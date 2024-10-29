@@ -1265,7 +1265,8 @@ namespace RT64 {
             while (WaitForSingleObjectEx(waitableObject, 0, FALSE));
         }
 
-        HRESULT res = d3d->Present(1, 0);
+        UINT syncInterval = vsyncEnabled ? 1 : 0;
+        HRESULT res = d3d->Present(syncInterval, 0);
         return SUCCEEDED(res);
     }
 
@@ -1297,6 +1298,14 @@ namespace RT64 {
         uint32_t windowWidth, windowHeight;
         getWindowSize(windowWidth, windowHeight);
         return (d3d == nullptr) || (windowWidth != width) || (windowHeight != height);
+    }
+
+    void D3D12SwapChain::setVsyncEnabled(bool vsyncEnabled) {
+        this->vsyncEnabled = vsyncEnabled;
+    }
+
+    bool D3D12SwapChain::isVsyncEnabled() const {
+        return vsyncEnabled;
     }
 
     uint32_t D3D12SwapChain::getWidth() const {

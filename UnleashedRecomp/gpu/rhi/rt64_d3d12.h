@@ -103,12 +103,15 @@ namespace RT64 {
         uint32_t width = 0;
         uint32_t height = 0;
         uint32_t refreshRate = 0;
+        bool vsyncEnabled = true;
 
         D3D12SwapChain(D3D12CommandQueue *commandQueue, RenderWindow renderWindow, uint32_t textureCount, RenderFormat format);
         ~D3D12SwapChain() override;
         bool present(uint32_t textureIndex, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount) override;
         bool resize() override;
         bool needsResize() const override;
+        void setVsyncEnabled(bool vsyncEnabled) override;
+        bool isVsyncEnabled() const override;
         uint32_t getWidth() const override;
         uint32_t getHeight() const override;
         RenderTexture *getTexture(uint32_t textureIndex) override;

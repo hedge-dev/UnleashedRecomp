@@ -2047,6 +2047,7 @@ namespace RT64 {
 
         std::vector<VkPresentModeKHR> presentModes(presentModeCount);
         vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
+        immediatePresentModeSupported = std::find(presentModes.begin(), presentModes.end(), VK_PRESENT_MODE_IMMEDIATE_KHR) != presentModes.end();
 
         // Check if the format we requested is part of the supported surface formats.
         std::vector<VkSurfaceFormatKHR> compatibleSurfaceFormats;
@@ -2076,7 +2077,7 @@ namespace RT64 {
         }
 
         // FIFO is guaranteed to be supported.
-        pickedPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+        requiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
 
         // Pick an alpha compositing mode, prefer opaque over inherit.
         if (surfaceCapabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) {
@@ -2164,7 +2165,7 @@ namespace RT64 {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         createInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
         createInfo.compositeAlpha = pickedAlphaFlag;
-        createInfo.presentMode = pickedPresentMode;
+        createInfo.presentMode = requiredPresentMode;
         createInfo.clipped = VK_TRUE;
         createInfo.oldSwapchain = vk;
 
@@ -2173,6 +2174,9 @@ namespace RT64 {
             fprintf(stderr, "vkCreateSwapchainKHR failed with error code 0x%X.\n", res);
             return false;
         }
+
+        // Store the chosen present mode to identify later whether the swapchain needs to be recreated.
+        createdPresentMode = requiredPresentMode;
 
         // Reset present counter.
         presentCount = 1;
@@ -2222,7 +2226,19 @@ namespace RT64 {
     bool VulkanSwapChain::needsResize() const {
         uint32_t windowWidth, windowHeight;
         getWindowSize(windowWidth, windowHeight);
-        return (vk == VK_NULL_HANDLE) || (windowWidth != width) || (windowHeight != height);
+        return (vk == VK_NULL_HANDLE) || (windowWidth != width) || (windowHeight != height) || (requiredPresentMode != createdPresentMode);
+    }
+
+    void VulkanSwapChain::setVsyncEnabled(bool vsyncEnabled) {
+        // Immediate mode must be supported and the presentation mode will only be used on the next resize.
+        // needsResize() will return as true as long as the created and required present mode do not match.
+        if (immediatePresentModeSupported) {
+            requiredPresentMode = vsyncEnabled ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        }
+    }
+
+    bool VulkanSwapChain::isVsyncEnabled() const {
+        return createdPresentMode == VK_PRESENT_MODE_FIFO_KHR;
     }
 
     uint32_t VulkanSwapChain::getWidth() const {
