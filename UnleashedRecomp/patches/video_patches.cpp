@@ -52,3 +52,8 @@ void CSDAspectRatioMidAsmHook(PPCRegister& f1, PPCRegister& f2)
         f2.f64 = 720.0f / ((1280.0f / newAspectRatio) / 720.0f);
     }
 }
+
+bool MotionBlurMidAsmHook()
+{
+    return Config::MotionBlur;
+}

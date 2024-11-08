@@ -69,8 +69,3 @@ PPC_FUNC(sub_82547DF0)
         __imp__sub_82547DF0(ctx, base);
     }
 }
-
-bool MotionBlurMidAsmHook()
-{
-    return Config::MotionBlur;
-}
