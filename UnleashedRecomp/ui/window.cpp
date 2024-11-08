@@ -155,10 +155,10 @@ void Window::Update()
 {
     if (!Window::IsFullscreen() && !Window::IsMaximised())
     {
-        Config::WindowWidth = Window::s_width;
-        Config::WindowHeight = Window::s_height;
         Config::WindowX = Window::s_x;
         Config::WindowY = Window::s_y;
+        Config::WindowWidth = Window::s_width;
+        Config::WindowHeight = Window::s_height;
     }
 }
 

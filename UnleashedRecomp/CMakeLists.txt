@@ -57,13 +57,21 @@ set(SWA_HID_CXX_SOURCES
     "hid/driver/sdl_hid.cpp"
 )
 
+set(SWA_PATCHES_CXX_SOURCES
+    "patches/fps_patches.cpp"
+    "patches/misc_patches.cpp"
+    "patches/object_patches.cpp"
+    "patches/player_patches.cpp"
+    "patches/resident_patches.cpp"
+    "patches/video_patches.cpp"
+)
+
 set(SWA_UI_CXX_SOURCES
     "ui/window.cpp"
 )
 
 set(SWA_CXX_SOURCES
     "config.cpp"
-    "game.cpp"
     "main.cpp"
     "misc_impl.cpp"
     "stdafx.cpp"
@@ -73,6 +81,7 @@ set(SWA_CXX_SOURCES
     ${SWA_GPU_CXX_SOURCES}
     ${SWA_APU_CXX_SOURCES}
     ${SWA_HID_CXX_SOURCES}
+    ${SWA_PATCHES_CXX_SOURCES}
     ${SWA_UI_CXX_SOURCES}
 )
 
