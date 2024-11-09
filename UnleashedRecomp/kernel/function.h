@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cpu/ppc_context.h>
 #include <array>
 #include "xbox.h"
@@ -159,6 +160,14 @@ struct ArgTranslator
         {
             SetPrecisionArgumentValue(ctx, base, idx, value);
         }
+        else if constexpr (std::is_null_pointer_v<T>)
+        {
+            SetIntegerArgumentValue(ctx, base, idx, 0);
+        }
+        else if constexpr (std::is_pointer_v<T>)
+        {
+            SetIntegerArgumentValue(ctx, base, idx, g_memory.MapVirtual(value));
+        }
         else
         {
             SetIntegerArgumentValue(ctx, base, idx, value);
@@ -168,7 +177,7 @@ struct ArgTranslator
     template<typename T>
     FORCEINLINE constexpr static std::enable_if_t<std::is_pointer_v<T>, void> SetValue(PPCContext& ctx, uint8_t* base, size_t idx, T value) noexcept
     {
-        const auto v = g_memory.MapVirtual(value);
+        const auto v = g_memory.MapVirtual((void*)value);
         if (!v)
         {
             return;
@@ -317,7 +326,7 @@ FORCEINLINE T GuestToHostFunction(uint32_t addr, TArgs... argv)
     }
     else if constexpr (std::is_pointer_v<T>)
     {
-        return static_cast<T>((uint64_t)g_memory.Translate(newCtx.r3.u32));
+        return reinterpret_cast<T>((uint64_t)g_memory.Translate(newCtx.r3.u32));
     }
     else if constexpr (is_precise_v<T>)
     {
