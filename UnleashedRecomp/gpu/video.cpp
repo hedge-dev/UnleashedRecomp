@@ -918,23 +918,23 @@ static void ProcSetRenderState(const RenderCommand& cmd)
 
 static const std::pair<GuestRenderState, void*> g_setRenderStateFunctions[] =
 {
-    { D3DRS_ZENABLE, GuestFunction<SetRenderState<D3DRS_ZENABLE>> },
-    { D3DRS_ZWRITEENABLE, GuestFunction<SetRenderState<D3DRS_ZWRITEENABLE>> },
-    { D3DRS_ALPHATESTENABLE, GuestFunction<SetRenderState<D3DRS_ALPHATESTENABLE>> },
-    { D3DRS_SRCBLEND, GuestFunction<SetRenderState<D3DRS_SRCBLEND>> },
-    { D3DRS_DESTBLEND, GuestFunction<SetRenderState<D3DRS_DESTBLEND>> },
-    { D3DRS_CULLMODE, GuestFunction<SetRenderState<D3DRS_CULLMODE>> },
-    { D3DRS_ZFUNC, GuestFunction<SetRenderState<D3DRS_ZFUNC>> },
-    { D3DRS_ALPHAREF, GuestFunction<SetRenderState<D3DRS_ALPHAREF>> },
-    { D3DRS_ALPHABLENDENABLE, GuestFunction<SetRenderState<D3DRS_ALPHABLENDENABLE>> },
-    { D3DRS_BLENDOP, GuestFunction<SetRenderState<D3DRS_BLENDOP>> },
-    { D3DRS_SCISSORTESTENABLE, GuestFunction<SetRenderState<D3DRS_SCISSORTESTENABLE>> },
-    { D3DRS_SLOPESCALEDEPTHBIAS, GuestFunction<SetRenderState<D3DRS_SLOPESCALEDEPTHBIAS>> },
-    { D3DRS_DEPTHBIAS, GuestFunction<SetRenderState<D3DRS_DEPTHBIAS>> },
-    { D3DRS_SRCBLENDALPHA, GuestFunction<SetRenderState<D3DRS_SRCBLENDALPHA>> },
-    { D3DRS_DESTBLENDALPHA, GuestFunction<SetRenderState<D3DRS_DESTBLENDALPHA>> },
-    { D3DRS_BLENDOPALPHA, GuestFunction<SetRenderState<D3DRS_BLENDOPALPHA>> },
-    { D3DRS_COLORWRITEENABLE, GuestFunction<SetRenderState<D3DRS_COLORWRITEENABLE>> }
+    { D3DRS_ZENABLE, HostToGuestFunction<SetRenderState<D3DRS_ZENABLE>> },
+    { D3DRS_ZWRITEENABLE, HostToGuestFunction<SetRenderState<D3DRS_ZWRITEENABLE>> },
+    { D3DRS_ALPHATESTENABLE, HostToGuestFunction<SetRenderState<D3DRS_ALPHATESTENABLE>> },
+    { D3DRS_SRCBLEND, HostToGuestFunction<SetRenderState<D3DRS_SRCBLEND>> },
+    { D3DRS_DESTBLEND, HostToGuestFunction<SetRenderState<D3DRS_DESTBLEND>> },
+    { D3DRS_CULLMODE, HostToGuestFunction<SetRenderState<D3DRS_CULLMODE>> },
+    { D3DRS_ZFUNC, HostToGuestFunction<SetRenderState<D3DRS_ZFUNC>> },
+    { D3DRS_ALPHAREF, HostToGuestFunction<SetRenderState<D3DRS_ALPHAREF>> },
+    { D3DRS_ALPHABLENDENABLE, HostToGuestFunction<SetRenderState<D3DRS_ALPHABLENDENABLE>> },
+    { D3DRS_BLENDOP, HostToGuestFunction<SetRenderState<D3DRS_BLENDOP>> },
+    { D3DRS_SCISSORTESTENABLE, HostToGuestFunction<SetRenderState<D3DRS_SCISSORTESTENABLE>> },
+    { D3DRS_SLOPESCALEDEPTHBIAS, HostToGuestFunction<SetRenderState<D3DRS_SLOPESCALEDEPTHBIAS>> },
+    { D3DRS_DEPTHBIAS, HostToGuestFunction<SetRenderState<D3DRS_DEPTHBIAS>> },
+    { D3DRS_SRCBLENDALPHA, HostToGuestFunction<SetRenderState<D3DRS_SRCBLENDALPHA>> },
+    { D3DRS_DESTBLENDALPHA, HostToGuestFunction<SetRenderState<D3DRS_DESTBLENDALPHA>> },
+    { D3DRS_BLENDOPALPHA, HostToGuestFunction<SetRenderState<D3DRS_BLENDOPALPHA>> },
+    { D3DRS_COLORWRITEENABLE, HostToGuestFunction<SetRenderState<D3DRS_COLORWRITEENABLE>> }
 };
 
 static std::unique_ptr<RenderPipeline> g_resolveMsaaDepthPipelines[3];
@@ -1214,7 +1214,7 @@ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
     memset(device, 0, sizeof(*device));
 
     uint32_t functionOffset = 0x443344; // D3D
-    g_codeCache.Insert(functionOffset, reinterpret_cast<void*>(GuestFunction<SetRenderStateUnimplemented>));
+    g_codeCache.Insert(functionOffset, reinterpret_cast<void*>(HostToGuestFunction<SetRenderStateUnimplemented>));
 
     for (size_t i = 0; i < _countof(device->setRenderStateFunctions); i++)
         device->setRenderStateFunctions[i] = functionOffset;
