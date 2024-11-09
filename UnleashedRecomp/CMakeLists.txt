@@ -59,6 +59,7 @@ set(SWA_HID_CXX_SOURCES
 )
 
 set(SWA_PATCHES_CXX_SOURCES
+    "patches/ui/frontend_listener.cpp"
     "patches/fps_patches.cpp"
     "patches/misc_patches.cpp"
     "patches/object_patches.cpp"

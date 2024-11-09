@@ -1,4 +1,5 @@
 #include "window.h"
+#include "window_listener.h"
 #include <config.h>
 #include <kernel/function.h>
 #include <SDL_syswm.h>
@@ -56,6 +57,9 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
                 }
             }
 
+            for (auto listener : Window::s_listeners)
+                listener->OnKeyDown(event->key.keysym.sym);
+
             break;
         }
 
@@ -68,6 +72,9 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
                     m_isFullscreenKeyReleased = true;
                     break;
             }
+
+            for (auto listener : Window::s_listeners)
+                listener->OnKeyUp(event->key.keysym.sym);
         }
 
         case SDL_WINDOWEVENT:
@@ -106,6 +113,9 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
             break;
         }
     }
+
+    for (auto listener : Window::s_listeners)
+        listener->OnSDLEvent(event);
 
     return 0;
 }
