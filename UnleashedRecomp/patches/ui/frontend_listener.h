@@ -7,28 +7,25 @@ class FrontendListener : public WindowListener
 {
 private:
     bool m_isF8KeyDown = false;
-    bool m_isF9KeyDown = false;
-    bool m_isF10KeyDown = false;
 
 public:
     void OnKeyDown(SDL_Keycode key) override
     {
         if (key == SDLK_F8 && !m_isF8KeyDown)
         {
-            m_isF8KeyDown = true;
-
             // アプリケーション設定 / 開発用 / デバッグ / HUD / 全 HUD 描画
             const auto ms_IsRenderHud = (bool*)g_memory.Translate(0x8328BB26);
 
             *ms_IsRenderHud = !*ms_IsRenderHud; // Toggle the entire HUD
-            (void)printf("HUD %s\n", *ms_IsRenderHud ? "On" : "Off");
+
+            printf("[*] HUD %s\n", *ms_IsRenderHud ? "On" : "Off");
+
+            m_isF8KeyDown = true;
         }
     }
 
     void OnKeyUp(SDL_Keycode key) override
     {
         m_isF8KeyDown = key != SDLK_F8;
-        m_isF9KeyDown = key != SDLK_F9;
-        m_isF10KeyDown = key != SDLK_F10;
     }
 };
