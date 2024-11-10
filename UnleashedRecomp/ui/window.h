@@ -22,7 +22,7 @@ public:
 
     inline static bool s_isFocused;
 
-    inline static std::vector<std::shared_ptr<WindowListener>> s_listeners;
+    inline static std::vector<WindowListener*> s_listeners;
 
     static SDL_Surface* GetIconSurface(void* pIconBmp = nullptr, size_t iconSize = 0)
     {
