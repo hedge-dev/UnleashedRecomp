@@ -1,5 +1,5 @@
 #include "window.h"
-#include "window_listener.h"
+#include "sdl_listener.h"
 #include <config.h>
 #include <kernel/function.h>
 #include <SDL_syswm.h>
@@ -108,19 +108,8 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
         }
     }
 
-    for (auto listener : Window::s_listeners)
-    {
+    for (auto listener : Window::s_eventListeners)
         listener->OnSDLEvent(event);
-
-        if (event->type == SDL_KEYDOWN)
-        {
-            listener->OnKeyDown(event->key.keysym.sym);
-        }
-        else if (event->type == SDL_KEYUP)
-        {
-            listener->OnKeyUp(event->key.keysym.sym);
-        }
-    }
 
     return 0;
 }

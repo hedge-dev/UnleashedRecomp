@@ -7,7 +7,7 @@
 #define DEFAULT_WIDTH 1280
 #define DEFAULT_HEIGHT 720
 
-class WindowListener;
+class SDLEventListener;
 
 class Window
 {
@@ -22,7 +22,7 @@ public:
 
     inline static bool s_isFocused;
 
-    inline static std::vector<WindowListener*> s_listeners;
+    inline static std::vector<SDLEventListener*> s_eventListeners;
 
     static SDL_Surface* GetIconSurface(void* pIconBmp = nullptr, size_t iconSize = 0)
     {
