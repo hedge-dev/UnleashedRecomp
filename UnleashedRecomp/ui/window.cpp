@@ -1,4 +1,5 @@
 #include "window.h"
+#include "sdl_listener.h"
 #include <config.h>
 #include <kernel/function.h>
 #include <SDL_syswm.h>
@@ -106,6 +107,9 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
             break;
         }
     }
+
+    for (auto listener : Window::s_eventListeners)
+        listener->OnSDLEvent(event);
 
     return 0;
 }
