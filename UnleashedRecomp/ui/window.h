@@ -1,6 +1,5 @@
 #pragma once
 
-#include <SDL.h>
 #include "res/icon.h"
 #include "ui/window_events.h"
 #include "config.h"

@@ -21,6 +21,10 @@
 #include <zstd.h>
 #include <stb_image.h>
 #include <concurrentqueue/blockingconcurrentqueue.h>
+#include <SDL.h>
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <imgui_impl_sdl2.h>
 
 #include "framework.h"
 #include "mutex.h"

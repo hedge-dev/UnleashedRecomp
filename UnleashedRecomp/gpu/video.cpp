@@ -8,12 +8,17 @@
 #include <xxHashMap.h>
 #include <shader/shader_cache.h>
 
+#include "imgui_snapshot.h"
 #include "gpu/video.h"
 #include "ui/window.h"
 #include "config.h"
 
 #include "shader/copy_vs.hlsl.dxil.h"
 #include "shader/copy_vs.hlsl.spirv.h"
+#include "shader/imgui_ps.hlsl.dxil.h"
+#include "shader/imgui_ps.hlsl.spirv.h"
+#include "shader/imgui_vs.hlsl.dxil.h"
+#include "shader/imgui_vs.hlsl.spirv.h"
 #include "shader/movie_vs.hlsl.dxil.h"
 #include "shader/movie_vs.hlsl.spirv.h"
 #include "shader/movie_ps.hlsl.dxil.h"
@@ -516,6 +521,7 @@ enum class RenderCommandType
     UnlockTextureRect,
     UnlockBuffer16,
     UnlockBuffer32,
+    DrawImGui,
     Present,
     StretchRect,
     SetRenderTarget,
@@ -952,10 +958,145 @@ static bool DetectWine()
     return dllHandle != nullptr && GetProcAddress(dllHandle, "wine_get_version") != nullptr;
 }
 
+static constexpr size_t TEXTURE_DESCRIPTOR_SIZE = 65536;
+static constexpr size_t SAMPLER_DESCRIPTOR_SIZE = 1024;
+
+static std::unique_ptr<RenderTexture> g_imFontTexture;
+static std::unique_ptr<RenderTextureView> g_imFontTextureView;
+static uint32_t g_imFontTextureDescriptorIndex;
+static bool g_imPendingBarrier = true;
+static std::unique_ptr<RenderPipelineLayout> g_imPipelineLayout;
+static std::unique_ptr<RenderPipeline> g_imPipeline;
+static ImDrawDataSnapshot g_imSnapshot;
+
+template<typename T>
+static void ExecuteCopyCommandList(const T& function)
+{
+    std::lock_guard lock(g_copyMutex);
+
+    g_copyCommandList->begin();
+    function();
+    g_copyCommandList->end();
+    g_copyQueue->executeCommandLists(g_copyCommandList.get(), g_copyCommandFence.get());
+    g_copyQueue->waitForCommandFence(g_copyCommandFence.get());
+}
+
+static constexpr uint32_t PITCH_ALIGNMENT = 0x100;
+static constexpr uint32_t PLACEMENT_ALIGNMENT = 0x200;
+
+static void CreateImGuiBackend()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+
+    ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
+
+    uint8_t* pixels;
+    int width, height;
+    io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
+
+    RenderTextureDesc textureDesc;
+    textureDesc.dimension = RenderTextureDimension::TEXTURE_2D;
+    textureDesc.width = width;
+    textureDesc.height = height;
+    textureDesc.depth = 1;
+    textureDesc.mipLevels = 1;
+    textureDesc.arraySize = 1;
+    textureDesc.format = RenderFormat::R8_UNORM;
+    g_imFontTexture = g_device->createTexture(textureDesc);
+
+    uint32_t rowPitch = (width + PITCH_ALIGNMENT - 1) & ~(PITCH_ALIGNMENT - 1);
+    uint32_t slicePitch = (rowPitch * height + PLACEMENT_ALIGNMENT - 1) & ~(PLACEMENT_ALIGNMENT - 1);
+    auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(slicePitch));
+    uint8_t* mappedMemory = reinterpret_cast<uint8_t*>(uploadBuffer->map());
+
+    if (rowPitch == width)
+    {
+        memcpy(mappedMemory, pixels, slicePitch);
+    }
+    else
+    {
+        for (size_t i = 0; i < height; i++)
+        {
+            memcpy(mappedMemory, pixels, width);
+            pixels += width;
+            mappedMemory += rowPitch;
+        }
+    }
+
+    uploadBuffer->unmap();
+
+    ExecuteCopyCommandList([&]
+        {
+            g_copyCommandList->barriers(RenderBarrierStage::COPY, RenderTextureBarrier(g_imFontTexture.get(), RenderTextureLayout::COPY_DEST));
+
+            g_copyCommandList->copyTextureRegion(
+                RenderTextureCopyLocation::Subresource(g_imFontTexture.get(), 0),
+                RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), RenderFormat::R8_UNORM, width, height, 1, rowPitch, 0));
+        });
+
+    RenderTextureViewDesc textureViewDesc;
+    textureViewDesc.format = textureDesc.format;
+    textureViewDesc.dimension = RenderTextureViewDimension::TEXTURE_2D;
+    textureViewDesc.mipLevels = 1;
+    textureViewDesc.componentMapping = RenderComponentMapping(RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::R);
+    g_imFontTextureView = g_imFontTexture->createTextureView(textureViewDesc);
+
+    g_imFontTextureDescriptorIndex = g_textureDescriptorAllocator.allocate();
+    g_textureDescriptorSet->setTexture(g_imFontTextureDescriptorIndex, g_imFontTexture.get(), RenderTextureLayout::SHADER_READ, g_imFontTextureView.get());
+
+    io.Fonts->SetTexID(ImTextureID(g_imFontTextureDescriptorIndex));
+
+    RenderPipelineLayoutBuilder pipelineLayoutBuilder;
+    pipelineLayoutBuilder.begin(false, true);
+
+    RenderDescriptorSetBuilder descriptorSetBuilder;
+    descriptorSetBuilder.begin();
+    descriptorSetBuilder.addTexture(0, TEXTURE_DESCRIPTOR_SIZE);
+    descriptorSetBuilder.end(true, TEXTURE_DESCRIPTOR_SIZE);
+    pipelineLayoutBuilder.addDescriptorSet(descriptorSetBuilder);
+
+    descriptorSetBuilder.begin();
+    descriptorSetBuilder.addSampler(0, SAMPLER_DESCRIPTOR_SIZE);
+    descriptorSetBuilder.end(true, SAMPLER_DESCRIPTOR_SIZE);
+    pipelineLayoutBuilder.addDescriptorSet(descriptorSetBuilder);
+
+    pipelineLayoutBuilder.addPushConstant(0, 2, 12, RenderShaderStageFlag::VERTEX | RenderShaderStageFlag::PIXEL);
+
+    pipelineLayoutBuilder.end();
+    g_imPipelineLayout = pipelineLayoutBuilder.create(g_device.get());
+
+    auto vertexShader = CREATE_SHADER(imgui_vs);
+    auto pixelShader = CREATE_SHADER(imgui_ps);
+
+    RenderInputElement inputElements[3];
+    inputElements[0] = RenderInputElement("POSITION", 0, 0, RenderFormat::R32G32_FLOAT, 0, offsetof(ImDrawVert, pos));
+    inputElements[1] = RenderInputElement("TEXCOORD", 0, 1, RenderFormat::R32G32_FLOAT, 0, offsetof(ImDrawVert, uv));
+    inputElements[2] = RenderInputElement("COLOR", 0, 2, RenderFormat::R8G8B8A8_UNORM, 0, offsetof(ImDrawVert, col));
+
+    RenderInputSlot inputSlot(0, sizeof(ImDrawVert));
+
+    RenderGraphicsPipelineDesc pipelineDesc;
+    pipelineDesc.pipelineLayout = g_imPipelineLayout.get();
+    pipelineDesc.vertexShader = vertexShader.get();
+    pipelineDesc.pixelShader = pixelShader.get();
+    pipelineDesc.renderTargetFormat[0] = RenderFormat::B8G8R8A8_UNORM;
+    pipelineDesc.renderTargetBlend[0] = RenderBlendDesc::AlphaBlend();
+    pipelineDesc.renderTargetCount = 1;
+    pipelineDesc.inputElements = inputElements;
+    pipelineDesc.inputElementsCount = std::size(inputElements);
+    pipelineDesc.inputSlots = &inputSlot;
+    pipelineDesc.inputSlotsCount = 1;
+    g_imPipeline = g_device->createGraphicsPipeline(pipelineDesc);
+}
+
 static void CreateHostDevice()
 {
     for (uint32_t i = 0; i < 16; i++)
         g_inputSlots[i].index = i;
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
 
     Window::Init();
 
@@ -994,9 +1135,6 @@ static void CreateHostDevice()
 
     RenderPipelineLayoutBuilder pipelineLayoutBuilder;
     pipelineLayoutBuilder.begin(false, true);
-
-    constexpr size_t TEXTURE_DESCRIPTOR_SIZE = 65536;
-    constexpr size_t SAMPLER_DESCRIPTOR_SIZE = 1024;
     
     RenderDescriptorSetBuilder descriptorSetBuilder;
     descriptorSetBuilder.begin();
@@ -1113,6 +1251,8 @@ static void CreateHostDevice()
         desc.depthTargetFormat = RenderFormat::D32_FLOAT;
         g_resolveMsaaDepthPipelines[i] = g_device->createGraphicsPipeline(desc);
     }
+
+    CreateImGuiBackend();
 }
 
 static void WaitForGPU()
@@ -1252,9 +1392,6 @@ static void ProcDestructResource(const RenderCommand& cmd)
     g_tempResources[g_frame].push_back(args.resource);
 }
 
-static constexpr uint32_t PITCH_ALIGNMENT = 0x100;
-static constexpr uint32_t PLACEMENT_ALIGNMENT = 0x200;
-
 static uint32_t ComputeTexturePitch(GuestTexture* texture)
 {
     return (texture->width * RenderFormatSize(texture->format) + PITCH_ALIGNMENT - 1) & ~(PITCH_ALIGNMENT - 1);
@@ -1311,18 +1448,6 @@ static void* LockBuffer(GuestBuffer* buffer, uint32_t flags)
 static void* LockVertexBuffer(GuestBuffer* buffer, uint32_t, uint32_t, uint32_t flags)
 {
     return LockBuffer(buffer, flags);
-}
-
-template<typename T>
-static void ExecuteCopyCommandList(const T& function)
-{
-    std::lock_guard lock(g_copyMutex);
-
-    g_copyCommandList->begin();
-    function();
-    g_copyCommandList->end();
-    g_copyQueue->executeCommandLists(g_copyCommandList.get(), g_copyCommandFence.get());
-    g_copyQueue->waitForCommandFence(g_copyCommandFence.get());
 }
 
 template<typename T>
@@ -1434,9 +1559,79 @@ static uint32_t HashVertexDeclaration(uint32_t vertexDeclaration)
     return vertexDeclaration;
 }
 
+static void DrawImGui()
+{
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
+    // ImGui logic here
+    ImGui::Render();
+
+    auto drawData = ImGui::GetDrawData();
+    if (drawData->CmdListsCount != 0)
+    {
+        g_imSnapshot.SnapUsingSwap(drawData, ImGui::GetTime());
+
+        RenderCommand cmd;
+        cmd.type = RenderCommandType::DrawImGui;
+        g_renderQueue.enqueue(cmd);
+    }
+}
+
+static void ProcDrawImGui(const RenderCommand& cmd)
+{
+    auto& commandList = g_commandLists[g_frame];
+
+    if (g_imPendingBarrier)
+    {
+        commandList->barriers(RenderBarrierStage::GRAPHICS, RenderTextureBarrier(g_imFontTexture.get(), RenderTextureLayout::SHADER_READ));
+        g_imPendingBarrier = false;
+    }
+
+    commandList->setGraphicsPipelineLayout(g_imPipelineLayout.get());
+    commandList->setPipeline(g_imPipeline.get());
+    commandList->setGraphicsDescriptorSet(g_textureDescriptorSet.get(), 0);
+    commandList->setGraphicsDescriptorSet(g_samplerDescriptorSet.get(), 1);
+
+    auto& drawData = g_imSnapshot.DrawData;
+    commandList->setViewports(RenderViewport(drawData.DisplayPos.x, drawData.DisplayPos.y, drawData.DisplaySize.x, drawData.DisplaySize.y));
+
+    float inverseDisplaySize[] = { 1.0f / drawData.DisplaySize.x, 1.0f / drawData.DisplaySize.y };
+    commandList->setGraphicsPushConstants(0, inverseDisplaySize, 4, 8);
+
+    for (int i = 0; i < drawData.CmdListsCount; i++)
+    {
+        auto& drawList = drawData.CmdLists[i];
+
+        auto vertexBufferAllocation = g_uploadAllocators[g_frame].allocate<false>(drawList->VtxBuffer.Data, drawList->VtxBuffer.Size * sizeof(ImDrawVert), alignof(ImDrawVert));
+        auto indexBufferAllocation = g_uploadAllocators[g_frame].allocate<false>(drawList->IdxBuffer.Data, drawList->IdxBuffer.Size * sizeof(uint16_t), alignof(uint16_t));
+
+        const RenderVertexBufferView vertexBufferView(vertexBufferAllocation.buffer->at(vertexBufferAllocation.offset), drawList->VtxBuffer.Size * sizeof(ImDrawVert));
+        const RenderInputSlot inputSlot(0, sizeof(ImDrawVert));
+        commandList->setVertexBuffers(0, &vertexBufferView, 1, &inputSlot);
+
+        const RenderIndexBufferView indexBufferView(indexBufferAllocation.buffer->at(indexBufferAllocation.offset), drawList->IdxBuffer.Size * sizeof(uint16_t), RenderFormat::R16_UINT);
+        commandList->setIndexBuffer(&indexBufferView);
+
+        for (int j = 0; j < drawList->CmdBuffer.Size; j++)
+        {
+            auto& drawCmd = drawList->CmdBuffer[j];
+
+            if (drawCmd.ClipRect.z <= drawCmd.ClipRect.x || drawCmd.ClipRect.w <= drawCmd.ClipRect.y)
+                continue;
+
+            uint32_t descriptorIndex = uint32_t(drawCmd.GetTexID());
+            commandList->setGraphicsPushConstants(0, &descriptorIndex, 0, 4);
+            commandList->setScissors(RenderRect(int32_t(drawCmd.ClipRect.x), int32_t(drawCmd.ClipRect.y), int32_t(drawCmd.ClipRect.z), int32_t(drawCmd.ClipRect.w)));
+            commandList->drawIndexedInstanced(drawCmd.ElemCount, 1, drawCmd.IdxOffset, drawCmd.VtxOffset, 0);
+        }
+    }
+}
+
 static void Present() 
 {
+    DrawImGui();
     WaitForRenderThread();
+
     g_pendingRenderThread = true;
 
     RenderCommand cmd;
@@ -2954,6 +3149,7 @@ static std::thread g_renderThread([]
                 case RenderCommandType::UnlockTextureRect:        ProcUnlockTextureRect(cmd); break;
                 case RenderCommandType::UnlockBuffer16:           ProcUnlockBuffer16(cmd); break;
                 case RenderCommandType::UnlockBuffer32:           ProcUnlockBuffer32(cmd); break;
+                case RenderCommandType::DrawImGui:                ProcDrawImGui(cmd); break;
                 case RenderCommandType::Present:                  ProcPresent(cmd); break;
                 case RenderCommandType::StretchRect:              ProcStretchRect(cmd); break;
                 case RenderCommandType::SetRenderTarget:          ProcSetRenderTarget(cmd); break;

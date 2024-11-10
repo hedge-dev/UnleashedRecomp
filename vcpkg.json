@@ -15,6 +15,10 @@
         "tomlplusplus",
         "zstd",
         "stb",
-        "concurrentqueue"
+        "concurrentqueue",
+        {
+            "name": "imgui",
+            "features": [ "sdl2-binding" ]
+        }
     ]
 }

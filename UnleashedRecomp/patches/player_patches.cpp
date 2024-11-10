@@ -89,3 +89,8 @@ void PostUnleashMidAsmHook(PPCRegister& r30)
         m_isUnleashCancelled = false;
     }
 }
+
+void SetXButtonHomingMidAsmHook(PPCRegister& r30)
+{
+    r30.u32 = Config::XButtonHoming;
+}

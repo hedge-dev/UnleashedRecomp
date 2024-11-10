@@ -1,4 +1,4 @@
-#include "movie_common.hlsl"
+#include "movie_common.hlsli"
 
 PixelShaderOutput main(in Interpolators In)
 {

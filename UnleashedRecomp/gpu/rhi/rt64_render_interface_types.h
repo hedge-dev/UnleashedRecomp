@@ -1265,7 +1265,7 @@ namespace RT64 {
         float mipLODBias = 0.0f;
         uint32_t maxAnisotropy = 16;
         bool anisotropyEnabled = false;
-        RenderComparisonFunction comparisonFunc = RenderComparisonFunction::LESS_EQUAL;
+        RenderComparisonFunction comparisonFunc = RenderComparisonFunction::NEVER;
         bool comparisonEnabled = false;
         RenderBorderColor borderColor = RenderBorderColor::OPAQUE_BLACK;
         float minLOD = 0.0f;

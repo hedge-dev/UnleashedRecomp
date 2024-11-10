@@ -43,6 +43,7 @@ set(SWA_CPU_CXX_SOURCES
 
 set(SWA_GPU_CXX_SOURCES
     "gpu/video.cpp"
+    "gpu/imgui_snapshot.cpp"
     "gpu/rhi/rt64_d3d12.cpp"
     "gpu/rhi/rt64_vulkan.cpp"
 )
@@ -111,6 +112,7 @@ find_package(directx-dxc REQUIRED)
 find_package(zstd CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 find_package(unofficial-concurrentqueue REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
 add_custom_command(TARGET UnleashedRecomp POST_BUILD
@@ -142,6 +144,7 @@ target_link_libraries(UnleashedRecomp PRIVATE
     zstd::libzstd_static
     unofficial::concurrentqueue::concurrentqueue
     Synchronization
+    imgui::imgui
 )
 
 target_include_directories(UnleashedRecomp PRIVATE
@@ -178,6 +181,8 @@ function(compile_pixel_shader FILE_PATH)
 endfunction()
 
 compile_vertex_shader(copy_vs)
+compile_pixel_shader(imgui_ps)
+compile_vertex_shader(imgui_vs)
 compile_pixel_shader(movie_ps)
 compile_vertex_shader(movie_vs)
 compile_pixel_shader(resolve_msaa_depth_2x)

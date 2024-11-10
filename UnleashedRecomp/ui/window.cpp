@@ -7,6 +7,9 @@ bool m_isFullscreenKeyReleased = true;
 
 int Window_OnSDLEvent(void*, SDL_Event* event)
 {
+    if (ImGui::GetIO().BackendPlatformUserData != nullptr)
+        ImGui_ImplSDL2_ProcessEvent(event);
+
     switch (event->type)
     {
         case SDL_QUIT:
