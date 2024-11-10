@@ -57,9 +57,6 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
                 }
             }
 
-            for (auto listener : Window::s_listeners)
-                listener->OnKeyDown(event->key.keysym.sym);
-
             break;
         }
 
@@ -72,9 +69,6 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
                     m_isFullscreenKeyReleased = true;
                     break;
             }
-
-            for (auto listener : Window::s_listeners)
-                listener->OnKeyUp(event->key.keysym.sym);
         }
 
         case SDL_WINDOWEVENT:
@@ -115,7 +109,18 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
     }
 
     for (auto listener : Window::s_listeners)
+    {
         listener->OnSDLEvent(event);
+
+        if (event->type == SDL_KEYDOWN)
+        {
+            listener->OnKeyDown(event->key.keysym.sym);
+        }
+        else if (event->type == SDL_KEYUP)
+        {
+            listener->OnKeyUp(event->key.keysym.sym);
+        }
+    }
 
     return 0;
 }
