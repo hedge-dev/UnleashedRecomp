@@ -1,6 +1,7 @@
 #pragma once
 
 #include "res/icon.h"
+#include "res/icon_night.h"
 #include "ui/window_events.h"
 #include "config.h"
 
@@ -21,12 +22,13 @@ public:
     inline static int s_height = DEFAULT_HEIGHT;
 
     inline static bool s_isFocused;
+    inline static bool s_isIconNight;
 
     inline static std::vector<SDLEventListener*> s_eventListeners;
 
-    static SDL_Surface* GetIconSurface(void* pIconBmp = nullptr, size_t iconSize = 0)
+    static SDL_Surface* GetIconSurface(void* pIconBmp, size_t iconSize)
     {
-        auto rw = SDL_RWFromMem(pIconBmp ? pIconBmp : (void*)g_icon, pIconBmp ? iconSize : g_icon_size);
+        auto rw = SDL_RWFromMem(pIconBmp, iconSize);
         auto surface = SDL_LoadBMP_RW(rw, 1);
 
         if (!surface)
@@ -35,12 +37,24 @@ public:
         return surface;
     }
 
-    static void SetIcon(void* pIconBmp = nullptr, size_t iconSize = 0)
+    static void SetIcon(void* pIconBmp, size_t iconSize)
     {
         if (auto icon = GetIconSurface(pIconBmp, iconSize))
         {
             SDL_SetWindowIcon(s_pWindow, icon);
             SDL_FreeSurface(icon);
+        }
+    }
+
+    static void SetIcon(bool isNight = false)
+    {
+        if (isNight)
+        {
+            SetIcon((void*)g_iconNight, g_iconNight_size);
+        }
+        else
+        {
+            SetIcon((void*)g_icon, g_icon_size);
         }
     }
 
@@ -72,7 +86,7 @@ public:
         {
             SDL_SetWindowFullscreen(s_pWindow, 0);
             SDL_ShowCursor(SDL_ENABLE);
-            SetIcon();
+            SetIcon(Window::s_isIconNight);
         }
 
         return isEnabled;

@@ -1,5 +1,7 @@
 #include <cpu/guest_code.h>
 #include "api/SWA.h"
+#include "ui/window.h"
+#include "ui/window_events.h"
 #include "config.h"
 
 uint32_t m_lastCheckpointScore = 0;
@@ -93,4 +95,22 @@ void PostUnleashMidAsmHook(PPCRegister& r30)
 void SetXButtonHomingMidAsmHook(PPCRegister& r30)
 {
     r30.u32 = Config::XButtonHoming;
+}
+
+// SWA::Player::CEvilSonicContext::Ctor
+PPC_FUNC_IMPL(__imp__sub_823B49D8);
+PPC_FUNC(sub_823B49D8)
+{
+    __imp__sub_823B49D8(ctx, base);
+
+    SDL_User_EvilSonic(Window::s_pWindow, true);
+}
+
+// SWA::Player::CEvilSonicContext::Dtor
+PPC_FUNC_IMPL(__imp__sub_823B4590);
+PPC_FUNC(sub_823B4590)
+{
+    __imp__sub_823B4590(ctx, base);
+
+    SDL_User_EvilSonic(Window::s_pWindow, false);
 }

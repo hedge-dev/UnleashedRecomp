@@ -106,6 +106,13 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
 
             break;
         }
+
+        case SDL_USER_EVILSONIC:
+        {
+            Window::s_isIconNight = event->user.code;
+            Window::SetIcon(Window::s_isIconNight);
+            break;
+        }
     }
 
     for (auto listener : Window::s_eventListeners)
