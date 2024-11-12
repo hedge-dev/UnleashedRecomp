@@ -664,7 +664,7 @@ void RtlRaiseException_x()
 void KfReleaseSpinLock(uint32_t* spinLock)
 {
     //printf("!!! STUB !!! KfReleaseSpinLock\n");
-    *spinLock = 0;
+    InterlockedExchange((volatile long*)spinLock, 0);
 }
 
 void KfAcquireSpinLock(uint32_t* spinLock)
@@ -711,7 +711,7 @@ void VdGetSystemCommandBuffer()
 void KeReleaseSpinLockFromRaisedIrql(uint32_t* spinLock)
 {
     //printf("!!! STUB !!! KeReleaseSpinLockFromRaisedIrql\n");
-    *spinLock = 0;
+    InterlockedExchange((volatile long*)spinLock, 0);
 }
 
 void KeAcquireSpinLockAtRaisedIrql(uint32_t* spinLock)

@@ -2023,12 +2023,37 @@ static void ProcStretchRect(const RenderCommand& cmd)
     AddBarrier(args.texture, RenderTextureLayout::SHADER_READ);
 }
 
+static void SetDefaultViewport(GuestDevice* device, GuestSurface* surface)
+{
+    if (surface != nullptr)
+    {
+        RenderCommand cmd;
+        cmd.type = RenderCommandType::SetViewport;
+        cmd.setViewport.x = 0.0f;
+        cmd.setViewport.y = 0.0f;
+        cmd.setViewport.width = float(surface->width);
+        cmd.setViewport.height = float(surface->height);
+        cmd.setViewport.minDepth = 0.0f;
+        cmd.setViewport.maxDepth = 1.0f;
+        g_renderQueue.enqueue(cmd);
+
+        device->viewport.x = 0.0f;
+        device->viewport.y = 0.0f;
+        device->viewport.width = float(surface->width);
+        device->viewport.height = float(surface->height);
+        device->viewport.minZ = 0.0f;
+        device->viewport.maxZ = 1.0f;
+    }
+}
+
 static void SetRenderTarget(GuestDevice* device, uint32_t index, GuestSurface* renderTarget) 
 {
     RenderCommand cmd;
     cmd.type = RenderCommandType::SetRenderTarget;
     cmd.setRenderTarget.renderTarget = renderTarget;
     g_renderQueue.enqueue(cmd);
+
+    SetDefaultViewport(device, renderTarget);
 }
 
 static void ProcSetRenderTarget(const RenderCommand& cmd)
@@ -2049,6 +2074,8 @@ static void SetDepthStencilSurface(GuestDevice* device, GuestSurface* depthStenc
     cmd.type = RenderCommandType::SetDepthStencilSurface;
     cmd.setDepthStencilSurface.depthStencil = depthStencil;
     g_renderQueue.enqueue(cmd);
+
+    SetDefaultViewport(device, depthStencil);
 }
 
 static void ProcSetDepthStencilSurface(const RenderCommand& cmd)
@@ -2996,6 +3023,8 @@ static void SetVertexDeclaration(GuestDevice* device, GuestVertexDeclaration* ve
     cmd.type = RenderCommandType::SetVertexDeclaration;
     cmd.setVertexDeclaration.vertexDeclaration = vertexDeclaration;
     g_renderQueue.enqueue(cmd);
+
+    device->vertexDeclaration = g_memory.MapVirtual(vertexDeclaration);
 }
 
 static void ProcSetVertexDeclaration(const RenderCommand& cmd)
@@ -3693,9 +3722,13 @@ static void SetResolution(be<uint32_t>* device)
     device[47] = height == 0 ? 720 : height;
 }
 
-static uint32_t StubFunction()
+// The game does some weird stuff to render targets if they are above 
+// 1024x1024 resolution, setting this bool at address 20 seems to avoid all that.
+PPC_FUNC(sub_82E9F048)
 {
-    return 0;
+    PPC_STORE_U8(ctx.r4.u32 + 20, 1);
+    PPC_STORE_U32(ctx.r4.u32 + 44, PPC_LOAD_U32(ctx.r4.u32 + 8)); // Width
+    PPC_STORE_U32(ctx.r4.u32 + 48, PPC_LOAD_U32(ctx.r4.u32 + 12)); // Height
 }
 
 static GuestShader* g_movieVertexShader;
@@ -3890,7 +3923,6 @@ GUEST_FUNCTION_HOOK(sub_82C00910, D3DXFillVolumeTexture);
 GUEST_FUNCTION_HOOK(sub_82E43FC8, MakePictureData);
 
 GUEST_FUNCTION_HOOK(sub_82E9EE38, SetResolution);
-GUEST_FUNCTION_HOOK(sub_82BE77B0, StubFunction);
 
 GUEST_FUNCTION_HOOK(sub_82AE2BF8, ScreenShaderInit);
 

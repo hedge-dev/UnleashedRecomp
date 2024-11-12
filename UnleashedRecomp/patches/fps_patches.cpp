@@ -3,6 +3,9 @@
 #include "ui/window.h"
 #include "config.h"
 
+float m_lastLoadingFrameDelta = 0.0f;
+std::chrono::steady_clock::time_point m_lastLoadingFrameTime;
+
 void HighFrameRateDeltaTimeFixMidAsmHook(PPCRegister& f1)
 {
     // Having 60 FPS threshold ensures we still retain
@@ -57,4 +60,16 @@ void Camera2DLerpFixMidAsmHook(PPCRegister& t, PPCRegister& deltaTime)
 void Camera2DSlopeLerpFixMidAsmHook(PPCRegister& t, PPCRegister& deltaTime)
 {
     t.f64 = ComputeLerpFactor(t.f64, deltaTime.f64 / 60.0);
+}
+
+void LoadingScreenSpeedFixMidAsmHook(PPCRegister& r4)
+{
+    auto now = std::chrono::high_resolution_clock::now();
+
+    m_lastLoadingFrameDelta = std::min(std::chrono::duration<float>(now - m_lastLoadingFrameTime).count(), 1.0f / 15.0f);
+    m_lastLoadingFrameTime = now;
+
+    auto pDeltaTime = (be<float>*)g_memory.Translate(r4.u32);
+
+    *pDeltaTime = m_lastLoadingFrameDelta;
 }

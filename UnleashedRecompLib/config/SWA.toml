@@ -417,3 +417,8 @@ jump_address_on_true = 0x827D20EC
 name = "ParticleTestDrawIndexedPrimitiveMidAsmHook"
 address = 0x827D25AC
 registers = ["r7"]
+
+[[midasm_hook]]
+name = "LoadingScreenSpeedFixMidAsmHook"
+address = 0x824DAB60
+registers = ["r4"]
