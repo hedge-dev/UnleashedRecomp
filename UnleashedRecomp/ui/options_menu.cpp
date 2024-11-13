@@ -151,13 +151,15 @@ static void DrawScanlineBars()
     drawList->AddLine(
         { 0.0f, height },
         { res.x, height },
-        OUTLINE_COLOR);
+        OUTLINE_COLOR,
+        Scale(1));
 
     // Bottom bar line
     drawList->AddLine(
         { 0.0f, res.y - height },
         { res.x, res.y - height },
-        OUTLINE_COLOR);
+        OUTLINE_COLOR,
+        Scale(1));
 }
 
 static constexpr size_t GRID_SIZE = 9;
@@ -188,15 +190,17 @@ static void DrawContainer(const ImVec2& min, const ImVec2& max)
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
+    float lineSize = Scale(2);
+
     // Top line
-    drawList->AddLine({ min.x + gridSize, min.y + gridSize }, { min.x + gridSize, min.y + gridSize * 2.0f }, LINE_COLOR, Scale(1)); // Vertical left
-    drawList->AddLine({ min.x + gridSize, min.y + gridSize }, { max.x - gridSize, min.y + gridSize }, LINE_COLOR, Scale(1)); // Horizontal
-    drawList->AddLine({ max.x - gridSize, min.y + gridSize }, { max.x - gridSize, min.y + gridSize * 2.0f }, LINE_COLOR, Scale(1)); // Vertical right
+    drawList->AddLine({ min.x + gridSize, min.y + gridSize }, { min.x + gridSize, min.y + gridSize * 2.0f }, LINE_COLOR, lineSize); // Vertical left
+    drawList->AddLine({ min.x + gridSize, min.y + gridSize }, { max.x - gridSize, min.y + gridSize }, LINE_COLOR, lineSize); // Horizontal
+    drawList->AddLine({ max.x - gridSize, min.y + gridSize }, { max.x - gridSize, min.y + gridSize * 2.0f }, LINE_COLOR, lineSize); // Vertical right
 
     // Bottom line
-    drawList->AddLine({ min.x + gridSize, max.y - gridSize }, { min.x + gridSize, max.y - gridSize * 2.0f }, LINE_COLOR, Scale(1)); // Vertical left
-    drawList->AddLine({ min.x + gridSize, max.y - gridSize }, { max.x - gridSize, max.y - gridSize }, LINE_COLOR, Scale(1)); // Horizontal
-    drawList->AddLine({ max.x - gridSize, max.y - gridSize }, { max.x - gridSize, max.y - gridSize * 2.0f }, LINE_COLOR, Scale(1)); // Vertical right
+    drawList->AddLine({ min.x + gridSize, max.y - gridSize }, { min.x + gridSize, max.y - gridSize * 2.0f }, LINE_COLOR, lineSize); // Vertical left
+    drawList->AddLine({ min.x + gridSize, max.y - gridSize }, { max.x - gridSize, max.y - gridSize }, LINE_COLOR, lineSize); // Horizontal
+    drawList->AddLine({ max.x - gridSize, max.y - gridSize }, { max.x - gridSize, max.y - gridSize * 2.0f }, LINE_COLOR, lineSize); // Vertical right
 
     // The draw area
     drawList->PushClipRect({ min.x + gridSize * 2.0f, min.y + gridSize * 2.0f }, { max.x - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
@@ -269,11 +273,10 @@ static void DrawCategories()
         }
 
         min.x += textPadding;
-        min.y += (tabHeight - textSizes[i].y) / 2.0f;
 
         SetGradient(
             min,
-            { min.x + textSizes[i].x, min.y + textSizes[i].y},
+            { min.x + textSizes[i].x, min.y + textSizes[i].y },
             IM_COL32(128, 255, 0, alpha),
             IM_COL32(255, 192, 0, alpha));
 
