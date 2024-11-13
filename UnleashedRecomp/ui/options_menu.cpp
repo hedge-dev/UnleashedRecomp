@@ -12,7 +12,7 @@ void OptionsMenu::Init()
     auto& io = ImGui::GetIO();
     g_seuratFont = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 26.0f);
     g_dfsogeistdFont = io.Fonts->AddFontFromFileTTF("DFSoGeiStd-W7.otf", 48.0f);
-    g_newRodinFont = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 16.0f);
+    g_newRodinFont = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f);
 }
 
 static std::vector<std::unique_ptr<ImGuiCallbackData>> g_callbackData;
@@ -216,11 +216,6 @@ static constexpr const char* CATEGORIES[] =
 
 static uint32_t g_categoryIndex;
 
-static float ComputeSizeWithPadding(float width, float padding, int32_t elementSize)
-{
-    return (width - padding * (elementSize - 1)) / elementSize;
-}
-
 static void DrawCategories()
 {
     auto drawList = ImGui::GetForegroundDrawList();
@@ -228,8 +223,8 @@ static void DrawCategories()
     auto clipRectMax = drawList->GetClipRectMax();
 
     float gridSize = Scale(GRID_SIZE);
-    float textPadding = gridSize;
-    float tabPadding = gridSize * 2.0f;
+    float textPadding = gridSize * 3.0f;
+    float tabPadding = gridSize;
 
     float size = Scale(32.0f);
     ImVec2 textSizes[std::size(CATEGORIES)];
@@ -252,7 +247,7 @@ static void DrawCategories()
         ImVec2 max = { clipRectMin.x + xOffset, clipRectMin.y + tabHeight };
         xOffset += tabPadding;
 
-        uint32_t alpha = 255;
+        uint32_t alpha = 235;
 
         if (g_categoryIndex == i || ImGui::IsMouseHoveringRect(min, max, false))
         {
@@ -344,7 +339,7 @@ static void DrawConfigOptions()
         auto valueText = config->ToString();
         std::transform(valueText.begin(), valueText.end(), valueText.begin(), toupper);
 
-        size = Scale(16.0f);
+        size = Scale(20.0f);
         textSize = g_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.c_str());
 
         min.x += ((max.x - min.x) - textSize.x) / 2.0f;
@@ -381,11 +376,11 @@ void OptionsMenu::Draw()
 
     //drawList->AddRectFilled({ 0.0f, 0.0f }, res, IM_COL32(0, 0, 0, 223));
 
-    *(bool*)g_memory.Translate(0x8328BB26) = false;
+    //*(bool*)g_memory.Translate(0x8328BB26) = false;
 
     DrawScanlineBars();
 
-    constexpr float CONTAINER_POS_X = 250.0f;
+    constexpr float CONTAINER_POS_X = 236.0f;
     constexpr float CONTAINER_POS_Y = 118.0f;
     
     ImVec2 min = { Scale(AlignToNextGrid(CONTAINER_POS_X)), Scale(AlignToNextGrid(CONTAINER_POS_Y)) };
