@@ -106,9 +106,7 @@ static void DrawScanlineBars()
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
 
-    SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE);
-
-    // Top bar
+    // Top bar fade
     drawList->AddRectFilledMultiColor(
         { 0.0f, 0.0f },
         { res.x, height },
@@ -116,16 +114,8 @@ static void DrawScanlineBars()
         FADE_COLOR0,
         FADE_COLOR1,
         FADE_COLOR1);
-
-    drawList->AddRectFilledMultiColor(
-        { 0.0f, 0.0f },
-        { res.x, height },
-        COLOR0, 
-        COLOR0, 
-        COLOR1,
-        COLOR1);
-
-    // Bottom bar
+    
+    // Bottom bar fade
     drawList->AddRectFilledMultiColor(
         { res.x, res.y },
         { 0.0f, res.y - height },
@@ -134,6 +124,18 @@ static void DrawScanlineBars()
         FADE_COLOR1,
         FADE_COLOR1);
 
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE);
+
+    // Top bar
+    drawList->AddRectFilledMultiColor(
+        { 0.0f, 0.0f },
+        { res.x, height },
+        COLOR0,
+        COLOR0,
+        COLOR1,
+        COLOR1);
+
+    // Bottom bar
     drawList->AddRectFilledMultiColor(
         { res.x, res.y },
         { 0.0f, res.y - height },
