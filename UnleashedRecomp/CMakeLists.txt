@@ -70,6 +70,7 @@ set(SWA_PATCHES_CXX_SOURCES
 )
 
 set(SWA_UI_CXX_SOURCES
+    "ui/options_menu.cpp"
     "ui/window.cpp"
 )
 

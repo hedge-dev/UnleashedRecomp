@@ -7,6 +7,7 @@
 #include <kernel/memory.h>
 #include <xxHashMap.h>
 #include <shader/shader_cache.h>
+#include <ui/options_menu.h>
 
 #include "imgui_snapshot.h"
 #include "gpu/video.h"
@@ -988,7 +989,7 @@ static void CreateImGuiBackend()
 {
     ImGuiIO& io = ImGui::GetIO();
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
-
+    OptionsMenu::Init();
     ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
 
     uint8_t* pixels;
@@ -1563,7 +1564,7 @@ static void DrawImGui()
 {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
-    // ImGui logic here
+    OptionsMenu::Draw();
     ImGui::Render();
 
     auto drawData = ImGui::GetDrawData();
