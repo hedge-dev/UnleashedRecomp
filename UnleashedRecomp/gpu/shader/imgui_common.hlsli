@@ -2,6 +2,11 @@
 
 struct PushConstants
 {
+    float2 GradientMin;
+    float2 GradientMax;
+    uint GradientTop;
+    uint GradientBottom;
+    uint ShaderModifier;
     uint Texture2DDescriptorIndex;
     float2 InverseDisplaySize;
 };

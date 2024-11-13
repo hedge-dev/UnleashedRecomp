@@ -10,6 +10,7 @@
 #include <ui/options_menu.h>
 
 #include "imgui_snapshot.h"
+#include "imgui_common.h"
 #include "gpu/video.h"
 #include "ui/window.h"
 #include "config.h"
@@ -985,6 +986,17 @@ static void ExecuteCopyCommandList(const T& function)
 static constexpr uint32_t PITCH_ALIGNMENT = 0x100;
 static constexpr uint32_t PLACEMENT_ALIGNMENT = 0x200;
 
+struct ImGuiPushConstants
+{
+    ImVec2 gradientMin{};
+    ImVec2 gradientMax{};
+    ImU32 gradientTop{};
+    ImU32 gradientBottom{};
+    uint32_t shaderModifier{};
+    uint32_t texture2DDescriptorIndex{};
+    ImVec2 inverseDisplaySize{};
+};
+
 static void CreateImGuiBackend()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -1062,7 +1074,7 @@ static void CreateImGuiBackend()
     descriptorSetBuilder.end(true, SAMPLER_DESCRIPTOR_SIZE);
     pipelineLayoutBuilder.addDescriptorSet(descriptorSetBuilder);
 
-    pipelineLayoutBuilder.addPushConstant(0, 2, 12, RenderShaderStageFlag::VERTEX | RenderShaderStageFlag::PIXEL);
+    pipelineLayoutBuilder.addPushConstant(0, 2, sizeof(ImGuiPushConstants), RenderShaderStageFlag::VERTEX | RenderShaderStageFlag::PIXEL);
 
     pipelineLayoutBuilder.end();
     g_imPipelineLayout = pipelineLayoutBuilder.create(g_device.get());
@@ -1596,8 +1608,9 @@ static void ProcDrawImGui(const RenderCommand& cmd)
     auto& drawData = g_imSnapshot.DrawData;
     commandList->setViewports(RenderViewport(drawData.DisplayPos.x, drawData.DisplayPos.y, drawData.DisplaySize.x, drawData.DisplaySize.y));
 
-    float inverseDisplaySize[] = { 1.0f / drawData.DisplaySize.x, 1.0f / drawData.DisplaySize.y };
-    commandList->setGraphicsPushConstants(0, inverseDisplaySize, 4, 8);
+    ImGuiPushConstants pushConstants{};
+    pushConstants.inverseDisplaySize = { 1.0f / drawData.DisplaySize.x, 1.0f / drawData.DisplaySize.y };
+    commandList->setGraphicsPushConstants(0, &pushConstants);
 
     for (int i = 0; i < drawData.CmdListsCount; i++)
     {
@@ -1616,14 +1629,30 @@ static void ProcDrawImGui(const RenderCommand& cmd)
         for (int j = 0; j < drawList->CmdBuffer.Size; j++)
         {
             auto& drawCmd = drawList->CmdBuffer[j];
+            if (drawCmd.UserCallback != nullptr)
+            {
+                auto callbackData = reinterpret_cast<const ImGuiCallbackData*>(drawCmd.UserCallbackData);
 
-            if (drawCmd.ClipRect.z <= drawCmd.ClipRect.x || drawCmd.ClipRect.w <= drawCmd.ClipRect.y)
-                continue;
+                switch (static_cast<ImGuiCallback>(reinterpret_cast<size_t>(drawCmd.UserCallback)))
+                {
+                case ImGuiCallback::SetGradient:
+                    commandList->setGraphicsPushConstants(0, &callbackData->setGradient, offsetof(ImGuiPushConstants, gradientMin), sizeof(callbackData->setGradient));
+                    break;       
+                case ImGuiCallback::SetShaderModifier:
+                    commandList->setGraphicsPushConstants(0, &callbackData->setShaderModifier, offsetof(ImGuiPushConstants, shaderModifier), sizeof(callbackData->setShaderModifier));
+                    break;
+                }
+            }
+            else
+            {
+                if (drawCmd.ClipRect.z <= drawCmd.ClipRect.x || drawCmd.ClipRect.w <= drawCmd.ClipRect.y)
+                    continue;
 
-            uint32_t descriptorIndex = uint32_t(drawCmd.GetTexID());
-            commandList->setGraphicsPushConstants(0, &descriptorIndex, 0, 4);
-            commandList->setScissors(RenderRect(int32_t(drawCmd.ClipRect.x), int32_t(drawCmd.ClipRect.y), int32_t(drawCmd.ClipRect.z), int32_t(drawCmd.ClipRect.w)));
-            commandList->drawIndexedInstanced(drawCmd.ElemCount, 1, drawCmd.IdxOffset, drawCmd.VtxOffset, 0);
+                uint32_t descriptorIndex = uint32_t(drawCmd.GetTexID());
+                commandList->setGraphicsPushConstants(0, &descriptorIndex, offsetof(ImGuiPushConstants, texture2DDescriptorIndex), sizeof(descriptorIndex));
+                commandList->setScissors(RenderRect(int32_t(drawCmd.ClipRect.x), int32_t(drawCmd.ClipRect.y), int32_t(drawCmd.ClipRect.z), int32_t(drawCmd.ClipRect.w)));
+                commandList->drawIndexedInstanced(drawCmd.ElemCount, 1, drawCmd.IdxOffset, drawCmd.VtxOffset, 0);
+            }
         }
     }
 }

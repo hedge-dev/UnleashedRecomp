@@ -1,6 +1,7 @@
 #include "options_menu.h"
 #include "window.h"
 #include <kernel/memory.h>
+#include <gpu/imgui_common.h>
 
 static ImFont* g_seuratFont;
 static ImFont* g_dfsogeistdFont;
@@ -12,6 +13,45 @@ void OptionsMenu::Init()
     g_seuratFont = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 26.0f);
     g_dfsogeistdFont = io.Fonts->AddFontFromFileTTF("DFSoGeiStd-W7.otf", 48.0f);
     g_newRodinFont = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 16.0f);
+}
+
+static std::vector<std::unique_ptr<ImGuiCallbackData>> g_callbackData;
+static uint32_t g_callbackDataIndex = 0;
+
+static ImGuiCallbackData* AddCallback(ImGuiCallback callback)
+{
+    if (g_callbackDataIndex >= g_callbackData.size())
+        g_callbackData.emplace_back(std::make_unique<ImGuiCallbackData>());
+
+    auto& callbackData = g_callbackData[g_callbackDataIndex];
+    ++g_callbackDataIndex;
+
+    ImGui::GetForegroundDrawList()->AddCallback(reinterpret_cast<ImDrawCallback>(callback), callbackData.get());
+
+    return callbackData.get();
+}
+
+static void SetGradient(const ImVec2& min, const ImVec2& max, ImU32 top, ImU32 bottom)
+{
+    auto callbackData = AddCallback(ImGuiCallback::SetGradient);
+    callbackData->setGradient.gradientMin[0] = min.x;
+    callbackData->setGradient.gradientMin[1] = min.y; 
+    callbackData->setGradient.gradientMax[0] = max.x;
+    callbackData->setGradient.gradientMax[1] = max.y;  
+    callbackData->setGradient.gradientTop = top;
+    callbackData->setGradient.gradientBottom = bottom;
+}
+
+static void ResetGradient()
+{
+    auto callbackData = AddCallback(ImGuiCallback::SetGradient);
+    memset(&callbackData->setGradient, 0, sizeof(callbackData->setGradient));
+}
+
+static void SetShaderModifier(uint32_t shaderModifier)
+{
+    auto callbackData = AddCallback(ImGuiCallback::SetShaderModifier);
+    callbackData->setShaderModifier.shaderModifier = shaderModifier;
 }
 
 static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, int32_t outlineSize, ImU32 outlineColor)
@@ -55,14 +95,16 @@ static float Scale(float size)
 
 static void DrawScanlineBars()
 {
-    constexpr uint32_t COLOR0 = IM_COL32(58, 71, 15, 0);
-    constexpr uint32_t COLOR1 = IM_COL32(58, 71, 15, 255);
+    constexpr uint32_t COLOR0 = IM_COL32(203, 255, 0, 0);
+    constexpr uint32_t COLOR1 = IM_COL32(203, 255, 0, 55);
     constexpr uint32_t OUTLINE_COLOR = IM_COL32(115, 178, 104, 255);
 
     float height = Scale(105.0f);
 
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
+
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE);
 
     // Top bar
     drawList->AddRectFilledMultiColor(
@@ -73,44 +115,60 @@ static void DrawScanlineBars()
         COLOR1,
         COLOR1);
 
-    drawList->AddLine(
-        { 0.0f, height }, 
-        { res.x, height },
-        OUTLINE_COLOR);
-
-    // Options text
-    DrawTextWithOutline(g_dfsogeistdFont, Scale(48.0f), { Scale(122.0f), Scale(56.0f) }, IM_COL32(255, 195, 0, 255), "OPTIONS", Scale(4), IM_COL32_BLACK);
-
     // Bottom bar
     drawList->AddRectFilledMultiColor(
-        { res.x, res.y }, 
+        { res.x, res.y },
         { 0.0f, res.y - height },
-        COLOR0, 
+        COLOR0,
         COLOR0,
         COLOR1,
         COLOR1);
 
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
+
+    // Options text
+    DrawTextWithOutline(g_dfsogeistdFont, Scale(48.0f), { Scale(122.0f), Scale(56.0f) }, IM_COL32(255, 195, 0, 255), "OPTIONS", Scale(4), IM_COL32_BLACK);
+
+    // Top bar line
+    drawList->AddLine(
+        { 0.0f, height },
+        { res.x, height },
+        OUTLINE_COLOR);
+
+    // Bottom bar line
     drawList->AddLine(
         { 0.0f, res.y - height },
         { res.x, res.y - height },
         OUTLINE_COLOR);
 }
 
-static constexpr size_t GRID_SIZE = 8;
+static constexpr size_t GRID_SIZE = 9;
+
+static float AlignToNextGrid(float value)
+{
+    return floor(value / GRID_SIZE) * GRID_SIZE;
+}
 
 static void DrawContainer(const ImVec2& min, const ImVec2& max)
 {
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
 
+    constexpr uint32_t BACKGROUND_COLOR = IM_COL32(0, 0, 0, 223);
     constexpr uint32_t COLOR = IM_COL32(0, 49, 0, 255);
     constexpr uint32_t INNER_COLOR = IM_COL32(0, 33, 0, 255);
     constexpr uint32_t LINE_COLOR = IM_COL32(0, 89, 0, 255);
 
     float gridSize = Scale(GRID_SIZE);
 
+    drawList->AddRectFilled(min, max, BACKGROUND_COLOR); // Background
+
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_CHECKERBOARD);
+
     drawList->AddRectFilled(min, max, COLOR); // Container
-    drawList->AddRectFilled({ min.x + gridSize, min.y + gridSize }, {max.x - gridSize, max.y - gridSize}, INNER_COLOR); // Inner container
+    drawList->AddRectFilled({ min.x + gridSize, min.y + gridSize }, { max.x - gridSize, max.y - gridSize }, INNER_COLOR); // Inner container
+
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
     // Top line
     drawList->AddLine({ min.x + gridSize, min.y + gridSize }, { min.x + gridSize, min.y + gridSize * 2.0f }, LINE_COLOR, Scale(1)); // Vertical left
@@ -123,7 +181,7 @@ static void DrawContainer(const ImVec2& min, const ImVec2& max)
     drawList->AddLine({ max.x - gridSize, max.y - gridSize }, { max.x - gridSize, max.y - gridSize * 2.0f }, LINE_COLOR, Scale(1)); // Vertical right
 
     // The draw area
-    drawList->PushClipRect({ min.x + gridSize * 2.0f, min.y + gridSize * 2.0f }, { max.x - gridSize * 2.0f, max.y - gridSize * 2.0f });
+    drawList->PushClipRect({ min.x + gridSize * 2.0f, min.y + gridSize * 2.0f }, { max.x - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
 }
 
 static constexpr const char* CATEGORIES[] =
@@ -148,10 +206,10 @@ static void DrawCategories()
     auto clipRectMax = drawList->GetClipRectMax();
 
     float gridSize = Scale(GRID_SIZE);
-    float tabPadding = gridSize * 2.0f;
+    float tabPadding = gridSize;
     float tabWidth = ComputeSizeWithPadding(clipRectMax.x - clipRectMin.x, tabPadding, std::size(CATEGORIES));
     float tabWidthWithPadding = tabWidth + tabPadding;
-    float tabHeight = gridSize * 4.5f;
+    float tabHeight = gridSize * 4.0f;
 
     for (size_t i = 0; i < std::size(CATEGORIES); i++)
     {
@@ -160,23 +218,40 @@ static void DrawCategories()
 
         if (g_categoryIndex == i || ImGui::IsMouseHoveringRect(min, max, false))
         {
-            drawList->AddRectFilled(min, max, IM_COL32(0, 96, 0, 255));
+            SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE_BUTTON);
+
+            drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178), IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178));
+            drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 0, 0, 13), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55), IM_COL32(0, 0, 0, 6));
+            drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13), IM_COL32(0, 130, 0, 111), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55));
+
+            SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 g_categoryIndex = i;
         }
 
-        float size = Scale(24.0f);
+        float size = Scale(32.0f);
         auto textSize = g_dfsogeistdFont->CalcTextSizeA(size, FLT_MAX, 0.0f, CATEGORIES[i]);
+
+        min.x += (tabWidth - textSize.x) / 2.0f;
+        min.y += (tabHeight - textSize.y) / 2.0f;
+
+        SetGradient(
+            min,
+            { min.x + textSize.x, min.y + textSize.y },
+            IM_COL32(128, 255, 0, 255),
+            IM_COL32(255, 192, 0, 255));
 
         DrawTextWithOutline(
             g_dfsogeistdFont, 
             size,
-            { min.x + (tabWidth - textSize.x) / 2.0f, min.y + (tabHeight - textSize.y) / 2.0f },
-            IM_COL32(150, 230, 30, 255), 
+            min,
+            IM_COL32_WHITE, 
             CATEGORIES[i], 
             Scale(3),
             IM_COL32_BLACK);
+
+        ResetGradient();
     }
 
     drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, clipRectMax);
@@ -188,8 +263,8 @@ static void DrawConfigOptions()
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
-    constexpr ImU32 COLOR0 = IM_COL32(113, 57, 17, 255);
-    constexpr ImU32 COLOR1 = IM_COL32(74, 138, 25, 255);
+    constexpr ImU32 COLOR0 = IM_COL32(0xE2, 0x71, 0x22, 0x80);
+    constexpr ImU32 COLOR1 = IM_COL32(0x92, 0xFF, 0x31, 0x80);
 
     float gridSize = Scale(GRID_SIZE);
     float optionWidth = gridSize * 56.0f;
@@ -220,7 +295,13 @@ static void DrawConfigOptions()
         min = { max.x + (clipRectMax.x - max.x - valueWidth) / 2.0f, min.y + (optionHeight - valueHeight) / 2.0f };
         max = { min.x + valueWidth, min.y + valueHeight };
 
-        drawList->AddRectFilled(min, max, IM_COL32(0, 96, 0, 255));
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE_BUTTON);
+
+        drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178), IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178));
+        drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 0, 0, 13), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55), IM_COL32(0, 0, 0, 6));
+        drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13), IM_COL32(0, 130, 0, 111), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55));
+
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
         auto valueText = config->ToString();
         std::transform(valueText.begin(), valueText.end(), valueText.begin(), toupper);
@@ -228,14 +309,26 @@ static void DrawConfigOptions()
         size = Scale(16.0f);
         textSize = g_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.c_str());
 
+        min.x += ((max.x - min.x) - textSize.x) / 2.0f;
+        min.y += ((max.y - min.y) - textSize.y) / 2.0f;
+
+        SetGradient(
+            min,
+            {min.x + textSize.x, min.y + textSize.y},
+            IM_COL32(192, 255, 0, 255),
+            IM_COL32(128, 170, 0, 255)
+        );
+
         DrawTextWithOutline(
             g_newRodinFont,
             size,
-            {min.x + ((max.x - min.x) - textSize.x) / 2.0f, min.y + ((max.y - min.y) - textSize.y) / 2.0f },
-            IM_COL32(167, 234, 67, 255),
+            min,
+            IM_COL32_WHITE,
             valueText.c_str(),
             Scale(2),
             IM_COL32_BLACK);
+
+        ResetGradient();
 
         ++currentRow;
     }
@@ -243,6 +336,8 @@ static void DrawConfigOptions()
 
 void OptionsMenu::Draw()
 {
+    g_callbackDataIndex = 0;
+
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
 
@@ -250,11 +345,11 @@ void OptionsMenu::Draw()
 
     DrawScanlineBars();
 
-    float containerPosX = Scale(/*276.0f*/250.0f);
-    float containerPosY = Scale(118.0f);
+    constexpr float CONTAINER_POS_X = 250.0f;
+    constexpr float CONTAINER_POS_Y = 118.0f;
     
-    ImVec2 min = { containerPosX, containerPosY };
-    ImVec2 max = { res.x - containerPosX, res.y - containerPosY };
+    ImVec2 min = { Scale(AlignToNextGrid(CONTAINER_POS_X)), Scale(AlignToNextGrid(CONTAINER_POS_Y)) };
+    ImVec2 max = { Scale(AlignToNextGrid(1280.0f - CONTAINER_POS_X)), Scale(AlignToNextGrid(720.0f - CONTAINER_POS_Y)) };
 
     DrawContainer(min, max);
 
