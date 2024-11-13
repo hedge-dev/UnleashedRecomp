@@ -97,6 +97,8 @@ static void DrawScanlineBars()
 {
     constexpr uint32_t COLOR0 = IM_COL32(203, 255, 0, 0);
     constexpr uint32_t COLOR1 = IM_COL32(203, 255, 0, 55);
+    constexpr uint32_t FADE_COLOR0 = IM_COL32(0, 0, 0, 255);
+    constexpr uint32_t FADE_COLOR1 = IM_COL32(0, 0, 0, 0);
     constexpr uint32_t OUTLINE_COLOR = IM_COL32(115, 178, 104, 255);
 
     float height = Scale(105.0f);
@@ -110,12 +112,28 @@ static void DrawScanlineBars()
     drawList->AddRectFilledMultiColor(
         { 0.0f, 0.0f },
         { res.x, height },
+        FADE_COLOR0,
+        FADE_COLOR0,
+        FADE_COLOR1,
+        FADE_COLOR1);
+
+    drawList->AddRectFilledMultiColor(
+        { 0.0f, 0.0f },
+        { res.x, height },
         COLOR0, 
         COLOR0, 
         COLOR1,
         COLOR1);
 
     // Bottom bar
+    drawList->AddRectFilledMultiColor(
+        { res.x, res.y },
+        { 0.0f, res.y - height },
+        FADE_COLOR0,
+        FADE_COLOR0,
+        FADE_COLOR1,
+        FADE_COLOR1);
+
     drawList->AddRectFilledMultiColor(
         { res.x, res.y },
         { 0.0f, res.y - height },
@@ -206,15 +224,31 @@ static void DrawCategories()
     auto clipRectMax = drawList->GetClipRectMax();
 
     float gridSize = Scale(GRID_SIZE);
-    float tabPadding = gridSize;
-    float tabWidth = ComputeSizeWithPadding(clipRectMax.x - clipRectMin.x, tabPadding, std::size(CATEGORIES));
-    float tabWidthWithPadding = tabWidth + tabPadding;
+    float textPadding = gridSize;
+    float tabPadding = gridSize * 2.0f;
+
+    float size = Scale(32.0f);
+    ImVec2 textSizes[std::size(CATEGORIES)];
+    float tabWidthSum = 0.0f;
+    for (size_t i = 0; i < std::size(CATEGORIES); i++)
+    {
+        textSizes[i] = g_dfsogeistdFont->CalcTextSizeA(size, FLT_MAX, 0.0f, CATEGORIES[i]);
+        tabWidthSum += textSizes[i].x + textPadding * 2.0f;
+    }
+    tabWidthSum += (std::size(CATEGORIES) - 1) * tabPadding;
+
     float tabHeight = gridSize * 4.0f;
+    float xOffset = ((clipRectMax.x - clipRectMin.x) - tabWidthSum) / 2.0f;
 
     for (size_t i = 0; i < std::size(CATEGORIES); i++)
     {
-        ImVec2 min = { clipRectMin.x + tabWidthWithPadding * i, clipRectMin.y };
-        ImVec2 max = { min.x + tabWidth, min.y + tabHeight };
+        ImVec2 min = { clipRectMin.x + xOffset, clipRectMin.y };
+
+        xOffset += textSizes[i].x + textPadding * 2.0f;
+        ImVec2 max = { clipRectMin.x + xOffset, clipRectMin.y + tabHeight };
+        xOffset += tabPadding;
+
+        uint32_t alpha = 255;
 
         if (g_categoryIndex == i || ImGui::IsMouseHoveringRect(min, max, false))
         {
@@ -229,18 +263,19 @@ static void DrawCategories()
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 g_categoryIndex = i;
         }
+        else
+        {
+            alpha = 128;
+        }
 
-        float size = Scale(32.0f);
-        auto textSize = g_dfsogeistdFont->CalcTextSizeA(size, FLT_MAX, 0.0f, CATEGORIES[i]);
-
-        min.x += (tabWidth - textSize.x) / 2.0f;
-        min.y += (tabHeight - textSize.y) / 2.0f;
+        min.x += textPadding;
+        min.y += (tabHeight - textSizes[i].y) / 2.0f;
 
         SetGradient(
             min,
-            { min.x + textSize.x, min.y + textSize.y },
-            IM_COL32(128, 255, 0, 255),
-            IM_COL32(255, 192, 0, 255));
+            { min.x + textSizes[i].x, min.y + textSizes[i].y},
+            IM_COL32(128, 255, 0, alpha),
+            IM_COL32(255, 192, 0, alpha));
 
         DrawTextWithOutline(
             g_dfsogeistdFont, 
@@ -340,6 +375,8 @@ void OptionsMenu::Draw()
 
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
+
+    //drawList->AddRectFilled({ 0.0f, 0.0f }, res, IM_COL32(0, 0, 0, 223));
 
     *(bool*)g_memory.Translate(0x8328BB26) = false;
 
