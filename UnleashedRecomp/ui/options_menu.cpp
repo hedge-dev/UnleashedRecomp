@@ -292,8 +292,8 @@ static void DrawCategories()
     drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, clipRectMax);
 }
 
-template<typename T, bool isMenuOption = true>
-static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T, isMenuOption>& config)
+template<typename T>
+static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T>& config)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
@@ -316,10 +316,12 @@ static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T, isMenuOption>&
     if (ImGui::IsMouseHoveringRect(min, max, false))
         drawList->AddRectFilledMultiColor(min, max, COLOR0, COLOR0, COLOR1, COLOR1);
 
-    float size = Scale(26.0f);
-    auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, config.Name.c_str());
+    auto configName = config.GetNameLocalised();
 
-    drawList->AddText(g_seuratFont, size, { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f }, IM_COL32_WHITE, config.GetName().data());
+    float size = Scale(26.0f);
+    auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, configName.c_str());
+
+    drawList->AddText(g_seuratFont, size, { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f }, IM_COL32_WHITE, configName.c_str());
 
     // Right side
     min = { max.x + (clipRectMax.x - max.x - valueWidth) / 2.0f, min.y + (optionHeight - valueHeight) / 2.0f };
@@ -333,8 +335,7 @@ static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T, isMenuOption>&
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
-    auto valueText = config.ToString();
-    std::transform(valueText.begin(), valueText.end(), valueText.begin(), toupper);
+    auto valueText = config.GetValueLocalised();
 
     size = Scale(20.0f);
     textSize = g_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.data());
@@ -372,7 +373,7 @@ static void DrawConfigOptions()
         DrawConfigOption(rowIndex++, Config::Language);
         DrawConfigOption(rowIndex++, Config::Hints);
         DrawConfigOption(rowIndex++, Config::ControlTutorial);
-        DrawConfigOption(rowIndex++, Config::ScoreBehaviour);
+        DrawConfigOption(rowIndex++, Config::SaveScoreAtCheckpoints);
         DrawConfigOption(rowIndex++, Config::UnleashOutOfControlDrain);
         DrawConfigOption(rowIndex++, Config::WerehogHubTransformVideo);
         DrawConfigOption(rowIndex++, Config::LogoSkip);

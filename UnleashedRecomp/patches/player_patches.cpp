@@ -15,7 +15,7 @@ PPC_FUNC(sub_82624308)
 {
     __imp__sub_82624308(ctx, base);
 
-    if (Config::ScoreBehaviour != EScoreBehaviour::CheckpointRetain)
+    if (!Config::SaveScoreAtCheckpoints)
         return;
 
     auto pGameDocument = SWA::CGameDocument::GetInstance();
@@ -33,7 +33,7 @@ PPC_FUNC(sub_8245F048)
 {
     __imp__sub_8245F048(ctx, base);
 
-    if (Config::ScoreBehaviour != EScoreBehaviour::CheckpointRetain)
+    if (!Config::SaveScoreAtCheckpoints)
         return;
 
     auto pGameDocument = SWA::CGameDocument::GetInstance();
