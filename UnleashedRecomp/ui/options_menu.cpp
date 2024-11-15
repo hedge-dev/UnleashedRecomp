@@ -324,7 +324,7 @@ static void DrawConfigOptions()
         float size = Scale(26.0f);
         auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, config->GetName().c_str());
 
-        drawList->AddText(g_seuratFont, size, { min.x + GRID_SIZE, min.y + (optionHeight - textSize.y) / 2.0f }, IM_COL32_WHITE, config->GetName().c_str());
+        drawList->AddText(g_seuratFont, size, { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f }, IM_COL32_WHITE, config->GetName().c_str());
 
         // Right side
         min = { max.x + (clipRectMax.x - max.x - valueWidth) / 2.0f, min.y + (optionHeight - valueHeight) / 2.0f };
