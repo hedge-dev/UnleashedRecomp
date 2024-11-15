@@ -1,8 +1,8 @@
 #include <cpu/guest_code.h>
-#include "api/SWA.h"
-#include "ui/window.h"
-#include "ui/window_events.h"
-#include "config.h"
+#include <api/SWA.h>
+#include <ui/window.h>
+#include <ui/window_events.h>
+#include <cfg/config.h>
 
 uint32_t m_lastCheckpointScore = 0;
 float m_lastDarkGaiaEnergy = 0.0f;

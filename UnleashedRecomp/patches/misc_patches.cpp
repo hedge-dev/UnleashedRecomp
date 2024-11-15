@@ -1,7 +1,7 @@
 #include <cpu/guest_code.h>
-#include "api/SWA.h"
-#include "ui/window.h"
-#include "config.h"
+#include <api/SWA.h>
+#include <ui/window.h>
+#include <cfg/config.h>
 
 bool DisableHintsMidAsmHook()
 {

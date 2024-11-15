@@ -180,61 +180,20 @@ public:
     std::unordered_map<ELanguage, std::unordered_map<T, std::string>>* EnumLocale;
     std::function<void(ConfigDef<T>*)> ReadCallback;
 
-    ConfigDef(std::string section, std::string name, T defaultValue)
-        : Section(section), Name(name), DefaultValue(defaultValue)
-    {
-        Config::Definitions.emplace_back(this);
-    }
+    // CONFIG_DEFINE
+    ConfigDef(std::string section, std::string name, T defaultValue);
 
-    ConfigDef(std::string section, std::string name, std::unordered_map<ELanguage, std::string>* nameLocale, T defaultValue)
-        : Section(section), Name(name), NameLocale(nameLocale), DefaultValue(defaultValue)
-    {
-        Config::Definitions.emplace_back(this);
-    }
+    // CONFIG_DEFINE_LOCALISED
+    ConfigDef(std::string section, std::string name, std::unordered_map<ELanguage, std::string>* nameLocale, T defaultValue);
 
-    ConfigDef
-    (
-        std::string section,
-        std::string name,
-        T defaultValue,
-        std::unordered_map<std::string, T>* enumTemplate
-    )
-    : Section(section), Name(name), DefaultValue(defaultValue), EnumTemplate(enumTemplate)
-    {
-        for (const auto& pair : *EnumTemplate)
-            EnumTemplateReverse[pair.second] = pair.first;
+    // CONFIG_DEFINE_ENUM
+    ConfigDef(std::string section, std::string name, T defaultValue, std::unordered_map<std::string, T>* enumTemplate);
 
-        Config::Definitions.emplace_back(this);
-    }
+    // CONFIG_DEFINE_ENUM_LOCALISED
+    ConfigDef(std::string section, std::string name, std::unordered_map<ELanguage, std::string>* nameLocale, T defaultValue, std::unordered_map<std::string, T>* enumTemplate, std::unordered_map<ELanguage, std::unordered_map<T, std::string>>* enumLocale);
 
-    ConfigDef
-    (
-        std::string section,
-        std::string name,
-        std::unordered_map<ELanguage, std::string>* nameLocale,
-        T defaultValue,
-        std::unordered_map<std::string, T>* enumTemplate,
-        std::unordered_map<ELanguage, std::unordered_map<T, std::string>>* enumLocale
-    )
-    : Section(section), Name(name), NameLocale(nameLocale), DefaultValue(defaultValue), EnumTemplate(enumTemplate), EnumLocale(enumLocale)
-    {
-        for (const auto& pair : *EnumTemplate)
-            EnumTemplateReverse[pair.second] = pair.first;
-
-        Config::Definitions.emplace_back(this);
-    }
-
-    ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T>*)> readCallback)
-        : Section(section), Name(name), DefaultValue(defaultValue), ReadCallback(readCallback)
-    {
-        Config::Definitions.emplace_back(this);
-    }
-
-    ConfigDef(std::string section, std::string name, std::unordered_map<ELanguage, std::string> nameLocale, T defaultValue, std::function<void(ConfigDef<T>*)> readCallback)
-        : Section(section), Name(name), NameLocale(nameLocale), DefaultValue(defaultValue), ReadCallback(readCallback)
-    {
-        Config::Definitions.emplace_back(this);
-    }
+    // CONFIG_DEFINE_CALLBACK
+    ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T>*)> readCallback);
 
     void ReadValue(toml::v3::ex::parse_result& toml) override
     {
@@ -277,67 +236,14 @@ public:
         return Name;
     }
 
-    std::string GetNameLocalised() const override
-    {
-        if (!NameLocale)
-            return Name;
-
-        if (!NameLocale->count(Config::Language))
-        {
-            if (NameLocale->count(ELanguage::English))
-            {
-                return NameLocale->at(ELanguage::English);
-            }
-            else
-            {
-                return Name;
-            }
-        }
-
-        return NameLocale->at(Config::Language);
-    }
+    std::string GetNameLocalised() const override;
 
     void* GetValue() override
     {
         return &Value;
     }
 
-    std::string GetValueLocalised() const override
-    {
-        auto language = Config::Language;
-        std::unordered_map<ELanguage, std::unordered_map<T, std::string>>* locale = nullptr;
-
-        if constexpr (std::is_enum_v<T>)
-        {
-            locale = EnumLocale;
-        }
-        else if constexpr (std::is_same_v<T, bool>)
-        {
-            locale = &g_bool_locale;
-        }
-
-        if (!locale)
-            return ToString(false);
-
-        if (!locale->count(language))
-        {
-            if (locale->count(ELanguage::English))
-            {
-                language = ELanguage::English;
-            }
-            else
-            {
-                return ToString(false);
-            }
-        }
-
-        auto strings = locale->at(language);
-
-        if (!strings.count(Value))
-            return ToString(false);
-
-        return strings.at(Value);
-    }
+    std::string GetValueLocalised() const override;
 
     std::string GetDefinition(bool withSection = false) const override
     {

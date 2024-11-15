@@ -2,7 +2,6 @@
 #include <cpu/ppc_context.h>
 #include <cpu/guest_thread.h>
 #include <apu/audio.h>
-#include <apu/audio.h>
 #include "function.h"
 #include "xex.h"
 #include "xbox.h"
@@ -12,7 +11,7 @@
 #include "xam.h"
 #include "xdm.h"
 #include <timeapi.h>
-#include "config.h"
+#include <cfg/config.h>
 
 #include <ntstatus.h>
 
