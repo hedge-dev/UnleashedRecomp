@@ -53,7 +53,7 @@ public:
     T DefaultValue{};
     T Value{ DefaultValue };
     std::unordered_map<std::string, T> EnumTemplate{};
-    std::unordered_map<T, std::string> EnumTemplateReverse{};
+    std::map<T, std::string> EnumTemplateReverse{};
     std::function<void(ConfigDef<T, isMenuOption>*, const toml::v3::table&)> ReadImpl;
     std::function<void(ConfigDef<T, isMenuOption>*)> ReadCallback;
 
