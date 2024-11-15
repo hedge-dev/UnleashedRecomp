@@ -292,7 +292,8 @@ static void DrawCategories()
     drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, clipRectMax);
 }
 
-static void DrawConfigOptions()
+template<typename T, bool isMenuOption = true>
+static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T, isMenuOption>& config)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
@@ -307,65 +308,106 @@ static void DrawConfigOptions()
     float optionPadding = gridSize * 0.5f;
     float valueWidth = gridSize * 24.0f;
     float valueHeight = gridSize * 3.0f;
-    int32_t currentRow = 0;
 
-    for (auto& config : Config::Definitions)
+    // Left side
+    ImVec2 min = { clipRectMin.x, clipRectMin.y + (optionHeight + optionPadding) * rowIndex };
+    ImVec2 max = { min.x + optionWidth, min.y + optionHeight };
+
+    if (ImGui::IsMouseHoveringRect(min, max, false))
+        drawList->AddRectFilledMultiColor(min, max, COLOR0, COLOR0, COLOR1, COLOR1);
+
+    float size = Scale(26.0f);
+    auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, config.Name.c_str());
+
+    drawList->AddText(g_seuratFont, size, { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f }, IM_COL32_WHITE, config.GetName().data());
+
+    // Right side
+    min = { max.x + (clipRectMax.x - max.x - valueWidth) / 2.0f, min.y + (optionHeight - valueHeight) / 2.0f };
+    max = { min.x + valueWidth, min.y + valueHeight };
+
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE_BUTTON);
+
+    drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178), IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178));
+    drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 0, 0, 13), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55), IM_COL32(0, 0, 0, 6));
+    drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13), IM_COL32(0, 130, 0, 111), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55));
+
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
+
+    auto valueText = config.ToString();
+    std::transform(valueText.begin(), valueText.end(), valueText.begin(), toupper);
+
+    size = Scale(20.0f);
+    textSize = g_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.data());
+
+    min.x += ((max.x - min.x) - textSize.x) / 2.0f;
+    min.y += ((max.y - min.y) - textSize.y) / 2.0f;
+
+    SetGradient(
+        min,
+        { min.x + textSize.x, min.y + textSize.y },
+        IM_COL32(192, 255, 0, 255),
+        IM_COL32(128, 170, 0, 255)
+    );
+
+    DrawTextWithOutline(
+        g_newRodinFont,
+        size,
+        min,
+        IM_COL32_WHITE,
+        valueText.data(),
+        Scale(2),
+        IM_COL32_BLACK);
+
+    ResetGradient();
+}
+
+static void DrawConfigOptions()
+{
+    int32_t rowIndex = 0;
+
+    // TODO: Don't use raw numbers here!
+    switch (g_categoryIndex)
     {
-        if (_stricmp(config->GetSection().data(), CATEGORIES[g_categoryIndex]) != 0)
-            continue;
-
-        // Left side
-        ImVec2 min = { clipRectMin.x, clipRectMin.y + (optionHeight + optionPadding) * currentRow };
-        ImVec2 max = { min.x + optionWidth, min.y + optionHeight };
-
-        if (ImGui::IsMouseHoveringRect(min, max, false))
-            drawList->AddRectFilledMultiColor(min, max, COLOR0, COLOR0, COLOR1, COLOR1);
-
-        float size = Scale(26.0f);
-        auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, config->GetName().data());
-
-        drawList->AddText(g_seuratFont, size, { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f }, IM_COL32_WHITE, config->GetName().data());
-
-        // Right side
-        min = { max.x + (clipRectMax.x - max.x - valueWidth) / 2.0f, min.y + (optionHeight - valueHeight) / 2.0f };
-        max = { min.x + valueWidth, min.y + valueHeight };
-
-        SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE_BUTTON);
-
-        drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178), IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178));
-        drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 0, 0, 13), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55), IM_COL32(0, 0, 0, 6));
-        drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13), IM_COL32(0, 130, 0, 111), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55));
-
-        SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
-
-        auto valueText = config->ToString();
-        std::transform(valueText.begin(), valueText.end(), valueText.begin(), toupper);
-
-        size = Scale(20.0f);
-        textSize = g_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.data());
-
-        min.x += ((max.x - min.x) - textSize.x) / 2.0f;
-        min.y += ((max.y - min.y) - textSize.y) / 2.0f;
-
-        SetGradient(
-            min,
-            {min.x + textSize.x, min.y + textSize.y},
-            IM_COL32(192, 255, 0, 255),
-            IM_COL32(128, 170, 0, 255)
-        );
-
-        DrawTextWithOutline(
-            g_newRodinFont,
-            size,
-            min,
-            IM_COL32_WHITE,
-            valueText.data(),
-            Scale(2),
-            IM_COL32_BLACK);
-
-        ResetGradient();
-
-        ++currentRow;
+    case 0: // SYSTEM
+        DrawConfigOption(rowIndex++, Config::Language);
+        DrawConfigOption(rowIndex++, Config::Hints);
+        DrawConfigOption(rowIndex++, Config::ControlTutorial);
+        DrawConfigOption(rowIndex++, Config::ScoreBehaviour);
+        DrawConfigOption(rowIndex++, Config::UnleashOutOfControlDrain);
+        DrawConfigOption(rowIndex++, Config::WerehogHubTransformVideo);
+        DrawConfigOption(rowIndex++, Config::LogoSkip);
+        break;
+    case 1: // CONTROLS
+        DrawConfigOption(rowIndex++, Config::CameraXInvert);
+        DrawConfigOption(rowIndex++, Config::CameraYInvert);
+        DrawConfigOption(rowIndex++, Config::XButtonHoming);
+        DrawConfigOption(rowIndex++, Config::UnleashCancel);
+        break;
+    case 2: // AUDIO
+        DrawConfigOption(rowIndex++, Config::MusicVolume);
+        DrawConfigOption(rowIndex++, Config::SEVolume);
+        DrawConfigOption(rowIndex++, Config::VoiceLanguage);
+        DrawConfigOption(rowIndex++, Config::Subtitles);
+        DrawConfigOption(rowIndex++, Config::WerehogBattleMusic);
+        break;
+    case 3: // VIDEO
+        DrawConfigOption(rowIndex++, Config::WindowWidth);
+        DrawConfigOption(rowIndex++, Config::WindowHeight);
+        DrawConfigOption(rowIndex++, Config::ResolutionScale);
+        DrawConfigOption(rowIndex++, Config::Fullscreen);
+        DrawConfigOption(rowIndex++, Config::VSync);
+        DrawConfigOption(rowIndex++, Config::TripleBuffering);
+        DrawConfigOption(rowIndex++, Config::FPS);
+        DrawConfigOption(rowIndex++, Config::Brightness);
+        DrawConfigOption(rowIndex++, Config::MSAA);
+        DrawConfigOption(rowIndex++, Config::ShadowResolution);
+        DrawConfigOption(rowIndex++, Config::GITextureFiltering);
+        DrawConfigOption(rowIndex++, Config::AlphaToCoverage);
+        DrawConfigOption(rowIndex++, Config::MotionBlur);
+        DrawConfigOption(rowIndex++, Config::Xbox360ColourCorrection);
+        DrawConfigOption(rowIndex++, Config::MovieScaleMode);
+        DrawConfigOption(rowIndex++, Config::UIScaleMode);
+        break;
     }
 }
 
