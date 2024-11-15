@@ -1,5 +1,5 @@
 #include <cpu/guest_code.h>
-#include "config.h"
+#include <cfg/config.h>
 
 const char* m_pStageID;
 

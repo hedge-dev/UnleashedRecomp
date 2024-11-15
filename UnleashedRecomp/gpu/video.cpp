@@ -9,9 +9,9 @@
 #include <shader/shader_cache.h>
 
 #include "imgui_snapshot.h"
-#include "gpu/video.h"
-#include "ui/window.h"
-#include "config.h"
+#include "video.h"
+#include <ui/window.h>
+#include <cfg/config.h>
 
 #include "shader/copy_vs.hlsl.dxil.h"
 #include "shader/copy_vs.hlsl.spirv.h"

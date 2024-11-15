@@ -7,33 +7,24 @@
 #define CONFIG_DEFINE(section, type, name, defaultValue) \
     inline static ConfigDef<type> name{section, #name, defaultValue};
 
-#define CONFIG_DEFINE_HIDE(section, type, name, defaultValue) \
-    inline static ConfigDef<type, false> name{section, #name, defaultValue};
-
 #define CONFIG_DEFINE_ENUM_TEMPLATE(type) \
     inline static std::unordered_map<std::string, type> g_##type##_template =
 
 #define CONFIG_DEFINE_ENUM(section, type, name, defaultValue) \
     inline static ConfigDef<type> name{section, #name, defaultValue, g_##type##_template};
 
-#define CONFIG_DEFINE_ENUM_HIDE(section, type, name, defaultValue) \
-    inline static ConfigDef<type, false> name{section, #name, defaultValue, g_##type##_template};
-
-#define CONFIG_DEFINE_IMPL(section, type, name, defaultValue, readImpl) \
-    inline static ConfigDef<type> name{section, #name, defaultValue, [](ConfigDef<type, true>* def, const toml::v3::table& table) readImpl};
-
 #define CONFIG_DEFINE_CALLBACK(section, type, name, defaultValue, readCallback) \
-    inline static ConfigDef<type> name{section, #name, defaultValue, [](ConfigDef<type, true>* def) readCallback};
+    inline static ConfigDef<type> name{section, #name, defaultValue, [](ConfigDef<type>* def) readCallback};
 
 #define CONFIG_GET_DEFAULT(name) Config::name.DefaultValue
 #define CONFIG_SET_DEFAULT(name) Config::name.MakeDefault();
 
 #define WINDOWPOS_CENTRED 0x2FFF0000
 
-class ConfigDefBase
+class IConfigDef
 {
 public:
-    virtual ~ConfigDefBase() = default;
+    virtual ~IConfigDef() = default;
     virtual void ReadValue(toml::v3::ex::parse_result& toml) = 0;
     virtual void MakeDefault() = 0;
     virtual std::string GetSection() const = 0;
@@ -42,12 +33,9 @@ public:
     virtual std::string ToString() const = 0;
 };
 
-template<typename T, bool isMenuOption = true>
-class ConfigDef : public ConfigDefBase
+template<typename T>
+class ConfigDef : public IConfigDef
 {
-protected:
-    bool m_isMenuOption{ isMenuOption };
-
 public:
     std::string Section{};
     std::string Name{};
@@ -55,35 +43,16 @@ public:
     T Value{ DefaultValue };
     std::unordered_map<std::string, T> EnumTemplate{};
     std::unordered_map<T, std::string> EnumTemplateReverse{};
-    std::function<void(ConfigDef<T, isMenuOption>*, const toml::v3::table&)> ReadImpl;
-    std::function<void(ConfigDef<T, isMenuOption>*)> ReadCallback;
+    std::function<void(ConfigDef<T>*)> ReadCallback;
 
-    ConfigDef(std::string section, std::string name, T defaultValue)
-        : Section(section), Name(name), DefaultValue(defaultValue)
-    {
-        Config::Definitions.emplace_back(this);
-    }
+    // CONFIG_DEFINE
+    ConfigDef(std::string section, std::string name, T defaultValue);
 
-    ConfigDef(std::string section, std::string name, T defaultValue, std::unordered_map<std::string, T> enumTemplate)
-        : Section(section), Name(name), DefaultValue(defaultValue), EnumTemplate(enumTemplate)
-    {
-        for (const auto& pair : EnumTemplate)
-            EnumTemplateReverse[pair.second] = pair.first;
+    // CONFIG_DEFINE_ENUM
+    ConfigDef(std::string section, std::string name, T defaultValue, std::unordered_map<std::string, T> enumTemplate);
 
-        Config::Definitions.emplace_back(this);
-    }
-
-    ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T, isMenuOption>*)> readCallback)
-        : Section(section), Name(name), DefaultValue(defaultValue), ReadCallback(readCallback)
-    {
-        Config::Definitions.emplace_back(this);
-    }
-
-    ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T, isMenuOption>*, const toml::v3::table&)> readImpl)
-        : Section(section), Name(name), DefaultValue(defaultValue), ReadImpl(readImpl)
-    {
-        Config::Definitions.emplace_back(this);
-    }
+    // CONFIG_DEFINE_CALLBACK
+    ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T>*)> readCallback);
 
     void ReadValue(toml::v3::ex::parse_result& toml) override
     {
@@ -91,30 +60,23 @@ public:
         {
             const auto& section = *pSection;
 
-            if (ReadImpl)
+            if constexpr (std::is_same<T, std::string>::value)
             {
-                ReadImpl(this, section);
+                Value = section[Name].value_or<std::string>(DefaultValue);
+            }
+            else if constexpr (std::is_enum_v<T>)
+            {
+                auto it = EnumTemplate.begin();
+
+                Value = EnumTemplate[section[Name].value_or<std::string>(static_cast<std::string>(it->first))];
             }
             else
             {
-                if constexpr (std::is_same<T, std::string>::value)
-                {
-                    Value = section[Name].value_or<std::string>(DefaultValue);
-                }
-                else if constexpr (std::is_enum_v<T>)
-                {
-                    auto it = EnumTemplate.begin();
-
-                    Value = EnumTemplate[section[Name].value_or<std::string>(static_cast<std::string>(it->first))];
-                }
-                else
-                {
-                    Value = section[Name].value_or(DefaultValue);
-                }
-
-                if (ReadCallback)
-                    ReadCallback(this);
+                Value = section[Name].value_or(DefaultValue);
             }
+
+            if (ReadCallback)
+                ReadCallback(this);
         }
     }
 

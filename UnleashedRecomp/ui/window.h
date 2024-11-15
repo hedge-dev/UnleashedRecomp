@@ -1,9 +1,9 @@
 #pragma once
 
-#include "res/icon.h"
-#include "res/icon_night.h"
-#include "ui/window_events.h"
-#include "config.h"
+#include <res/icon.h>
+#include <res/icon_night.h>
+#include <ui/window_events.h>
+#include <cfg/config.h>
 
 #define DEFAULT_WIDTH 1280
 #define DEFAULT_HEIGHT 720

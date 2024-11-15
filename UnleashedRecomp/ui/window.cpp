@@ -1,6 +1,6 @@
 #include "window.h"
 #include "sdl_listener.h"
-#include <config.h>
+#include <cfg/config.h>
 #include <kernel/function.h>
 #include <SDL_syswm.h>
 
