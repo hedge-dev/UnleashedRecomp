@@ -5,7 +5,7 @@
 class Config
 {
 public:
-    inline static std::vector<ConfigDefBase*> Definitions{};
+    inline static std::vector<IConfigDef*> Definitions{};
 
     CONFIG_DEFINE_ENUM("System", ELanguage, Language, ELanguage::English);
     CONFIG_DEFINE("System", bool, Hints, true);

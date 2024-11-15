@@ -311,7 +311,7 @@ static void DrawConfigOptions()
 
     for (auto& config : Config::Definitions)
     {
-        if (_stricmp(config->GetSection().c_str(), CATEGORIES[g_categoryIndex]) != 0)
+        if (_stricmp(config->GetSection().data(), CATEGORIES[g_categoryIndex]) != 0)
             continue;
 
         // Left side
@@ -322,9 +322,9 @@ static void DrawConfigOptions()
             drawList->AddRectFilledMultiColor(min, max, COLOR0, COLOR0, COLOR1, COLOR1);
 
         float size = Scale(26.0f);
-        auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, config->GetName().c_str());
+        auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, config->GetName().data());
 
-        drawList->AddText(g_seuratFont, size, { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f }, IM_COL32_WHITE, config->GetName().c_str());
+        drawList->AddText(g_seuratFont, size, { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f }, IM_COL32_WHITE, config->GetName().data());
 
         // Right side
         min = { max.x + (clipRectMax.x - max.x - valueWidth) / 2.0f, min.y + (optionHeight - valueHeight) / 2.0f };
@@ -342,7 +342,7 @@ static void DrawConfigOptions()
         std::transform(valueText.begin(), valueText.end(), valueText.begin(), toupper);
 
         size = Scale(20.0f);
-        textSize = g_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.c_str());
+        textSize = g_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.data());
 
         min.x += ((max.x - min.x) - textSize.x) / 2.0f;
         min.y += ((max.y - min.y) - textSize.y) / 2.0f;
@@ -359,7 +359,7 @@ static void DrawConfigOptions()
             size,
             min,
             IM_COL32_WHITE,
-            valueText.c_str(),
+            valueText.data(),
             Scale(2),
             IM_COL32_BLACK);
 

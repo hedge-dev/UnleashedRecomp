@@ -18,7 +18,7 @@ void Config::Load()
         {
             def->ReadValue(toml);
 #if _DEBUG
-            printf("%s\n", def->GetDefinition().c_str());
+            printf("%s (0x%llx)\n", def->GetDefinition().c_str(), def->GetValue());
 #endif
         }
     }

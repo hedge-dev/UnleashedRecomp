@@ -30,24 +30,23 @@
 
 #define WINDOWPOS_CENTRED 0x2FFF0000
 
-class ConfigDefBase
+class IConfigDef
 {
 public:
-    virtual ~ConfigDefBase() = default;
+    virtual ~IConfigDef() = default;
     virtual void ReadValue(toml::v3::ex::parse_result& toml) = 0;
     virtual void MakeDefault() = 0;
-    virtual std::string GetSection() const = 0;
-    virtual std::string GetName() const = 0;
+    virtual bool IsMenuOption() const = 0;
+    virtual std::string_view GetSection() const = 0;
+    virtual std::string_view GetName() const = 0;
+    virtual void* GetValue() = 0;
     virtual std::string GetDefinition(bool withSection = false) const = 0;
     virtual std::string ToString() const = 0;
 };
 
 template<typename T, bool isMenuOption = true>
-class ConfigDef : public ConfigDefBase
+class ConfigDef : public IConfigDef
 {
-protected:
-    bool m_isMenuOption{ isMenuOption };
-
 public:
     std::string Section{};
     std::string Name{};
@@ -123,14 +122,24 @@ public:
         Value = DefaultValue;
     }
 
-    std::string GetSection() const override
+    bool IsMenuOption() const override
+    {
+        return isMenuOption;
+    }
+
+    std::string_view GetSection() const override
     {
         return Section;
     }
 
-    std::string GetName() const override
+    std::string_view GetName() const override
     {
         return Name;
+    }
+
+    void* GetValue() override
+    {
+        return &Value;
     }
 
     std::string GetDefinition(bool withSection = false) const override
@@ -147,27 +156,25 @@ public:
 
     std::string ToString() const override
     {
-        if constexpr (std::is_same<T, std::string>::value)
+        std::string result = "\"N/A\"";
+
+        if constexpr (std::is_same_v<T, std::string>)
         {
-            return std::format("\"{}\"", Value);
+            result = std::format("\"{}\"", Value);
         }
         else if constexpr (std::is_enum_v<T>)
         {
             auto it = EnumTemplateReverse.find(Value);
 
             if (it != EnumTemplateReverse.end())
-            {
-                return std::format("\"{}\"", it->second);
-            }
-            else
-            {
-                return "\"N/A\"";
-            }
+                result = std::format("\"{}\"", it->second);
         }
         else
         {
-            return std::format("{}", Value);
+            result = std::format("{}", Value);
         }
+
+        return result;
     }
 
     ConfigDef& operator=(const ConfigDef& other)
