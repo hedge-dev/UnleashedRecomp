@@ -16,6 +16,7 @@
         "zstd",
         "stb",
         "concurrentqueue",
+        "tiny-aes-c",
         {
             "name": "imgui",
             "features": [ "sdl2-binding" ]

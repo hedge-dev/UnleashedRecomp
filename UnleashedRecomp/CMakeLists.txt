@@ -79,6 +79,30 @@ set(SWA_UI_CXX_SOURCES
     "ui/window.cpp"
 )
 
+set(SWA_INSTALL_CXX_SOURCES
+    "install/installer.cpp"
+    "install/iso_file_system.cpp"
+    "install/memory_mapped_file.cpp"
+    "install/xcontent_file_system.cpp"
+    "install/xex_patcher.cpp"
+    "install/hashes/apotos_shamar.cpp"
+    "install/hashes/chunnan.cpp"
+    "install/hashes/empire_city_adabat.cpp"
+    "install/hashes/game.cpp"
+    "install/hashes/holoska.cpp"
+    "install/hashes/mazuri.cpp"
+    "install/hashes/spagonia.cpp"
+    "install/hashes/update.cpp"
+)
+
+set(LIBMSPACK_PATH ${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack)
+
+set(LIBMSPACK_C_SOURCES
+    ${LIBMSPACK_PATH}/lzxd.c
+)
+
+set_source_files_properties(${LIBMSPACK_C_SOURCES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+
 set(SMOLV_SOURCE_DIR "${SWA_THIRDPARTY_ROOT}/ShaderRecomp/thirdparty/smol-v/source")
 
 set(SWA_CXX_SOURCES
@@ -95,7 +119,8 @@ set(SWA_CXX_SOURCES
     ${SWA_HID_CXX_SOURCES}
     ${SWA_PATCHES_CXX_SOURCES}
     ${SWA_UI_CXX_SOURCES}
-
+    ${SWA_INSTALL_CXX_SOURCES}
+    ${LIBMSPACK_C_SOURCES}
     "${SMOLV_SOURCE_DIR}/smolv.cpp"
 )
 
@@ -127,6 +152,7 @@ find_package(Stb REQUIRED)
 find_package(unofficial-concurrentqueue REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
+find_package(unofficial-tiny-aes-c CONFIG REQUIRED)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
 add_custom_command(TARGET UnleashedRecomp POST_BUILD
@@ -163,12 +189,15 @@ target_link_libraries(UnleashedRecomp PRIVATE
     Synchronization
     imgui::imgui
     magic_enum::magic_enum
+    unofficial::tiny-aes-c::tiny-aes-c
 )
 
 target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/api
-    ${SWA_THIRDPARTY_ROOT}/ddspp 
+    ${SWA_THIRDPARTY_ROOT}/ddspp
+    ${SWA_THIRDPARTY_ROOT}/TinySHA1
+    ${LIBMSPACK_PATH}
     ${Stb_INCLUDE_DIR}
     ${SMOLV_SOURCE_DIR}
 )

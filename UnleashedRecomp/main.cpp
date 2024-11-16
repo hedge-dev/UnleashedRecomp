@@ -12,6 +12,7 @@
 #include <apu/audio.h>
 #include <hid/hid.h>
 #include <cfg/config.h>
+#include <install/installer.h>
 
 #define GAME_XEX_PATH "game:\\default.xex"
 
@@ -96,13 +97,15 @@ uint32_t LdrLoadModule(const char* path)
     auto format = Xex2FindOptionalHeader<XEX_FILE_FORMAT_INFO>(xex, XEX_HEADER_FILE_FORMAT_INFO);
     auto entry = *Xex2FindOptionalHeader<uint32_t>(xex, XEX_HEADER_ENTRY_POINT);
     ByteSwap(entry);
-    assert(format->CompressionType >= 1);
 
-    if (format->CompressionType == 1)
+    auto srcData = (char *)xex + xex->SizeOfHeader;
+    auto destData = (char *)g_memory.Translate(security->ImageBase);
+    if (format->CompressionType == 0)
     {
-        auto srcData = (char*)xex + xex->SizeOfHeader;
-        auto destData = (char*)g_memory.Translate(security->ImageBase);
-
+        memcpy(destData, srcData, security->SizeOfImage);
+    }
+    else if (format->CompressionType == 1)
+    {
         auto numBlocks = (format->SizeOfHeader / sizeof(XEX_BASIC_FILE_COMPRESSION_INFO)) - 1;
         auto blocks = reinterpret_cast<const XEX_BASIC_FILE_COMPRESSION_INFO*>(format + 1);
 
@@ -116,6 +119,10 @@ uint32_t LdrLoadModule(const char* path)
 
             destData += blocks[i].SizeOfPadding;
         }
+    }
+    else
+    {
+        assert(false && "Unknown compression type.");
     }
 
     return entry;

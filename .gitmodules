@@ -7,3 +7,6 @@
 [submodule "thirdparty/ShaderRecomp"]
 	path = thirdparty/ShaderRecomp
 	url = https://github.com/hedge-dev/ShaderRecomp.git
+[submodule "thirdparty/libmspack"]
+	path = thirdparty/libmspack
+	url = https://github.com/kyz/libmspack
