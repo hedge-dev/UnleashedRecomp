@@ -19,12 +19,6 @@
 #define CONFIG_DEFINE_CALLBACK(section, type, name, defaultValue, readCallback) \
     inline static ConfigDef<type> name{section, #name, defaultValue, [](ConfigDef<type>* def) readCallback};
 
-#define CONFIG_DEFINE_LOCALE(name) \
-    inline static std::unordered_map<ELanguage, std::string> g_##name##_locale =
-
-#define CONFIG_DEFINE_ENUM_LOCALE(type) \
-    inline static std::unordered_map<ELanguage, std::unordered_map<type, std::string>> g_##type##_locale =
-
 #define CONFIG_DEFINE_ENUM_TEMPLATE(type) \
     inline static std::unordered_map<std::string, type> g_##type##_template =
 

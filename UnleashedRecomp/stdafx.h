@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <cassert>
+#include <chrono>
 #include <xbox.h>
 #include <xxhash.h>
 #include <ankerl/unordered_dense.h>

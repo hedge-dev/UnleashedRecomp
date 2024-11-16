@@ -397,6 +397,3 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
-
-# Don't ignore resources
-!UnleashedRecomp/res/[Ww][Ii][Nn]32/
