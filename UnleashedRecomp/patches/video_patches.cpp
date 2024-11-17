@@ -41,6 +41,9 @@ void CameraBoostAspectRatioMidAsmHook(PPCRegister& r31, PPCRegister& f0)
 
 void CSDAspectRatioMidAsmHook(PPCRegister& f1, PPCRegister& f2)
 {
+    if (Config::UIScaleMode == EUIScaleMode::Stretch)
+        return;
+
     auto newAspectRatio = (float)Window::s_width / (float)Window::s_height;
 
     if (newAspectRatio > m_baseAspectRatio)

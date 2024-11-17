@@ -63,7 +63,7 @@ public:
         if (!title)
         {
             title = Config::Language == ELanguage::Japanese
-                ? "Sonic World Adventure"
+                ? "SONIC WORLD ADVENTURE"
                 : "SONIC UNLEASHED";
         }
 
