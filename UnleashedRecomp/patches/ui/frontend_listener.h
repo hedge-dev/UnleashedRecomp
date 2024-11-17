@@ -2,6 +2,7 @@
 
 #include "kernel/memory.h"
 #include "ui/sdl_listener.h"
+#include "ui/options_menu.h"
 
 class FrontendListener : public SDLEventListener
 {
@@ -10,6 +11,9 @@ class FrontendListener : public SDLEventListener
 public:
     void OnSDLEvent(SDL_Event* event) override
     {
+        if (OptionsMenu::s_isVisible)
+            return;
+
         switch (event->type)
         {
             case SDL_KEYDOWN:

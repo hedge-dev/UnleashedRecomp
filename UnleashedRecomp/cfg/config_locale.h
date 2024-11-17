@@ -2,6 +2,12 @@
 
 #include "config_detail.h"
 
+#define CONFIG_DEFINE_LOCALE(name) \
+    inline static std::unordered_map<ELanguage, std::string> g_##name##_locale =
+
+#define CONFIG_DEFINE_ENUM_LOCALE(type) \
+    inline static std::unordered_map<ELanguage, std::unordered_map<type, std::string>> g_##type##_locale =
+
 CONFIG_DEFINE_ENUM_LOCALE(bool)
 {
     {
@@ -135,14 +141,9 @@ CONFIG_DEFINE_LOCALE(WerehogBattleMusic)
     { ELanguage::English, "Werehog Battle Theme" }
 };
 
-CONFIG_DEFINE_LOCALE(WindowWidth)
+CONFIG_DEFINE_LOCALE(WindowSize)
 {
-    { ELanguage::English, "Window Width" }
-};
-
-CONFIG_DEFINE_LOCALE(WindowHeight)
-{
-    { ELanguage::English, "Window Height" }
+    { ELanguage::English, "Window Size" }
 };
 
 CONFIG_DEFINE_LOCALE(ResolutionScale)

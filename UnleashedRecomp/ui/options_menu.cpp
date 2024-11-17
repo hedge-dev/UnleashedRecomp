@@ -414,32 +414,54 @@ static void DrawConfigOptions()
 
 void OptionsMenu::Draw()
 {
-    g_callbackDataIndex = 0;
+    if (!s_isVisible)
+        return;
 
+    g_callbackDataIndex = 0;
+    
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
-
-    //drawList->AddRectFilled({ 0.0f, 0.0f }, res, IM_COL32(0, 0, 0, 223));
-
-    //*(bool*)g_memory.Translate(0x8328BB26) = false;
-
+    
+    if (s_isDimBackground)
+        drawList->AddRectFilled({ 0.0f, 0.0f }, res, IM_COL32(0, 0, 0, 127));
+    
     DrawScanlineBars();
-
+    
     constexpr float CONTAINER_POS_X = 236.0f;
     constexpr float CONTAINER_POS_Y = 118.0f;
     
     ImVec2 min = { Scale(AlignToNextGrid(CONTAINER_POS_X)), Scale(AlignToNextGrid(CONTAINER_POS_Y)) };
     ImVec2 max = { Scale(AlignToNextGrid(1280.0f - CONTAINER_POS_X)), Scale(AlignToNextGrid(720.0f - CONTAINER_POS_Y)) };
-
+    
     DrawContainer(min, max);
-
+    
     DrawCategories();
-
+    
     DrawConfigOptions();
-
+    
     // Pop clip rect from DrawCategories
     drawList->PopClipRect();
-
+    
     // Pop clip rect from DrawContainer
     drawList->PopClipRect();
+}
+
+void OptionsMenu::Open(bool stage)
+{
+    s_isVisible = true;
+    s_isDimBackground = stage;
+
+    *(bool*)g_memory.Translate(0x8328BB26) = false;
+
+    // TODO: animate Miles Electric in if we're in a stage.
+}
+
+void OptionsMenu::Close(bool stage)
+{
+    s_isVisible = false;
+    s_isDimBackground = stage;
+
+    *(bool*)g_memory.Translate(0x8328BB26) = true;
+
+    // TODO: animate Miles Electric out if we're in a stage.
 }

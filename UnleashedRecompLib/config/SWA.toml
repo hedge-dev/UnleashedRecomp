@@ -422,3 +422,82 @@ registers = ["r7"]
 name = "LoadingScreenSpeedFixMidAsmHook"
 address = 0x824DAB60
 registers = ["r4"]
+
+# World Map Pause Menu
+[[midasm_hook]]
+name = "CHudPauseAddOptionsItemMidAsmHook"
+address = 0x824AF140
+registers = ["r31"]
+
+# Village Pause Menu
+[[midasm_hook]]
+name = "CHudPauseAddOptionsItemMidAsmHook"
+address = 0x824AF430
+registers = ["r31"]
+
+# Stage Pause Menu
+[[midasm_hook]]
+name = "CHudPauseAddOptionsItemMidAsmHook"
+address = 0x824AF988
+registers = ["r31"]
+
+# Hub Pause Menu
+[[midasm_hook]]
+name = "CHudPauseAddOptionsItemMidAsmHook"
+address = 0x824AFB20
+registers = ["r31"]
+
+# Misc Pause Menu
+[[midasm_hook]]
+name = "CHudPauseAddOptionsItemMidAsmHook"
+address = 0x824AFCC8
+registers = ["r31"]
+
+# World Map Pause Menu
+[[midasm_hook]]
+name = "CHudPauseItemCountMidAsmHook"
+address = 0x824B02F8
+registers = ["r3", "r11"]
+return_on_true = true
+
+# Village Pause Menu
+[[midasm_hook]]
+name = "CHudPauseItemCountMidAsmHook"
+address = 0x824B04AC
+registers = ["r31", "r10"]
+return_on_true = true
+
+# Stage Pause Menu
+[[midasm_hook]]
+name = "CHudPauseItemCountMidAsmHook"
+address = 0x824B061C
+registers = ["r3", "r11"]
+return_on_true = true
+
+# Hub Pause Menu
+[[midasm_hook]]
+name = "CHudPauseHubItemCountMidAsmHook"
+address = 0x824B07C4
+registers = ["r3", "r10"]
+return_on_true = true
+
+# Misc Pause Menu Index Wrap-around
+[[midasm_hook]]
+name = "CHudPauseItemCountMidAsmHook"
+address = 0x824B08A8
+registers = ["r3", "r11"]
+return_on_true = true
+
+# Misc Pause Menu Index Comparison
+[[midasm_hook]]
+name = "CHudPauseMiscItemCountMidAsmHook"
+address = 0x824B08B0
+registers = ["r11"]
+jump_address_on_true = 0x824B08C0
+
+# Misc Pause Menu Inject Options Behaviour
+[[midasm_hook]]
+name = "CHudPauseMiscInjectOptionsMidAsmHook"
+address = 0x824B08C0
+registers = ["r3"]
+return_on_true = true

@@ -39,6 +39,8 @@
 #include "SWA/Player/Character/EvilSonic/Hud/EvilHudGuide.h"
 #include "SWA/Player/Character/EvilSonic/EvilSonic.h"
 #include "SWA/Player/Character/EvilSonic/EvilSonicContext.h"
+#include "SWA/System/GameMode/Title/TitleMenu.h"
+#include "SWA/System/GameMode/Title/TitleStateBase.h"
 #include "SWA/System/ApplicationDocument.h"
 #include "SWA/System/GameDocument.h"
 #include "SWA/System/InputState.h"

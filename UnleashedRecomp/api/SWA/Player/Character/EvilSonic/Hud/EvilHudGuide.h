@@ -24,6 +24,6 @@ namespace SWA::Player
         SWA_INSERT_PADDING(0x14D);
         bool m_IsShown;
         bool m_IsVisible;
-        EGuideType m_GuideType;
+        be<EGuideType> m_GuideType;
     };
 }
