@@ -171,9 +171,19 @@ CONFIG_DEFINE_LOCALE(Brightness)
     { ELanguage::English, "Brightness" }
 };
 
-CONFIG_DEFINE_LOCALE(MSAA)
+CONFIG_DEFINE_LOCALE(AntiAliasing)
 {
     { ELanguage::English, "Anti-Aliasing" }
+};
+
+CONFIG_DEFINE_ENUM_LOCALE(EAntiAliasing)
+{
+    {
+        ELanguage::English,
+        {
+            { EAntiAliasing::None, "NONE" },
+        }
+    }
 };
 
 CONFIG_DEFINE_LOCALE(AnisotropicFiltering)

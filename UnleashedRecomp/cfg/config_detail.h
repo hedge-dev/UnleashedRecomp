@@ -84,6 +84,22 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EWindowState)
     { "Maximized", EWindowState::Maximised }
 };
 
+enum class EAntiAliasing : uint32_t
+{
+    None = 0,
+    MSAA2x = 2,
+    MSAA4x = 4,
+    MSAA8x = 8
+};
+
+CONFIG_DEFINE_ENUM_TEMPLATE(EAntiAliasing)
+{
+    { "None",    EAntiAliasing::None },
+    { "2x MSAA", EAntiAliasing::MSAA2x },
+    { "4x MSAA", EAntiAliasing::MSAA4x },
+    { "8x MSAA", EAntiAliasing::MSAA8x }
+};
+
 enum class EShadowResolution : int32_t
 {
     Original = -1,

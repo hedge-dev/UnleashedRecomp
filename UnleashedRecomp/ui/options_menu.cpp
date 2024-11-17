@@ -392,15 +392,14 @@ static void DrawConfigOptions()
         DrawConfigOption(rowIndex++, Config::WerehogBattleMusic);
         break;
     case 3: // VIDEO
-        DrawConfigOption(rowIndex++, Config::WindowWidth);
-        DrawConfigOption(rowIndex++, Config::WindowHeight);
+        // TODO: expose WindowWidth/WindowHeight as WindowSize.
         DrawConfigOption(rowIndex++, Config::ResolutionScale);
         DrawConfigOption(rowIndex++, Config::Fullscreen);
         DrawConfigOption(rowIndex++, Config::VSync);
         DrawConfigOption(rowIndex++, Config::TripleBuffering);
         DrawConfigOption(rowIndex++, Config::FPS);
         DrawConfigOption(rowIndex++, Config::Brightness);
-        DrawConfigOption(rowIndex++, Config::MSAA);
+        DrawConfigOption(rowIndex++, Config::AntiAliasing);
         DrawConfigOption(rowIndex++, Config::ShadowResolution);
         DrawConfigOption(rowIndex++, Config::GITextureFiltering);
         DrawConfigOption(rowIndex++, Config::AlphaToCoverage);

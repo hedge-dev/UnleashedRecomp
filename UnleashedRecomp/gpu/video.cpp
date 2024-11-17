@@ -1843,7 +1843,7 @@ static GuestSurface* CreateSurface(uint32_t width, uint32_t height, uint32_t for
     desc.depth = 1;
     desc.mipLevels = 1;
     desc.arraySize = 1;
-    desc.multisampling.sampleCount = multiSample != 0 && Config::MSAA > 1 ? Config::MSAA : RenderSampleCount::COUNT_1;
+    desc.multisampling.sampleCount = multiSample != 0 && (int)Config::AntiAliasing.Value > 1 ? (int)Config::AntiAliasing.Value : RenderSampleCount::COUNT_1;
     desc.format = ConvertFormat(format);
     desc.flags = desc.format == RenderFormat::D32_FLOAT ? RenderTextureFlag::DEPTH_TARGET : RenderTextureFlag::RENDER_TARGET;
 
