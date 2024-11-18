@@ -16,9 +16,12 @@ static const IConfigDef* g_selectedItem;
 void OptionsMenu::Init()
 {
     auto& io = ImGui::GetIO();
-    g_seuratFont = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 26.0f);
-    g_dfsogeistdFont = io.Fonts->AddFontFromFileTTF("DFSoGeiStd-W7.otf", 48.0f);
-    g_newRodinFont = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f);
+
+    constexpr float FONT_SCALE = 2.0f;
+
+    g_seuratFont = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 26.0f * FONT_SCALE);
+    g_dfsogeistdFont = io.Fonts->AddFontFromFileTTF("DFSoGeiStd-W7.otf", 48.0f * FONT_SCALE);
+    g_newRodinFont = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
 }
 
 static std::vector<std::unique_ptr<ImGuiCallbackData>> g_callbackData;
