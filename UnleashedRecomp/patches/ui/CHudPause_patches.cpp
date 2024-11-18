@@ -122,7 +122,7 @@ PPC_FUNC(sub_824B0930)
     if (auto pInputState = SWA::CInputState::GetInstance())
     {
         // TODO: disable Start button closing menu.
-        if (pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
+        if (OptionsMenu::CanClose() && pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
         {
             OptionsMenu::Close(pauseType);
             m_isOptionsFromPause = false;

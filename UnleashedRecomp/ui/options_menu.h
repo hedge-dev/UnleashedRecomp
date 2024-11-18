@@ -10,4 +10,6 @@ public:
     static void Draw();
     static void Open(bool stage = false);
     static void Close(bool stage = false);
+
+    static bool CanClose();
 };

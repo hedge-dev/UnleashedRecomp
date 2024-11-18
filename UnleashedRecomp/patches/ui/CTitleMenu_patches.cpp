@@ -23,7 +23,7 @@ PPC_FUNC(sub_825882B8)
     if (pInputState && isOptionsIndex)
     {
         // TODO: play sys_worldmap_cancel (could be "cansel" instead).
-        if (pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
+        if (OptionsMenu::CanClose() && pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
             OptionsMenu::Close();
     }
 }

@@ -252,15 +252,20 @@ static int32_t g_categoryIndex;
 static int32_t g_firstVisibleRowIndex;
 static int32_t g_selectedRowIndex;
 static double g_rowSelectionTime;
+static bool g_leftWasHeld;
 static bool g_upWasHeld;
+static bool g_rightWasHeld;
 static bool g_downWasHeld;
+static bool g_lockedOnOption;
 
 static void ResetSelection()
 {
     g_firstVisibleRowIndex = 0;
     g_selectedRowIndex = 0;
     g_rowSelectionTime = ImGui::GetTime();
+    g_leftWasHeld = false;
     g_upWasHeld = false;
+    g_rightWasHeld = false;
     g_downWasHeld = false;
 }
 
@@ -268,11 +273,11 @@ static void DrawCategories()
 {
     auto inputState = SWA::CInputState::GetInstance();
 
-    bool moveLeft = inputState->GetPadState().IsTapped(SWA::eKeyState_LeftBumper) ||
-        inputState->GetPadState().IsTapped(SWA::eKeyState_LeftTrigger);
+    bool moveLeft = !g_lockedOnOption && (inputState->GetPadState().IsTapped(SWA::eKeyState_LeftBumper) ||
+        inputState->GetPadState().IsTapped(SWA::eKeyState_LeftTrigger));
 
-    bool moveRight = inputState->GetPadState().IsTapped(SWA::eKeyState_RightBumper) ||
-        inputState->GetPadState().IsTapped(SWA::eKeyState_RightTrigger);
+    bool moveRight = !g_lockedOnOption && (inputState->GetPadState().IsTapped(SWA::eKeyState_RightBumper) ||
+        inputState->GetPadState().IsTapped(SWA::eKeyState_RightTrigger));
 
     if (moveLeft)
     {
@@ -360,11 +365,12 @@ static void DrawCategories()
 }
 
 template<typename T>
-static void DrawConfigOption(int32_t rowIndex, float yOffset, const ConfigDef<T>* config)
+static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* config)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
+    auto& padState = SWA::CInputState::GetInstance()->GetPadState();
 
     constexpr ImU32 COLOR0 = IM_COL32(0xE2, 0x71, 0x22, 0x80);
     constexpr ImU32 COLOR1 = IM_COL32(0x92, 0xFF, 0x31, 0x80);
@@ -389,16 +395,53 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, const ConfigDef<T>
     ImVec2 textPos = { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f };
     ImVec4 textClipRect = { min.x, min.y, max.x, max.y };
 
+    bool lockedOnOption = false;
     if (g_selectedRowIndex == rowIndex)
     {
         g_selectedItem = config;
 
+        if constexpr (std::is_same_v<T, bool>)
+        {
+            if (padState.IsTapped(SWA::eKeyState_A))
+                config->Value = !config->Value;
+        }
+        else
+        {
+            static T s_oldValue;
+
+            if (padState.IsTapped(SWA::eKeyState_A))
+            {
+                g_lockedOnOption ^= true;
+                if (g_lockedOnOption)
+                {
+                    g_leftWasHeld = false;
+                    g_rightWasHeld = false;
+                    // remember value
+                    s_oldValue = config->Value;
+                }
+            }
+            else if (padState.IsTapped(SWA::eKeyState_B))
+            {
+                // released lock, restore old value
+                config->Value = s_oldValue;
+                g_lockedOnOption = false;
+            }
+
+            lockedOnOption = g_lockedOnOption;
+        }
+    }
+
+    bool fadedOut = g_lockedOnOption && g_selectedItem != config;
+    float alpha = fadedOut ? 0.5f : 1.0f;
+
+    if (g_selectedItem == config)
+    {
         drawList->AddRectFilledMultiColor(min, max, COLOR0, COLOR0, COLOR1, COLOR1);
         DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, IM_COL32_WHITE, configName.c_str(), g_rowSelectionTime, 1.0, 250.0);
     }
     else
     {
-        drawList->AddText(g_seuratFont, size, textPos, IM_COL32_WHITE, configName.c_str(), 0, 0.0f, &textClipRect);
+        drawList->AddText(g_seuratFont, size, textPos, IM_COL32(255, 255, 255, 255 * alpha), configName.c_str(), 0, 0.0f, &textClipRect);
     }
 
     // Right side
@@ -407,14 +450,14 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, const ConfigDef<T>
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE_BUTTON);
 
-    drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178), IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178));
-    drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 0, 0, 13), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55), IM_COL32(0, 0, 0, 6));
-    drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13), IM_COL32(0, 130, 0, 111), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55));
+    drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 223 * alpha), IM_COL32(0, 130, 0, 178 * alpha), IM_COL32(0, 130, 0, 223 * alpha), IM_COL32(0, 130, 0, 178 * alpha));
+    drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 0, 0, 13 * alpha), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55 * alpha), IM_COL32(0, 0, 0, 6 * alpha));
+    drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13 * alpha), IM_COL32(0, 130, 0, 111 * alpha), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55 * alpha));
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
     // Selection triangles
-    if (g_selectedItem == config)
+    if (lockedOnOption)
     {
         constexpr uint32_t COLOR = IM_COL32(0, 97, 0, 255);
 
@@ -431,6 +474,37 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, const ConfigDef<T>
             { max.x + trianglePadding, min.y },
             { max.x + trianglePadding + triangleWidth, (min.y + max.y) / 2.0f },
             COLOR);
+
+        bool leftIsHeld = padState.IsTapped(SWA::eKeyState_DpadLeft) || padState.LeftStickHorizontal < -0.5f;
+        bool rightIsHeld = padState.IsTapped(SWA::eKeyState_DpadRight) || padState.LeftStickHorizontal > 0.5f;
+
+        bool moveLeft = !g_leftWasHeld && leftIsHeld;
+        bool moveRight = !g_rightWasHeld && rightIsHeld;
+
+        g_leftWasHeld = leftIsHeld;
+        g_rightWasHeld = rightIsHeld;
+
+        if constexpr (std::is_enum_v<T>)
+        {
+            auto it = config->EnumTemplateReverse.find(config->Value);
+
+            if (moveLeft)
+            {
+                if (it == config->EnumTemplateReverse.begin())
+                    it = config->EnumTemplateReverse.end();
+
+                --it;
+            }
+            else if (moveRight)
+            {
+                ++it;
+
+                if (it == config->EnumTemplateReverse.end())
+                    it = config->EnumTemplateReverse.begin();
+            }
+
+            config->Value = it->first;
+        }
     }
 
     auto valueText = config->GetValueLocalised();
@@ -452,10 +526,10 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, const ConfigDef<T>
         g_newRodinFont,
         size,
         min,
-        IM_COL32_WHITE,
+        IM_COL32(255, 255, 255, 255 * alpha),
         valueText.data(),
         Scale(2),
-        IM_COL32_BLACK);
+        IM_COL32(0, 0, 0, 255 * alpha));
 
     ResetGradient();
 }
@@ -516,11 +590,11 @@ static void DrawConfigOptions()
 
     auto inputState = SWA::CInputState::GetInstance();
 
-    bool upIsHeld = inputState->GetPadState().IsDown(SWA::eKeyState_DpadUp) ||
-        inputState->GetPadState().LeftStickVertical > 0.5f;
+    bool upIsHeld = !g_lockedOnOption && (inputState->GetPadState().IsDown(SWA::eKeyState_DpadUp) ||
+        inputState->GetPadState().LeftStickVertical > 0.5f);
 
-    bool downIsHeld = inputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
-        inputState->GetPadState().LeftStickVertical < -0.5f;
+    bool downIsHeld = !g_lockedOnOption && (inputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
+        inputState->GetPadState().LeftStickVertical < -0.5f);
 
     bool scrollUp = !g_upWasHeld && upIsHeld;
     bool scrollDown = !g_downWasHeld && downIsHeld;
@@ -652,7 +726,7 @@ void OptionsMenu::Draw()
     auto drawList = ImGui::GetForegroundDrawList();
     
     if (s_isDimBackground)
-        drawList->AddRectFilled({ 0.0f, 0.0f }, res, IM_COL32(0, 0, 0, 127));
+        drawList->AddRectFilled({ 0.0f, 0.0f }, res, IM_COL32(0, 0, 0, 223));
     
     DrawScanlineBars();
     DrawSettingsPanel();
@@ -679,4 +753,9 @@ void OptionsMenu::Close(bool stage)
     *(bool*)g_memory.Translate(0x8328BB26) = true;
 
     // TODO: animate Miles Electric out if we're in a stage.
+}
+
+bool OptionsMenu::CanClose()
+{
+    return !g_lockedOnOption;
 }
