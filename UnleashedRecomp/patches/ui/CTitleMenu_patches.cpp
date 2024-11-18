@@ -10,7 +10,7 @@ PPC_FUNC(sub_825882B8)
     auto pInputState = SWA::CInputState::GetInstance();
     auto isOptionsIndex = pTitleState->m_pMember->m_pTitleMenu->m_CursorIndex == 2;
 
-    if (pInputState && isOptionsIndex)
+    if (!OptionsMenu::s_isVisible && pInputState && isOptionsIndex)
     {
         // TODO: play sys_worldmap_decide.
         if (pInputState->GetPadState().IsTapped(SWA::eKeyState_A))
