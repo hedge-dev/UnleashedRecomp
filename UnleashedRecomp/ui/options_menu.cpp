@@ -332,8 +332,10 @@ static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T>* config)
     auto optionWidth = gridSize * 56.0f;
     auto optionHeight = gridSize * 5.5f;
     auto optionPadding = gridSize * 0.5f;
-    auto valueWidth = gridSize * 24.0f;
+    auto valueWidth = Scale(192.0f);
     auto valueHeight = gridSize * 3.0f;
+    auto triangleWidth = gridSize * 2.5f;
+    auto trianglePadding = gridSize;
 
     // Left side
     ImVec2 min = { clipRectMin.x, clipRectMin.y + (optionHeight + optionPadding) * rowIndex };
@@ -368,6 +370,26 @@ static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T>* config)
     drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13), IM_COL32(0, 130, 0, 111), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55));
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
+
+    // Selection triangles
+    if (g_selectedItem == config)
+    {
+        constexpr uint32_t COLOR = IM_COL32(0, 97, 0, 255);
+
+        // Left
+        drawList->AddTriangleFilled(
+            { min.x - trianglePadding, min.y },
+            { min.x - trianglePadding, max.y }, 
+            { min.x - trianglePadding - triangleWidth, (min.y + max.y) / 2.0f }, 
+            COLOR);
+
+        // Right
+        drawList->AddTriangleFilled(
+            { max.x + trianglePadding, max.y },
+            { max.x + trianglePadding, min.y },
+            { max.x + trianglePadding + triangleWidth, (min.y + max.y) / 2.0f },
+            COLOR);
+    }
 
     auto valueText = config->GetValueLocalised();
 
