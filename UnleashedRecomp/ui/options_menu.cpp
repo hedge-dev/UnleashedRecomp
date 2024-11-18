@@ -717,7 +717,9 @@ void DrawInfoPanel()
 
 void OptionsMenu::Draw()
 {
-    if (!s_isVisible)
+    auto inputState = SWA::CInputState::GetInstance();
+
+    if (!s_isVisible || inputState->GetPadState().IsDown(SWA::eKeyState_Y))
         return;
 
     g_callbackDataIndex = 0;
