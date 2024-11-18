@@ -50,7 +50,8 @@ namespace SWA
         be<uint32_t> TappedState;
         be<uint32_t> ReleasedState;
 
-        SWA_INSERT_PADDING(0x04);
+        // TODO: This structure seems different than the Generations counterpart,
+        // these paddings might not be there.
 
         be<float> LeftStickHorizontal;
         be<float> LeftStickVertical;
@@ -65,7 +66,7 @@ namespace SWA
         be<float> LeftTrigger;
         be<float> RightTrigger;
 
-        SWA_INSERT_PADDING(0x20);
+        SWA_INSERT_PADDING(0x24);
 
         bool IsDown(const EKeyState in_Keys) const;
         bool IsUp(const EKeyState in_Keys) const;

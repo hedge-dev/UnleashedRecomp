@@ -2,6 +2,7 @@
 #include "window.h"
 #include <kernel/memory.h>
 #include <gpu/imgui_common.h>
+#include <api/SWA/System/InputState.h>
 
 constexpr float COMMON_PADDING_POS_Y = 118.0f;
 constexpr float COMMON_PADDING_POS_X = 30.0f;
@@ -245,10 +246,39 @@ static constexpr const char* CATEGORIES[] =
     "VIDEO"
 };
 
-static uint32_t g_categoryIndex;
+static int32_t g_categoryIndex;
+static int32_t g_firstVisibleRowIndex;
+static int32_t g_selectedRowIndex;
 
 static void DrawCategories()
 {
+    auto inputState = SWA::CInputState::GetInstance();
+
+    bool moveLeft = inputState->GetPadState().IsTapped(SWA::eKeyState_LeftBumper) ||
+        inputState->GetPadState().IsTapped(SWA::eKeyState_LeftTrigger);
+
+    bool moveRight = inputState->GetPadState().IsTapped(SWA::eKeyState_RightBumper) ||
+        inputState->GetPadState().IsTapped(SWA::eKeyState_RightTrigger);
+
+    if (moveLeft)
+    {
+        --g_categoryIndex;
+        if (g_categoryIndex < 0)
+            g_categoryIndex = std::size(CATEGORIES) - 1;
+    }
+    else if (moveRight)
+    {
+        ++g_categoryIndex;
+        if (g_categoryIndex >= std::size(CATEGORIES))
+            g_categoryIndex = 0;
+    }
+
+    if (moveLeft || moveRight)
+    {
+        g_firstVisibleRowIndex = 0;
+        g_selectedRowIndex = 0;
+    }
+
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
@@ -280,7 +310,7 @@ static void DrawCategories()
 
         uint32_t alpha = 235;
 
-        if (g_categoryIndex == i || ImGui::IsMouseHoveringRect(min, max, false))
+        if (g_categoryIndex == i)
         {
             SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE_BUTTON);
 
@@ -289,9 +319,6 @@ static void DrawCategories()
             drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13), IM_COL32(0, 130, 0, 111), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55));
 
             SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
-
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-                g_categoryIndex = i;
         }
         else
         {
@@ -322,7 +349,7 @@ static void DrawCategories()
 }
 
 template<typename T>
-static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T>* config)
+static void DrawConfigOption(int32_t rowIndex, float yOffset, const ConfigDef<T>* config)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
@@ -341,7 +368,7 @@ static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T>* config)
     auto trianglePadding = gridSize;
 
     // Left side
-    ImVec2 min = { clipRectMin.x, clipRectMin.y + (optionHeight + optionPadding) * rowIndex };
+    ImVec2 min = { clipRectMin.x, clipRectMin.y + (optionHeight + optionPadding) * rowIndex + yOffset };
     ImVec2 max = { min.x + optionWidth, min.y + optionHeight };
 
     auto configName = config->GetNameLocalised();
@@ -351,9 +378,10 @@ static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T>* config)
     ImVec2 textPos = { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f };
     ImVec4 textClipRect = { min.x, min.y, max.x, max.y };
 
-    if (ImGui::IsMouseHoveringRect(min, max, false))
+    if (g_selectedRowIndex == rowIndex)
     {
         g_selectedItem = config;
+
         drawList->AddRectFilledMultiColor(min, max, COLOR0, COLOR0, COLOR1, COLOR1);
         DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, IM_COL32_WHITE, configName.c_str(), 250.0f);
     }
@@ -421,53 +449,95 @@ static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T>* config)
     ResetGradient();
 }
 
+static bool g_upWasHeld;
+static bool g_downWasHeld;
+
 static void DrawConfigOptions()
 {
-    int32_t rowIndex = 0;
+    float gridSize = Scale(GRID_SIZE);
+    float optionHeightWithPadding = gridSize * 6.0f;
+    float yOffset = -g_firstVisibleRowIndex * optionHeightWithPadding;
+
+    int32_t rowCount = 0;
 
     // TODO: Don't use raw numbers here!
     switch (g_categoryIndex)
     {
     case 0: // SYSTEM
-        DrawConfigOption(rowIndex++, &Config::Language);
-        DrawConfigOption(rowIndex++, &Config::Hints);
-        DrawConfigOption(rowIndex++, &Config::ControlTutorial);
-        DrawConfigOption(rowIndex++, &Config::SaveScoreAtCheckpoints);
-        DrawConfigOption(rowIndex++, &Config::UnleashOutOfControlDrain);
-        DrawConfigOption(rowIndex++, &Config::WerehogHubTransformVideo);
-        DrawConfigOption(rowIndex++, &Config::LogoSkip);
+        DrawConfigOption(rowCount++, yOffset, &Config::Language);
+        DrawConfigOption(rowCount++, yOffset, &Config::Hints);
+        DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial);
+        DrawConfigOption(rowCount++, yOffset, &Config::SaveScoreAtCheckpoints);
+        DrawConfigOption(rowCount++, yOffset, &Config::UnleashOutOfControlDrain);
+        DrawConfigOption(rowCount++, yOffset, &Config::WerehogHubTransformVideo);
+        DrawConfigOption(rowCount++, yOffset, &Config::LogoSkip);
         break;
     case 1: // CONTROLS
-        DrawConfigOption(rowIndex++, &Config::CameraXInvert);
-        DrawConfigOption(rowIndex++, &Config::CameraYInvert);
-        DrawConfigOption(rowIndex++, &Config::XButtonHoming);
-        DrawConfigOption(rowIndex++, &Config::UnleashCancel);
+        DrawConfigOption(rowCount++, yOffset, &Config::CameraXInvert);
+        DrawConfigOption(rowCount++, yOffset, &Config::CameraYInvert);
+        DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming);
+        DrawConfigOption(rowCount++, yOffset, &Config::UnleashCancel);
         break;
     case 2: // AUDIO
-        DrawConfigOption(rowIndex++, &Config::MusicVolume);
-        DrawConfigOption(rowIndex++, &Config::SEVolume);
-        DrawConfigOption(rowIndex++, &Config::VoiceLanguage);
-        DrawConfigOption(rowIndex++, &Config::Subtitles);
-        DrawConfigOption(rowIndex++, &Config::WerehogBattleMusic);
+        DrawConfigOption(rowCount++, yOffset, &Config::MusicVolume);
+        DrawConfigOption(rowCount++, yOffset, &Config::SEVolume);
+        DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage);
+        DrawConfigOption(rowCount++, yOffset, &Config::Subtitles);
+        DrawConfigOption(rowCount++, yOffset, &Config::WerehogBattleMusic);
         break;
     case 3: // VIDEO
         // TODO: expose WindowWidth/WindowHeight as WindowSize.
-        DrawConfigOption(rowIndex++, &Config::ResolutionScale);
-        DrawConfigOption(rowIndex++, &Config::Fullscreen);
-        DrawConfigOption(rowIndex++, &Config::VSync);
-        DrawConfigOption(rowIndex++, &Config::TripleBuffering);
-        DrawConfigOption(rowIndex++, &Config::FPS);
-        DrawConfigOption(rowIndex++, &Config::Brightness);
-        DrawConfigOption(rowIndex++, &Config::AntiAliasing);
-        DrawConfigOption(rowIndex++, &Config::ShadowResolution);
-        DrawConfigOption(rowIndex++, &Config::GITextureFiltering);
-        DrawConfigOption(rowIndex++, &Config::AlphaToCoverage);
-        DrawConfigOption(rowIndex++, &Config::MotionBlur);
-        DrawConfigOption(rowIndex++, &Config::Xbox360ColourCorrection);
-        DrawConfigOption(rowIndex++, &Config::MovieScaleMode);
-        DrawConfigOption(rowIndex++, &Config::UIScaleMode);
+        DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale);
+        DrawConfigOption(rowCount++, yOffset, &Config::Fullscreen);
+        DrawConfigOption(rowCount++, yOffset, &Config::VSync);
+        DrawConfigOption(rowCount++, yOffset, &Config::TripleBuffering);
+        DrawConfigOption(rowCount++, yOffset, &Config::FPS);
+        DrawConfigOption(rowCount++, yOffset, &Config::Brightness);
+        DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing);
+        DrawConfigOption(rowCount++, yOffset, &Config::ShadowResolution);
+        DrawConfigOption(rowCount++, yOffset, &Config::GITextureFiltering);
+        DrawConfigOption(rowCount++, yOffset, &Config::AlphaToCoverage);
+        DrawConfigOption(rowCount++, yOffset, &Config::MotionBlur);
+        DrawConfigOption(rowCount++, yOffset, &Config::Xbox360ColourCorrection);
+        DrawConfigOption(rowCount++, yOffset, &Config::MovieScaleMode);
+        DrawConfigOption(rowCount++, yOffset, &Config::UIScaleMode);
         break;
     }
+
+    auto inputState = SWA::CInputState::GetInstance();
+
+    bool upIsHeld = inputState->GetPadState().IsDown(SWA::eKeyState_DpadUp) ||
+        inputState->GetPadState().LeftStickVertical > 0.5f;
+
+    bool downIsHeld = inputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
+        inputState->GetPadState().LeftStickVertical < -0.5f;
+
+    if (!g_upWasHeld && upIsHeld)
+    {
+        --g_selectedRowIndex;
+        if (g_selectedRowIndex < 0)
+            g_selectedRowIndex = rowCount - 1;
+    }
+    else if (!g_downWasHeld && downIsHeld)
+    {
+        ++g_selectedRowIndex;
+        if (g_selectedRowIndex >= rowCount)
+            g_selectedRowIndex = 0;
+    }
+
+    g_upWasHeld = upIsHeld;
+    g_downWasHeld = downIsHeld;
+
+    auto drawList = ImGui::GetForegroundDrawList();
+    auto clipRectMin = drawList->GetClipRectMin();
+    auto clipRectMax = drawList->GetClipRectMax();
+    int32_t visibleRowCount = int32_t(floor((clipRectMax.y - clipRectMin.y) / optionHeightWithPadding));
+
+    if (g_firstVisibleRowIndex > g_selectedRowIndex)
+        g_firstVisibleRowIndex = g_selectedRowIndex;
+
+    if (g_firstVisibleRowIndex + visibleRowCount - 1 < g_selectedRowIndex)
+        g_firstVisibleRowIndex = std::max(0, g_selectedRowIndex - visibleRowCount + 1);
 }
 
 void DrawSettingsPanel()
@@ -562,6 +632,8 @@ void OptionsMenu::Open(bool stage)
 {
     s_isVisible = true;
     s_isDimBackground = stage;
+    g_upWasHeld = false;
+    g_downWasHeld = false;
 
     *(bool*)g_memory.Translate(0x8328BB26) = false;
 
