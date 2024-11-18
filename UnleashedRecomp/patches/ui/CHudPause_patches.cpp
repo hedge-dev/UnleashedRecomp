@@ -21,7 +21,7 @@ void CHudPauseAddOptionsItemMidAsmHook(PPCRegister& pThis)
     __HH_FREE(pStrMemory);
 }
 
-bool InjectOptionsBehaviour(uint32_t pThis, uint32_t count, uint32_t exitType = 2, uint32_t transitionType = 2)
+bool InjectOptionsBehaviour(uint32_t pThis, uint32_t count)
 {
     auto status = *(be<uint32_t>*)g_memory.Translate(pThis + 0x190);
     auto pauseType = *(be<uint32_t>*)g_memory.Translate(pThis + 0x18C);
@@ -34,7 +34,7 @@ bool InjectOptionsBehaviour(uint32_t pThis, uint32_t count, uint32_t exitType = 
         3 ---- Inventory
         4 ---- Skills
         5 ---- Go to the Lab
-        6 ---- Return to World Map
+        6 ---- Wait until Day/Night
         7 ---- Undefined
         8 ---- Restart Stage
         9 ---- Continue Stage
@@ -55,6 +55,25 @@ bool InjectOptionsBehaviour(uint32_t pThis, uint32_t count, uint32_t exitType = 
         <=9 - Stop updating pause menu
     */
     auto pTransitionType = (be<uint32_t>*)g_memory.Translate(pThis + 0x194);
+
+    auto exitType = 0;
+    auto transitionType = 0;
+
+    switch (pauseType)
+    {
+        case 0: // World Map
+        case 2: // Stage
+        case 4: // Misc
+            exitType = 2;
+            transitionType = 2;
+            break;
+
+        case 1: // Village
+        case 3: // Hub
+            exitType = 2;
+            transitionType = 6;
+            break;
+    }
 
     if (status == 1)
     {
@@ -87,11 +106,11 @@ bool CHudPauseItemCountMidAsmHook(PPCRegister& pThis, PPCRegister& count)
     return InjectOptionsBehaviour(pThis.u32, count.u32);
 }
 
-bool CHudPauseHubItemCountMidAsmHook(PPCRegister& pThis, PPCRegister& count)
+void CHudPauseVillageItemCountMidAsmHook(PPCRegister& pThis, PPCRegister& count)
 {
     count.u32 += 1;
 
-    return InjectOptionsBehaviour(pThis.u32, count.u32, 2, 6);
+    InjectOptionsBehaviour(pThis.u32, count.u32);
 }
 
 bool CHudPauseMiscItemCountMidAsmHook(PPCRegister& count)

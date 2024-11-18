@@ -432,7 +432,7 @@ registers = ["r31"]
 # Village Pause Menu
 [[midasm_hook]]
 name = "CHudPauseAddOptionsItemMidAsmHook"
-address = 0x824AF430
+address = 0x824AF5BC
 registers = ["r31"]
 
 # Stage Pause Menu
@@ -462,10 +462,9 @@ return_on_true = true
 
 # Village Pause Menu
 [[midasm_hook]]
-name = "CHudPauseItemCountMidAsmHook"
+name = "CHudPauseVillageItemCountMidAsmHook"
 address = 0x824B04AC
 registers = ["r31", "r10"]
-return_on_true = true
 
 # Stage Pause Menu
 [[midasm_hook]]
@@ -476,7 +475,7 @@ return_on_true = true
 
 # Hub Pause Menu
 [[midasm_hook]]
-name = "CHudPauseHubItemCountMidAsmHook"
+name = "CHudPauseItemCountMidAsmHook"
 address = 0x824B07C4
 registers = ["r3", "r10"]
 return_on_true = true
