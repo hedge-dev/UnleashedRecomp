@@ -47,6 +47,18 @@ CONFIG_DEFINE_ENUM_TEMPLATE(ELanguage)
     { "Italian",  ELanguage::Italian }
 };
 
+enum class EUnleashGaugeBehaviour : uint32_t
+{
+    Original,
+    Revised
+};
+
+CONFIG_DEFINE_ENUM_TEMPLATE(EUnleashGaugeBehaviour)
+{
+    { "Original", EUnleashGaugeBehaviour::Original },
+    { "Revised",  EUnleashGaugeBehaviour::Revised }
+};
+
 enum class EVoiceLanguage : uint32_t
 {
     English,

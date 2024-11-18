@@ -48,7 +48,7 @@ CONFIG_DEFINE_LOCALE(Language)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(Language)
 {
-    { ELanguage::English, "The language used for text and logos." }
+    { ELanguage::English, "Change the language used for text and logos." }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(ELanguage)
@@ -61,7 +61,7 @@ CONFIG_DEFINE_ENUM_LOCALE(ELanguage)
             { ELanguage::German,   "DEUTSCH" },
             { ELanguage::French,   "FRANÇAIS" },
             { ELanguage::Spanish,  "ESPAÑOL" },
-            { ELanguage::Italian,  "ITALIANO" },
+            { ELanguage::Italian,  "ITALIANO" }
         }
     }
 };
@@ -73,7 +73,7 @@ CONFIG_DEFINE_LOCALE(Hints)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(Hints)
 {
-    { ELanguage::English, "Determines whether to show hint rings in stages." }
+    { ELanguage::English, "Show hint rings in stages." }
 };
 
 CONFIG_DEFINE_LOCALE(ControlTutorial)
@@ -83,7 +83,7 @@ CONFIG_DEFINE_LOCALE(ControlTutorial)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(ControlTutorial)
 {
-    { ELanguage::English, "Determines whether to show controller hints in stages." }
+    { ELanguage::English, "Show controller hints in stages." }
 };
 
 CONFIG_DEFINE_LOCALE(SaveScoreAtCheckpoints)
@@ -93,27 +93,38 @@ CONFIG_DEFINE_LOCALE(SaveScoreAtCheckpoints)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(SaveScoreAtCheckpoints)
 {
-    { ELanguage::English, "Determines whether to save your score when reaching checkpoints.\n\nUpon respawning, your last checkpoint score will be restored." }
+    { ELanguage::English, "Keep your score from the last checkpoint upon respawning." }
 };
 
-CONFIG_DEFINE_LOCALE(UnleashOutOfControlDrain)
+CONFIG_DEFINE_LOCALE(UnleashGaugeBehaviour)
 {
-    { ELanguage::English, "Deplete Unleash Gauge whilst Out Of Control" }
+    { ELanguage::English, "Unleash Gauge Behavior" }
 };
 
-CONFIG_DEFINE_DESCRIPTION_LOCALE(UnleashOutOfControlDrain)
+CONFIG_DEFINE_DESCRIPTION_LOCALE(UnleashGaugeBehaviour)
 {
-    { ELanguage::English, "Determines whether to continue depleting the Unleash gauge whilst the player is locked in place during transitions." }
+    { ELanguage::English, "Change how the Unleash gauge behaves." }
+};
+
+CONFIG_DEFINE_ENUM_LOCALE(EUnleashGaugeBehaviour)
+{
+    {
+        ELanguage::English,
+        {
+            { EUnleashGaugeBehaviour::Original, "ORIGINAL" },
+            { EUnleashGaugeBehaviour::Revised,  "REVISED" }
+        }
+    }
 };
 
 CONFIG_DEFINE_LOCALE(WerehogHubTransformVideo)
 {
-    { ELanguage::English, "Werehog Transformation Cutscene" }
+    { ELanguage::English, "Transformation Cutscene" }
 };
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(WerehogHubTransformVideo)
 {
-    { ELanguage::English, "Determines whether to play the Werehog transformation cutscene when changing time of day in the hub areas." }
+    { ELanguage::English, "Set whether to play the Werehog transformation cutscene when changing the time of day in the hub areas." }
 };
 
 CONFIG_DEFINE_LOCALE(LogoSkip)
@@ -123,7 +134,7 @@ CONFIG_DEFINE_LOCALE(LogoSkip)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(LogoSkip)
 {
-    { ELanguage::English, "Determines whether to skip the logos during the game's boot sequence." }
+    { ELanguage::English, "Show the logos during the game's boot sequence." }
 };
 
 CONFIG_DEFINE_LOCALE(CameraXInvert)
@@ -133,7 +144,7 @@ CONFIG_DEFINE_LOCALE(CameraXInvert)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(CameraXInvert)
 {
-    { ELanguage::English, "Determines whether to invert the camera's left and right movement." }
+    { ELanguage::English, "Toggle between inverted left and right camera movement." }
 };
 
 CONFIG_DEFINE_LOCALE(CameraYInvert)
@@ -143,7 +154,7 @@ CONFIG_DEFINE_LOCALE(CameraYInvert)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(CameraYInvert)
 {
-    { ELanguage::English, "Determines whether to invert the camera's up and down movement." }
+    { ELanguage::English, "Toggle between inverted up and down camera movement." }
 };
 
 CONFIG_DEFINE_LOCALE(XButtonHoming)
@@ -153,7 +164,7 @@ CONFIG_DEFINE_LOCALE(XButtonHoming)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(XButtonHoming)
 {
-    { ELanguage::English, "Determines whether to bind the homing attack to the boost button." }
+    { ELanguage::English, "Toggle between using the boost button or the jump button for homing attack." }
 };
 
 CONFIG_DEFINE_LOCALE(UnleashCancel)
@@ -163,7 +174,7 @@ CONFIG_DEFINE_LOCALE(UnleashCancel)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(UnleashCancel)
 {
-    { ELanguage::English, "Determines whether to allow cancelling Unleash by pressing the input again." }
+    { ELanguage::English, "Set whether Unleash can be cancelled by pressing the input again." }
 };
 
 CONFIG_DEFINE_LOCALE(MusicVolume)
@@ -173,7 +184,7 @@ CONFIG_DEFINE_LOCALE(MusicVolume)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(MusicVolume)
 {
-    { ELanguage::English, "The volume used for the music." }
+    { ELanguage::English, "Adjust the volume for the music." }
 };
 
 CONFIG_DEFINE_LOCALE(SEVolume)
@@ -183,7 +194,7 @@ CONFIG_DEFINE_LOCALE(SEVolume)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(SEVolume)
 {
-    { ELanguage::English, "The volume used for sound effects." }
+    { ELanguage::English, "Adjust the volume for sound effects." }
 };
 
 CONFIG_DEFINE_LOCALE(VoiceLanguage)
@@ -193,7 +204,7 @@ CONFIG_DEFINE_LOCALE(VoiceLanguage)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(VoiceLanguage)
 {
-    { ELanguage::English, "The language used for character voices." }
+    { ELanguage::English, "Change the language used for character voices." }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EVoiceLanguage)
@@ -214,17 +225,17 @@ CONFIG_DEFINE_LOCALE(Subtitles)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(Subtitles)
 {
-    { ELanguage::English, "Determines whether to display subtitles during events." }
+    { ELanguage::English, "Show subtitles during dialogue." }
 };
 
 CONFIG_DEFINE_LOCALE(WerehogBattleMusic)
 {
-    { ELanguage::English, "Werehog Battle Theme" }
+    { ELanguage::English, "Battle Theme" }
 };
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(WerehogBattleMusic)
 {
-    { ELanguage::English, "Determines whether to play the battle theme whilst in combat as the Werehog." }
+    { ELanguage::English, "Set whether to play the Werehog battle theme during combat." }
 };
 
 CONFIG_DEFINE_LOCALE(WindowSize)
@@ -234,7 +245,7 @@ CONFIG_DEFINE_LOCALE(WindowSize)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(WindowSize)
 {
-    { ELanguage::English, "The size of the game window in windowed mode." }
+    { ELanguage::English, "Adjust the size of the game window in windowed mode." }
 };
 
 CONFIG_DEFINE_LOCALE(ResolutionScale)
@@ -244,7 +255,7 @@ CONFIG_DEFINE_LOCALE(ResolutionScale)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(ResolutionScale)
 {
-    { ELanguage::English, "The internal resolution the game will render at.\n\n%dx%d" }
+    { ELanguage::English, "Adjust the internal resolution of the game.\n\n%dx%d" }
 };
 
 CONFIG_DEFINE_LOCALE(Fullscreen)
@@ -254,7 +265,7 @@ CONFIG_DEFINE_LOCALE(Fullscreen)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(Fullscreen)
 {
-    { ELanguage::English, "Determines whether to use borderless fullscreen.\n\n[PLACEHOLDER]" }
+    { ELanguage::English, "Toggle between borderless fullscreen or windowed mode." }
 };
 
 CONFIG_DEFINE_LOCALE(VSync)
@@ -264,7 +275,7 @@ CONFIG_DEFINE_LOCALE(VSync)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(VSync)
 {
-    { ELanguage::English, "Determines whether to use V-Sync.\n\n[PLACEHOLDER]" }
+    { ELanguage::English, "[PLACEHOLDER]" }
 };
 
 CONFIG_DEFINE_LOCALE(TripleBuffering)
@@ -274,7 +285,17 @@ CONFIG_DEFINE_LOCALE(TripleBuffering)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(TripleBuffering)
 {
-    { ELanguage::English, "Determines whether to use triple buffering.\n\n[PLACEHOLDER]" }
+    { ELanguage::English, "[PLACEHOLDER]" }
+};
+
+CONFIG_DEFINE_LOCALE(FPS)
+{
+    { ELanguage::English, "FPS" }
+};
+
+CONFIG_DEFINE_DESCRIPTION_LOCALE(FPS)
+{
+    { ELanguage::English, "[PLACEHOLDER]" }
 };
 
 CONFIG_DEFINE_LOCALE(Brightness)
@@ -284,7 +305,7 @@ CONFIG_DEFINE_LOCALE(Brightness)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(Brightness)
 {
-    { ELanguage::English, "The brightness level of the game.\n\n[PLACEHOLDER]" }
+    { ELanguage::English, "Adjust the brightness level of the game." }
 };
 
 CONFIG_DEFINE_LOCALE(AntiAliasing)
@@ -294,7 +315,7 @@ CONFIG_DEFINE_LOCALE(AntiAliasing)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(AntiAliasing)
 {
-    { ELanguage::English, "The amount of smoothing applied to jagged edges.\n\n[PLACEHOLDER]" }
+    { ELanguage::English, "Adjust the amount of smoothing applied to jagged edges." }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EAntiAliasing)
@@ -307,16 +328,6 @@ CONFIG_DEFINE_ENUM_LOCALE(EAntiAliasing)
     }
 };
 
-CONFIG_DEFINE_LOCALE(AnisotropicFiltering)
-{
-    { ELanguage::English, "Anisotropic Filtering" }
-};
-
-CONFIG_DEFINE_DESCRIPTION_LOCALE(AnisotropicFiltering)
-{
-    { ELanguage::English, "The amount of detail retained by distant textures.\n\n[PLACEHOLDER]" }
-};
-
 CONFIG_DEFINE_LOCALE(ShadowResolution)
 {
     { ELanguage::English, "Shadow Resolution" }
@@ -324,7 +335,7 @@ CONFIG_DEFINE_LOCALE(ShadowResolution)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(ShadowResolution)
 {
-    { ELanguage::English, "The resolution of real-time shadows.\n\n[PLACEHOLDER]" }
+    { ELanguage::English, "[PLACEHOLDER]" }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EShadowResolution)
@@ -344,7 +355,7 @@ CONFIG_DEFINE_LOCALE(GITextureFiltering)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(GITextureFiltering)
 {
-    { ELanguage::English, "The method used for filtering baked lighting.\n\n[PLACEHOLDER]" }
+    { ELanguage::English, "[PLACEHOLDER]" }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EGITextureFiltering)
@@ -365,7 +376,7 @@ CONFIG_DEFINE_LOCALE(AlphaToCoverage)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(AlphaToCoverage)
 {
-    { ELanguage::English, "Determines whether to smooth out jagged edges on alpha transparent textures." }
+    { ELanguage::English, "Set whether to apply anti-aliasing to alpha transparent textures." }
 };
 
 CONFIG_DEFINE_LOCALE(MotionBlur)
@@ -375,17 +386,17 @@ CONFIG_DEFINE_LOCALE(MotionBlur)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(MotionBlur)
 {
-    { ELanguage::English, "Determines whether to draw per-object motion blur and radial blur." }
+    { ELanguage::English, "Set whether to use per-object motion blur and radial blur." }
 };
 
 CONFIG_DEFINE_LOCALE(Xbox360ColourCorrection)
 {
-    { ELanguage::English, "Xbox 360 Colour Correction" }
+    { ELanguage::English, "Xbox 360 Color Correction" }
 };
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(Xbox360ColourCorrection)
 {
-    { ELanguage::English, "Determines whether to tint the overall appearance of the game with a more warm hue like the original Xbox 360 version." }
+    { ELanguage::English, "Set whether to use the warm tint from the\nXbox 360 version of the game." }
 };
 
 CONFIG_DEFINE_LOCALE(MovieScaleMode)
@@ -395,7 +406,7 @@ CONFIG_DEFINE_LOCALE(MovieScaleMode)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(MovieScaleMode)
 {
-    { ELanguage::English, "Determines how to scale the movie player.\n\n[PLACEHOLDER]" }
+    { ELanguage::English, "Change how the movie player scales to the display." }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EMovieScaleMode)
@@ -417,7 +428,7 @@ CONFIG_DEFINE_LOCALE(UIScaleMode)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(UIScaleMode)
 {
-    { ELanguage::English, "Determines how to scale the UI.\n\n[PLACEHOLDER]" }
+    { ELanguage::English, "Change how the UI scales to the display." }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EUIScaleMode)

@@ -552,7 +552,7 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::Hints);
         DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial);
         DrawConfigOption(rowCount++, yOffset, &Config::SaveScoreAtCheckpoints);
-        DrawConfigOption(rowCount++, yOffset, &Config::UnleashOutOfControlDrain);
+        DrawConfigOption(rowCount++, yOffset, &Config::UnleashGaugeBehaviour);
         DrawConfigOption(rowCount++, yOffset, &Config::WerehogHubTransformVideo);
         DrawConfigOption(rowCount++, yOffset, &Config::LogoSkip);
         break;

@@ -127,6 +127,7 @@ PPC_FUNC(sub_824B0930)
             OptionsMenu::Close(pauseType);
             m_isOptionsFromPause = false;
 
+            // Re-open pause menu.
             GuestToHostFunction<int>(0x824AFD28, ctx.r3.u32, 0, 0, 0, 1);
         }
     }

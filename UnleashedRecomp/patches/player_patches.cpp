@@ -60,7 +60,7 @@ PPC_FUNC(sub_823AF7A8)
     m_lastDarkGaiaEnergy = pEvilSonicContext->m_DarkGaiaEnergy;
 
     // Don't drain energy if out of control.
-    if (!Config::UnleashOutOfControlDrain && pEvilSonicContext->m_OutOfControlCount && ctx.f1.f64 < 0.0)
+    if (Config::UnleashGaugeBehaviour == EUnleashGaugeBehaviour::Revised && pEvilSonicContext->m_OutOfControlCount && ctx.f1.f64 < 0.0)
         return;
 
     __imp__sub_823AF7A8(ctx, base);
