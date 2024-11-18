@@ -64,18 +64,16 @@ static void SetShaderModifier(uint32_t shaderModifier)
     callbackData->setShaderModifier.shaderModifier = shaderModifier;
 }
 
-// TODO: add delay argument to delay when to start the marquee. Unleashed menus have ~0.9 seconds of delay before the text beings to marquee.
-// TODO: reset the marquee position when a different item is selected. This might have to be handled once we use events for controller input.
-static void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 color, const char* text, float speed)
+static void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 color, const char* text, double time, double delay, double speed)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto rectWidth = max.x - min.x;
     auto textSize = g_seuratFont->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text);
-    auto textX = pos.x - fmodf(speed * ImGui::GetTime(), textSize.x + rectWidth);
+    auto textX = pos.x - fmodf(std::max(0.0, ImGui::GetTime() - (time + delay)) * speed, textSize.x + rectWidth);
 
     drawList->PushClipRect(min, max, true);
 
-    if (textX < pos.x)
+    if (textX <= pos.x)
         drawList->AddText(font, fontSize, { textX, pos.y }, color, text);
 
     if (textX + textSize.x < pos.x)
@@ -253,6 +251,18 @@ static constexpr const char* CATEGORIES[] =
 static int32_t g_categoryIndex;
 static int32_t g_firstVisibleRowIndex;
 static int32_t g_selectedRowIndex;
+static double g_rowSelectionTime;
+static bool g_upWasHeld;
+static bool g_downWasHeld;
+
+static void ResetSelection()
+{
+    g_firstVisibleRowIndex = 0;
+    g_selectedRowIndex = 0;
+    g_rowSelectionTime = ImGui::GetTime();
+    g_upWasHeld = false;
+    g_downWasHeld = false;
+}
 
 static void DrawCategories()
 {
@@ -278,10 +288,7 @@ static void DrawCategories()
     }
 
     if (moveLeft || moveRight)
-    {
-        g_firstVisibleRowIndex = 0;
-        g_selectedRowIndex = 0;
-    }
+        ResetSelection();
 
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
@@ -387,7 +394,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, const ConfigDef<T>
         g_selectedItem = config;
 
         drawList->AddRectFilledMultiColor(min, max, COLOR0, COLOR0, COLOR1, COLOR1);
-        DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, IM_COL32_WHITE, configName.c_str(), 250.0f);
+        DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, IM_COL32_WHITE, configName.c_str(), g_rowSelectionTime, 1.0, 250.0);
     }
     else
     {
@@ -453,9 +460,6 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, const ConfigDef<T>
     ResetGradient();
 }
 
-static bool g_upWasHeld;
-static bool g_downWasHeld;
-
 static void DrawConfigOptions()
 {
     g_selectedItem = nullptr;
@@ -518,18 +522,24 @@ static void DrawConfigOptions()
     bool downIsHeld = inputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
         inputState->GetPadState().LeftStickVertical < -0.5f;
 
-    if (!g_upWasHeld && upIsHeld)
+    bool scrollUp = !g_upWasHeld && upIsHeld;
+    bool scrollDown = !g_downWasHeld && downIsHeld;
+
+    if (scrollUp)
     {
         --g_selectedRowIndex;
         if (g_selectedRowIndex < 0)
             g_selectedRowIndex = rowCount - 1;
     }
-    else if (!g_downWasHeld && downIsHeld)
+    else if (scrollDown)
     {
         ++g_selectedRowIndex;
         if (g_selectedRowIndex >= rowCount)
             g_selectedRowIndex = 0;
     }
+
+    if (scrollUp || scrollDown)
+        g_rowSelectionTime = ImGui::GetTime();
 
     g_upWasHeld = upIsHeld;
     g_downWasHeld = downIsHeld;
@@ -653,8 +663,8 @@ void OptionsMenu::Open(bool stage)
 {
     s_isVisible = true;
     s_isDimBackground = stage;
-    g_upWasHeld = false;
-    g_downWasHeld = false;
+    g_categoryIndex = 0;
+    ResetSelection();
 
     *(bool*)g_memory.Translate(0x8328BB26) = false;
 
