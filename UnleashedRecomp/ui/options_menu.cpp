@@ -454,6 +454,8 @@ static bool g_downWasHeld;
 
 static void DrawConfigOptions()
 {
+    g_selectedItem = nullptr;
+
     float gridSize = Scale(GRID_SIZE);
     float optionHeightWithPadding = gridSize * 6.0f;
     float yOffset = -g_firstVisibleRowIndex * optionHeightWithPadding;
