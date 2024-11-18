@@ -257,6 +257,8 @@ static bool g_upWasHeld;
 static bool g_rightWasHeld;
 static bool g_downWasHeld;
 static bool g_lockedOnOption;
+static double g_lastTappedTime;
+static double g_lastIncrementTime;
 
 static void ResetSelection()
 {
@@ -365,7 +367,7 @@ static void DrawCategories()
 }
 
 template<typename T>
-static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* config)
+static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* config, T valueMin = T(0), T valueCenter = T(0.5), T valueMax = T(1))
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
@@ -454,6 +456,44 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 0, 0, 13 * alpha), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55 * alpha), IM_COL32(0, 0, 0, 6 * alpha));
     drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13 * alpha), IM_COL32(0, 130, 0, 111 * alpha), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55 * alpha));
 
+    if constexpr (std::is_same_v<T, float>)
+    {
+        // Inner container of slider
+        const uint32_t innerColor0 = IM_COL32(0, 65, 0, 255 * alpha);
+        const uint32_t innerColor1 = IM_COL32(0, 32, 0, 255 * alpha);
+
+        float xPadding = Scale(6.0f);
+        float yPadding = Scale(3.0f);
+
+        drawList->AddRectFilledMultiColor(
+            { min.x + xPadding, min.y + yPadding }, 
+            { max.x - xPadding, max.y - yPadding }, 
+            innerColor0, 
+            innerColor0, 
+            innerColor1, 
+            innerColor1);
+
+        // The actual slider
+        const uint32_t sliderColor0 = IM_COL32(57, 241, 0, 255 * alpha);
+        const uint32_t sliderColor1 = IM_COL32(2, 106, 0, 255 * alpha);
+
+        xPadding += Scale(1.0f);
+        yPadding += Scale(1.0f);
+
+        ImVec2 sliderMin = { min.x + xPadding, min.y + yPadding };
+        ImVec2 sliderMax = { max.x - xPadding, max.y - yPadding };
+        float factor;
+
+        if (config->Value <= valueCenter)
+            factor = (config->Value - valueMin) / (valueCenter - valueMin) * 0.5f;
+        else
+            factor = 0.5f + (config->Value - valueCenter) / (valueMax - valueCenter) * 0.5f;
+        
+        sliderMax.x = sliderMin.x + (sliderMax.x - sliderMin.x) * factor;
+
+        drawList->AddRectFilledMultiColor(sliderMin, sliderMax, sliderColor0, sliderColor0, sliderColor1, sliderColor1);
+    }
+
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
     // Selection triangles
@@ -478,8 +518,33 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         bool leftIsHeld = padState.IsTapped(SWA::eKeyState_DpadLeft) || padState.LeftStickHorizontal < -0.5f;
         bool rightIsHeld = padState.IsTapped(SWA::eKeyState_DpadRight) || padState.LeftStickHorizontal > 0.5f;
 
-        bool moveLeft = !g_leftWasHeld && leftIsHeld;
-        bool moveRight = !g_rightWasHeld && rightIsHeld;
+        bool leftTapped = !g_leftWasHeld && leftIsHeld;
+        bool rightTapped = !g_rightWasHeld && rightIsHeld;
+
+        double time = ImGui::GetTime();
+
+        if (leftTapped || rightTapped)
+            g_lastTappedTime = time;
+
+        bool decrement = leftTapped;
+        bool increment = rightTapped;
+
+        bool fastIncrement = (time - g_lastTappedTime) > 0.5;
+        constexpr double INCREMENT_TIME = 1.0 / 120.0;
+
+        if (fastIncrement)
+        {
+            if ((time - g_lastIncrementTime) < INCREMENT_TIME)
+                fastIncrement = false;
+            else
+                g_lastIncrementTime = time;
+        }
+
+        if (fastIncrement)
+        {
+            decrement = leftIsHeld;
+            increment = rightIsHeld;
+        }
 
         g_leftWasHeld = leftIsHeld;
         g_rightWasHeld = rightIsHeld;
@@ -488,14 +553,14 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         {
             auto it = config->EnumTemplateReverse.find(config->Value);
 
-            if (moveLeft)
+            if (leftTapped)
             {
                 if (it == config->EnumTemplateReverse.begin())
                     it = config->EnumTemplateReverse.end();
 
                 --it;
             }
-            else if (moveRight)
+            else if (rightTapped)
             {
                 ++it;
 
@@ -505,9 +570,29 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
             config->Value = it->first;
         }
+        else if constexpr (std::is_same_v<T, float>)
+        {
+            float deltaTime = ImGui::GetIO().DeltaTime;
+
+            do
+            {
+                if (decrement)
+                    config->Value -= 0.01f;
+                else if (increment)
+                    config->Value += 0.01f;
+
+                deltaTime -= INCREMENT_TIME;
+            } while (deltaTime > 0.0f);
+
+            config->Value = std::clamp(config->Value, valueMin, valueMax);
+        }
     }
 
-    auto valueText = config->GetValueLocalised();
+    std::string valueText;
+    if constexpr (std::is_same_v<T, float>)
+        valueText = std::format("{}%", int32_t(round(config->Value * 100.0f)));
+    else
+        valueText = config->GetValueLocalised();
 
     size = Scale(20.0f);
     textSize = g_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.data());
@@ -571,7 +656,7 @@ static void DrawConfigOptions()
         break;
     case 3: // VIDEO
         // TODO: expose WindowWidth/WindowHeight as WindowSize.
-        DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale);
+        DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale, 0.25f, 1.0f, 2.0f);
         DrawConfigOption(rowCount++, yOffset, &Config::Fullscreen);
         DrawConfigOption(rowCount++, yOffset, &Config::VSync);
         DrawConfigOption(rowCount++, yOffset, &Config::TripleBuffering);
