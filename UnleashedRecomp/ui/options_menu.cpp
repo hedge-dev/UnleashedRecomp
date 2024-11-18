@@ -345,7 +345,7 @@ static void DrawCategories()
         ResetGradient();
     }
 
-    drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, { clipRectMax.x - gridSize * 2.0f, clipRectMax.y });
+    drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, { clipRectMax.x - gridSize, clipRectMax.y });
 }
 
 template<typename T>
@@ -553,8 +553,8 @@ static void DrawConfigOptions()
         float minY = offsetRatio * totalHeight + clipRectMin.y;
 
         drawList->AddRectFilled(
-            { clipRectMax.x + gridSize, minY },
-            { clipRectMax.x + gridSize * 2.0f, minY + totalHeight * heightRatio },
+            { clipRectMax.x, minY },
+            { clipRectMax.x + gridSize, minY + totalHeight * heightRatio },
             IM_COL32(0, 128, 0, 255)
         );
     }
