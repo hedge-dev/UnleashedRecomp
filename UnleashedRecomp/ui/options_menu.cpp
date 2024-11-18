@@ -439,7 +439,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     if (g_selectedItem == config)
     {
         drawList->AddRectFilledMultiColor(min, max, COLOR0, COLOR0, COLOR1, COLOR1);
-        DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, IM_COL32_WHITE, configName.c_str(), g_rowSelectionTime, 1.0, 250.0);
+        DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, IM_COL32_WHITE, configName.c_str(), g_rowSelectionTime, 0.9, 250.0);
     }
     else
     {
@@ -773,7 +773,7 @@ void DrawInfoPanel()
         if (g_selectedItem->GetName() == "ResolutionScale")
         {
             char buf[100];
-            auto resScale = *(float*)g_selectedItem->GetValue();
+            auto resScale = round(*(float*)g_selectedItem->GetValue() * 1000) / 1000;
 
             std::snprintf(buf, sizeof(buf), desc.c_str(),
                 (int)((float)Window::s_width * resScale),
