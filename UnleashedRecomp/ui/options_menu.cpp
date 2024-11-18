@@ -345,7 +345,7 @@ static void DrawCategories()
         ResetGradient();
     }
 
-    drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, clipRectMax);
+    drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, { clipRectMax.x - gridSize * 2.0f, clipRectMax.y });
 }
 
 template<typename T>
@@ -359,7 +359,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, const ConfigDef<T>
     constexpr ImU32 COLOR1 = IM_COL32(0x92, 0xFF, 0x31, 0x80);
 
     auto gridSize = Scale(GRID_SIZE);
-    auto optionWidth = gridSize * 56.0f;
+    auto optionWidth = gridSize * 54.0f;
     auto optionHeight = gridSize * 5.5f;
     auto optionPadding = gridSize * 0.5f;
     auto valueWidth = Scale(192.0f);
@@ -540,6 +540,24 @@ static void DrawConfigOptions()
 
     if (g_firstVisibleRowIndex + visibleRowCount - 1 < g_selectedRowIndex)
         g_firstVisibleRowIndex = std::max(0, g_selectedRowIndex - visibleRowCount + 1);
+
+    // Pop clip rect from DrawCategories
+    drawList->PopClipRect();
+
+    // Draw scroll bar
+    if (rowCount > visibleRowCount)
+    {
+        float totalHeight = (clipRectMax.y - clipRectMin.y);
+        float heightRatio = float(visibleRowCount) / float(rowCount);
+        float offsetRatio = float(g_firstVisibleRowIndex) / float(rowCount);
+        float minY = offsetRatio * totalHeight + clipRectMin.y;
+
+        drawList->AddRectFilled(
+            { clipRectMax.x + gridSize, minY },
+            { clipRectMax.x + gridSize * 2.0f, minY + totalHeight * heightRatio },
+            IM_COL32(0, 128, 0, 255)
+        );
+    }
 }
 
 void DrawSettingsPanel()
@@ -552,9 +570,6 @@ void DrawSettingsPanel()
     DrawContainer(settingsMin, settingsMax);
     DrawCategories();
     DrawConfigOptions();
-
-    // Pop clip rect from DrawCategories
-    drawList->PopClipRect();
 
     // Pop clip rect from DrawContainer
     drawList->PopClipRect();
