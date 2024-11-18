@@ -43,15 +43,10 @@ namespace SWA
 
     struct SPadState
     {
-        SWA_INSERT_PADDING(0x20);
-
         be<uint32_t> DownState;
         be<uint32_t> UpState;
         be<uint32_t> TappedState;
         be<uint32_t> ReleasedState;
-
-        // TODO: This structure seems different than the Generations counterpart,
-        // these paddings might not be there.
 
         be<float> LeftStickHorizontal;
         be<float> LeftStickVertical;
@@ -66,7 +61,7 @@ namespace SWA
         be<float> LeftTrigger;
         be<float> RightTrigger;
 
-        SWA_INSERT_PADDING(0x24);
+        SWA_INSERT_PADDING(0x08);
 
         bool IsDown(const EKeyState in_Keys) const;
         bool IsUp(const EKeyState in_Keys) const;

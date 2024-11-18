@@ -11,10 +11,9 @@ namespace SWA
         // TODO: Hedgehog::Base::TSynchronizedPtr<CInputState>
         static CInputState* GetInstance();
 
-        SPadState m_PadStates[40];
-        SWA_INSERT_PADDING(0x50);
+        SWA_INSERT_PADDING(0x4);
+        SPadState m_PadStates[8];
         be<uint32_t> m_CurrentPadStateIndex;
-        SWA_INSERT_PADDING(0x04);
 
         const SPadState& GetPadState() const;
     };
