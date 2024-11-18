@@ -37,6 +37,7 @@ public:
     CONFIG_DEFINE_CALLBACK("Video", float, ResolutionScale, 1.0f,
     {
         def->NameLocale = &g_ResolutionScale_locale;
+        def->DescLocale = &g_ResolutionScale_desc_locale;
         def->Value = std::clamp(def->Value, 0.25f, 2.0f);
     });
 

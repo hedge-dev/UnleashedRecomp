@@ -10,8 +10,8 @@ ConfigDef<T>::ConfigDef(std::string section, std::string name, T defaultValue) :
 
 // CONFIG_DEFINE_LOCALISED
 template<typename T>
-ConfigDef<T>::ConfigDef(std::string section, std::string name, std::unordered_map<ELanguage, std::string>* nameLocale, T defaultValue)
-    : Section(section), Name(name), NameLocale(nameLocale), DefaultValue(defaultValue)
+ConfigDef<T>::ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, CONFIG_LOCALE* descLocale, T defaultValue)
+    : Section(section), Name(name), NameLocale(nameLocale), DescLocale(descLocale), DefaultValue(defaultValue)
 {
     Config::Definitions.emplace_back(this);
 }
@@ -29,8 +29,8 @@ ConfigDef<T>::ConfigDef(std::string section, std::string name, T defaultValue, s
 
 // CONFIG_DEFINE_ENUM_LOCALISED
 template<typename T>
-ConfigDef<T>::ConfigDef(std::string section, std::string name, std::unordered_map<ELanguage, std::string>* nameLocale, T defaultValue, std::unordered_map<std::string, T>* enumTemplate, std::unordered_map<ELanguage, std::unordered_map<T, std::string>>* enumLocale)
-    : Section(section), Name(name), NameLocale(nameLocale), DefaultValue(defaultValue), EnumTemplate(enumTemplate), EnumLocale(enumLocale)
+ConfigDef<T>::ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, CONFIG_LOCALE* descLocale, T defaultValue, std::unordered_map<std::string, T>* enumTemplate, CONFIG_ENUM_LOCALE(T)* enumLocale)
+    : Section(section), Name(name), NameLocale(nameLocale), DescLocale(descLocale), DefaultValue(defaultValue), EnumTemplate(enumTemplate), EnumLocale(enumLocale)
 {
     for (const auto& pair : *EnumTemplate)
         EnumTemplateReverse[pair.second] = pair.first;
@@ -44,6 +44,27 @@ ConfigDef<T>::ConfigDef(std::string section, std::string name, T defaultValue, s
     : Section(section), Name(name), DefaultValue(defaultValue), ReadCallback(readCallback)
 {
     Config::Definitions.emplace_back(this);
+}
+
+template<typename T>
+std::string ConfigDef<T>::GetDescription() const
+{
+    if (!DescLocale)
+        return "";
+
+    if (!DescLocale->count(Config::Language))
+    {
+        if (DescLocale->count(ELanguage::English))
+        {
+            return DescLocale->at(ELanguage::English);
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    return DescLocale->at(Config::Language);
 }
 
 template<typename T>
@@ -71,7 +92,7 @@ template<typename T>
 std::string ConfigDef<T>::GetValueLocalised() const
 {
     auto language = Config::Language;
-    std::unordered_map<ELanguage, std::unordered_map<T, std::string>>* locale = nullptr;
+    CONFIG_ENUM_LOCALE(T)* locale = nullptr;
 
     if constexpr (std::is_enum_v<T>)
     {

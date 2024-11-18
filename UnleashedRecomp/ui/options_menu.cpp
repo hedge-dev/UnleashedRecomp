@@ -3,9 +3,15 @@
 #include <kernel/memory.h>
 #include <gpu/imgui_common.h>
 
+constexpr float COMMON_PADDING_POS_Y = 118.0f;
+constexpr float COMMON_PADDING_POS_X = 30.0f;
+constexpr float INFO_CONTAINER_POS_X = 870.0f;
+
 static ImFont* g_seuratFont;
 static ImFont* g_dfsogeistdFont;
 static ImFont* g_newRodinFont;
+
+static const IConfigDef* g_selectedItem;
 
 void OptionsMenu::Init()
 {
@@ -52,6 +58,26 @@ static void SetShaderModifier(uint32_t shaderModifier)
 {
     auto callbackData = AddCallback(ImGuiCallback::SetShaderModifier);
     callbackData->setShaderModifier.shaderModifier = shaderModifier;
+}
+
+// TODO: add delay argument to delay when to start the marquee. Unleashed menus have ~0.9 seconds of delay before the text beings to marquee.
+// TODO: reset the marquee position when a different item is selected. This might have to be handled once we use events for controller input.
+static void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 color, const char* text, float speed)
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+    auto rectWidth = max.x - min.x;
+    auto textSize = g_seuratFont->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text);
+    auto textX = pos.x - fmodf(speed * ImGui::GetTime(), textSize.x + rectWidth);
+
+    drawList->PushClipRect(min, max, true);
+
+    if (textX < pos.x)
+        drawList->AddText(font, fontSize, { textX, pos.y }, color, text);
+
+    if (textX + textSize.x < pos.x)
+        drawList->AddText(font, fontSize, { textX + textSize.x + rectWidth, pos.y }, color, text);
+
+    drawList->PopClipRect();
 }
 
 static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, int32_t outlineSize, ImU32 outlineColor)
@@ -293,7 +319,7 @@ static void DrawCategories()
 }
 
 template<typename T>
-static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T>& config)
+static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T>* config)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
@@ -302,26 +328,34 @@ static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T>& config)
     constexpr ImU32 COLOR0 = IM_COL32(0xE2, 0x71, 0x22, 0x80);
     constexpr ImU32 COLOR1 = IM_COL32(0x92, 0xFF, 0x31, 0x80);
 
-    float gridSize = Scale(GRID_SIZE);
-    float optionWidth = gridSize * 56.0f;
-    float optionHeight = gridSize * 5.5f;
-    float optionPadding = gridSize * 0.5f;
-    float valueWidth = gridSize * 24.0f;
-    float valueHeight = gridSize * 3.0f;
+    auto gridSize = Scale(GRID_SIZE);
+    auto optionWidth = gridSize * 56.0f;
+    auto optionHeight = gridSize * 5.5f;
+    auto optionPadding = gridSize * 0.5f;
+    auto valueWidth = gridSize * 24.0f;
+    auto valueHeight = gridSize * 3.0f;
 
     // Left side
     ImVec2 min = { clipRectMin.x, clipRectMin.y + (optionHeight + optionPadding) * rowIndex };
     ImVec2 max = { min.x + optionWidth, min.y + optionHeight };
 
-    if (ImGui::IsMouseHoveringRect(min, max, false))
-        drawList->AddRectFilledMultiColor(min, max, COLOR0, COLOR0, COLOR1, COLOR1);
-
-    auto configName = config.GetNameLocalised();
-
-    float size = Scale(26.0f);
+    auto configName = config->GetNameLocalised();
+    auto size = Scale(26.0f);
     auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, configName.c_str());
 
-    drawList->AddText(g_seuratFont, size, { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f }, IM_COL32_WHITE, configName.c_str());
+    ImVec2 textPos = { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f };
+    ImVec4 textClipRect = { min.x, min.y, max.x, max.y };
+
+    if (ImGui::IsMouseHoveringRect(min, max, false))
+    {
+        g_selectedItem = config;
+        drawList->AddRectFilledMultiColor(min, max, COLOR0, COLOR0, COLOR1, COLOR1);
+        DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, IM_COL32_WHITE, configName.c_str(), 250.0f);
+    }
+    else
+    {
+        drawList->AddText(g_seuratFont, size, textPos, IM_COL32_WHITE, configName.c_str(), 0, 0.0f, &textClipRect);
+    }
 
     // Right side
     min = { max.x + (clipRectMax.x - max.x - valueWidth) / 2.0f, min.y + (optionHeight - valueHeight) / 2.0f };
@@ -335,7 +369,7 @@ static void DrawConfigOption(int32_t rowIndex, const ConfigDef<T>& config)
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
-    auto valueText = config.GetValueLocalised();
+    auto valueText = config->GetValueLocalised();
 
     size = Scale(20.0f);
     textSize = g_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.data());
@@ -370,44 +404,114 @@ static void DrawConfigOptions()
     switch (g_categoryIndex)
     {
     case 0: // SYSTEM
-        DrawConfigOption(rowIndex++, Config::Language);
-        DrawConfigOption(rowIndex++, Config::Hints);
-        DrawConfigOption(rowIndex++, Config::ControlTutorial);
-        DrawConfigOption(rowIndex++, Config::SaveScoreAtCheckpoints);
-        DrawConfigOption(rowIndex++, Config::UnleashOutOfControlDrain);
-        DrawConfigOption(rowIndex++, Config::WerehogHubTransformVideo);
-        DrawConfigOption(rowIndex++, Config::LogoSkip);
+        DrawConfigOption(rowIndex++, &Config::Language);
+        DrawConfigOption(rowIndex++, &Config::Hints);
+        DrawConfigOption(rowIndex++, &Config::ControlTutorial);
+        DrawConfigOption(rowIndex++, &Config::SaveScoreAtCheckpoints);
+        DrawConfigOption(rowIndex++, &Config::UnleashOutOfControlDrain);
+        DrawConfigOption(rowIndex++, &Config::WerehogHubTransformVideo);
+        DrawConfigOption(rowIndex++, &Config::LogoSkip);
         break;
     case 1: // CONTROLS
-        DrawConfigOption(rowIndex++, Config::CameraXInvert);
-        DrawConfigOption(rowIndex++, Config::CameraYInvert);
-        DrawConfigOption(rowIndex++, Config::XButtonHoming);
-        DrawConfigOption(rowIndex++, Config::UnleashCancel);
+        DrawConfigOption(rowIndex++, &Config::CameraXInvert);
+        DrawConfigOption(rowIndex++, &Config::CameraYInvert);
+        DrawConfigOption(rowIndex++, &Config::XButtonHoming);
+        DrawConfigOption(rowIndex++, &Config::UnleashCancel);
         break;
     case 2: // AUDIO
-        DrawConfigOption(rowIndex++, Config::MusicVolume);
-        DrawConfigOption(rowIndex++, Config::SEVolume);
-        DrawConfigOption(rowIndex++, Config::VoiceLanguage);
-        DrawConfigOption(rowIndex++, Config::Subtitles);
-        DrawConfigOption(rowIndex++, Config::WerehogBattleMusic);
+        DrawConfigOption(rowIndex++, &Config::MusicVolume);
+        DrawConfigOption(rowIndex++, &Config::SEVolume);
+        DrawConfigOption(rowIndex++, &Config::VoiceLanguage);
+        DrawConfigOption(rowIndex++, &Config::Subtitles);
+        DrawConfigOption(rowIndex++, &Config::WerehogBattleMusic);
         break;
     case 3: // VIDEO
         // TODO: expose WindowWidth/WindowHeight as WindowSize.
-        DrawConfigOption(rowIndex++, Config::ResolutionScale);
-        DrawConfigOption(rowIndex++, Config::Fullscreen);
-        DrawConfigOption(rowIndex++, Config::VSync);
-        DrawConfigOption(rowIndex++, Config::TripleBuffering);
-        DrawConfigOption(rowIndex++, Config::FPS);
-        DrawConfigOption(rowIndex++, Config::Brightness);
-        DrawConfigOption(rowIndex++, Config::AntiAliasing);
-        DrawConfigOption(rowIndex++, Config::ShadowResolution);
-        DrawConfigOption(rowIndex++, Config::GITextureFiltering);
-        DrawConfigOption(rowIndex++, Config::AlphaToCoverage);
-        DrawConfigOption(rowIndex++, Config::MotionBlur);
-        DrawConfigOption(rowIndex++, Config::Xbox360ColourCorrection);
-        DrawConfigOption(rowIndex++, Config::MovieScaleMode);
-        DrawConfigOption(rowIndex++, Config::UIScaleMode);
+        DrawConfigOption(rowIndex++, &Config::ResolutionScale);
+        DrawConfigOption(rowIndex++, &Config::Fullscreen);
+        DrawConfigOption(rowIndex++, &Config::VSync);
+        DrawConfigOption(rowIndex++, &Config::TripleBuffering);
+        DrawConfigOption(rowIndex++, &Config::FPS);
+        DrawConfigOption(rowIndex++, &Config::Brightness);
+        DrawConfigOption(rowIndex++, &Config::AntiAliasing);
+        DrawConfigOption(rowIndex++, &Config::ShadowResolution);
+        DrawConfigOption(rowIndex++, &Config::GITextureFiltering);
+        DrawConfigOption(rowIndex++, &Config::AlphaToCoverage);
+        DrawConfigOption(rowIndex++, &Config::MotionBlur);
+        DrawConfigOption(rowIndex++, &Config::Xbox360ColourCorrection);
+        DrawConfigOption(rowIndex++, &Config::MovieScaleMode);
+        DrawConfigOption(rowIndex++, &Config::UIScaleMode);
         break;
+    }
+}
+
+void DrawSettingsPanel()
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+
+    ImVec2 settingsMin = { Scale(AlignToNextGrid(COMMON_PADDING_POS_X)), Scale(AlignToNextGrid(COMMON_PADDING_POS_Y)) };
+    ImVec2 settingsMax = { Scale(AlignToNextGrid(INFO_CONTAINER_POS_X - COMMON_PADDING_POS_X)), Scale(AlignToNextGrid(720.0f - COMMON_PADDING_POS_Y)) };
+
+    DrawContainer(settingsMin, settingsMax);
+    DrawCategories();
+    DrawConfigOptions();
+
+    // Pop clip rect from DrawCategories
+    drawList->PopClipRect();
+
+    // Pop clip rect from DrawContainer
+    drawList->PopClipRect();
+}
+
+void DrawInfoPanel()
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+
+    ImVec2 infoMin = { Scale(AlignToNextGrid(INFO_CONTAINER_POS_X)), Scale(AlignToNextGrid(COMMON_PADDING_POS_Y)) };
+    ImVec2 infoMax = { Scale(AlignToNextGrid(1280.0f - COMMON_PADDING_POS_X)), Scale(AlignToNextGrid(720.0f - COMMON_PADDING_POS_Y)) };
+
+    DrawContainer(infoMin, infoMax);
+
+    auto clipRectMin = drawList->GetClipRectMin();
+    auto clipRectMax = drawList->GetClipRectMax();
+
+    ImVec2 thumbnailMax = { clipRectMin.x + ScaleX(343.0f), clipRectMin.y + ScaleY(193.0f) };
+
+    // Thumbnail box
+    drawList->AddRectFilled(clipRectMin, thumbnailMax, IM_COL32(0, 0, 0, 255));
+
+    if (g_selectedItem)
+    {
+        auto desc = g_selectedItem->GetDescription();
+
+        // Specialised description for resolution scale
+        if (g_selectedItem->GetName() == "ResolutionScale")
+        {
+            char buf[100];
+            auto resScale = *(float*)g_selectedItem->GetValue();
+
+            std::snprintf(buf, sizeof(buf), desc.c_str(),
+                (int)((float)Window::s_width * resScale),
+                (int)((float)Window::s_height * resScale));
+
+            desc = buf;
+        }
+
+        auto size = Scale(26.0f);
+        auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, desc.c_str());
+
+        drawList->AddText(
+            g_seuratFont,
+            size,
+            { clipRectMin.x, thumbnailMax.y + size },
+            IM_COL32_WHITE,
+            desc.c_str(),
+            0,
+            thumbnailMax.x - clipRectMin.x
+        );
+
+        // Pop clip rect from DrawContainer
+        drawList->PopClipRect();
     }
 }
 
@@ -425,24 +529,8 @@ void OptionsMenu::Draw()
         drawList->AddRectFilled({ 0.0f, 0.0f }, res, IM_COL32(0, 0, 0, 127));
     
     DrawScanlineBars();
-    
-    constexpr float CONTAINER_POS_X = 236.0f;
-    constexpr float CONTAINER_POS_Y = 118.0f;
-    
-    ImVec2 min = { Scale(AlignToNextGrid(CONTAINER_POS_X)), Scale(AlignToNextGrid(CONTAINER_POS_Y)) };
-    ImVec2 max = { Scale(AlignToNextGrid(1280.0f - CONTAINER_POS_X)), Scale(AlignToNextGrid(720.0f - CONTAINER_POS_Y)) };
-    
-    DrawContainer(min, max);
-    
-    DrawCategories();
-    
-    DrawConfigOptions();
-    
-    // Pop clip rect from DrawCategories
-    drawList->PopClipRect();
-    
-    // Pop clip rect from DrawContainer
-    drawList->PopClipRect();
+    DrawSettingsPanel();
+    DrawInfoPanel();
 }
 
 void OptionsMenu::Open(bool stage)

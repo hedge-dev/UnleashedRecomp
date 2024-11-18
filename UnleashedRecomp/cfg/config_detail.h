@@ -8,13 +8,13 @@
     inline static ConfigDef<type> name{section, #name, defaultValue};
 
 #define CONFIG_DEFINE_LOCALISED(section, type, name, defaultValue) \
-    inline static ConfigDef<type> name{section, #name, &g_##name##_locale, defaultValue};
+    inline static ConfigDef<type> name{section, #name, &g_##name##_locale, &g_##name##_desc_locale, defaultValue};
 
 #define CONFIG_DEFINE_ENUM(section, type, name, defaultValue) \
     inline static ConfigDef<type> name{section, #name, defaultValue, &g_##type##_template};
 
 #define CONFIG_DEFINE_ENUM_LOCALISED(section, type, name, defaultValue) \
-    inline static ConfigDef<type> name{section, #name, &g_##name##_locale, defaultValue, &g_##type##_template, &g_##type##_locale};
+    inline static ConfigDef<type> name{section, #name, &g_##name##_locale, &g_##name##_desc_locale, defaultValue, &g_##type##_template, &g_##type##_locale};
 
 #define CONFIG_DEFINE_CALLBACK(section, type, name, defaultValue, readCallback) \
     inline static ConfigDef<type> name{section, #name, defaultValue, [](ConfigDef<type>* def) readCallback};
@@ -22,8 +22,8 @@
 #define CONFIG_DEFINE_ENUM_TEMPLATE(type) \
     inline static std::unordered_map<std::string, type> g_##type##_template =
 
-#define CONFIG_GET_DEFAULT(name) Config::name.DefaultValue
-#define CONFIG_SET_DEFAULT(name) Config::name.MakeDefault();
+#define CONFIG_LOCALE std::unordered_map<ELanguage, std::string>
+#define CONFIG_ENUM_LOCALE(type) std::unordered_map<ELanguage, std::unordered_map<type, std::string>>
 
 #define WINDOWPOS_CENTRED 0x2FFF0000
 
@@ -169,8 +169,9 @@ public:
     virtual void MakeDefault() = 0;
     virtual std::string_view GetSection() const = 0;
     virtual std::string_view GetName() const = 0;
+    virtual std::string GetDescription() const = 0;
     virtual std::string GetNameLocalised() const = 0;
-    virtual void* GetValue() = 0;
+    virtual const void* GetValue() const = 0;
     virtual std::string GetValueLocalised() const = 0;
     virtual std::string GetDefinition(bool withSection = false) const = 0;
     virtual std::string ToString(bool strWithQuotes = true) const = 0;
@@ -182,25 +183,26 @@ class ConfigDef : public IConfigDef
 public:
     std::string Section{};
     std::string Name{};
-    std::unordered_map<ELanguage, std::string>* NameLocale;
+    CONFIG_LOCALE* NameLocale;
+    CONFIG_LOCALE* DescLocale;
     T DefaultValue{};
     T Value{ DefaultValue };
     std::unordered_map<std::string, T>* EnumTemplate;
     std::map<T, std::string> EnumTemplateReverse{};
-    std::unordered_map<ELanguage, std::unordered_map<T, std::string>>* EnumLocale;
+    CONFIG_ENUM_LOCALE(T)* EnumLocale;
     std::function<void(ConfigDef<T>*)> ReadCallback;
 
     // CONFIG_DEFINE
     ConfigDef(std::string section, std::string name, T defaultValue);
 
     // CONFIG_DEFINE_LOCALISED
-    ConfigDef(std::string section, std::string name, std::unordered_map<ELanguage, std::string>* nameLocale, T defaultValue);
+    ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, CONFIG_LOCALE* descLocale, T defaultValue);
 
     // CONFIG_DEFINE_ENUM
     ConfigDef(std::string section, std::string name, T defaultValue, std::unordered_map<std::string, T>* enumTemplate);
 
     // CONFIG_DEFINE_ENUM_LOCALISED
-    ConfigDef(std::string section, std::string name, std::unordered_map<ELanguage, std::string>* nameLocale, T defaultValue, std::unordered_map<std::string, T>* enumTemplate, std::unordered_map<ELanguage, std::unordered_map<T, std::string>>* enumLocale);
+    ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, CONFIG_LOCALE* descLocale, T defaultValue, std::unordered_map<std::string, T>* enumTemplate, CONFIG_ENUM_LOCALE(T)* enumLocale);
 
     // CONFIG_DEFINE_CALLBACK
     ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T>*)> readCallback);
@@ -246,9 +248,11 @@ public:
         return Name;
     }
 
+    std::string GetDescription() const override;
+
     std::string GetNameLocalised() const override;
 
-    void* GetValue() override
+    const void* GetValue() const override
     {
         return &Value;
     }
