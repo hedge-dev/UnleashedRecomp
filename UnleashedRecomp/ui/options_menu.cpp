@@ -217,7 +217,11 @@ static void DrawContainer(const ImVec2& min, const ImVec2& max)
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_CHECKERBOARD);
 
-    drawList->AddRectFilled(min, max, COLOR); // Container
+    drawList->AddRectFilled(min, { min.x + gridSize, max.y }, COLOR); // Container outline left
+    drawList->AddRectFilled({ max.x - gridSize, min.y }, max, COLOR); // Container outline right
+    drawList->AddRectFilled({ min.x + gridSize, min.y }, { max.x - gridSize, min.y + gridSize }, COLOR); // Container outline top
+    drawList->AddRectFilled({ min.x + gridSize, max.y - gridSize }, { max.x - gridSize, max.y }, COLOR); // Container outline bottom
+
     drawList->AddRectFilled({ min.x + gridSize, min.y + gridSize }, { max.x - gridSize, max.y - gridSize }, INNER_COLOR); // Inner container
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
