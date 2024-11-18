@@ -202,7 +202,7 @@ public:
     std::unordered_map<std::string, T>* EnumTemplate;
     std::map<T, std::string> EnumTemplateReverse{};
     CONFIG_ENUM_LOCALE(T)* EnumLocale;
-    std::function<void(ConfigDef<T>*)> ReadCallback;
+    std::function<void(ConfigDef<T>*)> Callback;
 
     // CONFIG_DEFINE
     ConfigDef(std::string section, std::string name, T defaultValue);
@@ -217,7 +217,7 @@ public:
     ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, CONFIG_LOCALE* descLocale, T defaultValue, std::unordered_map<std::string, T>* enumTemplate, CONFIG_ENUM_LOCALE(T)* enumLocale);
 
     // CONFIG_DEFINE_CALLBACK
-    ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T>*)> readCallback);
+    ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T>*)> callback);
 
     void ReadValue(toml::v3::ex::parse_result& toml) override
     {
@@ -240,8 +240,8 @@ public:
                 Value = section[Name].value_or(DefaultValue);
             }
 
-            if (ReadCallback)
-                ReadCallback(this);
+            if (Callback)
+                Callback(this);
         }
     }
 

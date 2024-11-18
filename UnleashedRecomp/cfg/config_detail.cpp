@@ -40,8 +40,8 @@ ConfigDef<T>::ConfigDef(std::string section, std::string name, CONFIG_LOCALE* na
 
 // CONFIG_DEFINE_CALLBACK
 template<typename T>
-ConfigDef<T>::ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T>*)> readCallback)
-    : Section(section), Name(name), DefaultValue(defaultValue), ReadCallback(readCallback)
+ConfigDef<T>::ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T>*)> callback)
+    : Section(section), Name(name), DefaultValue(defaultValue), Callback(callback)
 {
     Config::Definitions.emplace_back(this);
 }

@@ -2,6 +2,7 @@
 
 #include "config_detail.h"
 #include "config_locale.h"
+#include "exports.h"
 
 class Config
 {
@@ -41,7 +42,14 @@ public:
         def->Value = std::clamp(def->Value, 0.25f, 2.0f);
     });
 
-    CONFIG_DEFINE_LOCALISED("Video", bool, Fullscreen, false);
+    CONFIG_DEFINE_CALLBACK("Video", bool, Fullscreen, false,
+    {
+        def->NameLocale = &g_Fullscreen_locale;
+        def->DescLocale = &g_Fullscreen_desc_locale;
+
+        Window_SetFullscreen(def->Value);
+    });
+
     CONFIG_DEFINE_LOCALISED("Video", bool, VSync, true);
     CONFIG_DEFINE_LOCALISED("Video", bool, TripleBuffering, true);
     CONFIG_DEFINE_LOCALISED("Video", int32_t, FPS, 60);

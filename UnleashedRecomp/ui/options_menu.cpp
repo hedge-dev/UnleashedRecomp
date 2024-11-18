@@ -405,7 +405,12 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         if constexpr (std::is_same_v<T, bool>)
         {
             if (padState.IsTapped(SWA::eKeyState_A))
+            {
                 config->Value = !config->Value;
+
+                if (config->Callback)
+                    config->Callback(config);
+            }
         }
         else
         {
@@ -586,6 +591,9 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
             config->Value = std::clamp(config->Value, valueMin, valueMax);
         }
+
+        if (config->Callback)
+            config->Callback(config);
     }
 
     std::string valueText;

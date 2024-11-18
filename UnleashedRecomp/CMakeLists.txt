@@ -82,6 +82,7 @@ set(SWA_UI_CXX_SOURCES
 )
 
 set(SWA_CXX_SOURCES
+    "exports.cpp"
     "main.cpp"
     "misc_impl.cpp"
     "stdafx.cpp"
