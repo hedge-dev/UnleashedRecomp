@@ -345,7 +345,7 @@ static void DrawCategories()
         ResetGradient();
     }
 
-    drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, { clipRectMax.x - gridSize, clipRectMax.y });
+    drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, { clipRectMax.x - gridSize, clipRectMax.y - gridSize });
 }
 
 template<typename T>
