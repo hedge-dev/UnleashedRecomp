@@ -257,6 +257,7 @@ static constexpr const char* CATEGORIES[] =
 
 static int32_t g_categoryIndex;
 static int32_t g_firstVisibleRowIndex;
+static int32_t g_prevSelectedRowIndex;
 static int32_t g_selectedRowIndex;
 static double g_rowSelectionTime;
 static bool g_leftWasHeld;
@@ -271,6 +272,7 @@ static void ResetSelection()
 {
     g_firstVisibleRowIndex = 0;
     g_selectedRowIndex = 0;
+    g_prevSelectedRowIndex = 0;
     g_rowSelectionTime = ImGui::GetTime();
     g_leftWasHeld = false;
     g_upWasHeld = false;
@@ -499,7 +501,12 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
     if (g_selectedItem == config)
     {
-        drawList->AddRectFilledMultiColor(min, max, COLOR0, COLOR0, COLOR1, COLOR1);
+        float prevItemOffset = (g_prevSelectedRowIndex - g_selectedRowIndex) * (optionHeight + optionPadding);
+        double animRatio = std::clamp((ImGui::GetTime() - g_rowSelectionTime) * 60.0 / 8.0, 0.0, 1.0);
+        prevItemOffset *= pow(1.0 - animRatio, 3.0);
+
+        drawList->AddRectFilledMultiColor({ min.x, min.y + prevItemOffset }, { max.x, max.y + prevItemOffset }, COLOR0, COLOR0, COLOR1, COLOR1);
+
         DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, IM_COL32_WHITE, configName.c_str(), g_rowSelectionTime, 0.9, 250.0);
     }
     else
@@ -755,6 +762,8 @@ static void DrawConfigOptions()
     bool scrollUp = !g_upWasHeld && upIsHeld;
     bool scrollDown = !g_downWasHeld && downIsHeld;
 
+    int32_t prevSelectedRowIndex = g_selectedRowIndex;
+
     if (scrollUp)
     {
         --g_selectedRowIndex;
@@ -771,6 +780,7 @@ static void DrawConfigOptions()
     if (scrollUp || scrollDown)
     {
         g_rowSelectionTime = ImGui::GetTime();
+        g_prevSelectedRowIndex = prevSelectedRowIndex;
         PlaySound("sys_worldmap_cursor");
     }
 
@@ -782,11 +792,22 @@ static void DrawConfigOptions()
     auto clipRectMax = drawList->GetClipRectMax();
     int32_t visibleRowCount = int32_t(floor((clipRectMax.y - clipRectMin.y) / optionHeightWithPadding));
 
+    bool disableMoveAnimation = false;
+
     if (g_firstVisibleRowIndex > g_selectedRowIndex)
+    {
         g_firstVisibleRowIndex = g_selectedRowIndex;
+        disableMoveAnimation = true;
+    }
 
     if (g_firstVisibleRowIndex + visibleRowCount - 1 < g_selectedRowIndex)
+    {
         g_firstVisibleRowIndex = std::max(0, g_selectedRowIndex - visibleRowCount + 1);
+        disableMoveAnimation = true;
+    }
+
+    if (disableMoveAnimation)
+        g_prevSelectedRowIndex = g_selectedRowIndex;
 
     // Pop clip rect from DrawCategories
     drawList->PopClipRect();
