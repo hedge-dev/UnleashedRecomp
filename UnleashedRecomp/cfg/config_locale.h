@@ -235,7 +235,7 @@ CONFIG_DEFINE_LOCALE(WerehogBattleMusic)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(WerehogBattleMusic)
 {
-    { ELanguage::English, "Set whether to play the Werehog battle theme during combat." }
+    { ELanguage::English, "Set whether to play the Werehog battle theme during combat.\n\nThis option will apply the next time you're in combat." }
 };
 
 CONFIG_DEFINE_LOCALE(WindowSize)
