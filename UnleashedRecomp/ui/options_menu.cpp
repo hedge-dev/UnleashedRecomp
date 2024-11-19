@@ -324,7 +324,7 @@ static void DrawCategories()
     if (moveLeft || moveRight)
     {
         ResetSelection();
-        PlaySound("sys_worldmap_cursor");
+        PlaySound("sys_actstg_score");
     }
 
     auto drawList = ImGui::GetForegroundDrawList();
@@ -448,7 +448,10 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
                     VideoConfigValueChangedCallback(config);
 
-                    PlaySound("sys_worldmap_cursor");
+                    if (config->Value)
+                        PlaySound("sys_actstg_pausedecide");
+                    else
+                        PlaySound("sys_actstg_pausecansel");
                 }
             }
             else
@@ -632,7 +635,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             config->Value = it->first;
 
             if (increment || decrement)
-                PlaySound("sys_worldmap_cursor");
+                PlaySound("sys_actstg_pausecursor");
         }
         else if constexpr (std::is_same_v<T, float>)
         {
