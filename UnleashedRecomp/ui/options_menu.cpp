@@ -610,7 +610,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                     config->Value += 0.01f;
 
                 deltaTime -= INCREMENT_TIME;
-            } while (deltaTime > 0.0f);
+            } while (fastIncrement && deltaTime > 0.0f);
 
             config->Value = std::clamp(config->Value, valueMin, valueMax);
         }
