@@ -247,10 +247,11 @@ static void DrawContainer(const ImVec2& min, const ImVec2& max)
     drawList->PushClipRect({ min.x + gridSize * 2.0f, min.y + gridSize * 2.0f }, { max.x - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
 }
 
+// TODO: localise this.
 static constexpr const char* CATEGORIES[] =
 {
     "SYSTEM",
-    "CONTROLS",
+    "INPUT",
     "AUDIO",
     "VIDEO"
 };

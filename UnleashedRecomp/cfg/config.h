@@ -17,11 +17,11 @@ public:
     CONFIG_DEFINE_LOCALISED("System", bool, WerehogHubTransformVideo, true);
     CONFIG_DEFINE_LOCALISED("System", bool, LogoSkip, false);
 
-    CONFIG_DEFINE_LOCALISED("Controls", bool, CameraXInvert, false);
-    CONFIG_DEFINE_LOCALISED("Controls", bool, CameraYInvert, false);
-    CONFIG_DEFINE_LOCALISED("Controls", bool, XButtonHoming, true);
-    CONFIG_DEFINE_LOCALISED("Controls", bool, UnleashCancel, false);
-    CONFIG_DEFINE_LOCALISED("Controls", bool, BackgroundInput, false);
+    CONFIG_DEFINE_LOCALISED("Input", bool, CameraXInvert, false);
+    CONFIG_DEFINE_LOCALISED("Input", bool, CameraYInvert, false);
+    CONFIG_DEFINE_LOCALISED("Input", bool, XButtonHoming, true);
+    CONFIG_DEFINE_LOCALISED("Input", bool, UnleashCancel, false);
+    CONFIG_DEFINE_LOCALISED("Input", bool, BackgroundInput, false);
 
     CONFIG_DEFINE_LOCALISED("Audio", float, MusicVolume, 1.0f);
     CONFIG_DEFINE_LOCALISED("Audio", float, SEVolume, 1.0f);
