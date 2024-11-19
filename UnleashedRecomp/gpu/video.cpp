@@ -1001,6 +1001,7 @@ static void CreateImGuiBackend()
 {
     ImGuiIO& io = ImGui::GetIO();
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+    io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
     OptionsMenu::Init();
     ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
 
