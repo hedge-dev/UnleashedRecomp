@@ -793,6 +793,7 @@ void DrawInfoPanel()
         auto size = Scale(26.0f);
         auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, desc.c_str());
 
+        // TODO: fix word wrap width not scaling to resolution.
         drawList->AddText(
             g_seuratFont,
             size,
