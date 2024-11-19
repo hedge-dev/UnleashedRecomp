@@ -248,12 +248,12 @@ static void DrawContainer(ImVec2 min, ImVec2 max)
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
 
-    constexpr uint32_t LINE_COLOR = IM_COL32(0, 89, 0, 255);
 
     double outerAlpha = ComputeMotion(CONTAINER_OUTER_TIME, CONTAINER_OUTER_DURATION);
     double innerAlpha = ComputeMotion(CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
     double backgroundAlpha = ComputeMotion(CONTAINER_BACKGROUND_TIME, CONTAINER_BACKGROUND_DURATION);
 
+    const uint32_t lineColor = IM_COL32(0, 89, 0, 255 * containerHeight);
     const uint32_t outerColor = IM_COL32(0, 49, 0, 255 * outerAlpha);
     const uint32_t innerColor = IM_COL32(0, 33, 0, 255 * innerAlpha);
     const uint32_t backgroundColor = IM_COL32(0, 0, 0, 223 * backgroundAlpha);
@@ -276,14 +276,14 @@ static void DrawContainer(ImVec2 min, ImVec2 max)
     float lineSize = Scale(2);
 
     // Top line
-    drawList->AddLine({ min.x + gridSize, min.y + gridSize }, { min.x + gridSize, min.y + gridSize * 2.0f }, LINE_COLOR, lineSize); // Vertical left
-    drawList->AddLine({ min.x + gridSize, min.y + gridSize }, { max.x - gridSize, min.y + gridSize }, LINE_COLOR, lineSize); // Horizontal
-    drawList->AddLine({ max.x - gridSize, min.y + gridSize }, { max.x - gridSize, min.y + gridSize * 2.0f }, LINE_COLOR, lineSize); // Vertical right
+    drawList->AddLine({ min.x + gridSize, min.y + gridSize }, { min.x + gridSize, min.y + gridSize * 2.0f }, lineColor, lineSize); // Vertical left
+    drawList->AddLine({ min.x + gridSize, min.y + gridSize }, { max.x - gridSize, min.y + gridSize }, lineColor, lineSize); // Horizontal
+    drawList->AddLine({ max.x - gridSize, min.y + gridSize }, { max.x - gridSize, min.y + gridSize * 2.0f }, lineColor, lineSize); // Vertical right
 
     // Bottom line
-    drawList->AddLine({ min.x + gridSize, max.y - gridSize }, { min.x + gridSize, max.y - gridSize * 2.0f }, LINE_COLOR, lineSize); // Vertical left
-    drawList->AddLine({ min.x + gridSize, max.y - gridSize }, { max.x - gridSize, max.y - gridSize }, LINE_COLOR, lineSize); // Horizontal
-    drawList->AddLine({ max.x - gridSize, max.y - gridSize }, { max.x - gridSize, max.y - gridSize * 2.0f }, LINE_COLOR, lineSize); // Vertical right
+    drawList->AddLine({ min.x + gridSize, max.y - gridSize }, { min.x + gridSize, max.y - gridSize * 2.0f }, lineColor, lineSize); // Vertical left
+    drawList->AddLine({ min.x + gridSize, max.y - gridSize }, { max.x - gridSize, max.y - gridSize }, lineColor, lineSize); // Horizontal
+    drawList->AddLine({ max.x - gridSize, max.y - gridSize }, { max.x - gridSize, max.y - gridSize * 2.0f }, lineColor, lineSize); // Vertical right
 
     // The draw area
     drawList->PushClipRect({ min.x + gridSize * 2.0f, min.y + gridSize * 2.0f }, { max.x - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
