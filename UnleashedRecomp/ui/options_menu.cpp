@@ -681,9 +681,9 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::FPS);
         DrawConfigOption(rowCount++, yOffset, &Config::Brightness);
         DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing);
+        DrawConfigOption(rowCount++, yOffset, &Config::AlphaToCoverage);
         DrawConfigOption(rowCount++, yOffset, &Config::ShadowResolution);
         DrawConfigOption(rowCount++, yOffset, &Config::GITextureFiltering);
-        DrawConfigOption(rowCount++, yOffset, &Config::AlphaToCoverage);
         DrawConfigOption(rowCount++, yOffset, &Config::MotionBlur);
         DrawConfigOption(rowCount++, yOffset, &Config::Xbox360ColourCorrection);
         DrawConfigOption(rowCount++, yOffset, &Config::MovieScaleMode);

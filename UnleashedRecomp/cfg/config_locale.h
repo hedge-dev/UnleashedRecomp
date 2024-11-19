@@ -137,16 +137,6 @@ CONFIG_DEFINE_DESCRIPTION_LOCALE(LogoSkip)
     { ELanguage::English, "Show the logos during the game's boot sequence." }
 };
 
-CONFIG_DEFINE_LOCALE(BackgroundInput)
-{
-    { ELanguage::English, "Allow Background Input" }
-};
-
-CONFIG_DEFINE_DESCRIPTION_LOCALE(BackgroundInput)
-{
-    { ELanguage::English, "Set whether to accept controller input whilst the game window is unfocused." }
-};
-
 CONFIG_DEFINE_LOCALE(CameraXInvert)
 {
     { ELanguage::English, "Invert Camera X" }
@@ -185,6 +175,16 @@ CONFIG_DEFINE_LOCALE(UnleashCancel)
 CONFIG_DEFINE_DESCRIPTION_LOCALE(UnleashCancel)
 {
     { ELanguage::English, "Set whether Unleash can be cancelled by pressing the input again." }
+};
+
+CONFIG_DEFINE_LOCALE(BackgroundInput)
+{
+    { ELanguage::English, "Allow Background Input" }
+};
+
+CONFIG_DEFINE_DESCRIPTION_LOCALE(BackgroundInput)
+{
+    { ELanguage::English, "Set whether to accept controller input whilst the game window is unfocused." }
 };
 
 CONFIG_DEFINE_LOCALE(MusicVolume)
@@ -338,6 +338,16 @@ CONFIG_DEFINE_ENUM_LOCALE(EAntiAliasing)
     }
 };
 
+CONFIG_DEFINE_LOCALE(AlphaToCoverage)
+{
+    { ELanguage::English, "Transparency Anti-Aliasing" }
+};
+
+CONFIG_DEFINE_DESCRIPTION_LOCALE(AlphaToCoverage)
+{
+    { ELanguage::English, "Set whether to apply anti-aliasing to alpha transparent textures." }
+};
+
 CONFIG_DEFINE_LOCALE(ShadowResolution)
 {
     { ELanguage::English, "Shadow Resolution" }
@@ -377,16 +387,6 @@ CONFIG_DEFINE_ENUM_LOCALE(EGITextureFiltering)
             { EGITextureFiltering::Bicubic,  "BICUBIC" },
         }
     }
-};
-
-CONFIG_DEFINE_LOCALE(AlphaToCoverage)
-{
-    { ELanguage::English, "Transparency Anti-Aliasing" }
-};
-
-CONFIG_DEFINE_DESCRIPTION_LOCALE(AlphaToCoverage)
-{
-    { ELanguage::English, "Set whether to apply anti-aliasing to alpha transparent textures." }
 };
 
 CONFIG_DEFINE_LOCALE(MotionBlur)

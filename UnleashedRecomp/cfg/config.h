@@ -56,10 +56,10 @@ public:
     CONFIG_DEFINE_LOCALISED("Video", int32_t, FPS, 60);
     CONFIG_DEFINE_LOCALISED("Video", float, Brightness, 0.5f);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EAntiAliasing, AntiAliasing, EAntiAliasing::MSAA4x);
+    CONFIG_DEFINE_LOCALISED("Video", bool, AlphaToCoverage, true);
     CONFIG_DEFINE("Video", size_t, AnisotropicFiltering, 16);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EShadowResolution, ShadowResolution, EShadowResolution::x4096);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EGITextureFiltering, GITextureFiltering, EGITextureFiltering::Bicubic);
-    CONFIG_DEFINE_LOCALISED("Video", bool, AlphaToCoverage, true);
     CONFIG_DEFINE_LOCALISED("Video", bool, MotionBlur, true);
     CONFIG_DEFINE_LOCALISED("Video", bool, Xbox360ColourCorrection, false);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EMovieScaleMode, MovieScaleMode, EMovieScaleMode::Fit);
