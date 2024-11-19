@@ -655,10 +655,10 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                 deltaTime -= INCREMENT_TIME;
             } while (fastIncrement && deltaTime > 0.0f);
 
-            config->Value = std::clamp(config->Value, valueMin, valueMax);
-
-            if (increment || decrement)
+            if ((increment || decrement) && (config->Value >= valueMin && config->Value <= valueMax))
                 PlaySound("sys_actstg_twn_speechbutton");
+
+            config->Value = std::clamp(config->Value, valueMin, valueMax);
         }
 
         if (config->Callback)
