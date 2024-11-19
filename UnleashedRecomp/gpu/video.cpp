@@ -1306,6 +1306,7 @@ static void BeginCommandList()
     g_pipelineState.renderTargetFormat = g_backBuffer->format;
     g_pipelineState.depthStencilFormat = RenderFormat::UNKNOWN;
 
+    g_swapChain->setVsyncEnabled(Config::VSync);
     g_swapChainValid &= !g_swapChain->needsResize();
 
     if (!g_swapChainValid)
@@ -3746,8 +3747,8 @@ void SetShadowResolutionMidAsmHook(PPCRegister& r11)
 
 static void SetResolution(be<uint32_t>* device)
 {
-    uint32_t width = uint32_t(g_swapChain->getWidth() * Config::ResolutionScale);
-    uint32_t height = uint32_t(g_swapChain->getHeight() * Config::ResolutionScale);
+    uint32_t width = uint32_t(round(g_swapChain->getWidth() * Config::ResolutionScale));
+    uint32_t height = uint32_t(round(g_swapChain->getHeight() * Config::ResolutionScale));
     device[46] = width == 0 ? 880 : width;
     device[47] = height == 0 ? 720 : height;
 }
@@ -3889,6 +3890,15 @@ void ParticleTestDrawIndexedPrimitiveMidAsmHook(PPCRegister& r7)
 {
     if (!g_triangleFanSupported)
         r7.u64 = std::size(g_particleTestIndexBuffer);
+}
+
+void VideoConfigValueChangedCallback(IConfigDef* config)
+{
+    // Config options that require internal resolution resize
+    g_needsResize |=
+        config == &Config::ResolutionScale ||
+        config == &Config::AntiAliasing ||
+        config == &Config::ShadowResolution;
 }
 
 GUEST_FUNCTION_HOOK(sub_82BD99B0, CreateDevice);

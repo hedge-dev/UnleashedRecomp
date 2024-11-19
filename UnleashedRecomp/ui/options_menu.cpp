@@ -371,6 +371,9 @@ static void DrawCategories()
     drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, { clipRectMax.x - gridSize, clipRectMax.y - gridSize });
 }
 
+// extern definition to avoid including "video.h", the header is quite large
+extern void VideoConfigValueChangedCallback(IConfigDef* config);
+
 template<typename T>
 static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* config, T valueMin = T(0), T valueCenter = T(0.5), T valueMax = T(1))
 {
@@ -417,6 +420,8 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
                     if (config->Callback)
                         config->Callback(config);
+
+                    VideoConfigValueChangedCallback(config);
                 }
             }
             else
@@ -432,6 +437,12 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                         g_rightWasHeld = false;
                         // remember value
                         s_oldValue = config->Value;
+                    }
+                    else
+                    {
+                        // released lock, call video callbacks if value is different
+                        if (config->Value != s_oldValue)
+                            VideoConfigValueChangedCallback(config);
                     }
                 }
                 else if (padState.IsTapped(SWA::eKeyState_B))
