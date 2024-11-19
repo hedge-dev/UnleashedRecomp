@@ -1,8 +1,10 @@
 #include "options_menu.h"
 #include "window.h"
-#include <kernel/memory.h>
-#include <gpu/imgui_common.h>
+
 #include <api/SWA/System/InputState.h>
+#include <gpu/imgui_common.h>
+#include <kernel/heap.h>
+#include <kernel/memory.h>
 
 constexpr float COMMON_PADDING_POS_Y = 118.0f;
 constexpr float COMMON_PADDING_POS_X = 30.0f;
@@ -276,6 +278,26 @@ static void ResetSelection()
     g_downWasHeld = false;
 }
 
+#undef PlaySound
+static void PlaySound(const char* name)
+{
+    void* soundPlayerSharedPtr = g_userHeap.Alloc(8);
+    GuestToHostFunction<void>(0x82B4DF50, soundPlayerSharedPtr, ((be<uint32_t>*)g_memory.Translate(0x83367900))->get(), 7, 0, 0);
+
+    auto soundPlayer = (be<uint32_t>*)g_memory.Translate(*(be<uint32_t>*)soundPlayerSharedPtr);
+    auto soundPlayerVtable = (be<uint32_t>*)g_memory.Translate(*soundPlayer);
+    uint32_t virtualFunction = *(soundPlayerVtable + 1);
+
+    size_t strLen = strlen(name);
+    void* strAllocation = g_userHeap.Alloc(strLen + 1);
+    memcpy(strAllocation, name, strLen + 1);
+    GuestToHostFunction<void>(virtualFunction, soundPlayer, strAllocation, 0);
+    g_userHeap.Free(strAllocation);
+
+    GuestToHostFunction<void>(0x822C0890, *((be<uint32_t>*)soundPlayerSharedPtr + 1));
+    g_userHeap.Free(soundPlayerSharedPtr);
+}
+
 static void DrawCategories()
 {
     auto inputState = SWA::CInputState::GetInstance();
@@ -300,7 +322,10 @@ static void DrawCategories()
     }
 
     if (moveLeft || moveRight)
+    {
         ResetSelection();
+        PlaySound("sys_worldmap_cursor");
+    }
 
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
@@ -422,6 +447,8 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                         config->Callback(config);
 
                     VideoConfigValueChangedCallback(config);
+
+                    PlaySound("sys_worldmap_cursor");
                 }
             }
             else
@@ -437,12 +464,16 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                         g_rightWasHeld = false;
                         // remember value
                         s_oldValue = config->Value;
+
+                        PlaySound("sys_worldmap_decide");
                     }
                     else
                     {
                         // released lock, call video callbacks if value is different
                         if (config->Value != s_oldValue)
                             VideoConfigValueChangedCallback(config);
+
+                        PlaySound("sys_worldmap_finaldecide");
                     }
                 }
                 else if (padState.IsTapped(SWA::eKeyState_B))
@@ -450,6 +481,8 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                     // released lock, restore old value
                     config->Value = s_oldValue;
                     g_lockedOnOption = false;
+
+                    PlaySound("sys_worldmap_cansel");
                 }
 
                 lockedOnOption = g_lockedOnOption;
@@ -543,8 +576,8 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             { max.x + trianglePadding + triangleWidth, (min.y + max.y) / 2.0f },
             COLOR);
 
-        bool leftIsHeld = padState.IsTapped(SWA::eKeyState_DpadLeft) || padState.LeftStickHorizontal < -0.5f;
-        bool rightIsHeld = padState.IsTapped(SWA::eKeyState_DpadRight) || padState.LeftStickHorizontal > 0.5f;
+        bool leftIsHeld = padState.IsDown(SWA::eKeyState_DpadLeft) || padState.LeftStickHorizontal < -0.5f;
+        bool rightIsHeld = padState.IsDown(SWA::eKeyState_DpadRight) || padState.LeftStickHorizontal > 0.5f;
 
         bool leftTapped = !g_leftWasHeld && leftIsHeld;
         bool rightTapped = !g_rightWasHeld && rightIsHeld;
@@ -597,6 +630,9 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             }
 
             config->Value = it->first;
+
+            if (increment || decrement)
+                PlaySound("sys_worldmap_cursor");
         }
         else if constexpr (std::is_same_v<T, float>)
         {
@@ -613,6 +649,9 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             } while (fastIncrement && deltaTime > 0.0f);
 
             config->Value = std::clamp(config->Value, valueMin, valueMax);
+
+            if (increment || decrement)
+                PlaySound("sys_actstg_twn_speechbutton");
         }
 
         if (config->Callback)
@@ -730,7 +769,10 @@ static void DrawConfigOptions()
     }
 
     if (scrollUp || scrollDown)
+    {
         g_rowSelectionTime = ImGui::GetTime();
+        PlaySound("sys_worldmap_cursor");
+    }
 
     g_upWasHeld = upIsHeld;
     g_downWasHeld = downIsHeld;
