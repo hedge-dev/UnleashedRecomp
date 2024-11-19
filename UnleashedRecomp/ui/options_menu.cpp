@@ -256,14 +256,19 @@ static constexpr const char* CATEGORIES[] =
 };
 
 static int32_t g_categoryIndex;
+static ImVec2 g_categoryAnimMin;
+static ImVec2 g_categoryAnimMax;
+
 static int32_t g_firstVisibleRowIndex;
 static int32_t g_prevSelectedRowIndex;
 static int32_t g_selectedRowIndex;
 static double g_rowSelectionTime;
+
 static bool g_leftWasHeld;
 static bool g_upWasHeld;
 static bool g_rightWasHeld;
 static bool g_downWasHeld;
+
 static bool g_lockedOnOption;
 static double g_lastTappedTime;
 static double g_lastIncrementTime;
@@ -298,6 +303,16 @@ static void PlaySound(const char* name)
 
     GuestToHostFunction<void>(0x822C0890, *((be<uint32_t>*)soundPlayerSharedPtr + 1));
     g_userHeap.Free(soundPlayerSharedPtr);
+}
+
+static float Lerp(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
+
+static ImVec2 Lerp(const ImVec2& a, const ImVec2& b, float t)
+{
+    return { a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t };
 }
 
 static void DrawCategories()
@@ -350,6 +365,8 @@ static void DrawCategories()
     float tabHeight = gridSize * 4.0f;
     float xOffset = ((clipRectMax.x - clipRectMin.x) - tabWidthSum) / 2.0f;
 
+    ImVec2 minVec[std::size(CATEGORIES)];
+
     for (size_t i = 0; i < std::size(CATEGORIES); i++)
     {
         ImVec2 min = { clipRectMin.x + xOffset, clipRectMin.y };
@@ -358,24 +375,44 @@ static void DrawCategories()
         ImVec2 max = { clipRectMin.x + xOffset, clipRectMin.y + tabHeight };
         xOffset += tabPadding;
 
-        uint32_t alpha = 235;
-
         if (g_categoryIndex == i)
         {
+            // Animation interrupted by entering/exiting or resizing the options menu
+            if (abs(g_categoryAnimMin.y - min.y) > 0.01f || abs(g_categoryAnimMax.y - max.y) > 0.01f)
+            {
+                g_categoryAnimMin = min;
+                g_categoryAnimMax = max;
+            }
+            else
+            {
+                float animWidth = g_categoryAnimMax.x - g_categoryAnimMin.x;
+                float width = max.x - min.x;
+                float height = max.y - min.y;
+                
+                animWidth = Lerp(animWidth, width, 1.0f - exp(-64.0f * ImGui::GetIO().DeltaTime));
+
+                g_categoryAnimMin = Lerp(g_categoryAnimMin, min, 1.0f - exp(-16.0f * ImGui::GetIO().DeltaTime));
+                g_categoryAnimMax = { g_categoryAnimMin.x + animWidth, g_categoryAnimMin.y + height };
+            }
+
             SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE_BUTTON);
 
-            drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178), IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178));
-            drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 0, 0, 13), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55), IM_COL32(0, 0, 0, 6));
-            drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13), IM_COL32(0, 130, 0, 111), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55));
+            drawList->AddRectFilledMultiColor(g_categoryAnimMin, g_categoryAnimMax, IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178), IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178));
+            drawList->AddRectFilledMultiColor(g_categoryAnimMin, g_categoryAnimMax, IM_COL32(0, 0, 0, 13), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55), IM_COL32(0, 0, 0, 6));
+            drawList->AddRectFilledMultiColor(g_categoryAnimMin, g_categoryAnimMax, IM_COL32(0, 130, 0, 13), IM_COL32(0, 130, 0, 111), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55));
 
             SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
         }
-        else
-        {
-            alpha = 128;
-        }
 
+        // Store to draw again later, otherwise the tab background gets drawn on top of text during the animation.
         min.x += textPadding;
+        minVec[i] = min; 
+    }
+
+    for (size_t i = 0; i < std::size(CATEGORIES); i++)
+    {
+        auto& min = minVec[i];
+        uint8_t alpha = i == g_categoryIndex ? 235 : 128;
 
         SetGradient(
             min,
@@ -384,11 +421,11 @@ static void DrawCategories()
             IM_COL32(255, 192, 0, alpha));
 
         DrawTextWithOutline(
-            g_dfsogeistdFont, 
+            g_dfsogeistdFont,
             size,
             min,
-            IM_COL32_WHITE, 
-            CATEGORIES[i], 
+            IM_COL32_WHITE,
+            CATEGORIES[i],
             Scale(3),
             IM_COL32_BLACK);
 
@@ -918,8 +955,9 @@ void OptionsMenu::Open(bool stage)
 {
     s_isVisible = true;
     s_isStage = stage;
-
     g_categoryIndex = 0;
+    g_categoryAnimMin = { 0.0f, 0.0f };
+    g_categoryAnimMax = { 0.0f, 0.0f };
 
     /* Store button state so we can track it later
        and prevent the first item being selected. */
