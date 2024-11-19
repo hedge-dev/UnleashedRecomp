@@ -448,10 +448,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
                     VideoConfigValueChangedCallback(config);
 
-                    if (config->Value)
-                        PlaySound("sys_actstg_pausedecide");
-                    else
-                        PlaySound("sys_actstg_pausecansel");
+                    PlaySound("sys_worldmap_finaldecide");
                 }
             }
             else
