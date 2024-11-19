@@ -17,6 +17,7 @@ static ImFont* g_newRodinFont;
 static const IConfigDef* g_selectedItem;
 
 static bool g_isEnterKeyBuffered = false;
+static double g_appearTime = 0.0;
 
 void OptionsMenu::Init()
 {
@@ -125,6 +126,16 @@ static float Scale(float size)
         return size * std::max(1.0f, io.DisplaySize.x / 1280.0f);
 }
 
+static float Lerp(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
+
+static ImVec2 Lerp(const ImVec2& a, const ImVec2& b, float t)
+{
+    return { a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t };
+}
+
 static void DrawScanlineBars()
 {
     constexpr uint32_t COLOR0 = IM_COL32(203, 255, 0, 0);
@@ -206,28 +217,59 @@ static float AlignToNextGrid(float value)
     return floor(value / GRID_SIZE) * GRID_SIZE;
 }
 
-static void DrawContainer(const ImVec2& min, const ImVec2& max)
+static double ComputeMotion(double frameOffset, double frames)
 {
+    double t = std::clamp((ImGui::GetTime() - g_appearTime - frameOffset / 60.0) / frames * 60.0, 0.0, 1.0);
+    return sqrt(t);
+}
+
+// all in 60 FPS
+static constexpr double CONTAINER_LINE_ANIMATION_DURATION = 8.0;
+
+static constexpr double CONTAINER_OUTER_TIME = CONTAINER_LINE_ANIMATION_DURATION + 8.0; // 8 frame delay
+static constexpr double CONTAINER_OUTER_DURATION = 8.0;
+
+static constexpr double CONTAINER_INNER_TIME = CONTAINER_OUTER_TIME + CONTAINER_OUTER_DURATION + 8.0; // 8 frame delay
+static constexpr double CONTAINER_INNER_DURATION = 8.0;
+
+static constexpr double CONTAINER_BACKGROUND_TIME = CONTAINER_INNER_TIME + CONTAINER_INNER_DURATION + 8.0; // 8 frame delay
+static constexpr double CONTAINER_BACKGROUND_DURATION = 12.0;
+
+static constexpr double CONTAINER_FULL_DURATION = CONTAINER_BACKGROUND_TIME + CONTAINER_BACKGROUND_DURATION;
+
+static void DrawContainer(ImVec2 min, ImVec2 max)
+{
+    double containerHeight = ComputeMotion(0.0, CONTAINER_LINE_ANIMATION_DURATION);
+
+    float center = (min.y + max.y) / 2.0f;
+    min.y = Lerp(center, min.y, containerHeight);
+    max.y = Lerp(center, max.y, containerHeight);
+
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
 
-    constexpr uint32_t BACKGROUND_COLOR = IM_COL32(0, 0, 0, 223);
-    constexpr uint32_t COLOR = IM_COL32(0, 49, 0, 255);
-    constexpr uint32_t INNER_COLOR = IM_COL32(0, 33, 0, 255);
     constexpr uint32_t LINE_COLOR = IM_COL32(0, 89, 0, 255);
+
+    double outerAlpha = ComputeMotion(CONTAINER_OUTER_TIME, CONTAINER_OUTER_DURATION);
+    double innerAlpha = ComputeMotion(CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
+    double backgroundAlpha = ComputeMotion(CONTAINER_BACKGROUND_TIME, CONTAINER_BACKGROUND_DURATION);
+
+    const uint32_t outerColor = IM_COL32(0, 49, 0, 255 * outerAlpha);
+    const uint32_t innerColor = IM_COL32(0, 33, 0, 255 * innerAlpha);
+    const uint32_t backgroundColor = IM_COL32(0, 0, 0, 223 * backgroundAlpha);
 
     float gridSize = Scale(GRID_SIZE);
 
-    drawList->AddRectFilled(min, max, BACKGROUND_COLOR); // Background
+    drawList->AddRectFilled(min, max, backgroundColor); // Background
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_CHECKERBOARD);
 
-    drawList->AddRectFilled(min, { min.x + gridSize, max.y }, COLOR); // Container outline left
-    drawList->AddRectFilled({ max.x - gridSize, min.y }, max, COLOR); // Container outline right
-    drawList->AddRectFilled({ min.x + gridSize, min.y }, { max.x - gridSize, min.y + gridSize }, COLOR); // Container outline top
-    drawList->AddRectFilled({ min.x + gridSize, max.y - gridSize }, { max.x - gridSize, max.y }, COLOR); // Container outline bottom
+    drawList->AddRectFilled(min, { min.x + gridSize, max.y }, outerColor); // Container outline left
+    drawList->AddRectFilled({ max.x - gridSize, min.y }, max, outerColor); // Container outline right
+    drawList->AddRectFilled({ min.x + gridSize, min.y }, { max.x - gridSize, min.y + gridSize }, outerColor); // Container outline top
+    drawList->AddRectFilled({ min.x + gridSize, max.y - gridSize }, { max.x - gridSize, max.y }, outerColor); // Container outline bottom
 
-    drawList->AddRectFilled({ min.x + gridSize, min.y + gridSize }, { max.x - gridSize, max.y - gridSize }, INNER_COLOR); // Inner container
+    drawList->AddRectFilled({ min.x + gridSize, min.y + gridSize }, { max.x - gridSize, max.y - gridSize }, innerColor); // Inner container
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
@@ -306,18 +348,15 @@ static void PlaySound(const char* name)
     g_userHeap.Free(soundPlayerSharedPtr);
 }
 
-static float Lerp(float a, float b, float t)
-{
-    return a + (b - a) * t;
-}
+static constexpr double CONTAINER_CATEGORY_TIME = (CONTAINER_INNER_TIME + CONTAINER_BACKGROUND_TIME) / 2.0;
+static constexpr double CONTAINER_CATEGORY_DURATION = 12.0;
 
-static ImVec2 Lerp(const ImVec2& a, const ImVec2& b, float t)
+static bool DrawCategories()
 {
-    return { a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t };
-}
+    double motion = ComputeMotion(CONTAINER_CATEGORY_TIME, CONTAINER_CATEGORY_DURATION);
+    if (motion == 0.0)
+        return false;
 
-static void DrawCategories()
-{
     auto inputState = SWA::CInputState::GetInstance();
 
     bool moveLeft = !g_lockedOnOption && (inputState->GetPadState().IsTapped(SWA::eKeyState_LeftBumper) ||
@@ -365,6 +404,7 @@ static void DrawCategories()
 
     float tabHeight = gridSize * 4.0f;
     float xOffset = ((clipRectMax.x - clipRectMin.x) - tabWidthSum) / 2.0f;
+    xOffset -= (1.0 - motion) * gridSize * 4.0;
 
     ImVec2 minVec[std::size(CATEGORIES)];
 
@@ -379,7 +419,7 @@ static void DrawCategories()
         if (g_categoryIndex == i)
         {
             // Animation interrupted by entering/exiting or resizing the options menu
-            if (abs(g_categoryAnimMin.y - min.y) > 0.01f || abs(g_categoryAnimMax.y - max.y) > 0.01f)
+            if (motion < 1.0 || abs(g_categoryAnimMin.y - min.y) > 0.01f || abs(g_categoryAnimMax.y - max.y) > 0.01f)
             {
                 g_categoryAnimMin = min;
                 g_categoryAnimMax = max;
@@ -398,22 +438,43 @@ static void DrawCategories()
 
             SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE_BUTTON);
 
-            drawList->AddRectFilledMultiColor(g_categoryAnimMin, g_categoryAnimMax, IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178), IM_COL32(0, 130, 0, 223), IM_COL32(0, 130, 0, 178));
-            drawList->AddRectFilledMultiColor(g_categoryAnimMin, g_categoryAnimMax, IM_COL32(0, 0, 0, 13), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55), IM_COL32(0, 0, 0, 6));
-            drawList->AddRectFilledMultiColor(g_categoryAnimMin, g_categoryAnimMax, IM_COL32(0, 130, 0, 13), IM_COL32(0, 130, 0, 111), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55));
+            drawList->AddRectFilledMultiColor(
+                g_categoryAnimMin,
+                g_categoryAnimMax,
+                IM_COL32(0, 130, 0, 223 * motion),
+                IM_COL32(0, 130, 0, 178 * motion), 
+                IM_COL32(0, 130, 0, 223 * motion),
+                IM_COL32(0, 130, 0, 178 * motion));
+
+            drawList->AddRectFilledMultiColor(
+                g_categoryAnimMin, 
+                g_categoryAnimMax,
+                IM_COL32(0, 0, 0, 13 * motion),
+                IM_COL32(0, 0, 0, 0),
+                IM_COL32(0, 0, 0, 55 * motion),
+                IM_COL32(0, 0, 0, 6));
+
+            drawList->AddRectFilledMultiColor(
+                g_categoryAnimMin, 
+                g_categoryAnimMax,
+                IM_COL32(0, 130, 0, 13 * motion),
+                IM_COL32(0, 130, 0, 111 * motion),
+                IM_COL32(0, 130, 0, 0), 
+                IM_COL32(0, 130, 0, 55 * motion));
 
             SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
         }
 
-        // Store to draw again later, otherwise the tab background gets drawn on top of text during the animation.
         min.x += textPadding;
+
+        // Store to draw again later, otherwise the tab background gets drawn on top of text during the animation.
         minVec[i] = min; 
     }
 
     for (size_t i = 0; i < std::size(CATEGORIES); i++)
     {
         auto& min = minVec[i];
-        uint8_t alpha = i == g_categoryIndex ? 235 : 128;
+        uint8_t alpha = (i == g_categoryIndex ? 235 : 128) * motion;
 
         SetGradient(
             min,
@@ -433,7 +494,13 @@ static void DrawCategories()
         ResetGradient();
     }
 
-    drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, { clipRectMax.x - gridSize, clipRectMax.y - gridSize });
+    if ((ImGui::GetTime() - g_appearTime) >= (CONTAINER_FULL_DURATION / 60.0))
+    {
+        drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, { clipRectMax.x - gridSize, clipRectMax.y - gridSize });
+        return true;
+    }
+
+    return false;
 }
 
 // extern definition to avoid including "video.h", the header is quite large
@@ -736,6 +803,10 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
 static void DrawConfigOptions()
 {
+    auto drawList = ImGui::GetForegroundDrawList();
+    auto clipRectMin = drawList->GetClipRectMin();
+    auto clipRectMax = drawList->GetClipRectMax();
+
     g_selectedItem = nullptr;
 
     float gridSize = Scale(GRID_SIZE);
@@ -825,9 +896,6 @@ static void DrawConfigOptions()
     g_upWasHeld = upIsHeld;
     g_downWasHeld = downIsHeld;
 
-    auto drawList = ImGui::GetForegroundDrawList();
-    auto clipRectMin = drawList->GetClipRectMin();
-    auto clipRectMax = drawList->GetClipRectMax();
     int32_t visibleRowCount = int32_t(floor((clipRectMax.y - clipRectMin.y) / optionHeightWithPadding));
 
     bool disableMoveAnimation = false;
@@ -866,7 +934,7 @@ static void DrawConfigOptions()
     }
 }
 
-void DrawSettingsPanel()
+static void DrawSettingsPanel()
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
@@ -874,14 +942,17 @@ void DrawSettingsPanel()
     ImVec2 settingsMax = { Scale(AlignToNextGrid(INFO_CONTAINER_POS_X - COMMON_PADDING_POS_X)), Scale(AlignToNextGrid(720.0f - COMMON_PADDING_POS_Y)) };
 
     DrawContainer(settingsMin, settingsMax);
-    DrawCategories();
-    DrawConfigOptions();
+
+    if (DrawCategories())
+        DrawConfigOptions();
+    else
+        ResetSelection();
 
     // Pop clip rect from DrawContainer
     drawList->PopClipRect();
 }
 
-void DrawInfoPanel()
+static void DrawInfoPanel()
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
@@ -956,6 +1027,7 @@ void OptionsMenu::Open(bool stage)
 {
     s_isVisible = true;
     s_isStage = stage;
+    g_appearTime = ImGui::GetTime();
     g_categoryIndex = 0;
     g_categoryAnimMin = { 0.0f, 0.0f };
     g_categoryAnimMax = { 0.0f, 0.0f };
