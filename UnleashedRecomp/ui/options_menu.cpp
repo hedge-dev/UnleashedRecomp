@@ -14,6 +14,8 @@ static ImFont* g_newRodinFont;
 
 static const IConfigDef* g_selectedItem;
 
+static bool g_isEnterKeyBuffered = false;
+
 void OptionsMenu::Init()
 {
     auto& io = ImGui::GetIO();
@@ -402,41 +404,48 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     {
         g_selectedItem = config;
 
-        if constexpr (std::is_same_v<T, bool>)
+        if (!g_isEnterKeyBuffered)
         {
-            if (padState.IsTapped(SWA::eKeyState_A))
+            if constexpr (std::is_same_v<T, bool>)
             {
-                config->Value = !config->Value;
-
-                if (config->Callback)
-                    config->Callback(config);
-            }
-        }
-        else
-        {
-            static T s_oldValue;
-
-            if (padState.IsTapped(SWA::eKeyState_A))
-            {
-                g_lockedOnOption ^= true;
-                if (g_lockedOnOption)
+                if (padState.IsTapped(SWA::eKeyState_A))
                 {
-                    g_leftWasHeld = false;
-                    g_rightWasHeld = false;
-                    // remember value
-                    s_oldValue = config->Value;
+                    config->Value = !config->Value;
+
+                    if (config->Callback)
+                        config->Callback(config);
                 }
             }
-            else if (padState.IsTapped(SWA::eKeyState_B))
+            else
             {
-                // released lock, restore old value
-                config->Value = s_oldValue;
-                g_lockedOnOption = false;
-            }
+                static T s_oldValue;
 
-            lockedOnOption = g_lockedOnOption;
+                if (padState.IsTapped(SWA::eKeyState_A))
+                {
+                    g_lockedOnOption ^= true;
+                    if (g_lockedOnOption)
+                    {
+                        g_leftWasHeld = false;
+                        g_rightWasHeld = false;
+                        // remember value
+                        s_oldValue = config->Value;
+                    }
+                }
+                else if (padState.IsTapped(SWA::eKeyState_B))
+                {
+                    // released lock, restore old value
+                    config->Value = s_oldValue;
+                    g_lockedOnOption = false;
+                }
+
+                lockedOnOption = g_lockedOnOption;
+            }
         }
     }
+
+    // We've entered the menu now, no need to check this.
+    if (padState.IsReleased(SWA::eKeyState_A))
+        g_isEnterKeyBuffered = false;
 
     bool fadedOut = g_lockedOnOption && g_selectedItem != config;
     float alpha = fadedOut ? 0.5f : 1.0f;
@@ -811,9 +820,7 @@ void DrawInfoPanel()
 
 void OptionsMenu::Draw()
 {
-    auto inputState = SWA::CInputState::GetInstance();
-
-    if (!s_isVisible || inputState->GetPadState().IsDown(SWA::eKeyState_Y))
+    if (!s_isVisible || SWA::CInputState::GetInstance()->GetPadState().IsDown(SWA::eKeyState_Y))
         return;
 
     g_callbackDataIndex = 0;
@@ -821,7 +828,7 @@ void OptionsMenu::Draw()
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
     
-    if (s_isDimBackground)
+    if (s_isStage)
         drawList->AddRectFilled({ 0.0f, 0.0f }, res, IM_COL32(0, 0, 0, 223));
     
     DrawScanlineBars();
@@ -832,8 +839,15 @@ void OptionsMenu::Draw()
 void OptionsMenu::Open(bool stage)
 {
     s_isVisible = true;
-    s_isDimBackground = stage;
+    s_isStage = stage;
+
     g_categoryIndex = 0;
+
+    /* Store button state so we can track it later
+       and prevent the first item being selected. */
+    if (SWA::CInputState::GetInstance()->GetPadState().IsDown(SWA::eKeyState_A))
+        g_isEnterKeyBuffered = true;
+
     ResetSelection();
 
     *(bool*)g_memory.Translate(0x8328BB26) = false;
@@ -844,7 +858,7 @@ void OptionsMenu::Open(bool stage)
 void OptionsMenu::Close(bool stage)
 {
     s_isVisible = false;
-    s_isDimBackground = stage;
+    s_isStage = stage;
 
     *(bool*)g_memory.Translate(0x8328BB26) = true;
 
