@@ -8,11 +8,14 @@ namespace Hedgehog::Universe
     class IParallelJob
     {
     public:
+        SWA_INSERT_PADDING(0x04); // vftable ptr
+
         IParallelJob() {}
         IParallelJob(const swa_null_ctor&) {}
 
-        virtual ~IParallelJob() = default;
-
-        virtual void ExecuteParallelJob(const SUpdateInfo& in_rUpdateInfo) = 0;
+        // TODO: implement virtual functions.
+        // virtual ~IParallelJob() = default;
+        // 
+        // virtual void ExecuteParallelJob(const SUpdateInfo& in_rUpdateInfo) = 0;
     };
 }

@@ -5,7 +5,7 @@
 
 namespace SWA::Player
 {
-    class CEvilSonic
+    class CEvilSonic // : public CPlayer
     {
     public:
         SWA_INSERT_PADDING(0xC4);

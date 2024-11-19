@@ -15,6 +15,5 @@ namespace SWA
     {
     public:
         Chao::CSD::RCPtr<Chao::CSD::CProject> m_rcProject;
-        SWA_INSERT_PADDING(0x38);
     };
 }

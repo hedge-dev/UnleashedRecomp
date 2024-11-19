@@ -9,6 +9,6 @@ namespace Hedgehog::Universe
     class CMessageActor : public IMessageProcess, public IParallelJob
     {
     public:
-        SWA_INSERT_PADDING(0x7C);
+        SWA_INSERT_PADDING(0x88);
     };
 }

@@ -43,5 +43,6 @@
 #include "SWA/System/GameMode/Title/TitleStateBase.h"
 #include "SWA/System/ApplicationDocument.h"
 #include "SWA/System/GameDocument.h"
+#include "SWA/System/GameObject.h"
 #include "SWA/System/InputState.h"
 #include "SWA/System/PadState.h"
