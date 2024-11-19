@@ -663,6 +663,7 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::CameraYInvert);
         DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming);
         DrawConfigOption(rowCount++, yOffset, &Config::UnleashCancel);
+        DrawConfigOption(rowCount++, yOffset, &Config::BackgroundInput);
         break;
     case 2: // AUDIO
         DrawConfigOption(rowCount++, yOffset, &Config::MusicVolume);

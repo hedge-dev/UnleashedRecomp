@@ -333,9 +333,6 @@ SWA_API uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_S
 {
     //printf("!!! STUB !!! XamInputGetState\n");
 
-    if (!Window::s_isFocused)
-        return 0;
-
     uint32_t result = hid::GetState(userIndex, state);
 
     if (result == ERROR_SUCCESS)
@@ -349,6 +346,9 @@ SWA_API uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_S
     }
     else if (userIndex == 0)
     {
+        if (!Window::s_isFocused)
+            return ERROR_SUCCESS;
+
         memset(state, 0, sizeof(*state));
         if (GetAsyncKeyState('W') & 0x8000)
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_Y;
