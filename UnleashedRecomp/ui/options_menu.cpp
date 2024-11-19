@@ -629,7 +629,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 0, 0, 13 * alpha), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55 * alpha), IM_COL32(0, 0, 0, 6 * alpha));
     drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13 * alpha), IM_COL32(0, 130, 0, 111 * alpha), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55 * alpha));
 
-    if constexpr (std::is_same_v<T, float>)
+    if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int32_t>)
     {
         // Inner container of slider
         const uint32_t innerColor0 = IM_COL32(0, 65, 0, 255 * alpha);
@@ -658,9 +658,9 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         float factor;
 
         if (config->Value <= valueCenter)
-            factor = (config->Value - valueMin) / (valueCenter - valueMin) * 0.5f;
+            factor = float(config->Value - valueMin) / (valueCenter - valueMin) * 0.5f;
         else
-            factor = 0.5f + (config->Value - valueCenter) / (valueMax - valueCenter) * 0.5f;
+            factor = 0.5f + float(config->Value - valueCenter) / (valueMax - valueCenter) * 0.5f;
         
         sliderMax.x = sliderMin.x + (sliderMax.x - sliderMin.x) * factor;
 
@@ -746,16 +746,26 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             if (increment || decrement)
                 PlaySound("sys_actstg_pausecursor");
         }
-        else if constexpr (std::is_same_v<T, float>)
+        else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int32_t>)
         {
             float deltaTime = ImGui::GetIO().DeltaTime;
 
             do
             {
-                if (decrement)
-                    config->Value -= 0.01f;
-                else if (increment)
-                    config->Value += 0.01f;
+                if constexpr (std::is_integral_v<T>)
+                {
+                    if (decrement)
+                        config->Value -= 1;
+                    else if (increment)
+                        config->Value += 1;
+                }
+                else
+                {
+                    if (decrement)
+                        config->Value -= 0.01f;
+                    else if (increment)
+                        config->Value += 0.01f;
+                }
 
                 deltaTime -= INCREMENT_TIME;
             } while (fastIncrement && deltaTime > 0.0f);
@@ -773,6 +783,8 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     std::string valueText;
     if constexpr (std::is_same_v<T, float>)
         valueText = std::format("{}%", int32_t(round(config->Value * 100.0f)));
+    else if constexpr (std::is_same_v<T, int32_t>)
+        valueText = config->Value >= valueMax ? "MAX" : std::format("{}", config->Value);
     else
         valueText = config->GetValueLocalised();
 
@@ -847,7 +859,7 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::Fullscreen);
         DrawConfigOption(rowCount++, yOffset, &Config::VSync);
         DrawConfigOption(rowCount++, yOffset, &Config::TripleBuffering);
-        DrawConfigOption(rowCount++, yOffset, &Config::FPS);
+        DrawConfigOption(rowCount++, yOffset, &Config::FPS, 15, 120, 240);
         DrawConfigOption(rowCount++, yOffset, &Config::Brightness);
         DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing);
         DrawConfigOption(rowCount++, yOffset, &Config::AlphaToCoverage);
@@ -1017,7 +1029,7 @@ void OptionsMenu::Draw()
     
     if (s_isStage)
         drawList->AddRectFilled({ 0.0f, 0.0f }, res, IM_COL32(0, 0, 0, 223));
-    
+
     DrawScanlineBars();
     DrawSettingsPanel();
     DrawInfoPanel();
