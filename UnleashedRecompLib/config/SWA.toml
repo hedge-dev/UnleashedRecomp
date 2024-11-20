@@ -422,3 +422,8 @@ registers = ["r7"]
 name = "LoadingScreenSpeedFixMidAsmHook"
 address = 0x824DAB60
 registers = ["r4"]
+
+[[midasm_hook]]
+name = "MotionBlurPrevInvViewProjectionMidAsmHook"
+address = 0x82BA9E7C
+registers = ["r10"]

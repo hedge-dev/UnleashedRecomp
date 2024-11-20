@@ -90,7 +90,6 @@ static GuestSurface* g_depthStencil;
 static RenderFramebuffer* g_framebuffer;
 static RenderViewport g_viewport(0.0f, 0.0f, 1280.0f, 720.0f);
 static bool g_halfPixel = true;
-static uint32_t g_zFunc;
 static PipelineState g_pipelineState;
 static SharedConstants g_sharedConstants;
 static RenderSamplerDesc g_samplerDescs[16];
@@ -879,8 +878,41 @@ static void ProcSetRenderState(const RenderCommand& cmd)
     }
     case D3DRS_ZFUNC:
     {
-        g_zFunc = value;
-        SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.zFunc, ConvertComparisonFunc(value, g_viewport.minDepth >= g_viewport.maxDepth));
+        RenderComparisonFunction comparisonFunc;
+
+        switch (value)
+        {
+        case D3DCMP_NEVER:
+            comparisonFunc = RenderComparisonFunction::NEVER;
+            break;
+        case D3DCMP_LESS:
+            comparisonFunc = RenderComparisonFunction::LESS;
+            break;
+        case D3DCMP_EQUAL:
+            comparisonFunc = RenderComparisonFunction::EQUAL;
+            break;
+        case D3DCMP_LESSEQUAL:
+            comparisonFunc = RenderComparisonFunction::LESS_EQUAL;
+            break;
+        case D3DCMP_GREATER:
+            comparisonFunc = RenderComparisonFunction::GREATER;
+            break;
+        case D3DCMP_NOTEQUAL:
+            comparisonFunc = RenderComparisonFunction::NOT_EQUAL;
+            break;
+        case D3DCMP_GREATEREQUAL:
+            comparisonFunc = RenderComparisonFunction::GREATER_EQUAL;
+            break;
+        case D3DCMP_ALWAYS:
+            comparisonFunc = RenderComparisonFunction::ALWAYS;
+            break;
+        default:
+            assert(false && "Unknown comparison function");
+            comparisonFunc = RenderComparisonFunction::NEVER;
+            break;
+        }
+
+        SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.zFunc, comparisonFunc);
         break;
     }
     case D3DRS_ALPHAREF:
@@ -2005,11 +2037,8 @@ static void FlushViewport()
             viewport.height *= height / 720.0f;
         }
 
-        if (viewport.minDepth >= viewport.maxDepth)
-        {
-            viewport.minDepth = 1.0f - viewport.minDepth;
-            viewport.maxDepth = 1.0f - viewport.maxDepth;
-        }
+        if (viewport.minDepth > viewport.maxDepth)
+            std::swap(viewport.minDepth, viewport.maxDepth);
 
         commandList->setViewports(viewport);
 
@@ -2321,8 +2350,7 @@ static void ProcClear(const RenderCommand& cmd)
         if (!canClearInOnePass)
             SetFramebuffer(nullptr, g_depthStencil, true);
 
-        // The condition here is done by the game to determine reverse Z.
-        commandList->clearDepth(true, g_depthStencil->guestFormat == D3DFMT_D24FS8 ? (1.0f - args.z) : args.z);
+        commandList->clearDepth(true, args.z);
     }
 }
 
@@ -2356,11 +2384,16 @@ static void ProcSetViewport(const RenderCommand& cmd)
     SetDirtyValue<float>(g_dirtyStates.viewport, g_viewport.height, args.height);
     SetDirtyValue<float>(g_dirtyStates.viewport, g_viewport.minDepth, args.minDepth);
     SetDirtyValue<float>(g_dirtyStates.viewport, g_viewport.maxDepth, args.maxDepth);
+    
+    uint32_t specConstants = g_pipelineState.specConstants;
+    if (args.minDepth > args.maxDepth)
+        specConstants |= SPEC_CONSTANT_REVERSE_Z;
+    else 
+        specConstants &= ~SPEC_CONSTANT_REVERSE_Z;
+
+    SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.specConstants, specConstants);
 
     g_dirtyStates.scissorRect |= g_dirtyStates.viewport;
-
-    // Update Z function as it's dependent on reverse Z.
-    SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.zFunc, ConvertComparisonFunc(g_zFunc, args.minDepth >= args.maxDepth));
 }
 
 static void SetTexture(GuestDevice* device, uint32_t index, GuestTexture* texture) 
@@ -4126,6 +4159,16 @@ void ParticleTestDrawIndexedPrimitiveMidAsmHook(PPCRegister& r7)
 {
     if (!g_triangleFanSupported)
         r7.u64 = std::size(g_particleTestIndexBuffer);
+}
+
+void MotionBlurPrevInvViewProjectionMidAsmHook(PPCRegister& r10)
+{
+    auto mtxProjection = reinterpret_cast<be<float>*>(g_memory.Translate(r10.u32));
+
+    // Reverse Z. Have to be done on CPU side because the matrix multiplications
+    // add up and it loses precision by the time it's sent to GPU.
+    mtxProjection[10] = -(mtxProjection[10] + 1.0f);
+    mtxProjection[14] = -mtxProjection[14];
 }
 
 GUEST_FUNCTION_HOOK(sub_82BD99B0, CreateDevice);
