@@ -990,9 +990,7 @@ static void DrawInfoPanel()
         desc += "\n\n" + g_selectedItem->GetValueDescription();
 
         auto size = Scale(26.0f);
-        auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, desc.c_str());
 
-        // TODO: fix word wrap width not scaling to resolution.
         drawList->AddText(
             g_seuratFont,
             size,
@@ -1000,7 +998,7 @@ static void DrawInfoPanel()
             IM_COL32_WHITE,
             desc.c_str(),
             0,
-            thumbnailMax.x - clipRectMin.x
+            clipRectMax.x - clipRectMin.x
         );
 
         // Pop clip rect from DrawContainer
