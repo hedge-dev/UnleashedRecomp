@@ -464,8 +464,15 @@ static void DestructTempResources()
 
         case ResourceType::VertexShader:
         case ResourceType::PixelShader:
-            reinterpret_cast<GuestShader*>(resource)->~GuestShader();
+        {
+            const auto shader = reinterpret_cast<GuestShader*>(resource);
+
+            for (auto blob : shader->shaderBlobs)
+                blob->Release();
+
+            shader->~GuestShader();
             break;
+        }
         }
 
         g_userHeap.Free(resource);
@@ -2404,6 +2411,126 @@ static void ProcSetScissorRect(const RenderCommand& cmd)
     SetDirtyValue<int32_t>(g_dirtyStates.scissorRect, g_scissorRect.right, args.right);
 }
 
+static IDxcCompiler3* g_dxcCompiler;
+static IDxcLinker* g_dxcLinker;
+static IDxcUtils* g_dxcUtils;
+static ankerl::unordered_dense::set<uint32_t> g_compiledSpecConstantLibraryBlobs;
+
+static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specConstants)
+{
+    if (g_vulkan ||
+        guestShader->shaderCacheEntry == nullptr || 
+        guestShader->shaderCacheEntry->specConstantsMask == 0)
+    {
+        if (guestShader->shader == nullptr)
+        {
+            assert(guestShader->shaderCacheEntry != nullptr);
+
+            if (g_vulkan)
+                guestShader->shader = g_device->createShader(g_shaderCache.get() + guestShader->shaderCacheEntry->spirvOffset, guestShader->shaderCacheEntry->spirvSize, "main", RenderShaderFormat::SPIRV);
+            else
+                guestShader->shader = g_device->createShader(g_shaderCache.get() + guestShader->shaderCacheEntry->dxilOffset, guestShader->shaderCacheEntry->dxilSize, "main", RenderShaderFormat::DXIL);
+        }
+
+        return guestShader->shader.get();
+    }
+
+    specConstants &= guestShader->shaderCacheEntry->specConstantsMask;
+
+    auto& shader = guestShader->linkedShaders[specConstants];
+    if (shader == nullptr)
+    {
+        wchar_t specConstantsLibName[0x100];
+        swprintf_s(specConstantsLibName, L"SpecConstants_%d", specConstants);
+
+        if (!g_compiledSpecConstantLibraryBlobs.contains(specConstants))
+        {
+            if (g_dxcCompiler == nullptr)
+            {
+                HRESULT hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&g_dxcCompiler));
+                assert(SUCCEEDED(hr) && g_dxcCompiler != nullptr);
+            }
+
+            char libraryHlsl[0x100];
+            sprintf_s(libraryHlsl, "export uint g_SpecConstants() { return %d; }", specConstants);
+
+            DxcBuffer buffer{};
+            buffer.Ptr = libraryHlsl;
+            buffer.Size = strlen(libraryHlsl);
+
+            const wchar_t* args[1];
+            args[0] = L"-T lib_6_3";
+
+            IDxcResult* result = nullptr;
+            HRESULT hr = g_dxcCompiler->Compile(&buffer, args, std::size(args), nullptr, IID_PPV_ARGS(&result));
+            assert(SUCCEEDED(hr) && result != nullptr);
+
+            if (g_dxcLinker == nullptr)
+            {
+                HRESULT hr = DxcCreateInstance(CLSID_DxcLinker, IID_PPV_ARGS(&g_dxcLinker));
+                assert(SUCCEEDED(hr) && g_dxcLinker != nullptr);
+            }
+
+            IDxcBlob* blob = nullptr;
+            hr = result->GetResult(&blob);
+            assert(SUCCEEDED(hr) && blob != nullptr);
+
+            g_dxcLinker->RegisterLibrary(specConstantsLibName, blob);
+
+            blob->Release();
+            result->Release();
+
+            g_compiledSpecConstantLibraryBlobs.emplace(specConstants);
+        }
+
+        wchar_t shaderLibName[0x100];
+        swprintf_s(shaderLibName, L"Shader_%d", guestShader->shaderCacheEntry->dxilOffset);
+
+        if (!guestShader->libraryRegistered)
+        {
+            if (g_dxcUtils == nullptr)
+            {
+                HRESULT hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&g_dxcUtils));
+                assert(SUCCEEDED(hr) && g_dxcUtils != nullptr);
+            }
+
+            IDxcBlobEncoding* blob = nullptr;
+            HRESULT hr = g_dxcUtils->CreateBlobFromPinned(
+                g_shaderCache.get() + guestShader->shaderCacheEntry->dxilOffset,
+                guestShader->shaderCacheEntry->dxilSize,
+                DXC_CP_ACP,
+                &blob);
+
+            assert(SUCCEEDED(hr) && blob != nullptr);
+
+            g_dxcLinker->RegisterLibrary(shaderLibName, blob);
+
+            blob->Release();
+
+            guestShader->libraryRegistered = true;
+        }
+
+        const wchar_t* libraryNames[] = { specConstantsLibName, shaderLibName };
+
+        IDxcOperationResult* result = nullptr;
+        HRESULT hr = g_dxcLinker->Link(L"main", guestShader->type == ResourceType::VertexShader ? L"vs_6_0" : L"ps_6_0",
+            libraryNames, std::size(libraryNames), nullptr, 0, &result);
+
+        assert(SUCCEEDED(hr) && result != nullptr);
+
+        IDxcBlob* blob = nullptr;
+        hr = result->GetResult(&blob);
+        assert(SUCCEEDED(hr) && blob != nullptr);
+
+        shader = g_device->createShader(blob->GetBufferPointer(), blob->GetBufferSize(), "main", RenderShaderFormat::DXIL);
+        guestShader->shaderBlobs.push_back(blob);
+
+        result->Release();
+    }
+
+    return shader.get();
+}
+
 static RenderPipeline* CreateGraphicsPipeline(PipelineState pipelineState)
 {
     // Sanitize to prevent state leaking.
@@ -2432,9 +2559,12 @@ static RenderPipeline* CreateGraphicsPipeline(PipelineState pipelineState)
         pipelineState.blendOpAlpha = RenderBlendOperation::ADD;
     }
 
-    uint32_t specConstantsMask = pipelineState.vertexShader->specConstantsMask;
-    if (pipelineState.pixelShader != nullptr)
-        specConstantsMask |= pipelineState.pixelShader->specConstantsMask;
+    uint32_t specConstantsMask = 0;
+    if (pipelineState.vertexShader->shaderCacheEntry != nullptr)
+        specConstantsMask |= pipelineState.vertexShader->shaderCacheEntry->specConstantsMask;
+
+    if (pipelineState.pixelShader != nullptr && pipelineState.pixelShader->shaderCacheEntry != nullptr)
+        specConstantsMask |= pipelineState.pixelShader->shaderCacheEntry->specConstantsMask;
 
     pipelineState.specConstants &= specConstantsMask;
 
@@ -2443,8 +2573,8 @@ static RenderPipeline* CreateGraphicsPipeline(PipelineState pipelineState)
     {
         RenderGraphicsPipelineDesc desc;
         desc.pipelineLayout = g_pipelineLayout.get();
-        desc.vertexShader = pipelineState.vertexShader->shader.get();
-        desc.pixelShader = pipelineState.pixelShader != nullptr ? pipelineState.pixelShader->shader.get() : nullptr;
+        desc.vertexShader = GetOrLinkShader(pipelineState.vertexShader, pipelineState.specConstants);
+        desc.pixelShader = pipelineState.pixelShader != nullptr ? GetOrLinkShader(pipelineState.pixelShader, pipelineState.specConstants) : nullptr;
         desc.depthFunction = pipelineState.zFunc;
         desc.depthEnabled = pipelineState.zEnable;
         desc.depthWriteEnabled = pipelineState.zWriteEnable;
@@ -3197,12 +3327,7 @@ static GuestShader* CreateShader(const be<uint32_t>* function, ResourceType reso
         if (findResult->userData == nullptr)
         {
             shader = g_userHeap.AllocPhysical<GuestShader>(resourceType);
-            shader->specConstantsMask = findResult->specConstantsMask;
-
-            if (g_vulkan)
-                shader->shader = g_device->createShader(g_shaderCache.get() + findResult->spirvOffset, findResult->spirvSize, "main", RenderShaderFormat::SPIRV);
-            else
-                shader->shader = g_device->createShader(g_shaderCache.get() + findResult->dxilOffset, findResult->dxilSize, "main", RenderShaderFormat::DXIL);
+            shader->shaderCacheEntry = findResult;
 
             findResult->userData = shader;
         }

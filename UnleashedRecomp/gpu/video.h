@@ -241,7 +241,10 @@ struct GuestVertexDeclaration : GuestResource
 struct GuestShader : GuestResource
 {
     std::unique_ptr<RenderShader> shader;
-    uint32_t specConstantsMask = 0;
+    struct ShaderCacheEntry* shaderCacheEntry = nullptr;
+    ankerl::unordered_dense::map<uint32_t, std::unique_ptr<RenderShader>> linkedShaders;
+    std::vector<IDxcBlob*> shaderBlobs;
+    bool libraryRegistered = false;
 };
 
 struct GuestViewport

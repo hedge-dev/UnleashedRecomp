@@ -3,6 +3,7 @@
 #define NOMINMAX
 
 #include <windows.h>
+#include <dxcapi.h>
 #include <ShlObj_core.h>
 #include <algorithm>
 #include <mutex>

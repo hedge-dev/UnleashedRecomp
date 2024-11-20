@@ -130,10 +130,13 @@ add_custom_command(TARGET UnleashedRecomp POST_BUILD
    COMMAND_EXPAND_LISTS
 )
 
+file(COPY ${PACKAGE_PREFIX_DIR}/bin/dxil.dll DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 target_link_libraries(UnleashedRecomp PRIVATE
     Microsoft::DirectX-Headers 
     Microsoft::DirectX-Guids 
     Microsoft::DirectX12-Agility
+    Microsoft::DirectXShaderCompiler
     comctl32
     dxgi
     Vulkan::Headers
