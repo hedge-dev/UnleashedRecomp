@@ -13,6 +13,7 @@
 #include <ui/window.h>
 #include <cfg/config.h>
 
+#include "../../thirdparty/ShaderRecomp/ShaderRecomp/shader_common.h"
 #include "shader/copy_vs.hlsl.dxil.h"
 #include "shader/copy_vs.hlsl.spirv.h"
 #include "shader/gamma_correction_ps.hlsl.dxil.h"
@@ -70,13 +71,7 @@ struct PipelineState
     RenderFormat depthStencilFormat{};
     RenderSampleCounts sampleCount = RenderSampleCount::COUNT_1;
     bool enableAlphaToCoverage = false;
-};
-
-enum class AlphaTestMode : uint32_t
-{
-    Disabled,
-    AlphaThreshold,
-    AlphaToCoverage
+    uint32_t specConstants = 0;
 };
 
 struct SharedConstants
@@ -85,12 +80,9 @@ struct SharedConstants
     uint32_t texture3DIndices[16]{};
     uint32_t textureCubeIndices[16]{};
     uint32_t samplerIndices[16]{};
-    AlphaTestMode alphaTestMode{};
-    float alphaThreshold{};
     uint32_t booleans{};
     uint32_t swappedTexcoords{};
-    uint32_t inputLayoutFlags{};
-    uint32_t enableGIBicubicFiltering{};
+    float alphaThreshold{};
 };
 
 static GuestSurface* g_renderTarget;
@@ -723,18 +715,23 @@ static void SetRenderStateUnimplemented(GuestDevice* device, uint32_t value)
 
 static void SetAlphaTestMode(bool enable)
 {
-    AlphaTestMode alphaTestMode = AlphaTestMode::Disabled;
+    uint32_t specConstants = 0;
+    bool enableAlphaToCoverage = false;
 
     if (enable)
     {
-        if (Config::AlphaToCoverage && g_renderTarget != nullptr && g_renderTarget->sampleCount != RenderSampleCount::COUNT_1)
-            alphaTestMode = AlphaTestMode::AlphaToCoverage;
+        enableAlphaToCoverage = Config::AlphaToCoverage && g_renderTarget != nullptr && g_renderTarget->sampleCount != RenderSampleCount::COUNT_1;
+
+        if (enableAlphaToCoverage)
+            specConstants = SPEC_CONSTANT_ALPHA_TO_COVERAGE;
         else
-            alphaTestMode = AlphaTestMode::AlphaThreshold;
+            specConstants = SPEC_CONSTANT_ALPHA_TEST;
     }
 
-    SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.alphaTestMode, alphaTestMode);
-    SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.enableAlphaToCoverage, alphaTestMode == AlphaTestMode::AlphaToCoverage);
+    specConstants |= (g_pipelineState.specConstants & ~(SPEC_CONSTANT_ALPHA_TEST | SPEC_CONSTANT_ALPHA_TO_COVERAGE));
+
+    SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.enableAlphaToCoverage, enableAlphaToCoverage);
+    SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.specConstants, specConstants);
 }
 
 static RenderBlend ConvertBlendMode(uint32_t blendMode)
@@ -1373,7 +1370,10 @@ static void BeginCommandList()
         g_sharedConstants.textureCubeIndices[i] = TEXTURE_DESCRIPTOR_NULL_TEXTURE_CUBE;
     }
 
-    g_sharedConstants.enableGIBicubicFiltering = (Config::GITextureFiltering == EGITextureFiltering::Bicubic);
+    if (Config::GITextureFiltering == EGITextureFiltering::Bicubic)
+        g_pipelineState.specConstants |= SPEC_CONSTANT_BICUBIC_GI_FILTER;
+    else
+        g_pipelineState.specConstants &= ~SPEC_CONSTANT_BICUBIC_GI_FILTER;
 
     auto& commandList = g_commandLists[g_frame];
 
@@ -2190,7 +2190,7 @@ static void ProcSetRenderTarget(const RenderCommand& cmd)
     SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.sampleCount, args.renderTarget != nullptr ? args.renderTarget->sampleCount : RenderSampleCount::COUNT_1);
 
     // When alpha to coverage is enabled, update the alpha test mode as it's dependent on sample count.
-    SetAlphaTestMode(g_sharedConstants.alphaTestMode != AlphaTestMode::Disabled);
+    SetAlphaTestMode((g_pipelineState.specConstants & (SPEC_CONSTANT_ALPHA_TEST | SPEC_CONSTANT_ALPHA_TO_COVERAGE)) != 0);
 }
 
 static void SetDepthStencilSurface(GuestDevice* device, GuestSurface* depthStencil) 
@@ -2432,6 +2432,12 @@ static RenderPipeline* CreateGraphicsPipeline(PipelineState pipelineState)
         pipelineState.blendOpAlpha = RenderBlendOperation::ADD;
     }
 
+    uint32_t specConstantsMask = pipelineState.vertexShader->specConstantsMask;
+    if (pipelineState.pixelShader != nullptr)
+        specConstantsMask |= pipelineState.pixelShader->specConstantsMask;
+
+    pipelineState.specConstants &= specConstantsMask;
+
     auto& pipeline = g_pipelines[XXH3_64bits(&pipelineState, sizeof(PipelineState))];
     if (pipeline == nullptr)
     {
@@ -2462,6 +2468,15 @@ static RenderPipeline* CreateGraphicsPipeline(PipelineState pipelineState)
         desc.alphaToCoverageEnabled = pipelineState.enableAlphaToCoverage;
         desc.inputElements = pipelineState.vertexDeclaration->inputElements.get();
         desc.inputElementsCount = pipelineState.vertexDeclaration->inputElementCount;
+
+        RenderSpecConstant specConstant{};
+        specConstant.value = pipelineState.specConstants;
+
+        if (specConstantsMask != 0)
+        {
+            desc.specConstants = &specConstant;
+            desc.specConstantsCount = 1;
+        }
 
         RenderInputSlot inputSlots[16]{};
         uint32_t inputSlotIndices[16]{};
@@ -2613,6 +2628,15 @@ static void FlushRenderStateForMainThread(GuestDevice* device, LocalRenderComman
 static void ProcSetBooleans(const RenderCommand& cmd)
 {
     SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.booleans, cmd.setBooleans.booleans);
+
+    // mrgHasBone
+    uint32_t specConstants = g_pipelineState.specConstants;
+    if ((cmd.setBooleans.booleans & 0x1) != 0)
+        specConstants |= SPEC_CONSTANT_HAS_BONE;
+    else
+        specConstants &= ~SPEC_CONSTANT_HAS_BONE;
+
+    SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.specConstants, specConstants);
 }
 
 static void ProcSetSamplerState(const RenderCommand& cmd)
@@ -3036,18 +3060,13 @@ static GuestVertexDeclaration* CreateVertexDeclaration(GuestVertexElement* verte
                     vertexDeclaration->indexVertexStream = vertexElement->stream;
                 break;
 
-            case D3DDECLUSAGE_BLENDWEIGHT:
-            case D3DDECLUSAGE_BLENDINDICES:
-                vertexDeclaration->inputLayoutFlags |= INPUT_LAYOUT_FLAG_HAS_BONE_WEIGHTS;
-                break;
-
             case D3DDECLUSAGE_NORMAL:
             case D3DDECLUSAGE_TANGENT:
             case D3DDECLUSAGE_BINORMAL:
                 if (vertexElement->type == D3DDECLTYPE_FLOAT3)
                     inputElement.format = RenderFormat::R32G32B32_UINT;
                 else
-                    vertexDeclaration->inputLayoutFlags |= INPUT_LAYOUT_FLAG_HAS_R11G11B10_NORMAL;
+                    vertexDeclaration->hasR11G11B10Normal = true;
                 break;
 
             case D3DDECLUSAGE_TEXCOORD:
@@ -3149,7 +3168,14 @@ static void ProcSetVertexDeclaration(const RenderCommand& cmd)
     if (args.vertexDeclaration != nullptr)
     {
         SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.swappedTexcoords, args.vertexDeclaration->swappedTexcoords);
-        SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.inputLayoutFlags, args.vertexDeclaration->inputLayoutFlags);
+
+        uint32_t specConstants = g_pipelineState.specConstants;
+        if (args.vertexDeclaration->hasR11G11B10Normal)
+            specConstants |= SPEC_CONSTANT_R11G11B10_NORMAL;
+        else
+            specConstants &= ~SPEC_CONSTANT_R11G11B10_NORMAL;
+
+        SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.specConstants, specConstants);
     }
     SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.vertexDeclaration, args.vertexDeclaration);
 }
@@ -3171,6 +3197,7 @@ static GuestShader* CreateShader(const be<uint32_t>* function, ResourceType reso
         if (findResult->userData == nullptr)
         {
             shader = g_userHeap.AllocPhysical<GuestShader>(resourceType);
+            shader->specConstantsMask = findResult->specConstantsMask;
 
             if (g_vulkan)
                 shader->shader = g_device->createShader(g_shaderCache.get() + findResult->spirvOffset, findResult->spirvSize, "main", RenderShaderFormat::SPIRV);

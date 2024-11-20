@@ -226,12 +226,6 @@ struct GuestVertexElement
     uint8_t padding;
 };
 
-enum InputLayoutFlags
-{
-    INPUT_LAYOUT_FLAG_HAS_R11G11B10_NORMAL = 1 << 0,
-    INPUT_LAYOUT_FLAG_HAS_BONE_WEIGHTS = 1 << 1
-};
-
 struct GuestVertexDeclaration : GuestResource
 {
     std::unique_ptr<RenderInputElement[]> inputElements;
@@ -239,7 +233,7 @@ struct GuestVertexDeclaration : GuestResource
     uint32_t inputElementCount = 0;
     uint32_t vertexElementCount = 0;
     uint32_t swappedTexcoords = 0;
-    uint32_t inputLayoutFlags = 0;
+    bool hasR11G11B10Normal = false;
     uint32_t indexVertexStream = 0;
 };
 
@@ -247,6 +241,7 @@ struct GuestVertexDeclaration : GuestResource
 struct GuestShader : GuestResource
 {
     std::unique_ptr<RenderShader> shader;
+    uint32_t specConstantsMask = 0;
 };
 
 struct GuestViewport
