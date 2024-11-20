@@ -17,7 +17,7 @@ namespace SWA
             boost::shared_ptr<Hedgehog::Database::CDatabase> m_spDatabase;
             SWA_INSERT_PADDING(0x8C);
             xpointer<CSoundAdministrator> m_pSoundAdministrator;
-            SWA_INSERT_PADDING(0x15C);
+            SWA_INSERT_PADDING(0x158);
             be<uint32_t> m_Score;
         };
 
