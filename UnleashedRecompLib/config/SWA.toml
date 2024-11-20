@@ -213,52 +213,52 @@ jump_address = 0x8247DD3C
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247DD48 # Slope
-registers = ["f0", "f21"]
+registers = ["f0"]
 
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247DDFC # Dash path binormal
-registers = ["f0", "f21"]
+registers = ["f0"]
 
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247E280 # Target front offset
-registers = ["f0", "f21"]
+registers = ["f0"]
 
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247E300 # Target
-registers = ["f0", "f21"]
+registers = ["f0"]
 
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247E3C8 # Target
-registers = ["f0", "f21"]
+registers = ["f0"]
 
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247E4A0 # Target up positive
-registers = ["f0", "f21"]
+registers = ["f0"]
 
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247E4E8 # Target up negative
-registers = ["f0", "f21"]
+registers = ["f0"]
 
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247E9FC # Position
-registers = ["f0", "f21"]
+registers = ["f0"]
 
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247EA84 # Position up negative
-registers = ["f0", "f21"]
+registers = ["f0"]
 
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247EA50 # Position up positive
-registers = ["f0", "f21"]
+registers = ["f0"]
 
 [[midasm_hook]]
 name = "CameraDeltaTimeFixMidAsmHook"
@@ -269,7 +269,7 @@ jump_address = 0x8247ED34
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247ED40 # Distance offset 1
-registers = ["f0", "f21"]
+registers = ["f0"]
 
 [[midasm_hook]]
 name = "CameraDeltaTimeFixMidAsmHook"
@@ -280,12 +280,12 @@ jump_address = 0x8247ED58
 [[midasm_hook]]
 name = "CameraLerpFixMidAsmHook"
 address = 0x8247ED64 # Distance offset 2
-registers = ["f13", "f21"]
+registers = ["f13"]
 
 [[midasm_hook]]
 name = "CameraTargetSideOffsetLerpFixMidAsmHook"
 address = 0x8247F12C # Target side offset
-registers = ["v13", "v62", "f21"]
+registers = ["v13", "v62"]
 
 # 2D camera HFR fixes
 [[midasm_hook]]
