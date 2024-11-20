@@ -18,6 +18,7 @@ static ImFont* g_newRodinFont;
 static const IConfigDef* g_selectedItem;
 
 static bool g_isEnterKeyBuffered = false;
+
 static double g_appearTime = 0.0;
 
 void OptionsMenu::Init()
@@ -964,7 +965,7 @@ static void DrawInfoPanel()
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
-    ImVec2 thumbnailMax = { clipRectMin.x + ScaleX(343.0f), clipRectMin.y + ScaleY(193.0f) };
+    ImVec2 thumbnailMax = { clipRectMin.x + ScaleX(343.0f), clipRectMin.y + ScaleY(198.0f) };
 
     // Thumbnail box
     drawList->AddRectFilled(clipRectMin, thumbnailMax, IM_COL32(0, 0, 0, 255));
@@ -995,7 +996,7 @@ static void DrawInfoPanel()
         drawList->AddText(
             g_seuratFont,
             size,
-            { clipRectMin.x, thumbnailMax.y + size },
+            { clipRectMin.x, thumbnailMax.y + size - 5.0f },
             IM_COL32_WHITE,
             desc.c_str(),
             0,
@@ -1011,7 +1012,7 @@ void OptionsMenu::Draw()
 {
     auto pInputState = SWA::CInputState::GetInstance();
 
-    if (!s_isVisible || pInputState->GetPadState().IsDown(SWA::eKeyState_Y))
+    if (!s_isVisible)
         return;
 
     // We've entered the menu now, no need to check this.
