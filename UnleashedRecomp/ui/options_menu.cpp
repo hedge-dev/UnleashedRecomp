@@ -316,6 +316,7 @@ static bool g_downWasHeld;
 static bool g_lockedOnOption;
 static double g_lastTappedTime;
 static double g_lastIncrementTime;
+static double g_lastIncrementSoundTime;
 
 static void ResetSelection()
 {
@@ -682,8 +683,13 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         bool fastIncrement = (time - g_lastTappedTime) > 0.5;
         constexpr double INCREMENT_TIME = 1.0 / 120.0;
 
+        constexpr double INCREMENT_SOUND_TIME = 1.0 / 7.5;
+        bool isPlayIncrementSound = true;
+
         if (fastIncrement)
         {
+            isPlayIncrementSound = (time - g_lastIncrementSoundTime) > INCREMENT_SOUND_TIME;
+
             if ((time - g_lastIncrementTime) < INCREMENT_TIME)
                 fastIncrement = false;
             else
@@ -747,8 +753,13 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                 deltaTime -= INCREMENT_TIME;
             } while (fastIncrement && deltaTime > 0.0f);
 
-            if ((increment || decrement) && (config->Value >= valueMin && config->Value <= valueMax))
+            bool isConfigValueInBounds = config->Value >= valueMin && config->Value <= valueMax;
+
+            if ((increment || decrement) && isConfigValueInBounds && isPlayIncrementSound) 
+            {
+                g_lastIncrementSoundTime = time;
                 Game_PlaySound("sys_actstg_twn_speechbutton");
+            }
 
             config->Value = std::clamp(config->Value, valueMin, valueMax);
         }
@@ -975,6 +986,8 @@ static void DrawInfoPanel()
 
             desc = buf;
         }
+
+        desc += "\n\n" + g_selectedItem->GetValueDescription();
 
         auto size = Scale(26.0f);
         auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, desc.c_str());

@@ -39,15 +39,13 @@ public:
 
     CONFIG_DEFINE_CALLBACK("Video", float, ResolutionScale, 1.0f,
     {
-        def->NameLocale = &g_ResolutionScale_locale;
-        def->DescLocale = &g_ResolutionScale_desc_locale;
+        def->Locale = &g_ResolutionScale_locale;
         def->Value = std::clamp(def->Value, 0.25f, 2.0f);
     });
 
     CONFIG_DEFINE_CALLBACK("Video", bool, Fullscreen, false,
     {
-        def->NameLocale = &g_Fullscreen_locale;
-        def->DescLocale = &g_Fullscreen_desc_locale;
+        def->Locale = &g_Fullscreen_locale;
 
         Window_SetFullscreen(def->Value);
     });

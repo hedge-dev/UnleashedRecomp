@@ -10,8 +10,8 @@ ConfigDef<T>::ConfigDef(std::string section, std::string name, T defaultValue) :
 
 // CONFIG_DEFINE_LOCALISED
 template<typename T>
-ConfigDef<T>::ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, CONFIG_LOCALE* descLocale, T defaultValue)
-    : Section(section), Name(name), NameLocale(nameLocale), DescLocale(descLocale), DefaultValue(defaultValue)
+ConfigDef<T>::ConfigDef(std::string section, std::string name, CONFIG_LOCALE* locale, T defaultValue)
+    : Section(section), Name(name), Locale(locale), DefaultValue(defaultValue)
 {
     Config::Definitions.emplace_back(this);
 }
@@ -29,8 +29,8 @@ ConfigDef<T>::ConfigDef(std::string section, std::string name, T defaultValue, s
 
 // CONFIG_DEFINE_ENUM_LOCALISED
 template<typename T>
-ConfigDef<T>::ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, CONFIG_LOCALE* descLocale, T defaultValue, std::unordered_map<std::string, T>* enumTemplate, CONFIG_ENUM_LOCALE(T)* enumLocale)
-    : Section(section), Name(name), NameLocale(nameLocale), DescLocale(descLocale), DefaultValue(defaultValue), EnumTemplate(enumTemplate), EnumLocale(enumLocale)
+ConfigDef<T>::ConfigDef(std::string section, std::string name, CONFIG_LOCALE* locale, T defaultValue, std::unordered_map<std::string, T>* enumTemplate, CONFIG_ENUM_LOCALE(T)* enumLocale)
+    : Section(section), Name(name), Locale(locale), DefaultValue(defaultValue), EnumTemplate(enumTemplate), EnumLocale(enumLocale)
 {
     for (const auto& pair : *EnumTemplate)
         EnumTemplateReverse[pair.second] = pair.first;
@@ -47,37 +47,16 @@ ConfigDef<T>::ConfigDef(std::string section, std::string name, T defaultValue, s
 }
 
 template<typename T>
-std::string ConfigDef<T>::GetDescription() const
-{
-    if (!DescLocale)
-        return "";
-
-    if (!DescLocale->count(Config::Language))
-    {
-        if (DescLocale->count(ELanguage::English))
-        {
-            return DescLocale->at(ELanguage::English);
-        }
-        else
-        {
-            return "";
-        }
-    }
-
-    return DescLocale->at(Config::Language);
-}
-
-template<typename T>
 std::string ConfigDef<T>::GetNameLocalised() const
 {
-    if (!NameLocale)
+    if (!Locale)
         return Name;
 
-    if (!NameLocale->count(Config::Language))
+    if (!Locale->count(Config::Language))
     {
-        if (NameLocale->count(ELanguage::English))
+        if (Locale->count(ELanguage::English))
         {
-            return NameLocale->at(ELanguage::English);
+            return std::get<0>(Locale->at(ELanguage::English));
         }
         else
         {
@@ -85,7 +64,28 @@ std::string ConfigDef<T>::GetNameLocalised() const
         }
     }
 
-    return NameLocale->at(Config::Language);
+    return std::get<0>(Locale->at(Config::Language));
+}
+
+template<typename T>
+std::string ConfigDef<T>::GetDescription() const
+{
+    if (!Locale)
+        return "";
+
+    if (!Locale->count(Config::Language))
+    {
+        if (Locale->count(ELanguage::English))
+        {
+            return std::get<1>(Locale->at(ELanguage::English));
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    return std::get<1>(Locale->at(Config::Language));
 }
 
 template<typename T>
@@ -123,5 +123,43 @@ std::string ConfigDef<T>::GetValueLocalised() const
     if (!strings.count(Value))
         return ToString(false);
 
-    return strings.at(Value);
+    return std::get<0>(strings.at(Value));
+}
+
+template<typename T>
+std::string ConfigDef<T>::GetValueDescription() const
+{
+    auto language = Config::Language;
+    CONFIG_ENUM_LOCALE(T)* locale = nullptr;
+
+    if constexpr (std::is_enum_v<T>)
+    {
+        locale = EnumLocale;
+    }
+    else if constexpr (std::is_same_v<T, bool>)
+    {
+        locale = &g_bool_locale;
+    }
+
+    if (!locale)
+        return "";
+
+    if (!locale->count(language))
+    {
+        if (locale->count(ELanguage::English))
+        {
+            language = ELanguage::English;
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    auto strings = locale->at(language);
+
+    if (!strings.count(Value))
+        return "";
+
+    return std::get<1>(strings.at(Value));
 }
