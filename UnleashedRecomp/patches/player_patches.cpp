@@ -86,7 +86,7 @@ void PostUnleashMidAsmHook(PPCRegister& r30)
     if (m_isUnleashCancelled)
     {
         if (auto pEvilSonicContext = (SWA::Player::CEvilSonicContext*)g_memory.Translate(r30.u32))
-            pEvilSonicContext->m_DarkGaiaEnergy = m_lastDarkGaiaEnergy - 35.0f;
+            pEvilSonicContext->m_DarkGaiaEnergy = std::max(0.0f, m_lastDarkGaiaEnergy - 35.0f);
 
         m_isUnleashCancelled = false;
     }
