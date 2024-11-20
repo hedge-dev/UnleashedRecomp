@@ -597,10 +597,6 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         }
     }
 
-    // We've entered the menu now, no need to check this.
-    if (padState.IsReleased(SWA::eKeyState_A))
-        g_isEnterKeyBuffered = false;
-
     bool fadedOut = g_lockedOnOption && g_selectedItem != config;
     float alpha = fadedOut ? 0.5f : 1.0f;
 
@@ -1019,8 +1015,14 @@ static void DrawInfoPanel()
 
 void OptionsMenu::Draw()
 {
-    if (!s_isVisible || SWA::CInputState::GetInstance()->GetPadState().IsDown(SWA::eKeyState_Y))
+    auto pInputState = SWA::CInputState::GetInstance();
+
+    if (!s_isVisible || pInputState->GetPadState().IsDown(SWA::eKeyState_Y))
         return;
+
+    // We've entered the menu now, no need to check this.
+    if (pInputState->GetPadState().IsReleased(SWA::eKeyState_A))
+        g_isEnterKeyBuffered = false;
 
     g_callbackDataIndex = 0;
     
