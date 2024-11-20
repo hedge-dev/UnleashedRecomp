@@ -1,5 +1,8 @@
 #pragma once
 
+#include <SWA.inl>
+#include <SWA/System/Game.h>
+
 namespace SWA
 {
     class CApplicationDocument // : public Hedgehog::Base::CSynchronizedObject
@@ -8,8 +11,10 @@ namespace SWA
         class CMember
         {
         public:
-            SWA_INSERT_PADDING(0x138);
-            void* m_spGameParameter;
+            SWA_INSERT_PADDING(0x20);
+            boost::shared_ptr<CGame> m_pGame;
+            SWA_INSERT_PADDING(0x114);
+            xpointer<void> m_spGameParameter;
         };
 
         // TODO: Hedgehog::Base::TSynchronizedPtr<CApplicationDocument>

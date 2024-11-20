@@ -10,7 +10,7 @@ namespace boost
     {
     private:
         xpointer<T> m_pObject;
-        xpointer<size_t> m_pRefCount;
+        xpointer<uint32_t> m_pRefCount;
 
         void release()
         {
@@ -24,7 +24,7 @@ namespace boost
     public:
         shared_ptr() : m_pObject(nullptr), m_pRefCount(nullptr) {}
 
-        explicit shared_ptr(T* p) : m_pObject(p), m_pRefCount(new size_t(1)) {}
+        explicit shared_ptr(T* p) : m_pObject(p), m_pRefCount(new uint32_t(1)) {}
 
         shared_ptr(const shared_ptr& other) : m_pObject(other.m_pObject), m_pRefCount(other.m_pRefCount)
         {
