@@ -24,6 +24,8 @@ PPC_FUNC(sub_82624308)
         return;
 
     m_lastCheckpointScore = pGameDocument->m_pMember->m_Score;
+
+    printf("[*] Score: %d\n", m_lastCheckpointScore);
 }
 
 /* Hook function that resets the score
@@ -41,7 +43,7 @@ PPC_FUNC(sub_8245F048)
     if (!pGameDocument)
         return;
 
-    printf("[*] Resetting score to %d\n", m_lastCheckpointScore);
+    printf("[*] Score: %d\n", m_lastCheckpointScore);
 
     pGameDocument->m_pMember->m_Score = m_lastCheckpointScore;
 }
