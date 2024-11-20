@@ -66,7 +66,7 @@ set(SWA_HID_CXX_SOURCES
 
 set(SWA_PATCHES_CXX_SOURCES
     "patches/ui/CHudPause_patches.cpp"
-    "patches/ui/CTitleMenu_patches.cpp"
+    "patches/ui/CTitleStateMenu_patches.cpp"
     "patches/ui/frontend_listener.cpp"
     "patches/audio_patches.cpp"
     "patches/camera_patches.cpp"
@@ -84,6 +84,7 @@ set(SWA_UI_CXX_SOURCES
 )
 
 set(SWA_CXX_SOURCES
+    "app.cpp"
     "exports.cpp"
     "main.cpp"
     "misc_impl.cpp"
