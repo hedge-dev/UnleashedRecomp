@@ -828,6 +828,7 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::SEVolume);
         DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage);
         DrawConfigOption(rowCount++, yOffset, &Config::Subtitles);
+        DrawConfigOption(rowCount++, yOffset, &Config::MusicAttenuation); // TODO: grey this out for non-Windows platforms.
         DrawConfigOption(rowCount++, yOffset, &Config::WerehogBattleMusic);
         break;
     case 3: // VIDEO

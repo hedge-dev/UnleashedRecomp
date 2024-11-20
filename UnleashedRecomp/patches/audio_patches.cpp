@@ -3,6 +3,42 @@
 #include <kernel/function.h>
 #include <patches/audio_patches.h>
 
+#if _WIN32
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Media.Control.h>
+
+using namespace winrt;
+using namespace Windows::Foundation;
+using namespace Windows::Media::Control;
+
+GlobalSystemMediaTransportControlsSessionManager m_sessionManager = nullptr;
+
+GlobalSystemMediaTransportControlsSessionManager GetSessionManager()
+{
+    if (m_sessionManager)
+        return m_sessionManager;
+
+    init_apartment();
+
+    return m_sessionManager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync().get();
+}
+
+GlobalSystemMediaTransportControlsSession GetCurrentSession()
+{
+    return GetSessionManager().GetCurrentSession();
+}
+
+bool IsExternalAudioPlaying()
+{
+    auto session = GetCurrentSession();
+
+    if (!session)
+        return false;
+
+    return session.GetPlaybackInfo().PlaybackStatus() == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing;
+}
+#endif
+
 be<float>* GetVolume(bool isMusic = true)
 {
     auto ppUnkClass = (be<uint32_t>*)g_memory.Translate(0x83362FFC);
@@ -22,8 +58,27 @@ void audio_patches::Update(float deltaTime)
     if (!pMusicVolume || !pSEVolume)
         return;
 
+#if _WIN32
+    if (Config::MusicAttenuation)
+    {
+        auto time = 1.0f - expf(2.5f * -deltaTime);
+
+        if (IsExternalAudioPlaying())
+        {
+            *pMusicVolume = std::lerp(*pMusicVolume, 0.0f, time);
+        }
+        else
+        {
+            *pMusicVolume = std::lerp(*pMusicVolume, Config::MusicVolume, time);
+        }
+    }
+    else
+#endif
+    {
+        *pMusicVolume = Config::MusicVolume;
+    }
+
     *pSEVolume = Config::SEVolume;
-    *pMusicVolume = Config::MusicVolume;
 }
 
 // Stub volume setter.

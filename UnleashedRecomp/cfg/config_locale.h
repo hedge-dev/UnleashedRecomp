@@ -207,6 +207,16 @@ CONFIG_DEFINE_DESCRIPTION_LOCALE(SEVolume)
     { ELanguage::English, "Adjust the volume for sound effects." }
 };
 
+CONFIG_DEFINE_LOCALE(MusicAttenuation)
+{
+    { ELanguage::English, "Music Attenuation" }
+};
+
+CONFIG_DEFINE_DESCRIPTION_LOCALE(MusicAttenuation)
+{
+    { ELanguage::English, "Fade out the game's music when external media is playing.\n\nRequires Windows 10 or later." }
+};
+
 CONFIG_DEFINE_LOCALE(VoiceLanguage)
 {
     { ELanguage::English, "Voice Language" }

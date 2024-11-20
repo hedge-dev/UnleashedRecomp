@@ -27,6 +27,7 @@ public:
     CONFIG_DEFINE_LOCALISED("Audio", float, SEVolume, 1.0f);
     CONFIG_DEFINE_ENUM_LOCALISED("Audio", EVoiceLanguage, VoiceLanguage, EVoiceLanguage::English);
     CONFIG_DEFINE_LOCALISED("Audio", bool, Subtitles, true);
+    CONFIG_DEFINE_LOCALISED("Audio", bool, MusicAttenuation, false);
     CONFIG_DEFINE_LOCALISED("Audio", bool, WerehogBattleMusic, true);
 
     CONFIG_DEFINE_ENUM("Video", EGraphicsAPI, GraphicsAPI, EGraphicsAPI::D3D12);
