@@ -23,20 +23,20 @@ bool CameraAspectRatioMidAsmHook(PPCRegister& r31)
     return newAspectRatio < m_baseAspectRatio;
 }
 
-void CameraBoostAspectRatioMidAsmHook(PPCRegister& r31, PPCRegister& f0)
+bool CameraBoostAspectRatioMidAsmHook(PPCRegister& r31, PPCRegister& f0, PPCRegister& f10, PPCRegister& f12)
 {
     auto pCamera = (SWA::CCamera*)g_memory.Translate(r31.u32);
 
     if (Window::s_width < Window::s_height)
     {
-        // Use horizontal FOV for narrow aspect ratios.
-        f0.f32 = pCamera->m_HorzFieldOfView;
+        pCamera->m_VertFieldOfView = pCamera->m_HorzFieldOfView + f10.f64;
     }
     else
     {
-        // Use vertical FOV for wide aspect ratios.
-        f0.f32 = pCamera->m_VertFieldOfView;
+        pCamera->m_VertFieldOfView = (f12.f64 / f0.f64) + f10.f64;
     }
+
+    return true;
 }
 
 PPC_FUNC_IMPL(__imp__sub_824697B0);

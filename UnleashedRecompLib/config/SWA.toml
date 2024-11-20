@@ -98,8 +98,9 @@ jump_address_on_false = 0x82468EE0
 
 [[midasm_hook]]
 name = "CameraBoostAspectRatioMidAsmHook"
-address = 0x8246BDA8
-registers = ["r31", "f0"]
+address = 0x8246BDA0
+registers = ["r31", "f0", "f10", "f12"]
+jump_address_on_true = 0x8246BDAC
 
 [[midasm_hook]]
 name = "CSDAspectRatioMidAsmHook"
