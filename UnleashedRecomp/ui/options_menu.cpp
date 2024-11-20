@@ -1,5 +1,6 @@
 #include "options_menu.h"
 #include "window.h"
+#include "exports.h"
 
 #include <api/SWA/System/InputState.h>
 #include <gpu/imgui_common.h>
@@ -328,26 +329,6 @@ static void ResetSelection()
     g_downWasHeld = false;
 }
 
-#undef PlaySound
-static void PlaySound(const char* name)
-{
-    void* soundPlayerSharedPtr = g_userHeap.Alloc(8);
-    GuestToHostFunction<void>(0x82B4DF50, soundPlayerSharedPtr, ((be<uint32_t>*)g_memory.Translate(0x83367900))->get(), 7, 0, 0);
-
-    auto soundPlayer = (be<uint32_t>*)g_memory.Translate(*(be<uint32_t>*)soundPlayerSharedPtr);
-    auto soundPlayerVtable = (be<uint32_t>*)g_memory.Translate(*soundPlayer);
-    uint32_t virtualFunction = *(soundPlayerVtable + 1);
-
-    size_t strLen = strlen(name);
-    void* strAllocation = g_userHeap.Alloc(strLen + 1);
-    memcpy(strAllocation, name, strLen + 1);
-    GuestToHostFunction<void>(virtualFunction, soundPlayer, strAllocation, 0);
-    g_userHeap.Free(strAllocation);
-
-    GuestToHostFunction<void>(0x822C0890, *((be<uint32_t>*)soundPlayerSharedPtr + 1));
-    g_userHeap.Free(soundPlayerSharedPtr);
-}
-
 static constexpr double CONTAINER_CATEGORY_TIME = (CONTAINER_INNER_TIME + CONTAINER_BACKGROUND_TIME) / 2.0;
 static constexpr double CONTAINER_CATEGORY_DURATION = 12.0;
 
@@ -381,7 +362,7 @@ static bool DrawCategories()
     if (moveLeft || moveRight)
     {
         ResetSelection();
-        PlaySound("sys_actstg_score");
+        Game_PlaySound("sys_actstg_score");
     }
 
     auto drawList = ImGui::GetForegroundDrawList();
@@ -555,7 +536,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
                     VideoConfigValueChangedCallback(config);
 
-                    PlaySound("sys_worldmap_finaldecide");
+                    Game_PlaySound("sys_worldmap_finaldecide");
                 }
             }
             else
@@ -572,7 +553,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                         // remember value
                         s_oldValue = config->Value;
 
-                        PlaySound("sys_worldmap_decide");
+                        Game_PlaySound("sys_worldmap_decide");
                     }
                     else
                     {
@@ -580,7 +561,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                         if (config->Value != s_oldValue)
                             VideoConfigValueChangedCallback(config);
 
-                        PlaySound("sys_worldmap_finaldecide");
+                        Game_PlaySound("sys_worldmap_finaldecide");
                     }
                 }
                 else if (padState.IsTapped(SWA::eKeyState_B))
@@ -589,7 +570,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                     config->Value = s_oldValue;
                     g_lockedOnOption = false;
 
-                    PlaySound("sys_worldmap_cansel");
+                    Game_PlaySound("sys_worldmap_cansel");
                 }
 
                 lockedOnOption = g_lockedOnOption;
@@ -740,7 +721,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             config->Value = it->first;
 
             if (increment || decrement)
-                PlaySound("sys_actstg_pausecursor");
+                Game_PlaySound("sys_actstg_pausecursor");
         }
         else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int32_t>)
         {
@@ -767,7 +748,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             } while (fastIncrement && deltaTime > 0.0f);
 
             if ((increment || decrement) && (config->Value >= valueMin && config->Value <= valueMax))
-                PlaySound("sys_actstg_twn_speechbutton");
+                Game_PlaySound("sys_actstg_twn_speechbutton");
 
             config->Value = std::clamp(config->Value, valueMin, valueMax);
         }
@@ -835,7 +816,7 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::WerehogHubTransformVideo);
         DrawConfigOption(rowCount++, yOffset, &Config::LogoSkip);
         break;
-    case 1: // CONTROLS
+    case 1: // INPUT
         DrawConfigOption(rowCount++, yOffset, &Config::CameraXInvert);
         DrawConfigOption(rowCount++, yOffset, &Config::CameraYInvert);
         DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming);
@@ -898,7 +879,7 @@ static void DrawConfigOptions()
     {
         g_rowSelectionTime = ImGui::GetTime();
         g_prevSelectedRowIndex = prevSelectedRowIndex;
-        PlaySound("sys_worldmap_cursor");
+        Game_PlaySound("sys_worldmap_cursor");
     }
 
     g_upWasHeld = upIsHeld;
