@@ -124,7 +124,7 @@ CONFIG_DEFINE_LOCALE(WerehogHubTransformVideo)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(WerehogHubTransformVideo)
 {
-    { ELanguage::English, "Set whether to play the Werehog transformation cutscene when changing the time of day in the hub areas." }
+    { ELanguage::English, "Play the Werehog transformation cutscene when changing the time of day in the hub areas." }
 };
 
 CONFIG_DEFINE_LOCALE(LogoSkip)
@@ -174,7 +174,7 @@ CONFIG_DEFINE_LOCALE(UnleashCancel)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(UnleashCancel)
 {
-    { ELanguage::English, "Set whether Unleash can be cancelled by pressing the input again." }
+    { ELanguage::English, "Allow Unleash to be cancelled at the cost of some energy by pressing the input again." }
 };
 
 CONFIG_DEFINE_LOCALE(BackgroundInput)
@@ -184,7 +184,7 @@ CONFIG_DEFINE_LOCALE(BackgroundInput)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(BackgroundInput)
 {
-    { ELanguage::English, "Set whether to accept controller input whilst the game window is unfocused." }
+    { ELanguage::English, "Accept controller input whilst the game window is unfocused." }
 };
 
 CONFIG_DEFINE_LOCALE(MusicVolume)
@@ -245,7 +245,7 @@ CONFIG_DEFINE_LOCALE(WerehogBattleMusic)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(WerehogBattleMusic)
 {
-    { ELanguage::English, "Set whether to play the Werehog battle theme during combat.\n\nThis option will apply the next time you're in combat." }
+    { ELanguage::English, "Play the Werehog battle theme during combat.\n\nThis option will apply the next time you're in combat." }
 };
 
 CONFIG_DEFINE_LOCALE(WindowSize)
@@ -345,7 +345,7 @@ CONFIG_DEFINE_LOCALE(AlphaToCoverage)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(AlphaToCoverage)
 {
-    { ELanguage::English, "Set whether to apply anti-aliasing to alpha transparent textures." }
+    { ELanguage::English, "Apply anti-aliasing to alpha transparent textures." }
 };
 
 CONFIG_DEFINE_LOCALE(ShadowResolution)
@@ -396,7 +396,7 @@ CONFIG_DEFINE_LOCALE(MotionBlur)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(MotionBlur)
 {
-    { ELanguage::English, "Set whether to use per-object motion blur and radial blur." }
+    { ELanguage::English, "Use per-object motion blur and radial blur." }
 };
 
 CONFIG_DEFINE_LOCALE(Xbox360ColourCorrection)
@@ -406,7 +406,7 @@ CONFIG_DEFINE_LOCALE(Xbox360ColourCorrection)
 
 CONFIG_DEFINE_DESCRIPTION_LOCALE(Xbox360ColourCorrection)
 {
-    { ELanguage::English, "Set whether to use the warm tint from the\nXbox 360 version of the game." }
+    { ELanguage::English, "Use the warm tint from the Xbox 360 version of the game." }
 };
 
 CONFIG_DEFINE_LOCALE(MovieScaleMode)
