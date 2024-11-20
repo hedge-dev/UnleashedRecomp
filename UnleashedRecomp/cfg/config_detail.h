@@ -8,13 +8,13 @@
     inline static ConfigDef<type> name{section, #name, defaultValue};
 
 #define CONFIG_DEFINE_LOCALISED(section, type, name, defaultValue) \
-    inline static ConfigDef<type> name{section, #name, &g_##name##_locale, &g_##name##_desc_locale, defaultValue};
+    inline static ConfigDef<type> name{section, #name, &g_##name##_locale, defaultValue};
 
 #define CONFIG_DEFINE_ENUM(section, type, name, defaultValue) \
     inline static ConfigDef<type> name{section, #name, defaultValue, &g_##type##_template};
 
 #define CONFIG_DEFINE_ENUM_LOCALISED(section, type, name, defaultValue) \
-    inline static ConfigDef<type> name{section, #name, &g_##name##_locale, &g_##name##_desc_locale, defaultValue, &g_##type##_template, &g_##type##_locale};
+    inline static ConfigDef<type> name{section, #name, &g_##name##_locale, defaultValue, &g_##type##_template, &g_##type##_locale};
 
 #define CONFIG_DEFINE_CALLBACK(section, type, name, defaultValue, readCallback) \
     inline static ConfigDef<type> name{section, #name, defaultValue, [](ConfigDef<type>* def) readCallback};
@@ -22,8 +22,8 @@
 #define CONFIG_DEFINE_ENUM_TEMPLATE(type) \
     inline static std::unordered_map<std::string, type> g_##type##_template =
 
-#define CONFIG_LOCALE std::unordered_map<ELanguage, std::string>
-#define CONFIG_ENUM_LOCALE(type) std::unordered_map<ELanguage, std::unordered_map<type, std::string>>
+#define CONFIG_LOCALE std::unordered_map<ELanguage, std::tuple<std::string, std::string>>
+#define CONFIG_ENUM_LOCALE(type) std::unordered_map<ELanguage, std::unordered_map<type, std::tuple<std::string, std::string>>>
 
 #define WINDOWPOS_CENTRED 0x2FFF0000
 
@@ -181,10 +181,11 @@ public:
     virtual void MakeDefault() = 0;
     virtual std::string_view GetSection() const = 0;
     virtual std::string_view GetName() const = 0;
-    virtual std::string GetDescription() const = 0;
     virtual std::string GetNameLocalised() const = 0;
+    virtual std::string GetDescription() const = 0;
     virtual const void* GetValue() const = 0;
     virtual std::string GetValueLocalised() const = 0;
+    virtual std::string GetValueDescription() const = 0;
     virtual std::string GetDefinition(bool withSection = false) const = 0;
     virtual std::string ToString(bool strWithQuotes = true) const = 0;
 };
@@ -195,8 +196,7 @@ class ConfigDef : public IConfigDef
 public:
     std::string Section{};
     std::string Name{};
-    CONFIG_LOCALE* NameLocale;
-    CONFIG_LOCALE* DescLocale;
+    CONFIG_LOCALE* Locale;
     T DefaultValue{};
     T Value{ DefaultValue };
     std::unordered_map<std::string, T>* EnumTemplate;
@@ -208,13 +208,13 @@ public:
     ConfigDef(std::string section, std::string name, T defaultValue);
 
     // CONFIG_DEFINE_LOCALISED
-    ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, CONFIG_LOCALE* descLocale, T defaultValue);
+    ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, T defaultValue);
 
     // CONFIG_DEFINE_ENUM
     ConfigDef(std::string section, std::string name, T defaultValue, std::unordered_map<std::string, T>* enumTemplate);
 
     // CONFIG_DEFINE_ENUM_LOCALISED
-    ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, CONFIG_LOCALE* descLocale, T defaultValue, std::unordered_map<std::string, T>* enumTemplate, CONFIG_ENUM_LOCALE(T)* enumLocale);
+    ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, T defaultValue, std::unordered_map<std::string, T>* enumTemplate, CONFIG_ENUM_LOCALE(T)* enumLocale);
 
     // CONFIG_DEFINE_CALLBACK
     ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T>*)> callback);
@@ -260,9 +260,9 @@ public:
         return Name;
     }
 
-    std::string GetDescription() const override;
-
     std::string GetNameLocalised() const override;
+
+    std::string GetDescription() const override;
 
     const void* GetValue() const override
     {
@@ -270,6 +270,8 @@ public:
     }
 
     std::string GetValueLocalised() const override;
+
+    std::string GetValueDescription() const override;
 
     std::string GetDefinition(bool withSection = false) const override
     {

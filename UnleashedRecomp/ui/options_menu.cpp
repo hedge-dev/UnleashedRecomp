@@ -986,6 +986,8 @@ static void DrawInfoPanel()
             desc = buf;
         }
 
+        desc += "\n\n" + g_selectedItem->GetValueDescription();
+
         auto size = Scale(26.0f);
         auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, desc.c_str());
 
