@@ -27,15 +27,5 @@ void AudioPatches::Update(float deltaTime)
     *pEffectsVolume = Config::EffectsVolume;
 }
 
-PPC_FUNC_IMPL(__imp__sub_824EB9B0);
-PPC_FUNC(sub_824EB9B0)
-{
-    auto pApplicationDocument = (SWA::CApplicationDocument*)g_memory.Translate(ctx.r4.u32);
-
-    pApplicationDocument->m_VoiceLanguage = (SWA::EVoiceLanguage)Config::VoiceLanguage.Value;
-
-    __imp__sub_824EB9B0(ctx, base);
-}
-
 // Stub volume setter.
 GUEST_FUNCTION_STUB(sub_82E58728);

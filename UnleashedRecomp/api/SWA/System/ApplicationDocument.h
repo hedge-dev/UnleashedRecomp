@@ -5,6 +5,16 @@
 
 namespace SWA
 {
+    enum ELanguage : uint32_t
+    {
+        eLanguage_English,
+        eLanguage_Japanese,
+        eLanguage_German,
+        eLanguage_French,
+        eLanguage_Italian,
+        eLanguage_Spanish
+    };
+
     enum EVoiceLanguage : uint32_t
     {
         eVoiceLanguage_English,
@@ -28,7 +38,7 @@ namespace SWA
 
         xpointer<void> m_pVftable;
         xpointer<CMember> m_pMember;
-        SWA_INSERT_PADDING(0x04);
+        be<ELanguage> m_Language;
         be<EVoiceLanguage> m_VoiceLanguage;
         SWA_INSERT_PADDING(0x0C);
         be<uint32_t> m_Region;

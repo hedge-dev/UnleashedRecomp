@@ -31,6 +31,17 @@ PPC_FUNC(sub_824DCF38)
     __imp__sub_824DCF38(ctx, base);
 }
 
+// Load voice language files.
+PPC_FUNC_IMPL(__imp__sub_824EB9B0);
+PPC_FUNC(sub_824EB9B0)
+{
+    auto pApplicationDocument = (SWA::CApplicationDocument*)g_memory.Translate(ctx.r4.u32);
+
+    pApplicationDocument->m_VoiceLanguage = (SWA::EVoiceLanguage)Config::VoiceLanguage.Value;
+
+    __imp__sub_824EB9B0(ctx, base);
+}
+
 // CApplicationDocument::LoadArchiveDatabases
 PPC_FUNC_IMPL(__imp__sub_824EFD28);
 PPC_FUNC(sub_824EFD28)
