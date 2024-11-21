@@ -19,7 +19,8 @@ static ImFont* g_dfsogeistdFont;
 static ImFont* g_newRodinFont;
 
 static const IConfigDef* g_selectedItem;
-static bool g_isSelectedItemAccessible;
+
+static std::string* g_inaccessibleReason;
 
 static bool g_isEnterKeyBuffered = false;
 
@@ -498,7 +499,9 @@ static bool DrawCategories()
 extern void VideoConfigValueChangedCallback(IConfigDef* config);
 
 template<typename T>
-static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* config, bool isAccessible, T valueMin = T(0), T valueCenter = T(0.5), T valueMax = T(1))
+static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* config,
+    bool isAccessible, std::string* inaccessibleReason = nullptr,
+    T valueMin = T(0), T valueCenter = T(0.5), T valueMax = T(1))
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
@@ -529,7 +532,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     if (g_selectedRowIndex == rowIndex)
     {
         g_selectedItem = config;
-        g_isSelectedItemAccessible = isAccessible;
+        g_inaccessibleReason = isAccessible ? nullptr : inaccessibleReason;
 
         if (!g_isEnterKeyBuffered)
         {
@@ -836,14 +839,15 @@ static void DrawConfigOptions()
     int32_t rowCount = 0;
 
     bool isStage = OptionsMenu::s_pauseMenuType == SWA::eMenuType_Stage || OptionsMenu::s_pauseMenuType == SWA::eMenuType_Hub;
+    auto cmnReason = &Localise("Options_Desc_NotAvailable");
 
     // TODO: Don't use raw numbers here!
     switch (g_categoryIndex)
     {
     case 0: // SYSTEM
-        DrawConfigOption(rowCount++, yOffset, &Config::Language, !OptionsMenu::s_isPause);
-        DrawConfigOption(rowCount++, yOffset, &Config::Hints, !isStage);
-        DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, !isStage);
+        DrawConfigOption(rowCount++, yOffset, &Config::Language, !OptionsMenu::s_isPause, cmnReason);
+        DrawConfigOption(rowCount++, yOffset, &Config::Hints, !isStage, cmnReason);
+        DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, !isStage, cmnReason);
         DrawConfigOption(rowCount++, yOffset, &Config::SaveScoreAtCheckpoints, true);
         DrawConfigOption(rowCount++, yOffset, &Config::UnleashGaugeBehaviour, true);
         DrawConfigOption(rowCount++, yOffset, &Config::WerehogHubTransformVideo, true);
@@ -852,7 +856,7 @@ static void DrawConfigOptions()
     case 1: // INPUT
         DrawConfigOption(rowCount++, yOffset, &Config::CameraXInvert, true);
         DrawConfigOption(rowCount++, yOffset, &Config::CameraYInvert, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming, !OptionsMenu::s_isPause); // TODO: make this editable in stages.
+        DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming, !OptionsMenu::s_isPause, cmnReason); // TODO: make this editable in stages.
         DrawConfigOption(rowCount++, yOffset, &Config::UnleashCancel, true);
         DrawConfigOption(rowCount++, yOffset, &Config::BackgroundInput, true);
         break;
@@ -866,11 +870,11 @@ static void DrawConfigOptions()
         break;
     case 3: // VIDEO
         // TODO: expose WindowWidth/WindowHeight as WindowSize.
-        DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale, true, 0.25f, 1.0f, 2.0f);
+        DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale, true, nullptr, 0.25f, 1.0f, 2.0f);
         DrawConfigOption(rowCount++, yOffset, &Config::Fullscreen, true);
         DrawConfigOption(rowCount++, yOffset, &Config::VSync, true);
         DrawConfigOption(rowCount++, yOffset, &Config::TripleBuffering, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::FPS, true, 15, 120, 240);
+        DrawConfigOption(rowCount++, yOffset, &Config::FPS, true, nullptr, 15, 120, 240);
         DrawConfigOption(rowCount++, yOffset, &Config::Brightness, true);
         DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing, true);
         DrawConfigOption(rowCount++, yOffset, &Config::AlphaToCoverage, true);
@@ -996,7 +1000,11 @@ static void DrawInfoPanel()
     {
         auto desc = g_selectedItem->GetDescription();
 
-        if (g_isSelectedItemAccessible)
+        if (g_inaccessibleReason)
+        {
+            desc = *g_inaccessibleReason;
+        }
+        else
         {
             // Specialised description for resolution scale
             if (g_selectedItem->GetName() == "ResolutionScale")
@@ -1012,10 +1020,6 @@ static void DrawInfoPanel()
             }
 
             desc += "\n\n" + g_selectedItem->GetValueDescription();
-        }
-        else
-        {
-            desc = Localise("Options_Desc_NotAvailable");
         }
 
         auto size = Scale(26.0f);
