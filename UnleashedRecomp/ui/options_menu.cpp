@@ -1038,10 +1038,10 @@ static void DrawInfoPanel()
             0,
             clipRectMax.x - clipRectMin.x
         );
-
-        // Pop clip rect from DrawContainer
-        drawList->PopClipRect();
     }
+
+    // Pop clip rect from DrawContainer
+    drawList->PopClipRect();
 }
 
 void OptionsMenu::Draw()
