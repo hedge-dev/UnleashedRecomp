@@ -24,7 +24,7 @@ bool InjectOptionsBehaviour(uint32_t pThis, uint32_t count)
     auto pHudPause = (SWA::CHudPause*)g_memory.Translate(pThis);
     auto cursorIndex = *(be<uint32_t>*)g_memory.Translate(4 * (*(be<uint32_t>*)g_memory.Translate(pThis + 0x19C) + 0x68) + pThis);
 
-    auto exitType = SWA::eActionType_Undefined;
+    auto actionType = SWA::eActionType_Undefined;
     auto transitionType = SWA::eTransitionType_Undefined;
 
     switch (pHudPause->m_Menu)
@@ -32,13 +32,13 @@ bool InjectOptionsBehaviour(uint32_t pThis, uint32_t count)
         case SWA::eMenuType_WorldMap:
         case SWA::eMenuType_Stage:
         case SWA::eMenuType_Misc:
-            exitType = SWA::eActionType_Return;
+            actionType = SWA::eActionType_Return;
             transitionType = SWA::eTransitionType_Quit;
             break;
 
         case SWA::eMenuType_Village:
         case SWA::eMenuType_Hub:
-            exitType = SWA::eActionType_Return;
+            actionType = SWA::eActionType_Return;
             transitionType = SWA::eTransitionType_Hide;
             break;
     }
@@ -56,7 +56,7 @@ bool InjectOptionsBehaviour(uint32_t pThis, uint32_t count)
         }
         else if (cursorIndex == count - 1)
         {
-            pHudPause->m_Action = exitType;
+            pHudPause->m_Action = actionType;
             pHudPause->m_Transition = transitionType;
 
             return true;

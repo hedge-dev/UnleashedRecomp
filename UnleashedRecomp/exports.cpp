@@ -3,7 +3,7 @@
 #include <kernel/memory.h>
 #include <ui/window.h>
 
-extern "C" void Game_PlaySound(const char* pName)
+SWA_API void Game_PlaySound(const char* pName)
 {
     void* soundPlayerSharedPtr = g_userHeap.Alloc(8);
     GuestToHostFunction<void>(0x82B4DF50, soundPlayerSharedPtr, ((be<uint32_t>*)g_memory.Translate(0x83367900))->get(), 7, 0, 0);
@@ -22,7 +22,7 @@ extern "C" void Game_PlaySound(const char* pName)
     g_userHeap.Free(soundPlayerSharedPtr);
 }
 
-extern "C" void Window_SetFullscreen(bool isEnabled)
+SWA_API void Window_SetFullscreen(bool isEnabled)
 {
     Window::SetFullscreen(isEnabled);
 }
