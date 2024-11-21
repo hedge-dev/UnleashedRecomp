@@ -1,6 +1,6 @@
 #pragma once
 
-class audio_patches
+class AudioPatches
 {
 public:
     static void Update(float deltaTime);

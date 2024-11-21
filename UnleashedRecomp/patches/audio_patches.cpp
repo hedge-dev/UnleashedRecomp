@@ -50,7 +50,7 @@ be<float>* GetVolume(bool isMusic = true)
     return (be<float>*)g_memory.Translate(4 * ((int)isMusic + 0x1C) + ((be<uint32_t>*)g_memory.Translate(ppUnkClass->get() + 4))->get());
 }
 
-void audio_patches::Update(float deltaTime)
+void AudioPatches::Update(float deltaTime)
 {
     auto pMusicVolume = GetVolume();
     auto pSEVolume = GetVolume(false);

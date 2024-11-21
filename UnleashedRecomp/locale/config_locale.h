@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config_detail.h"
+#include <cfg/config_detail.h>
 
 #define CONFIG_DEFINE_LOCALE(name) \
     inline static std::unordered_map<ELanguage, std::tuple<std::string, std::string>> g_##name##_locale =

@@ -17,6 +17,7 @@ PPC_FUNC(sub_825882B8)
         {
             Game_PlaySound("sys_worldmap_window");
             Game_PlaySound("sys_worldmap_decide");
+
             OptionsMenu::Open();
         }
     }
@@ -29,6 +30,7 @@ PPC_FUNC(sub_825882B8)
         if (OptionsMenu::CanClose() && pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
         {
             Game_PlaySound("sys_worldmap_cansel");
+
             OptionsMenu::Close();
         }
     }

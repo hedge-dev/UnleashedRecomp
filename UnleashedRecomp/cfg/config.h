@@ -1,8 +1,8 @@
 #pragma once
 
-#include "config_detail.h"
-#include "config_locale.h"
-#include "exports.h"
+#include <cfg/config_detail.h>
+#include <locale/config_locale.h>
+#include <exports.h>
 
 class Config
 {
