@@ -20,7 +20,7 @@ namespace SWA
         // TODO: Hedgehog::Base::TSynchronizedPtr<CApplicationDocument>
         static CApplicationDocument* GetInstance();
 
-        SWA_INSERT_PADDING(0x04);
+        xpointer<void> m_pVftable;
         xpointer<CMember> m_pMember;
         SWA_INSERT_PADDING(0x14);
         be<uint32_t> m_Region;

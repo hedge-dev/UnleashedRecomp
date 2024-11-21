@@ -24,7 +24,7 @@ namespace SWA
         // TODO: Hedgehog::Base::TSynchronizedPtr<CGameDocument>
         static CGameDocument* GetInstance();
 
-        SWA_INSERT_PADDING(0x04); // vftable ptr
+        xpointer<void> m_pVftable;
         xpointer<CMember> m_pMember;
     };
 }

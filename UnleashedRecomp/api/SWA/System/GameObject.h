@@ -21,7 +21,7 @@ namespace SWA
             SWA_INSERT_PADDING(0x70);
         };
 
-        SWA_INSERT_PADDING(0x04); // vftable ptr
+        xpointer<void> m_pVftable;
         xpointer<CMember> m_pMember;
     };
 }

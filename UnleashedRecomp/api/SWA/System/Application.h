@@ -14,7 +14,7 @@ namespace SWA
             xpointer<CApplicationDocument> m_pApplicationDocument;
         };
 
-        SWA_INSERT_PADDING(0x04); // vftable ptr
+        xpointer<void> m_pVftable;
         xpointer<CMember> m_pMember;
         SWA_INSERT_PADDING(0x18);
     };
