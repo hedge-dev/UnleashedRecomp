@@ -15,7 +15,7 @@ PPC_FUNC(sub_822C1130)
     SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 
     Window::Update();
-    audio_patches::Update(g_deltaTime);
+    AudioPatches::Update(g_deltaTime);
 
     __imp__sub_822C1130(ctx, base);
 }

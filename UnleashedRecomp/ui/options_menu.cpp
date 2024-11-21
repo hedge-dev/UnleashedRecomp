@@ -6,6 +6,7 @@
 #include <gpu/imgui_common.h>
 #include <kernel/heap.h>
 #include <kernel/memory.h>
+#include <locale/locale.h>
 
 constexpr float COMMON_PADDING_POS_Y = 118.0f;
 constexpr float COMMON_PADDING_POS_X = 30.0f;
@@ -16,6 +17,7 @@ static ImFont* g_dfsogeistdFont;
 static ImFont* g_newRodinFont;
 
 static const IConfigDef* g_selectedItem;
+static bool g_isSelectedItemAccessible;
 
 static bool g_isEnterKeyBuffered = false;
 
@@ -151,7 +153,7 @@ static void DrawScanlineBars()
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
 
-    if (OptionsMenu::s_isStage)
+    if (OptionsMenu::s_pauseMenuType != SWA::eMenuType_WorldMap)
     {
         // Top bar fade
         drawList->AddRectFilledMultiColor(
@@ -291,18 +293,22 @@ static void DrawContainer(ImVec2 min, ImVec2 max)
     drawList->PushClipRect({ min.x + gridSize * 2.0f, min.y + gridSize * 2.0f }, { max.x - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
 }
 
-// TODO: localise this.
-static constexpr const char* CATEGORIES[] =
-{
-    "SYSTEM",
-    "INPUT",
-    "AUDIO",
-    "VIDEO"
-};
-
+static int32_t g_categoryCount = 4;
 static int32_t g_categoryIndex;
 static ImVec2 g_categoryAnimMin;
 static ImVec2 g_categoryAnimMax;
+
+static std::string& GetCategory(int index)
+{
+    // TODO: Don't use raw numbers here!
+    switch (index)
+    {
+        case 0: return Localise("Options_Category_System");
+        case 1: return Localise("Options_Category_Input");
+        case 2: return Localise("Options_Category_Audio");
+        case 3: return Localise("Options_Category_Video");
+    }
+}
 
 static int32_t g_firstVisibleRowIndex;
 static int32_t g_prevSelectedRowIndex;
@@ -352,12 +358,12 @@ static bool DrawCategories()
     {
         --g_categoryIndex;
         if (g_categoryIndex < 0)
-            g_categoryIndex = std::size(CATEGORIES) - 1;
+            g_categoryIndex = g_categoryCount - 1;
     }
     else if (moveRight)
     {
         ++g_categoryIndex;
-        if (g_categoryIndex >= std::size(CATEGORIES))
+        if (g_categoryIndex >= g_categoryCount)
             g_categoryIndex = 0;
     }
 
@@ -376,22 +382,22 @@ static bool DrawCategories()
     float tabPadding = gridSize;
 
     float size = Scale(32.0f);
-    ImVec2 textSizes[std::size(CATEGORIES)];
+    ImVec2 textSizes[g_categoryCount];
     float tabWidthSum = 0.0f;
-    for (size_t i = 0; i < std::size(CATEGORIES); i++)
+    for (size_t i = 0; i < g_categoryCount; i++)
     {
-        textSizes[i] = g_dfsogeistdFont->CalcTextSizeA(size, FLT_MAX, 0.0f, CATEGORIES[i]);
+        textSizes[i] = g_dfsogeistdFont->CalcTextSizeA(size, FLT_MAX, 0.0f, GetCategory(i).c_str());
         tabWidthSum += textSizes[i].x + textPadding * 2.0f;
     }
-    tabWidthSum += (std::size(CATEGORIES) - 1) * tabPadding;
+    tabWidthSum += (g_categoryCount - 1) * tabPadding;
 
     float tabHeight = gridSize * 4.0f;
     float xOffset = ((clipRectMax.x - clipRectMin.x) - tabWidthSum) / 2.0f;
     xOffset -= (1.0 - motion) * gridSize * 4.0;
 
-    ImVec2 minVec[std::size(CATEGORIES)];
+    ImVec2 minVec[g_categoryCount];
 
-    for (size_t i = 0; i < std::size(CATEGORIES); i++)
+    for (size_t i = 0; i < g_categoryCount; i++)
     {
         ImVec2 min = { clipRectMin.x + xOffset, clipRectMin.y };
 
@@ -454,7 +460,7 @@ static bool DrawCategories()
         minVec[i] = min; 
     }
 
-    for (size_t i = 0; i < std::size(CATEGORIES); i++)
+    for (size_t i = 0; i < g_categoryCount; i++)
     {
         auto& min = minVec[i];
         uint8_t alpha = (i == g_categoryIndex ? 235 : 128) * motion;
@@ -470,7 +476,7 @@ static bool DrawCategories()
             size,
             min,
             IM_COL32_WHITE,
-            CATEGORIES[i],
+            GetCategory(i).c_str(),
             Scale(3),
             IM_COL32_BLACK);
 
@@ -490,15 +496,12 @@ static bool DrawCategories()
 extern void VideoConfigValueChangedCallback(IConfigDef* config);
 
 template<typename T>
-static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* config, T valueMin = T(0), T valueCenter = T(0.5), T valueMax = T(1))
+static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* config, bool isAccessible, T valueMin = T(0), T valueCenter = T(0.5), T valueMax = T(1))
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
     auto& padState = SWA::CInputState::GetInstance()->GetPadState();
-
-    constexpr ImU32 COLOR0 = IM_COL32(0xE2, 0x71, 0x22, 0x80);
-    constexpr ImU32 COLOR1 = IM_COL32(0x92, 0xFF, 0x31, 0x80);
 
     auto gridSize = Scale(GRID_SIZE);
     auto optionWidth = gridSize * 54.0f;
@@ -524,64 +527,75 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     if (g_selectedRowIndex == rowIndex)
     {
         g_selectedItem = config;
+        g_isSelectedItemAccessible = isAccessible;
 
         if (!g_isEnterKeyBuffered)
         {
-            if constexpr (std::is_same_v<T, bool>)
+            if (isAccessible)
             {
-                if (padState.IsTapped(SWA::eKeyState_A))
+                if constexpr (std::is_same_v<T, bool>)
                 {
-                    config->Value = !config->Value;
-
-                    if (config->Callback)
-                        config->Callback(config);
-
-                    VideoConfigValueChangedCallback(config);
-
-                    Game_PlaySound("sys_worldmap_finaldecide");
-                }
-            }
-            else
-            {
-                static T s_oldValue;
-
-                if (padState.IsTapped(SWA::eKeyState_A))
-                {
-                    g_lockedOnOption ^= true;
-                    if (g_lockedOnOption)
+                    if (padState.IsTapped(SWA::eKeyState_A))
                     {
-                        g_leftWasHeld = false;
-                        g_rightWasHeld = false;
-                        // remember value
-                        s_oldValue = config->Value;
+                        config->Value = !config->Value;
 
-                        Game_PlaySound("sys_worldmap_decide");
-                    }
-                    else
-                    {
-                        // released lock, call video callbacks if value is different
-                        if (config->Value != s_oldValue)
-                            VideoConfigValueChangedCallback(config);
+                        if (config->Callback)
+                            config->Callback(config);
+
+                        VideoConfigValueChangedCallback(config);
 
                         Game_PlaySound("sys_worldmap_finaldecide");
                     }
                 }
-                else if (padState.IsTapped(SWA::eKeyState_B))
+                else
                 {
-                    // released lock, restore old value
-                    config->Value = s_oldValue;
-                    g_lockedOnOption = false;
+                    static T s_oldValue;
 
-                    Game_PlaySound("sys_worldmap_cansel");
+                    if (padState.IsTapped(SWA::eKeyState_A))
+                    {
+                        g_lockedOnOption ^= true;
+
+                        if (g_lockedOnOption)
+                        {
+                            g_leftWasHeld = false;
+                            g_rightWasHeld = false;
+                            // remember value
+                            s_oldValue = config->Value;
+
+                            Game_PlaySound("sys_worldmap_decide");
+                        }
+                        else
+                        {
+                            // released lock, call video callbacks if value is different
+                            if (config->Value != s_oldValue)
+                                VideoConfigValueChangedCallback(config);
+
+                            Game_PlaySound("sys_worldmap_finaldecide");
+                        }
+                    }
+                    else if (padState.IsTapped(SWA::eKeyState_B))
+                    {
+                        // released lock, restore old value
+                        config->Value = s_oldValue;
+                        g_lockedOnOption = false;
+
+                        Game_PlaySound("sys_worldmap_cansel");
+                    }
+
+                    lockedOnOption = g_lockedOnOption;
                 }
-
-                lockedOnOption = g_lockedOnOption;
+            }
+            else
+            {
+                if (padState.IsTapped(SWA::eKeyState_A))
+                    Game_PlaySound("sys_actstg_stateserror");
             }
         }
     }
 
-    bool fadedOut = g_lockedOnOption && g_selectedItem != config;
-    float alpha = fadedOut ? 0.5f : 1.0f;
+    auto fadedOut = (g_lockedOnOption && g_selectedItem != config) || !isAccessible;
+    auto alpha = fadedOut ? 0.5f : 1.0f;
+    auto textColour = IM_COL32(255, 255, 255, 255 * alpha);
 
     if (g_selectedItem == config)
     {
@@ -589,13 +603,16 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         double animRatio = std::clamp((ImGui::GetTime() - g_rowSelectionTime) * 60.0 / 8.0, 0.0, 1.0);
         prevItemOffset *= pow(1.0 - animRatio, 3.0);
 
-        drawList->AddRectFilledMultiColor({ min.x, min.y + prevItemOffset }, { max.x, max.y + prevItemOffset }, COLOR0, COLOR0, COLOR1, COLOR1);
+        auto c0 = IM_COL32(0xE2, 0x71, 0x22, isAccessible ? 0x80 : 0x30);
+        auto c1 = IM_COL32(0x92, 0xFF, 0x31, isAccessible ? 0x80 : 0x30);
 
-        DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, IM_COL32_WHITE, configName.c_str(), g_rowSelectionTime, 0.9, 250.0);
+        drawList->AddRectFilledMultiColor({ min.x, min.y + prevItemOffset }, { max.x, max.y + prevItemOffset }, c0, c0, c1, c1);
+
+        DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, textColour, configName.c_str(), g_rowSelectionTime, 0.9, 250.0);
     }
     else
     {
-        drawList->AddText(g_seuratFont, size, textPos, IM_COL32(255, 255, 255, 255 * alpha), configName.c_str(), 0, 0.0f, &textClipRect);
+        drawList->AddText(g_seuratFont, size, textPos, textColour, configName.c_str(), 0, 0.0f, &textClipRect);
     }
 
     // Right side
@@ -773,7 +790,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     if constexpr (std::is_same_v<T, float>)
         valueText = std::format("{}%", int32_t(round(config->Value * 100.0f)));
     else if constexpr (std::is_same_v<T, int32_t>)
-        valueText = config->Value >= valueMax ? "MAX" : std::format("{}", config->Value);
+        valueText = config->Value >= valueMax ? Localise("Options_Value_Max") : std::format("{}", config->Value);
     else
         valueText = config->GetValueLocalised();
 
@@ -816,48 +833,50 @@ static void DrawConfigOptions()
 
     int32_t rowCount = 0;
 
+    bool isStage = OptionsMenu::s_pauseMenuType == SWA::eMenuType_Stage || OptionsMenu::s_pauseMenuType == SWA::eMenuType_Hub;
+
     // TODO: Don't use raw numbers here!
     switch (g_categoryIndex)
     {
     case 0: // SYSTEM
-        DrawConfigOption(rowCount++, yOffset, &Config::Language);
-        DrawConfigOption(rowCount++, yOffset, &Config::Hints);
-        DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial);
-        DrawConfigOption(rowCount++, yOffset, &Config::SaveScoreAtCheckpoints);
-        DrawConfigOption(rowCount++, yOffset, &Config::UnleashGaugeBehaviour);
-        DrawConfigOption(rowCount++, yOffset, &Config::WerehogHubTransformVideo);
-        DrawConfigOption(rowCount++, yOffset, &Config::LogoSkip);
+        DrawConfigOption(rowCount++, yOffset, &Config::Language, !OptionsMenu::s_isPause);
+        DrawConfigOption(rowCount++, yOffset, &Config::Hints, !isStage);
+        DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, !isStage);
+        DrawConfigOption(rowCount++, yOffset, &Config::SaveScoreAtCheckpoints, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::UnleashGaugeBehaviour, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::WerehogHubTransformVideo, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::LogoSkip, true);
         break;
     case 1: // INPUT
-        DrawConfigOption(rowCount++, yOffset, &Config::CameraXInvert);
-        DrawConfigOption(rowCount++, yOffset, &Config::CameraYInvert);
-        DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming);
-        DrawConfigOption(rowCount++, yOffset, &Config::UnleashCancel);
-        DrawConfigOption(rowCount++, yOffset, &Config::BackgroundInput);
+        DrawConfigOption(rowCount++, yOffset, &Config::CameraXInvert, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::CameraYInvert, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming, !OptionsMenu::s_isPause); // TODO: make this editable in stages.
+        DrawConfigOption(rowCount++, yOffset, &Config::UnleashCancel, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::BackgroundInput, true);
         break;
     case 2: // AUDIO
-        DrawConfigOption(rowCount++, yOffset, &Config::MusicVolume);
-        DrawConfigOption(rowCount++, yOffset, &Config::SEVolume);
-        DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage);
-        DrawConfigOption(rowCount++, yOffset, &Config::Subtitles);
-        DrawConfigOption(rowCount++, yOffset, &Config::WerehogBattleMusic);
+        DrawConfigOption(rowCount++, yOffset, &Config::MusicVolume, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::SEVolume, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::Subtitles, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::WerehogBattleMusic, true);
         break;
     case 3: // VIDEO
         // TODO: expose WindowWidth/WindowHeight as WindowSize.
-        DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale, 0.25f, 1.0f, 2.0f);
-        DrawConfigOption(rowCount++, yOffset, &Config::Fullscreen);
-        DrawConfigOption(rowCount++, yOffset, &Config::VSync);
-        DrawConfigOption(rowCount++, yOffset, &Config::TripleBuffering);
-        DrawConfigOption(rowCount++, yOffset, &Config::FPS, 15, 120, 240);
-        DrawConfigOption(rowCount++, yOffset, &Config::Brightness);
-        DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing);
-        DrawConfigOption(rowCount++, yOffset, &Config::AlphaToCoverage);
-        DrawConfigOption(rowCount++, yOffset, &Config::ShadowResolution);
-        DrawConfigOption(rowCount++, yOffset, &Config::GITextureFiltering);
-        DrawConfigOption(rowCount++, yOffset, &Config::MotionBlur);
-        DrawConfigOption(rowCount++, yOffset, &Config::Xbox360ColourCorrection);
-        DrawConfigOption(rowCount++, yOffset, &Config::MovieScaleMode);
-        DrawConfigOption(rowCount++, yOffset, &Config::UIScaleMode);
+        DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale, true, 0.25f, 1.0f, 2.0f);
+        DrawConfigOption(rowCount++, yOffset, &Config::Fullscreen, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::VSync, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::TripleBuffering, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::FPS, true, 15, 120, 240);
+        DrawConfigOption(rowCount++, yOffset, &Config::Brightness, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::AlphaToCoverage, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::ShadowResolution, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::GITextureFiltering, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::MotionBlur, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::Xbox360ColourCorrection, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::MovieScaleMode, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::UIScaleMode, true);
         break;
     }
 
@@ -974,20 +993,27 @@ static void DrawInfoPanel()
     {
         auto desc = g_selectedItem->GetDescription();
 
-        // Specialised description for resolution scale
-        if (g_selectedItem->GetName() == "ResolutionScale")
+        if (g_isSelectedItemAccessible)
         {
-            char buf[100];
-            auto resScale = round(*(float*)g_selectedItem->GetValue() * 1000) / 1000;
+            // Specialised description for resolution scale
+            if (g_selectedItem->GetName() == "ResolutionScale")
+            {
+                char buf[100];
+                auto resScale = round(*(float*)g_selectedItem->GetValue() * 1000) / 1000;
 
-            std::snprintf(buf, sizeof(buf), desc.c_str(),
-                (int)((float)Window::s_width * resScale),
-                (int)((float)Window::s_height * resScale));
+                std::snprintf(buf, sizeof(buf), desc.c_str(),
+                    (int)((float)Window::s_width * resScale),
+                    (int)((float)Window::s_height * resScale));
 
-            desc = buf;
+                desc = buf;
+            }
+
+            desc += "\n\n" + g_selectedItem->GetValueDescription();
         }
-
-        desc += "\n\n" + g_selectedItem->GetValueDescription();
+        else
+        {
+            desc = Localise("Options_Desc_NotAvailable");
+        }
 
         auto size = Scale(26.0f);
 
@@ -1022,7 +1048,7 @@ void OptionsMenu::Draw()
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
     
-    if (s_isStage)
+    if (s_isPause && s_pauseMenuType != SWA::eMenuType_WorldMap)
         drawList->AddRectFilled({ 0.0f, 0.0f }, res, IM_COL32(0, 0, 0, 223));
 
     DrawScanlineBars();
@@ -1030,10 +1056,13 @@ void OptionsMenu::Draw()
     DrawInfoPanel();
 }
 
-void OptionsMenu::Open(bool stage)
+void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
 {
     s_isVisible = true;
-    s_isStage = stage;
+    s_isPause = isPause;
+
+    s_pauseMenuType = pauseMenuType;
+
     g_appearTime = ImGui::GetTime();
     g_categoryIndex = 0;
     g_categoryAnimMin = { 0.0f, 0.0f };
@@ -1051,10 +1080,9 @@ void OptionsMenu::Open(bool stage)
     // TODO: animate Miles Electric in if we're in a stage.
 }
 
-void OptionsMenu::Close(bool stage)
+void OptionsMenu::Close()
 {
     s_isVisible = false;
-    s_isStage = stage;
 
     *(bool*)g_memory.Translate(0x8328BB26) = true;
 

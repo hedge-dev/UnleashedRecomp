@@ -3,8 +3,6 @@
 #include <api/SWA.h>
 #include <ui/options_menu.h>
 
-bool m_isOptionsFromPause = false;
-
 void CHudPauseAddOptionsItemMidAsmHook(PPCRegister& pThis)
 {
     auto pStrMemory = __HH_ALLOC(8);
@@ -23,74 +21,43 @@ void CHudPauseAddOptionsItemMidAsmHook(PPCRegister& pThis)
 
 bool InjectOptionsBehaviour(uint32_t pThis, uint32_t count)
 {
-    auto status = *(be<uint32_t>*)g_memory.Translate(pThis + 0x190);
-    auto pauseType = *(be<uint32_t>*)g_memory.Translate(pThis + 0x18C);
+    auto pHudPause = (SWA::CHudPause*)g_memory.Translate(pThis);
     auto cursorIndex = *(be<uint32_t>*)g_memory.Translate(4 * (*(be<uint32_t>*)g_memory.Translate(pThis + 0x19C) + 0x68) + pThis);
 
-    /*
-        0 ---- Undefined
-        1 ---- Status
-        2 ---- Return to Previous Area
-        3 ---- Inventory
-        4 ---- Skills
-        5 ---- Go to the Lab
-        6 ---- Wait until Day/Night
-        7 ---- Undefined
-        8 ---- Restart Stage
-        9 ---- Continue Stage
-        <=10 - Undefined
-    */
-    auto pExitType = (be<uint32_t>*)g_memory.Translate(pThis + 0x188);
+    auto exitType = SWA::eActionType_Undefined;
+    auto transitionType = SWA::eTransitionType_Undefined;
 
-    /*
-        0 --- Undefined
-        1 --- Unknown menu
-        2 --- Quit menu
-        3 --- Pause menu?
-        4 --- Undefined
-        5 --- Make cursor small?
-        6 --- Hide UI and ignore face buttons
-        7 --- Stop updating pause menu
-        8 --- Hide UI (apart from pause header) and ignore face buttons
-        <=9 - Stop updating pause menu
-    */
-    auto pTransitionType = (be<uint32_t>*)g_memory.Translate(pThis + 0x194);
-
-    auto exitType = 0;
-    auto transitionType = 0;
-
-    switch (pauseType)
+    switch (pHudPause->m_Menu)
     {
-        case 0: // World Map
-        case 2: // Stage
-        case 4: // Misc
-            exitType = 2;
-            transitionType = 2;
+        case SWA::eMenuType_WorldMap:
+        case SWA::eMenuType_Stage:
+        case SWA::eMenuType_Misc:
+            exitType = SWA::eActionType_Return;
+            transitionType = SWA::eTransitionType_Quit;
             break;
 
-        case 1: // Village
-        case 3: // Hub
-            exitType = 2;
-            transitionType = 6;
+        case SWA::eMenuType_Village:
+        case SWA::eMenuType_Hub:
+            exitType = SWA::eActionType_Return;
+            transitionType = SWA::eTransitionType_Hide;
             break;
     }
 
-    if (status == 1)
+    if (pHudPause->m_Status == SWA::eStatusType_Accept)
     {
         if (cursorIndex == count - 2)
         {
-            OptionsMenu::Open(pauseType);
-            m_isOptionsFromPause = true;
+            OptionsMenu::Open(true, pHudPause->m_Menu);
 
-            *pExitType = 0;
-            *pTransitionType = 6;
+            pHudPause->m_Action = SWA::eActionType_Undefined;
+            pHudPause->m_Transition = SWA::eTransitionType_Hide;
 
             return true;
         }
         else if (cursorIndex == count - 1)
         {
-            *pExitType = exitType;
-            *pTransitionType = transitionType;
+            pHudPause->m_Action = exitType;
+            pHudPause->m_Transition = transitionType;
 
             return true;
         }
@@ -130,21 +97,18 @@ bool CHudPauseMiscInjectOptionsMidAsmHook(PPCRegister& pThis)
 PPC_FUNC_IMPL(__imp__sub_824B0930);
 PPC_FUNC(sub_824B0930)
 {
-    if (!OptionsMenu::s_isVisible || !m_isOptionsFromPause)
+    if (!OptionsMenu::s_isVisible || !OptionsMenu::s_isPause)
     {
         __imp__sub_824B0930(ctx, base);
         return;
     }
-
-    auto pauseType = *(be<uint32_t>*)g_memory.Translate(ctx.r3.u32 + 0x18C);
 
     if (auto pInputState = SWA::CInputState::GetInstance())
     {
         // TODO: disable Start button closing menu.
         if (OptionsMenu::CanClose() && pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
         {
-            OptionsMenu::Close(pauseType);
-            m_isOptionsFromPause = false;
+            OptionsMenu::Close();
 
             // Re-open pause menu.
             GuestToHostFunction<int>(0x824AFD28, ctx.r3.u32, 0, 0, 0, 1);
