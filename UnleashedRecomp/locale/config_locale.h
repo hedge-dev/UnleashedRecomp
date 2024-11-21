@@ -157,7 +157,7 @@ CONFIG_DEFINE_LOCALE(SEVolume)
 
 CONFIG_DEFINE_LOCALE(MusicAttenuation)
 {
-    { ELanguage::English, { "Music Attenuation", "Fade out the game's music when external media is playing.\n\nRequires Windows 10 or later." } }
+    { ELanguage::English, { "Music Attenuation", "Fade out the game's music when external media is playing." } }
 };
 
 CONFIG_DEFINE_LOCALE(VoiceLanguage)

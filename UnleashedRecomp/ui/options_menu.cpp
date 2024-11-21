@@ -8,6 +8,8 @@
 #include <kernel/memory.h>
 #include <locale/locale.h>
 
+#include <patches/audio_patches.h>
+
 constexpr float COMMON_PADDING_POS_Y = 118.0f;
 constexpr float COMMON_PADDING_POS_X = 30.0f;
 constexpr float INFO_CONTAINER_POS_X = 870.0f;
@@ -859,7 +861,7 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::SEVolume, true);
         DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage, true);
         DrawConfigOption(rowCount++, yOffset, &Config::Subtitles, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::MusicAttenuation, true); // TODO: grey this out for non-Windows platforms.
+        DrawConfigOption(rowCount++, yOffset, &Config::MusicAttenuation, AudioPatches::CanAttenuate(), &Localise("Options_Desc_OSNotSupported"));
         DrawConfigOption(rowCount++, yOffset, &Config::WerehogBattleMusic, true);
         break;
     case 3: // VIDEO

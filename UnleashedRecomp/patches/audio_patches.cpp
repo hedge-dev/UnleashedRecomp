@@ -1,6 +1,7 @@
 #include <cpu/guest_code.h>
 #include <cfg/config.h>
 #include <kernel/function.h>
+#include <kernel/platform.h>
 #include <patches/audio_patches.h>
 
 #if _WIN32
@@ -37,6 +38,8 @@ bool IsExternalAudioPlaying()
 
     return session.GetPlaybackInfo().PlaybackStatus() == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing;
 }
+
+int AudioPatches::m_isAttenuationSupported = -1;
 #endif
 
 be<float>* GetVolume(bool isMusic = true)
@@ -50,6 +53,22 @@ be<float>* GetVolume(bool isMusic = true)
     return (be<float>*)g_memory.Translate(4 * ((int)isMusic + 0x1C) + ((be<uint32_t>*)g_memory.Translate(ppUnkClass->get() + 4))->get());
 }
 
+bool AudioPatches::CanAttenuate()
+{
+#if _WIN32
+    if (m_isAttenuationSupported >= 0)
+        return m_isAttenuationSupported;
+
+    auto version = GetPlatformVersion();
+
+    m_isAttenuationSupported = version.Major == 10 && version.Build >= 17763;
+
+    return m_isAttenuationSupported;
+#else
+    return false;
+#endif
+}
+
 void AudioPatches::Update(float deltaTime)
 {
     auto pMusicVolume = GetVolume();
@@ -59,7 +78,7 @@ void AudioPatches::Update(float deltaTime)
         return;
 
 #if _WIN32
-    if (Config::MusicAttenuation)
+    if (Config::MusicAttenuation && CanAttenuate())
     {
         auto time = 1.0f - expf(2.5f * -deltaTime);
 
