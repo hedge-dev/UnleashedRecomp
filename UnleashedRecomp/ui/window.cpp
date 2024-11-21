@@ -81,7 +81,7 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
 
                 case SDL_WINDOWEVENT_FOCUS_GAINED:
                     Window::s_isFocused = true;
-                    SDL_ShowCursor(Window::IsFullscreen() ? SDL_DISABLE : SDL_ENABLE);
+                    SDL_ShowCursor(SDL_DISABLE);
                     break;
 
                 case SDL_WINDOWEVENT_RESTORED:
@@ -149,9 +149,6 @@ void Window::Init()
     }
 
     s_pWindow = SDL_CreateWindow("SWA", s_x, s_y, s_width, s_height, GetWindowFlags());
-
-    if (IsFullscreen())
-        SDL_ShowCursor(SDL_DISABLE);
 
     SetIcon();
     SetTitle();
