@@ -293,7 +293,7 @@ static void DrawContainer(ImVec2 min, ImVec2 max)
     drawList->PushClipRect({ min.x + gridSize * 2.0f, min.y + gridSize * 2.0f }, { max.x - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
 }
 
-static int32_t g_categoryCount = 4;
+static constexpr int32_t g_categoryCount = 4;
 static int32_t g_categoryIndex;
 static ImVec2 g_categoryAnimMin;
 static ImVec2 g_categoryAnimMax;
@@ -308,6 +308,8 @@ static std::string& GetCategory(int index)
         case 2: return Localise("Options_Category_Audio");
         case 3: return Localise("Options_Category_Video");
     }
+
+    return g_localeMissing;
 }
 
 static int32_t g_firstVisibleRowIndex;
@@ -421,8 +423,15 @@ static bool DrawCategories()
                 
                 animWidth = Lerp(animWidth, width, 1.0f - exp(-64.0f * ImGui::GetIO().DeltaTime));
 
-                g_categoryAnimMin = Lerp(g_categoryAnimMin, min, 1.0f - exp(-16.0f * ImGui::GetIO().DeltaTime));
-                g_categoryAnimMax = { g_categoryAnimMin.x + animWidth, g_categoryAnimMin.y + height };
+                auto center = Lerp(min, max, 0.5f);
+                auto animCenter = Lerp(g_categoryAnimMin, g_categoryAnimMax, 0.5f);
+                auto animatedCenter = Lerp(animCenter, center, 1.0f - exp(-16.0f * ImGui::GetIO().DeltaTime));
+
+                float widthHalfExtent = width / 2.0f;
+                float heightHalfExtent = height / 2.0f;
+
+                g_categoryAnimMin = { animatedCenter.x - widthHalfExtent, animatedCenter.y - heightHalfExtent };
+                g_categoryAnimMax = { animatedCenter.x + widthHalfExtent, animatedCenter.y + heightHalfExtent };
             }
 
             SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE_BUTTON);
