@@ -22,6 +22,13 @@ bool DisableEvilControlTutorialMidAsmHook(PPCRegister& r4, PPCRegister& r5)
     return r4.u32 == 1 && r5.u32 == 1;
 }
 
+void ToggleSubtitlesMidAsmHook(PPCRegister& r27)
+{
+    auto pApplicationDocument = (SWA::CApplicationDocument*)g_memory.Translate(r27.u32);
+
+    pApplicationDocument->m_Subtitles = Config::Subtitles;
+}
+
 void WerehogBattleMusicMidAsmHook(PPCRegister& r11)
 {
     if (Config::BattleTheme)

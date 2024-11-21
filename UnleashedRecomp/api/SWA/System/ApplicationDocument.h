@@ -21,7 +21,7 @@ namespace SWA
         eVoiceLanguage_Japanese
     };
 
-    class CApplicationDocument // : public Hedgehog::Base::CSynchronizedObject
+    class CApplicationDocument : public Hedgehog::Base::CSynchronizedObject
     {
     public:
         class CMember
@@ -36,12 +36,11 @@ namespace SWA
         // TODO: Hedgehog::Base::TSynchronizedPtr<CApplicationDocument>
         static CApplicationDocument* GetInstance();
 
-        xpointer<void> m_pVftable;
         xpointer<CMember> m_pMember;
         be<ELanguage> m_Language;
         be<EVoiceLanguage> m_VoiceLanguage;
-        SWA_INSERT_PADDING(0x0C);
-        be<uint32_t> m_Region;
+        SWA_INSERT_PADDING(0x0D);
+        bool m_Subtitles;
     };
 }
 
