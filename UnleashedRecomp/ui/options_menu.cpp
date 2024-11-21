@@ -1071,6 +1071,7 @@ void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
     g_categoryIndex = 0;
     g_categoryAnimMin = { 0.0f, 0.0f };
     g_categoryAnimMax = { 0.0f, 0.0f };
+    g_selectedItem = nullptr;
 
     /* Store button state so we can track it later
        and prevent the first item being selected. */
