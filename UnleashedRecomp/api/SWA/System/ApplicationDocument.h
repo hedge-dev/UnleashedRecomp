@@ -5,6 +5,12 @@
 
 namespace SWA
 {
+    enum EVoiceLanguage : uint32_t
+    {
+        eVoiceLanguage_English,
+        eVoiceLanguage_Japanese
+    };
+
     class CApplicationDocument // : public Hedgehog::Base::CSynchronizedObject
     {
     public:
@@ -22,7 +28,9 @@ namespace SWA
 
         xpointer<void> m_pVftable;
         xpointer<CMember> m_pMember;
-        SWA_INSERT_PADDING(0x14);
+        SWA_INSERT_PADDING(0x04);
+        be<EVoiceLanguage> m_VoiceLanguage;
+        SWA_INSERT_PADDING(0x0C);
         be<uint32_t> m_Region;
     };
 }

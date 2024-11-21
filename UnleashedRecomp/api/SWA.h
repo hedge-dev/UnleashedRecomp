@@ -36,6 +36,7 @@
 #include "SWA/CSD/CsdProject.h"
 #include "SWA/CSD/CsdTexListMirage.h"
 #include "SWA/CSD/GameObjectCSD.h"
+#include "SWA/HUD/Loading/Loading.h"
 #include "SWA/HUD/Pause/HudPause.h"
 #include "SWA/Player/Character/EvilSonic/Hud/EvilHudGuide.h"
 #include "SWA/Player/Character/EvilSonic/EvilSonic.h"

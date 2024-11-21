@@ -1,5 +1,6 @@
 #include <cpu/guest_code.h>
 #include <cfg/config.h>
+#include <api/SWA.h>
 
 const char* m_pStageID;
 
@@ -12,30 +13,19 @@ void GetStageIDMidAsmHook(PPCRegister& r5)
 PPC_FUNC_IMPL(__imp__sub_824DCF38);
 PPC_FUNC(sub_824DCF38)
 {
-    // TODO: use the actual PS3 loading screen.
+    // TODO: use the actual PS3 loading screen ("n_2_d").
     if (Config::TimeOfDayTransition == ETimeOfDayTransition::PlayStation)
     {
-        /*
-            0 - Tails Electric NOW LOADING
-            1 - No Transition
-            2 - Werehog Transition
-            3 - Tails Electric NOW LOADING w/ Info (requires context)
-            4 - Arrows In/Out
-            5 - NOW LOADING
-            6 - Event Gallery
-            7 - NOW LOADING
-            8 - Black Screen
-        */
-        if (ctx.r4.u32 == 2)
-            ctx.r4.u32 = 4;
+        if (ctx.r4.u32 == SWA::eLoadingDisplayType_WerehogMovie)
+            ctx.r4.u32 = SWA::eLoadingDisplayType_Arrows;
     }
 
     if (m_pStageID)
     {
         /* Fix restarting Eggmanland as the Werehog
            erroneously using the Event Gallery transition. */
-        if (ctx.r4.u32 == 6 && !strcmp(m_pStageID, "Act_EggmanLand"))
-            ctx.r4.u32 = 5;
+        if (ctx.r4.u32 == SWA::eLoadingDisplayType_EventGallery && !strcmp(m_pStageID, "Act_EggmanLand"))
+            ctx.r4.u32 = SWA::eLoadingDisplayType_NowLoading;
     }
 
     __imp__sub_824DCF38(ctx, base);

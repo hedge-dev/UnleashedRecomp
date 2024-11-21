@@ -1,6 +1,6 @@
+#include <app.h>
 #include <kernel/function.h>
 #include <ui/window.h>
-#include <app.h>
 #include <patches/audio_patches.h>
 
 double g_deltaTime;

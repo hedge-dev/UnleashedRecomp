@@ -2,6 +2,7 @@
 #include <cfg/config.h>
 #include <kernel/function.h>
 #include <patches/audio_patches.h>
+#include <api/SWA.h>
 
 be<float>* GetVolume(bool isMusic = true)
 {
@@ -24,6 +25,16 @@ void AudioPatches::Update(float deltaTime)
 
     *pMusicVolume = Config::MusicVolume;
     *pEffectsVolume = Config::EffectsVolume;
+}
+
+PPC_FUNC_IMPL(__imp__sub_824EB9B0);
+PPC_FUNC(sub_824EB9B0)
+{
+    auto pApplicationDocument = (SWA::CApplicationDocument*)g_memory.Translate(ctx.r4.u32);
+
+    pApplicationDocument->m_VoiceLanguage = (SWA::EVoiceLanguage)Config::VoiceLanguage.Value;
+
+    __imp__sub_824EB9B0(ctx, base);
 }
 
 // Stub volume setter.

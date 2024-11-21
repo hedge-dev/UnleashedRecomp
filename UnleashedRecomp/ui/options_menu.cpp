@@ -860,14 +860,14 @@ static void DrawConfigOptions()
     case 1: // INPUT
         DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraX, true);
         DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraY, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason); // TODO: make this editable in stages?
+        DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason);
         DrawConfigOption(rowCount++, yOffset, &Config::AllowCancellingUnleash, true);
         DrawConfigOption(rowCount++, yOffset, &Config::AllowBackgroundInput, true);
         break;
     case 2: // AUDIO
         DrawConfigOption(rowCount++, yOffset, &Config::MusicVolume, true);
         DrawConfigOption(rowCount++, yOffset, &Config::EffectsVolume, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason);
         DrawConfigOption(rowCount++, yOffset, &Config::Subtitles, true);
         DrawConfigOption(rowCount++, yOffset, &Config::BattleTheme, true);
         break;
