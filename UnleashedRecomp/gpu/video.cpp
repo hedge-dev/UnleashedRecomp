@@ -963,10 +963,7 @@ static bool DetectWine()
 static constexpr size_t TEXTURE_DESCRIPTOR_SIZE = 65536;
 static constexpr size_t SAMPLER_DESCRIPTOR_SIZE = 1024;
 
-static std::unique_ptr<RenderTexture> g_imFontTexture;
-static std::unique_ptr<RenderTextureView> g_imFontTextureView;
-static uint32_t g_imFontTextureDescriptorIndex;
-static bool g_imPendingBarrier = true;
+static std::unique_ptr<GuestTexture> g_imFontTexture;
 static std::unique_ptr<RenderPipelineLayout> g_imPipelineLayout;
 static std::unique_ptr<RenderPipeline> g_imPipeline;
 static ImDrawDataSnapshot g_imSnapshot;
@@ -1005,6 +1002,8 @@ static void CreateImGuiBackend()
     OptionsMenu::Init();
     ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
 
+    g_imFontTexture = std::make_unique<GuestTexture>(ResourceType::Texture);
+
     uint8_t* pixels;
     int width, height;
     io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
@@ -1017,7 +1016,9 @@ static void CreateImGuiBackend()
     textureDesc.mipLevels = 1;
     textureDesc.arraySize = 1;
     textureDesc.format = RenderFormat::R8_UNORM;
-    g_imFontTexture = g_device->createTexture(textureDesc);
+
+    g_imFontTexture->textureHolder = g_device->createTexture(textureDesc);
+    g_imFontTexture->texture = g_imFontTexture->textureHolder.get();
 
     uint32_t rowPitch = (width + PITCH_ALIGNMENT - 1) & ~(PITCH_ALIGNMENT - 1);
     uint32_t slicePitch = (rowPitch * height + PLACEMENT_ALIGNMENT - 1) & ~(PLACEMENT_ALIGNMENT - 1);
@@ -1042,24 +1043,26 @@ static void CreateImGuiBackend()
 
     ExecuteCopyCommandList([&]
         {
-            g_copyCommandList->barriers(RenderBarrierStage::COPY, RenderTextureBarrier(g_imFontTexture.get(), RenderTextureLayout::COPY_DEST));
+            g_copyCommandList->barriers(RenderBarrierStage::COPY, RenderTextureBarrier(g_imFontTexture->texture, RenderTextureLayout::COPY_DEST));
 
             g_copyCommandList->copyTextureRegion(
-                RenderTextureCopyLocation::Subresource(g_imFontTexture.get(), 0),
+                RenderTextureCopyLocation::Subresource(g_imFontTexture->texture, 0),
                 RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), RenderFormat::R8_UNORM, width, height, 1, rowPitch, 0));
         });
+
+    g_imFontTexture->layout = RenderTextureLayout::COPY_DEST;
 
     RenderTextureViewDesc textureViewDesc;
     textureViewDesc.format = textureDesc.format;
     textureViewDesc.dimension = RenderTextureViewDimension::TEXTURE_2D;
     textureViewDesc.mipLevels = 1;
     textureViewDesc.componentMapping = RenderComponentMapping(RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::R);
-    g_imFontTextureView = g_imFontTexture->createTextureView(textureViewDesc);
+    g_imFontTexture->textureView = g_imFontTexture->texture->createTextureView(textureViewDesc);
 
-    g_imFontTextureDescriptorIndex = g_textureDescriptorAllocator.allocate();
-    g_textureDescriptorSet->setTexture(g_imFontTextureDescriptorIndex, g_imFontTexture.get(), RenderTextureLayout::SHADER_READ, g_imFontTextureView.get());
+    g_imFontTexture->descriptorIndex = g_textureDescriptorAllocator.allocate();
+    g_textureDescriptorSet->setTexture(g_imFontTexture->descriptorIndex, g_imFontTexture->texture, RenderTextureLayout::SHADER_READ, g_imFontTexture->textureView.get());
 
-    io.Fonts->SetTexID(ImTextureID(g_imFontTextureDescriptorIndex));
+    io.Fonts->SetTexID(g_imFontTexture.get());
 
     RenderPipelineLayoutBuilder pipelineLayoutBuilder;
     pipelineLayoutBuilder.begin(false, true);
@@ -1596,12 +1599,6 @@ static void ProcDrawImGui(const RenderCommand& cmd)
 {
     auto& commandList = g_commandLists[g_frame];
 
-    if (g_imPendingBarrier)
-    {
-        commandList->barriers(RenderBarrierStage::GRAPHICS, RenderTextureBarrier(g_imFontTexture.get(), RenderTextureLayout::SHADER_READ));
-        g_imPendingBarrier = false;
-    }
-
     commandList->setGraphicsPipelineLayout(g_imPipelineLayout.get());
     commandList->setPipeline(g_imPipeline.get());
     commandList->setGraphicsDescriptorSet(g_textureDescriptorSet.get(), 0);
@@ -1650,7 +1647,21 @@ static void ProcDrawImGui(const RenderCommand& cmd)
                 if (drawCmd.ClipRect.z <= drawCmd.ClipRect.x || drawCmd.ClipRect.w <= drawCmd.ClipRect.y)
                     continue;
 
-                uint32_t descriptorIndex = uint32_t(drawCmd.GetTexID());
+                auto texture = reinterpret_cast<GuestTexture*>(drawCmd.TextureId);
+                uint32_t descriptorIndex = TEXTURE_DESCRIPTOR_NULL_TEXTURE_2D;
+                if (texture != nullptr)
+                {
+                    if (texture->layout != RenderTextureLayout::SHADER_READ)
+                    {
+                        commandList->barriers(RenderBarrierStage::GRAPHICS | RenderBarrierStage::COPY,
+                            RenderTextureBarrier(texture->texture, RenderTextureLayout::SHADER_READ));
+
+                        texture->layout = RenderTextureLayout::SHADER_READ;
+                    }
+
+                    descriptorIndex = texture->descriptorIndex;
+                }
+
                 commandList->setGraphicsPushConstants(0, &descriptorIndex, offsetof(ImGuiPushConstants, texture2DDescriptorIndex), sizeof(descriptorIndex));
                 commandList->setScissors(RenderRect(int32_t(drawCmd.ClipRect.x), int32_t(drawCmd.ClipRect.y), int32_t(drawCmd.ClipRect.z), int32_t(drawCmd.ClipRect.w)));
                 commandList->drawIndexedInstanced(drawCmd.ElemCount, 1, drawCmd.IdxOffset, drawCmd.VtxOffset, 0);
@@ -3559,176 +3570,193 @@ static RenderFormat ConvertDXGIFormat(ddspp::DXGIFormat format)
     }
 }
 
-static void MakePictureData(GuestPictureData* pictureData, uint8_t* data, uint32_t dataSize)
+static bool LoadTexture(GuestTexture& texture, uint8_t* data, size_t dataSize)
 {
-    if ((pictureData->flags & 0x1) == 0)
+    ddspp::Descriptor ddsDesc;
+    if (ddspp::decode_header(data, ddsDesc) != ddspp::Error)
     {
-        ddspp::Descriptor ddsDesc;
-        if (ddspp::decode_header(data, ddsDesc) != ddspp::Error)
+        RenderTextureDesc desc;
+        desc.dimension = ConvertTextureDimension(ddsDesc.type);
+        desc.width = ddsDesc.width;
+        desc.height = ddsDesc.height;
+        desc.depth = ddsDesc.depth;
+        desc.mipLevels = ddsDesc.numMips;
+        desc.arraySize = ddsDesc.type == ddspp::TextureType::Cubemap ? ddsDesc.arraySize * 6 : ddsDesc.arraySize;
+        desc.format = ConvertDXGIFormat(ddsDesc.format);
+        desc.flags = ddsDesc.type == ddspp::TextureType::Cubemap ? RenderTextureFlag::CUBE : RenderTextureFlag::NONE;
+
+        texture.textureHolder = g_device->createTexture(desc);
+        texture.texture = texture.textureHolder.get();
+        texture.layout = RenderTextureLayout::COPY_DEST;
+
+        RenderTextureViewDesc viewDesc;
+        viewDesc.format = desc.format;
+        viewDesc.dimension = ConvertTextureViewDimension(ddsDesc.type);
+        viewDesc.mipLevels = ddsDesc.numMips;
+        texture.textureView = texture.texture->createTextureView(viewDesc);
+        texture.descriptorIndex = g_textureDescriptorAllocator.allocate();
+        g_textureDescriptorSet->setTexture(texture.descriptorIndex, texture.texture, RenderTextureLayout::SHADER_READ, texture.textureView.get());
+
+        texture.viewDimension = viewDesc.dimension;
+
+        struct Slice
         {
-            const auto texture = g_userHeap.AllocPhysical<GuestTexture>(ResourceType::Texture);
+            uint32_t width;
+            uint32_t height;
+            uint32_t depth;
+            uint32_t srcOffset;
+            uint32_t dstOffset;
+            uint32_t srcRowPitch;
+            uint32_t dstRowPitch;
+            uint32_t rowCount;
+        };
 
-            RenderTextureDesc desc;
-            desc.dimension = ConvertTextureDimension(ddsDesc.type);
-            desc.width = ddsDesc.width;
-            desc.height = ddsDesc.height;
-            desc.depth = ddsDesc.depth;
-            desc.mipLevels = ddsDesc.numMips;
-            desc.arraySize = ddsDesc.type == ddspp::TextureType::Cubemap ? ddsDesc.arraySize * 6 : ddsDesc.arraySize;
-            desc.format = ConvertDXGIFormat(ddsDesc.format);
-            desc.flags = ddsDesc.type == ddspp::TextureType::Cubemap ? RenderTextureFlag::CUBE : RenderTextureFlag::NONE;
+        std::vector<Slice> slices;
+        uint32_t curSrcOffset = 0;
+        uint32_t curDstOffset = 0;
 
-            texture->textureHolder = g_device->createTexture(desc);
-            texture->texture = texture->textureHolder.get();
-            texture->layout = RenderTextureLayout::COPY_DEST;
-
-#ifdef _DEBUG
-            texture->texture->setName(reinterpret_cast<char*>(g_memory.Translate(pictureData->name + 2)));
-#endif
-
-            RenderTextureViewDesc viewDesc;
-            viewDesc.format = desc.format;
-            viewDesc.dimension = ConvertTextureViewDimension(ddsDesc.type);
-            viewDesc.mipLevels = ddsDesc.numMips;
-            texture->textureView = texture->texture->createTextureView(viewDesc);
-            texture->descriptorIndex = g_textureDescriptorAllocator.allocate();
-            g_textureDescriptorSet->setTexture(texture->descriptorIndex, texture->texture, RenderTextureLayout::SHADER_READ, texture->textureView.get());
-
-            texture->viewDimension = viewDesc.dimension;
-
-            struct Slice
+        for (uint32_t arraySlice = 0; arraySlice < desc.arraySize; arraySlice++)
+        {
+            for (uint32_t mipSlice = 0; mipSlice < ddsDesc.numMips; mipSlice++)
             {
-                uint32_t width;
-                uint32_t height;
-                uint32_t depth;
-                uint32_t srcOffset;
-                uint32_t dstOffset;
-                uint32_t srcRowPitch;
-                uint32_t dstRowPitch;
-                uint32_t rowCount;
-            };
+                auto& slice = slices.emplace_back();
 
-            std::vector<Slice> slices;
-            uint32_t curSrcOffset = 0;
-            uint32_t curDstOffset = 0;
+                slice.width = std::max(1u, ddsDesc.width >> mipSlice);
+                slice.height = std::max(1u, ddsDesc.height >> mipSlice);
+                slice.depth = std::max(1u, ddsDesc.depth >> mipSlice);
+                slice.srcOffset = curSrcOffset;
+                slice.dstOffset = curDstOffset;
+                uint32_t rowPitch = ((slice.width + ddsDesc.blockWidth - 1) / ddsDesc.blockWidth) * ddsDesc.bitsPerPixelOrBlock;
+                slice.srcRowPitch = (rowPitch + 7) / 8;
+                slice.dstRowPitch = (slice.srcRowPitch + PITCH_ALIGNMENT - 1) & ~(PITCH_ALIGNMENT - 1);
+                slice.rowCount = (slice.height + ddsDesc.blockHeight - 1) / ddsDesc.blockHeight;
 
-            for (uint32_t arraySlice = 0; arraySlice < desc.arraySize; arraySlice++)
+                curSrcOffset += slice.srcRowPitch * slice.rowCount * slice.depth;
+                curDstOffset += (slice.dstRowPitch * slice.rowCount * slice.depth + PLACEMENT_ALIGNMENT - 1) & ~(PLACEMENT_ALIGNMENT - 1);
+            }
+        }
+
+        auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(curDstOffset));
+        uint8_t* mappedMemory = reinterpret_cast<uint8_t*>(uploadBuffer->map());
+
+        for (auto& slice : slices)
+        {
+            uint8_t* srcData = data + ddsDesc.headerSize + slice.srcOffset;
+            uint8_t* dstData = mappedMemory + slice.dstOffset;
+
+            if (slice.srcRowPitch == slice.dstRowPitch)
             {
-                for (uint32_t mipSlice = 0; mipSlice < ddsDesc.numMips; mipSlice++)
+                memcpy(dstData, srcData, slice.srcRowPitch * slice.rowCount * slice.depth);
+            }
+            else
+            {
+                for (size_t i = 0; i < slice.rowCount * slice.depth; i++)
                 {
-                    auto& slice = slices.emplace_back();
-
-                    slice.width = std::max(1u, ddsDesc.width >> mipSlice);
-                    slice.height = std::max(1u, ddsDesc.height >> mipSlice);
-                    slice.depth = std::max(1u, ddsDesc.depth >> mipSlice);
-                    slice.srcOffset = curSrcOffset;
-                    slice.dstOffset = curDstOffset;
-                    uint32_t rowPitch = ((slice.width + ddsDesc.blockWidth - 1) / ddsDesc.blockWidth) * ddsDesc.bitsPerPixelOrBlock;
-                    slice.srcRowPitch = (rowPitch + 7) / 8;
-                    slice.dstRowPitch = (slice.srcRowPitch + PITCH_ALIGNMENT - 1) & ~(PITCH_ALIGNMENT - 1);
-                    slice.rowCount = (slice.height + ddsDesc.blockHeight - 1) / ddsDesc.blockHeight;
-
-                    curSrcOffset += slice.srcRowPitch * slice.rowCount * slice.depth;
-                    curDstOffset += (slice.dstRowPitch * slice.rowCount * slice.depth + PLACEMENT_ALIGNMENT - 1) & ~(PLACEMENT_ALIGNMENT - 1);
+                    memcpy(dstData, srcData, slice.srcRowPitch);
+                    srcData += slice.srcRowPitch;
+                    dstData += slice.dstRowPitch;
                 }
             }
+        }
 
-            auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(curDstOffset));
+        uploadBuffer->unmap();
+
+        ExecuteCopyCommandList([&]
+            {
+                g_copyCommandList->barriers(RenderBarrierStage::COPY, RenderTextureBarrier(texture.texture, RenderTextureLayout::COPY_DEST));
+
+                for (size_t i = 0; i < slices.size(); i++)
+                {
+                    auto& slice = slices[i];
+
+                    g_copyCommandList->copyTextureRegion(
+                        RenderTextureCopyLocation::Subresource(texture.texture, i),
+                        RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), desc.format, slice.width, slice.height, slice.depth, (slice.dstRowPitch * 8) / ddsDesc.bitsPerPixelOrBlock * ddsDesc.blockWidth, slice.dstOffset));
+                }
+            });
+
+        return true;
+    }
+    else
+    {
+        int width, height;
+        void* stbImage = stbi_load_from_memory(data, dataSize, &width, &height, nullptr, 4);
+
+        if (stbImage != nullptr)
+        {
+            texture.textureHolder = g_device->createTexture(RenderTextureDesc::Texture2D(width, height, 1, RenderFormat::R8G8B8A8_UNORM));
+            texture.texture = texture.textureHolder.get();
+            texture.viewDimension = RenderTextureViewDimension::TEXTURE_2D;
+            texture.layout = RenderTextureLayout::COPY_DEST;
+
+            texture.descriptorIndex = g_textureDescriptorAllocator.allocate();
+            g_textureDescriptorSet->setTexture(texture.descriptorIndex, texture.texture, RenderTextureLayout::SHADER_READ);
+
+            uint32_t rowPitch = (width * 4 + PITCH_ALIGNMENT - 1) & ~(PITCH_ALIGNMENT - 1);
+            uint32_t slicePitch = rowPitch * height;
+
+            auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(slicePitch));
             uint8_t* mappedMemory = reinterpret_cast<uint8_t*>(uploadBuffer->map());
 
-            for (auto& slice : slices)
+            if (rowPitch == (width * 4))
             {
-                uint8_t* srcData = data + ddsDesc.headerSize + slice.srcOffset;
-                uint8_t* dstData = mappedMemory + slice.dstOffset;
+                memcpy(mappedMemory, stbImage, slicePitch);
+            }
+            else
+            {
+                auto data = reinterpret_cast<const uint8_t*>(stbImage);
 
-                if (slice.srcRowPitch == slice.dstRowPitch)
+                for (size_t i = 0; i < height; i++)
                 {
-                    memcpy(dstData, srcData, slice.srcRowPitch * slice.rowCount * slice.depth);
-                }
-                else
-                {
-                    for (size_t i = 0; i < slice.rowCount * slice.depth; i++)
-                    {
-                        memcpy(dstData, srcData, slice.srcRowPitch);
-                        srcData += slice.srcRowPitch;
-                        dstData += slice.dstRowPitch;
-                    }
+                    memcpy(mappedMemory, data, width * 4);
+                    data += width * 4;
+                    mappedMemory += rowPitch;
                 }
             }
 
             uploadBuffer->unmap();
 
+            stbi_image_free(stbImage);
+
             ExecuteCopyCommandList([&]
                 {
-                    g_copyCommandList->barriers(RenderBarrierStage::COPY, RenderTextureBarrier(texture->texture, RenderTextureLayout::COPY_DEST));
+                    g_copyCommandList->barriers(RenderBarrierStage::COPY, RenderTextureBarrier(texture.texture, RenderTextureLayout::COPY_DEST));
 
-                    for (size_t i = 0; i < slices.size(); i++)
-                    {
-                        auto& slice = slices[i];
-
-                        g_copyCommandList->copyTextureRegion(
-                            RenderTextureCopyLocation::Subresource(texture->texture, i),
-                            RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), desc.format, slice.width, slice.height, slice.depth, (slice.dstRowPitch * 8) / ddsDesc.bitsPerPixelOrBlock * ddsDesc.blockWidth, slice.dstOffset));
-                    }
+                    g_copyCommandList->copyTextureRegion(
+                        RenderTextureCopyLocation::Subresource(texture.texture, 0),
+                        RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), RenderFormat::R8G8B8A8_UNORM, width, height, 1, rowPitch / 4, 0));
                 });
 
-            pictureData->texture = g_memory.MapVirtual(texture);
-            pictureData->type = 0;
+            return true;
         }
-        else
+    }
+
+    return false;
+}
+
+std::unique_ptr<GuestTexture> LoadTexture(uint8_t* data, size_t dataSize)
+{
+    GuestTexture texture(ResourceType::Texture);
+
+    if (LoadTexture(texture, data, dataSize))
+        return std::make_unique<GuestTexture>(std::move(texture));
+
+    return nullptr;
+}
+
+static void MakePictureData(GuestPictureData* pictureData, uint8_t* data, uint32_t dataSize)
+{
+    if ((pictureData->flags & 0x1) == 0)
+    {
+        GuestTexture texture(ResourceType::Texture);
+
+        if (LoadTexture(texture, data, dataSize))
         {
-            int width, height;
-            void* stbImage = stbi_load_from_memory(data, dataSize, &width, &height, nullptr, 4);
-
-            if (stbImage != nullptr)
-            {
-                const auto texture = g_userHeap.AllocPhysical<GuestTexture>(ResourceType::Texture);
-                texture->textureHolder = g_device->createTexture(RenderTextureDesc::Texture2D(width, height, 1, RenderFormat::R8G8B8A8_UNORM));
-                texture->texture = texture->textureHolder.get();
-                texture->viewDimension = RenderTextureViewDimension::TEXTURE_2D;
-                texture->layout = RenderTextureLayout::COPY_DEST;
-
-                texture->descriptorIndex = g_textureDescriptorAllocator.allocate();
-                g_textureDescriptorSet->setTexture(texture->descriptorIndex, texture->texture, RenderTextureLayout::SHADER_READ);
-
-                uint32_t rowPitch = (width * 4 + PITCH_ALIGNMENT - 1) & ~(PITCH_ALIGNMENT - 1);
-                uint32_t slicePitch = rowPitch * height;
-
-                auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(slicePitch));
-                uint8_t* mappedMemory = reinterpret_cast<uint8_t*>(uploadBuffer->map());
-
-                if (rowPitch == (width * 4))
-                {
-                    memcpy(mappedMemory, stbImage, slicePitch);
-                }
-                else
-                {
-                    auto data = reinterpret_cast<const uint8_t*>(stbImage);
-
-                    for (size_t i = 0; i < height; i++)
-                    {
-                        memcpy(mappedMemory, data, width * 4);
-                        data += width * 4;
-                        mappedMemory += rowPitch;
-                    }
-                }
-
-                uploadBuffer->unmap();
-
-                stbi_image_free(stbImage);
-
-                ExecuteCopyCommandList([&]
-                    {
-                        g_copyCommandList->barriers(RenderBarrierStage::COPY, RenderTextureBarrier(texture->texture, RenderTextureLayout::COPY_DEST));
-
-                        g_copyCommandList->copyTextureRegion(
-                            RenderTextureCopyLocation::Subresource(texture->texture, 0),
-                            RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), RenderFormat::R8G8B8A8_UNORM, width, height, 1, rowPitch / 4, 0));
-                    });
-
-                pictureData->texture = g_memory.MapVirtual(texture);
-                pictureData->type = 0;
-            }
+#ifdef _DEBUG
+            texture.texture->setName(reinterpret_cast<char*>(g_memory.Translate(pictureData->name + 2)));
+#endif
+            pictureData->texture = g_memory.MapVirtual(g_userHeap.AllocPhysical<GuestTexture>(std::move(texture)));
+            pictureData->type = 0;
         }
     }
 }

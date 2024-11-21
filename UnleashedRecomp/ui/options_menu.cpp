@@ -4,6 +4,7 @@
 
 #include <api/SWA/System/InputState.h>
 #include <gpu/imgui_common.h>
+#include <gpu/video.h>
 #include <kernel/heap.h>
 #include <kernel/memory.h>
 #include <locale/locale.h>
@@ -500,9 +501,6 @@ static bool DrawCategories()
 
     return false;
 }
-
-// extern definition to avoid including "video.h", the header is quite large
-extern void VideoConfigValueChangedCallback(IConfigDef* config);
 
 template<typename T>
 static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* config,

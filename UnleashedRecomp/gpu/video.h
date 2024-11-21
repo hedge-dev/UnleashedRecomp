@@ -357,3 +357,7 @@ enum GuestTextureAddress
     D3DTADDRESS_MIRRORONCE = 3,
     D3DTADDRESS_BORDER = 6
 };
+
+extern std::unique_ptr<GuestTexture> LoadTexture(uint8_t* data, size_t dataSize);
+
+extern void VideoConfigValueChangedCallback(class IConfigDef* config);
