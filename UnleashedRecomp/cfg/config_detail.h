@@ -108,6 +108,20 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EWindowState)
     { "Maximized", EWindowState::Maximised }
 };
 
+enum class EAspectRatio : uint32_t
+{
+    Auto,
+    Square,
+    Widescreen
+};
+
+CONFIG_DEFINE_ENUM_TEMPLATE(EAspectRatio)
+{
+    { "Auto", EAspectRatio::Auto },
+    { "4:3",  EAspectRatio::Square },
+    { "16:9", EAspectRatio::Widescreen }
+};
+
 enum class EAntiAliasing : uint32_t
 {
     None = 0,

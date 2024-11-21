@@ -873,6 +873,7 @@ static void DrawConfigOptions()
         break;
     case 3: // VIDEO
         // TODO: expose WindowWidth/WindowHeight as WindowSize.
+        DrawConfigOption(rowCount++, yOffset, &Config::AspectRatio, true);
         DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale, true, nullptr, 0.25f, 1.0f, 2.0f);
         DrawConfigOption(rowCount++, yOffset, &Config::Fullscreen, true);
         DrawConfigOption(rowCount++, yOffset, &Config::VSync, true);

@@ -35,6 +35,7 @@ public:
     CONFIG_DEFINE("Video", int32_t, WindowWidth, 1280);
     CONFIG_DEFINE("Video", int32_t, WindowHeight, 720);
     CONFIG_DEFINE_ENUM("Video", EWindowState, WindowState, EWindowState::Normal);
+    CONFIG_DEFINE_ENUM_LOCALISED("Video", EAspectRatio, AspectRatio, EAspectRatio::Auto);
 
     CONFIG_DEFINE_CALLBACK("Video", float, ResolutionScale, 1.0f,
     {

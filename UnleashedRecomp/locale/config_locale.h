@@ -192,9 +192,19 @@ CONFIG_DEFINE_LOCALE(BattleTheme)
     { ELanguage::English, { "Battle Theme", "Play the Werehog battle theme during combat.\n\nThis option will apply the next time you're in combat." } }
 };
 
-CONFIG_DEFINE_LOCALE(WindowSize)
+CONFIG_DEFINE_LOCALE(AspectRatio)
 {
-    { ELanguage::English, { "Window Size", "Adjust the size of the game window in windowed mode." } }
+    { ELanguage::English, { "Aspect Ratio", "Change the aspect ratio." } }
+};
+
+CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
+{
+    {
+        ELanguage::English,
+        {
+            { EAspectRatio::Auto, { "AUTO", "Auto: the aspect ratio will dynamically adjust to the window size." } }
+        }
+    }
 };
 
 CONFIG_DEFINE_LOCALE(ResolutionScale)

@@ -37,6 +37,18 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         }
     },
     {
+        "Options_Name_WindowSize",
+        {
+            { ELanguage::English, "Window Size" }
+        }
+    },
+    {
+        "Options_Desc_WindowSize",
+        {
+            { ELanguage::English, "Adjust the size of the game window in windowed mode." }
+        }
+    },
+    {
         "Options_Desc_NotAvailable",
         {
             { ELanguage::English, "This option is not available at this location." }
