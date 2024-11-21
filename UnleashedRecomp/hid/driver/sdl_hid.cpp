@@ -42,7 +42,7 @@ public:
 
     bool CanPoll()
     {
-        return controller && (Window::s_isFocused || Config::BackgroundInput);
+        return controller && (Window::s_isFocused || Config::AllowBackgroundInput);
     }
 
     void PollAxis()

@@ -12,9 +12,8 @@ void GetStageIDMidAsmHook(PPCRegister& r5)
 PPC_FUNC_IMPL(__imp__sub_824DCF38);
 PPC_FUNC(sub_824DCF38)
 {
-    /* Force the Werehog transition ID
-       to use a different transition. */
-    if (!Config::WerehogHubTransformVideo)
+    // TODO: use the actual PS3 loading screen.
+    if (Config::TimeOfDayTransition == ETimeOfDayTransition::PlayStation)
     {
         /*
             0 - Tails Electric NOW LOADING

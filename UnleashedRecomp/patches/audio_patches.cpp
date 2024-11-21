@@ -17,13 +17,13 @@ be<float>* GetVolume(bool isMusic = true)
 void AudioPatches::Update(float deltaTime)
 {
     auto pMusicVolume = GetVolume();
-    auto pSEVolume = GetVolume(false);
+    auto pEffectsVolume = GetVolume(false);
 
-    if (!pMusicVolume || !pSEVolume)
+    if (!pMusicVolume || !pEffectsVolume)
         return;
 
-    *pSEVolume = Config::SEVolume;
     *pMusicVolume = Config::MusicVolume;
+    *pEffectsVolume = Config::EffectsVolume;
 }
 
 // Stub volume setter.

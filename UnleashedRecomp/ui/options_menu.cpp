@@ -854,22 +854,22 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, !isStage, cmnReason);
         DrawConfigOption(rowCount++, yOffset, &Config::SaveScoreAtCheckpoints, true);
         DrawConfigOption(rowCount++, yOffset, &Config::UnleashGaugeBehaviour, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::WerehogHubTransformVideo, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::LogoSkip, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::TimeOfDayTransition, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::SkipIntroLogos, true);
         break;
     case 1: // INPUT
-        DrawConfigOption(rowCount++, yOffset, &Config::CameraXInvert, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::CameraYInvert, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraX, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraY, true);
         DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason); // TODO: make this editable in stages?
-        DrawConfigOption(rowCount++, yOffset, &Config::UnleashCancel, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::BackgroundInput, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::AllowCancellingUnleash, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::AllowBackgroundInput, true);
         break;
     case 2: // AUDIO
         DrawConfigOption(rowCount++, yOffset, &Config::MusicVolume, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::SEVolume, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::EffectsVolume, true);
         DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage, true);
         DrawConfigOption(rowCount++, yOffset, &Config::Subtitles, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::WerehogBattleMusic, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::BattleTheme, true);
         break;
     case 3: // VIDEO
         // TODO: expose WindowWidth/WindowHeight as WindowSize.
@@ -880,11 +880,11 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::FPS, true, nullptr, 15, 120, 240);
         DrawConfigOption(rowCount++, yOffset, &Config::Brightness, true);
         DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::AlphaToCoverage, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::TransparencyAntiAliasing, Config::AntiAliasing != EAntiAliasing::None, &Localise("Options_Desc_NotAvailableMSAA"));
         DrawConfigOption(rowCount++, yOffset, &Config::ShadowResolution, true);
         DrawConfigOption(rowCount++, yOffset, &Config::GITextureFiltering, true);
         DrawConfigOption(rowCount++, yOffset, &Config::MotionBlur, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::Xbox360ColourCorrection, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::XboxColourCorrection, true);
         DrawConfigOption(rowCount++, yOffset, &Config::MovieScaleMode, true);
         DrawConfigOption(rowCount++, yOffset, &Config::UIScaleMode, true);
         break;

@@ -718,7 +718,7 @@ static void SetAlphaTestMode(bool enable)
 
     if (enable)
     {
-        if (Config::AlphaToCoverage && g_renderTarget != nullptr && g_renderTarget->sampleCount != RenderSampleCount::COUNT_1)
+        if (Config::TransparencyAntiAliasing && g_renderTarget != nullptr && g_renderTarget->sampleCount != RenderSampleCount::COUNT_1)
             alphaTestMode = AlphaTestMode::AlphaToCoverage;
         else
             alphaTestMode = AlphaTestMode::AlphaThreshold;

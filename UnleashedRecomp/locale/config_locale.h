@@ -91,12 +91,12 @@ CONFIG_DEFINE_LOCALE(ControlTutorial)
 
 CONFIG_DEFINE_LOCALE(SaveScoreAtCheckpoints)
 {
-    { ELanguage::English, { "Save Score at Checkpoints", "Keep your score from the last checkpoint upon respawning." } }
+    { ELanguage::English, { "Save Score at Checkpoints", "Keep your score from the last checkpoint upon respawning.\n\n[TO BE REMOVED]" } }
 };
 
 CONFIG_DEFINE_LOCALE(UnleashGaugeBehaviour)
 {
-    { ELanguage::English, { "Unleash Gauge Behavior", "Change how the Unleash gauge behaves." } }
+    { ELanguage::English, { "Unleash Gauge Behavior", "Change how the Unleash gauge behaves.\n\n[TO BE REMOVED]" } }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EUnleashGaugeBehaviour)
@@ -110,37 +110,48 @@ CONFIG_DEFINE_ENUM_LOCALE(EUnleashGaugeBehaviour)
     }
 };
 
-CONFIG_DEFINE_LOCALE(WerehogHubTransformVideo)
+CONFIG_DEFINE_LOCALE(TimeOfDayTransition)
 {
-    { ELanguage::English, { "Transformation Cutscene", "Play the Werehog transformation cutscene when changing the time of day in the hub areas." } }
+    { ELanguage::English, { "Time of Day Transition", "Change how the loading screen appears when switching time of day in the hub areas." } }
 };
 
-CONFIG_DEFINE_LOCALE(LogoSkip)
+CONFIG_DEFINE_ENUM_LOCALE(ETimeOfDayTransition)
 {
-    { ELanguage::English, { "Skip Intro Logos", "Skip the logos during the game's boot sequence." } }
+    {
+        ELanguage::English,
+        {
+            { ETimeOfDayTransition::Xbox,        { "XBOX", "Xbox: the transformation cutscene will play with artificial loading times." } },
+            { ETimeOfDayTransition::PlayStation, { "PLAYSTATION", "PlayStation: a spinning medal loading screen will be used instead." } }
+        }
+    }
 };
 
-CONFIG_DEFINE_LOCALE(CameraXInvert)
+CONFIG_DEFINE_LOCALE(SkipIntroLogos)
+{
+    { ELanguage::English, { "Skip Intro Logos", "Skip the logos during the game's boot sequence.\n\n[TO BE REMOVED]" } }
+};
+
+CONFIG_DEFINE_LOCALE(InvertCameraX)
 {
     { ELanguage::English, { "Invert Camera X", "Toggle between inverted left and right camera movement." } }
 };
 
-CONFIG_DEFINE_LOCALE(CameraYInvert)
+CONFIG_DEFINE_LOCALE(InvertCameraY)
 {
     { ELanguage::English, { "Invert Camera Y", "Toggle between inverted up and down camera movement." } }
 };
 
 CONFIG_DEFINE_LOCALE(XButtonHoming)
 {
-    { ELanguage::English, { "Homing Attack on Boost", "Toggle between using the boost button or the jump button for homing attack." } }
+    { ELanguage::English, { "Homing Attack on Boost", "Toggle between using the boost button or the jump button for the homing attack.\n\n[TO BE REMOVED]" } }
 };
 
-CONFIG_DEFINE_LOCALE(UnleashCancel)
+CONFIG_DEFINE_LOCALE(AllowCancellingUnleash)
 {
-    { ELanguage::English, { "Allow Cancelling Unleash", "Allow Unleash to be cancelled at the cost of some energy by pressing the input again." } }
+    { ELanguage::English, { "Allow Cancelling Unleash", "Allow Unleash to be cancelled at the cost of some energy by pressing the input again.\n\n[TO BE REMOVED]" } }
 };
 
-CONFIG_DEFINE_LOCALE(BackgroundInput)
+CONFIG_DEFINE_LOCALE(AllowBackgroundInput)
 {
     { ELanguage::English, { "Allow Background Input", "Accept controller input whilst the game window is unfocused." } }
 };
@@ -150,7 +161,7 @@ CONFIG_DEFINE_LOCALE(MusicVolume)
     { ELanguage::English, { "Music Volume", "Adjust the volume for the music." } }
 };
 
-CONFIG_DEFINE_LOCALE(SEVolume)
+CONFIG_DEFINE_LOCALE(EffectsVolume)
 {
     { ELanguage::English, { "Effects Volume", "Adjust the volume for sound effects." } }
 };
@@ -176,7 +187,7 @@ CONFIG_DEFINE_LOCALE(Subtitles)
     { ELanguage::English, { "Subtitles", "Show subtitles during dialogue." } }
 };
 
-CONFIG_DEFINE_LOCALE(WerehogBattleMusic)
+CONFIG_DEFINE_LOCALE(BattleTheme)
 {
     { ELanguage::English, { "Battle Theme", "Play the Werehog battle theme during combat.\n\nThis option will apply the next time you're in combat." } }
 };
@@ -231,7 +242,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EAntiAliasing)
     }
 };
 
-CONFIG_DEFINE_LOCALE(AlphaToCoverage)
+CONFIG_DEFINE_LOCALE(TransparencyAntiAliasing)
 {
     { ELanguage::English, { "Transparency Anti-Aliasing", "Apply anti-aliasing to alpha transparent textures." } }
 };
@@ -272,9 +283,9 @@ CONFIG_DEFINE_LOCALE(MotionBlur)
     { ELanguage::English, { "Motion Blur", "Use per-object motion blur and radial blur." } }
 };
 
-CONFIG_DEFINE_LOCALE(Xbox360ColourCorrection)
+CONFIG_DEFINE_LOCALE(XboxColourCorrection)
 {
-    { ELanguage::English, { "Xbox 360 Color Correction", "Use the warm tint from the Xbox 360 version of the game." } }
+    { ELanguage::English, { "Xbox Color Correction", "Use the warm tint from the Xbox version of the game." } }
 };
 
 CONFIG_DEFINE_LOCALE(MovieScaleMode)

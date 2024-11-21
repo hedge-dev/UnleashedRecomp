@@ -59,6 +59,18 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EUnleashGaugeBehaviour)
     { "Revised",  EUnleashGaugeBehaviour::Revised }
 };
 
+enum class ETimeOfDayTransition : uint32_t
+{
+    Xbox,
+    PlayStation
+};
+
+CONFIG_DEFINE_ENUM_TEMPLATE(ETimeOfDayTransition)
+{
+    { "Xbox",        ETimeOfDayTransition::Xbox },
+    { "PlayStation", ETimeOfDayTransition::PlayStation }
+};
+
 enum class EVoiceLanguage : uint32_t
 {
     English,

@@ -41,6 +41,12 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         {
             { ELanguage::English, "This option is not available at this location." }
         }
+    },
+    {
+        "Options_Desc_NotAvailableMSAA",
+        {
+            { ELanguage::English, "This option is not available without MSAA." }
+        }
     }
 };
 

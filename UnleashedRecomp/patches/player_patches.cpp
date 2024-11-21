@@ -67,7 +67,7 @@ PPC_FUNC(sub_823AF7A8)
 
     __imp__sub_823AF7A8(ctx, base);
 
-    if (!Config::UnleashCancel)
+    if (!Config::AllowCancellingUnleash)
         return;
 
     auto pInputState = SWA::CInputState::GetInstance();

@@ -14,20 +14,20 @@ public:
     CONFIG_DEFINE_LOCALISED("System", bool, ControlTutorial, true);
     CONFIG_DEFINE_LOCALISED("System", bool, SaveScoreAtCheckpoints, false);
     CONFIG_DEFINE_ENUM_LOCALISED("System", EUnleashGaugeBehaviour, UnleashGaugeBehaviour, EUnleashGaugeBehaviour::Original);
-    CONFIG_DEFINE_LOCALISED("System", bool, WerehogHubTransformVideo, true);
-    CONFIG_DEFINE_LOCALISED("System", bool, LogoSkip, false);
+    CONFIG_DEFINE_ENUM_LOCALISED("System", ETimeOfDayTransition, TimeOfDayTransition, ETimeOfDayTransition::Xbox);
+    CONFIG_DEFINE_LOCALISED("System", bool, SkipIntroLogos, false);
 
-    CONFIG_DEFINE_LOCALISED("Input", bool, CameraXInvert, false);
-    CONFIG_DEFINE_LOCALISED("Input", bool, CameraYInvert, false);
+    CONFIG_DEFINE_LOCALISED("Input", bool, InvertCameraX, false);
+    CONFIG_DEFINE_LOCALISED("Input", bool, InvertCameraY, false);
     CONFIG_DEFINE_LOCALISED("Input", bool, XButtonHoming, true);
-    CONFIG_DEFINE_LOCALISED("Input", bool, UnleashCancel, false);
-    CONFIG_DEFINE_LOCALISED("Input", bool, BackgroundInput, false);
+    CONFIG_DEFINE_LOCALISED("Input", bool, AllowCancellingUnleash, false);
+    CONFIG_DEFINE_LOCALISED("Input", bool, AllowBackgroundInput, false);
 
     CONFIG_DEFINE_LOCALISED("Audio", float, MusicVolume, 1.0f);
-    CONFIG_DEFINE_LOCALISED("Audio", float, SEVolume, 1.0f);
+    CONFIG_DEFINE_LOCALISED("Audio", float, EffectsVolume, 1.0f);
     CONFIG_DEFINE_ENUM_LOCALISED("Audio", EVoiceLanguage, VoiceLanguage, EVoiceLanguage::English);
     CONFIG_DEFINE_LOCALISED("Audio", bool, Subtitles, true);
-    CONFIG_DEFINE_LOCALISED("Audio", bool, WerehogBattleMusic, true);
+    CONFIG_DEFINE_LOCALISED("Audio", bool, BattleTheme, true);
 
     CONFIG_DEFINE_ENUM("Video", EGraphicsAPI, GraphicsAPI, EGraphicsAPI::D3D12);
     CONFIG_DEFINE("Video", int32_t, WindowX, WINDOWPOS_CENTRED);
@@ -54,12 +54,12 @@ public:
     CONFIG_DEFINE_LOCALISED("Video", int32_t, FPS, 60);
     CONFIG_DEFINE_LOCALISED("Video", float, Brightness, 0.5f);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EAntiAliasing, AntiAliasing, EAntiAliasing::MSAA4x);
-    CONFIG_DEFINE_LOCALISED("Video", bool, AlphaToCoverage, true);
+    CONFIG_DEFINE_LOCALISED("Video", bool, TransparencyAntiAliasing, true);
     CONFIG_DEFINE("Video", size_t, AnisotropicFiltering, 16);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EShadowResolution, ShadowResolution, EShadowResolution::x4096);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EGITextureFiltering, GITextureFiltering, EGITextureFiltering::Bicubic);
     CONFIG_DEFINE_LOCALISED("Video", bool, MotionBlur, true);
-    CONFIG_DEFINE_LOCALISED("Video", bool, Xbox360ColourCorrection, false);
+    CONFIG_DEFINE_LOCALISED("Video", bool, XboxColourCorrection, false);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EMovieScaleMode, MovieScaleMode, EMovieScaleMode::Fit);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EUIScaleMode, UIScaleMode, EUIScaleMode::Centre);
 
