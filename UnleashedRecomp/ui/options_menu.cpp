@@ -253,7 +253,6 @@ static void DrawContainer(ImVec2 min, ImVec2 max)
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
 
-
     double outerAlpha = ComputeMotion(CONTAINER_OUTER_TIME, CONTAINER_OUTER_DURATION);
     double innerAlpha = ComputeMotion(CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
     double backgroundAlpha = ComputeMotion(CONTAINER_BACKGROUND_TIME, CONTAINER_BACKGROUND_DURATION);
@@ -854,7 +853,7 @@ static void DrawConfigOptions()
     case 1: // INPUT
         DrawConfigOption(rowCount++, yOffset, &Config::CameraXInvert, true);
         DrawConfigOption(rowCount++, yOffset, &Config::CameraYInvert, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming, !OptionsMenu::s_isPause, cmnReason); // TODO: make this editable in stages.
+        DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason); // TODO: make this editable in stages?
         DrawConfigOption(rowCount++, yOffset, &Config::UnleashCancel, true);
         DrawConfigOption(rowCount++, yOffset, &Config::BackgroundInput, true);
         break;
