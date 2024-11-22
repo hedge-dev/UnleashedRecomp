@@ -222,11 +222,6 @@ CONFIG_DEFINE_LOCALE(VSync)
     { ELanguage::English, { "V-Sync", "[PLACEHOLDER]" } }
 };
 
-CONFIG_DEFINE_LOCALE(TripleBuffering)
-{
-    { ELanguage::English, { "Triple Buffering", "[PLACEHOLDER]" } }
-};
-
 CONFIG_DEFINE_LOCALE(FPS)
 {
     { ELanguage::English, { "FPS", "[PLACEHOLDER]" } }

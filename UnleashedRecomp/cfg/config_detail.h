@@ -122,6 +122,20 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EAspectRatio)
     { "16:9", EAspectRatio::Widescreen }
 };
 
+enum class ETripleBuffering : uint32_t
+{
+    Auto,
+    On,
+    Off
+};
+
+CONFIG_DEFINE_ENUM_TEMPLATE(ETripleBuffering)
+{
+    { "Auto", ETripleBuffering::Auto },
+    { "On",  ETripleBuffering::On },
+    { "Off", ETripleBuffering::Off }
+};
+
 enum class EAntiAliasing : uint32_t
 {
     None = 0,

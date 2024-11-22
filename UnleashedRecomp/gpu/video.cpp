@@ -1149,7 +1149,22 @@ static void CreateHostDevice()
     g_copyCommandList = g_device->createCommandList(RenderCommandListType::COPY);
     g_copyCommandFence = g_device->createCommandFence();
 
-    g_swapChain = g_queue->createSwapChain(Window::s_handle, Config::TripleBuffering ? 3 : 2, BACKBUFFER_FORMAT);
+    uint32_t bufferCount = 2;
+
+    switch (Config::TripleBuffering)
+    {
+    case ETripleBuffering::Auto:
+        bufferCount = g_vulkan ? 2 : 3; // Defaulting to 3 is fine on D3D12 thanks to flip discard model.
+        break;
+    case ETripleBuffering::On:
+        bufferCount = 3;
+        break;
+    case ETripleBuffering::Off:
+        bufferCount = 2;
+        break;
+    }
+
+    g_swapChain = g_queue->createSwapChain(Window::s_handle, bufferCount, BACKBUFFER_FORMAT);
     g_swapChain->setVsyncEnabled(Config::VSync);
     g_swapChainValid = !g_swapChain->needsResize();
 
