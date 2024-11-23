@@ -81,7 +81,7 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
 
                 case SDL_WINDOWEVENT_FOCUS_GAINED:
                     Window::s_isFocused = true;
-                    SDL_ShowCursor(SDL_DISABLE);
+                    SDL_ShowCursor(Window::IsFullscreen() ? SDL_DISABLE : SDL_ENABLE);
                     break;
 
                 case SDL_WINDOWEVENT_RESTORED:
@@ -111,6 +111,20 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
             Window::s_isIconNight = event->user.code;
             Window::SetIcon(Window::s_isIconNight);
             break;
+        }
+    }
+
+    if (!Window::IsFullscreen())
+    {
+        if (event->type == SDL_CONTROLLERBUTTONDOWN || event->type == SDL_CONTROLLERBUTTONUP || event->type == SDL_CONTROLLERAXISMOTION)
+        {
+            // Hide mouse cursor when controller input is detected.
+            SDL_ShowCursor(SDL_DISABLE);
+        }
+        else if (event->type == SDL_MOUSEMOTION)
+        {
+            // Restore mouse cursor when mouse input is detected.
+            SDL_ShowCursor(SDL_ENABLE);
         }
     }
 
@@ -149,6 +163,9 @@ void Window::Init()
     }
 
     s_pWindow = SDL_CreateWindow("SWA", s_x, s_y, s_width, s_height, GetWindowFlags());
+
+    if (IsFullscreen())
+        SDL_ShowCursor(SDL_DISABLE);
 
     SetIcon();
     SetTitle();
