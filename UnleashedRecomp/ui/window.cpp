@@ -4,6 +4,7 @@
 #include <SDL_syswm.h>
 
 bool m_isFullscreenKeyReleased = true;
+bool m_isResizing = false;
 
 int Window_OnSDLEvent(void*, SDL_Event* event)
 {
@@ -93,8 +94,10 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
                     break;
 
                 case SDL_WINDOWEVENT_RESIZED:
+                    m_isResizing = true;
                     Window::s_width = event->window.data1;
                     Window::s_height = event->window.data2;
+                    Window::SetTitle(std::format("{} - [{}x{}]", Window::GetTitle(), Window::s_width, Window::s_height).c_str());
                     break;
 
                 case SDL_WINDOWEVENT_MOVED:
@@ -186,5 +189,11 @@ void Window::Update()
         Config::WindowY = Window::s_y;
         Config::WindowWidth = Window::s_width;
         Config::WindowHeight = Window::s_height;
+    }
+
+    if (m_isResizing)
+    {
+        SetTitle();
+        m_isResizing = false;
     }
 }

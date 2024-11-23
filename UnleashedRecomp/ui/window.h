@@ -58,16 +58,16 @@ public:
         }
     }
 
+    static const char* GetTitle()
+    {
+        return Config::Language == ELanguage::Japanese
+            ? "SONIC WORLD ADVENTURE"
+            : "SONIC UNLEASHED";
+    }
+
     static void SetTitle(const char* title = nullptr)
     {
-        if (!title)
-        {
-            title = Config::Language == ELanguage::Japanese
-                ? "SONIC WORLD ADVENTURE"
-                : "SONIC UNLEASHED";
-        }
-
-        SDL_SetWindowTitle(s_pWindow, title);
+        SDL_SetWindowTitle(s_pWindow, title ? title : GetTitle());
     }
 
     static bool IsFullscreen()
