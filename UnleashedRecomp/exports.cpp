@@ -1,25 +1,23 @@
 #include <kernel/function.h>
 #include <kernel/heap.h>
 #include <kernel/memory.h>
+#include <cpu/guest_stack_var.h>
 #include <ui/window.h>
+#include <api/boost/smart_ptr/shared_ptr.h>
 
 SWA_API void Game_PlaySound(const char* pName)
 {
-    void* soundPlayerSharedPtr = g_userHeap.Alloc(8);
-    GuestToHostFunction<void>(sub_82B4DF50, soundPlayerSharedPtr, ((be<uint32_t>*)g_memory.Translate(0x83367900))->get(), 7, 0, 0);
+    guest_stack_var<boost::anonymous_shared_ptr> soundPlayer;
+    GuestToHostFunction<void>(sub_82B4DF50, soundPlayer.get(), ((be<uint32_t>*)g_memory.Translate(0x83367900))->get(), 7, 0, 0);
 
-    auto soundPlayer = (be<uint32_t>*)g_memory.Translate(*(be<uint32_t>*)soundPlayerSharedPtr);
-    auto soundPlayerVtable = (be<uint32_t>*)g_memory.Translate(*soundPlayer);
+    auto soundPlayerVtable = (be<uint32_t>*)g_memory.Translate(*(be<uint32_t>*)soundPlayer->get());
     uint32_t virtualFunction = *(soundPlayerVtable + 1);
 
     size_t strLen = strlen(pName);
     void* strAllocation = g_userHeap.Alloc(strLen + 1);
     memcpy(strAllocation, pName, strLen + 1);
-    GuestToHostFunction<void>(virtualFunction, soundPlayer, strAllocation, 0);
+    GuestToHostFunction<void>(virtualFunction, soundPlayer->get(), strAllocation, 0);
     g_userHeap.Free(strAllocation);
-
-    GuestToHostFunction<void>(sub_822C0890, *((be<uint32_t>*)soundPlayerSharedPtr + 1));
-    g_userHeap.Free(soundPlayerSharedPtr);
 }
 
 SWA_API void Window_SetFullscreen(bool isEnabled)

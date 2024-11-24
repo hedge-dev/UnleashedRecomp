@@ -306,8 +306,8 @@ FORCEINLINE T GuestToHostFunction(const TFunction& func, TArgs... argv)
 {
     auto args = std::make_tuple(argv...);
     auto& currentCtx = *GetPPCContext();
-    auto newCtx = PPCContext{};
 
+    PPCContext newCtx; // NOTE: No need for zero initialization, has lots of unnecessary code generation.
     newCtx.fn = currentCtx.fn;
     newCtx.r1 = currentCtx.r1;
     newCtx.r13 = currentCtx.r13;

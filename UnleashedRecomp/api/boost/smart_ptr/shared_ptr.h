@@ -5,35 +5,117 @@
 
 namespace boost
 {
+    namespace detail
+    {
+        class sp_counted_base
+        {
+        protected:
+            struct vftable_t
+            {
+                be<uint32_t> destructor;
+                be<uint32_t> dispose;
+                be<uint32_t> destroy;
+                be<uint32_t> get_deleter;
+            };
+
+            xpointer<vftable_t> vftable_;
+            be<uint32_t> use_count_;
+            be<uint32_t> weak_count_;
+
+        public:
+            // TODO
+            sp_counted_base() = delete;
+
+            void add_ref()
+            {
+                be<uint32_t> original, incremented;
+                do
+                {
+                    original = use_count_;
+                    incremented = original + 1;
+                } while (InterlockedCompareExchange((unsigned long*)&use_count_, incremented.value, original.value) != original.value);
+            }
+
+            void release()
+            {
+                be<uint32_t> original, decremented;
+                do
+                {
+                    original = use_count_;
+                    decremented = original - 1;
+                } while (InterlockedCompareExchange((unsigned long*)&use_count_, decremented.value, original.value) != original.value);
+
+                if (decremented == 0)
+                {
+                    GuestToHostFunction<void>(vftable_->dispose, this);
+                    weak_release();
+                }
+            }
+
+            void weak_release()
+            {
+                be<uint32_t> original, decremented;
+                do
+                {
+                    original = weak_count_;
+                    decremented = original - 1;
+                } while (InterlockedCompareExchange((unsigned long*)&weak_count_, decremented.value, original.value) != original.value);
+
+                if (decremented == 0)
+                {
+                    GuestToHostFunction<void>(vftable_->destroy, this);
+                }
+            }
+
+            uint32_t use_count() const
+            {
+                return use_count_;
+            }
+        };
+
+        template< class T > struct sp_dereference
+        {
+            typedef T& type;
+        };
+
+        template<> struct sp_dereference< void >
+        {
+            typedef void type;
+        };
+    }
+
     template<typename T>
     class shared_ptr
     {
     private:
-        xpointer<T> m_pObject;
-        xpointer<uint32_t> m_pRefCount;
+        xpointer<T> px;
+        xpointer<boost::detail::sp_counted_base> pn;
+
+        void add_ref()
+        {
+            if (pn)
+                pn->add_ref();
+        }
 
         void release()
         {
-            if (m_pRefCount && --(*m_pRefCount) == 0)
-            {
-                delete m_pObject;
-                delete m_pRefCount;
-            }
+            if (pn)
+                pn->release();
         }
 
     public:
-        shared_ptr() : m_pObject(nullptr), m_pRefCount(nullptr) {}
+        shared_ptr() : px(nullptr), pn(nullptr) {}
 
-        explicit shared_ptr(T* p) : m_pObject(p), m_pRefCount(new uint32_t(1)) {}
+        // TODO
+        explicit shared_ptr(T* p) = delete;
 
-        shared_ptr(const shared_ptr& other) : m_pObject(other.m_pObject), m_pRefCount(other.m_pRefCount)
+        shared_ptr(const shared_ptr& other) : px(other.px), pn(other.pn)
         {
-            if (m_pRefCount)
-                ++(*m_pRefCount);
+            add_ref();
         }
 
-        shared_ptr(shared_ptr&& other) noexcept : m_pObject(std::exchange(other.m_pObject, nullptr)),
-            m_pRefCount(std::exchange(other.m_pRefCount, nullptr)) {}
+        shared_ptr(shared_ptr&& other) noexcept : px(std::exchange(other.px, nullptr)),
+            pn(std::exchange(other.pn, nullptr)) {}
 
         ~shared_ptr()
         {
@@ -46,11 +128,10 @@ namespace boost
             {
                 release();
 
-                m_pObject = other.m_pObject;
-                m_pRefCount = other.m_pRefCount;
+                px = other.px;
+                pn = other.pn;
 
-                if (m_pRefCount)
-                    ++(*m_pRefCount);
+                add_ref();
             }
 
             return *this;
@@ -62,20 +143,22 @@ namespace boost
             {
                 release();
 
-                m_pObject = std::exchange(other.m_pObject, nullptr);
-                m_pRefCount = std::exchange(other.m_pRefCount, nullptr);
+                px = std::exchange(other.px, nullptr);
+                pn = std::exchange(other.pn, nullptr);
             }
 
             return *this;
         }
 
-        T* get() const { return m_pObject; }
+        T* get() const { return px; }
 
-        T& operator*() const { assert(m_pObject); return *m_pObject; }
-        T* operator->() const { assert(m_pObject); return m_pObject; }
+        detail::sp_dereference<T> operator*() const { assert(px); return *px; }
+        T* operator->() const { assert(px); return px; }
 
-        explicit operator bool() const { return m_pObject != nullptr; }
+        explicit operator bool() const { return px != nullptr; }
 
-        size_t use_count() const { return m_pRefCount ? *m_pRefCount : 0; }
+        size_t use_count() const { return pn ? pn->use_count() : 0; }
     };
+
+    using anonymous_shared_ptr = shared_ptr<void>;
 }
