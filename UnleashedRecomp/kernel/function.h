@@ -193,10 +193,10 @@ struct Argument
     int ordinal{};
 };
 
-template<auto Func>
-constexpr std::array<Argument, arg_count_t<Func>::value> GatherFunctionArguments()
+template<typename T1>
+constexpr std::array<Argument, std::tuple_size_v<T1>> GatherFunctionArguments(const T1& tpl)
 {
-    std::array<Argument, arg_count_t<Func>::value> args{};
+    std::array<Argument, std::tuple_size_v<T1>> args{};
 
     int floatOrdinal{};
     size_t i{};
@@ -205,9 +205,9 @@ constexpr std::array<Argument, arg_count_t<Func>::value> GatherFunctionArguments
     {
         std::apply([&](const auto& first, const auto&... rest)
             {
-                auto append = [&]<typename T>(const T & v)
+                auto append = [&]<typename T2>(const T2& v)
                 {
-                    if constexpr (is_precise_v<T>)
+                    if constexpr (is_precise_v<T2>)
                     {
                         args[i] = { 1, floatOrdinal++ };
                     }
@@ -221,10 +221,16 @@ constexpr std::array<Argument, arg_count_t<Func>::value> GatherFunctionArguments
 
                 append(first);
                 (append(rest), ...);
-            }, function_args(Func));
+            }, tpl);
     }
 
     return args;
+}
+
+template<auto Func>
+constexpr std::array<Argument, arg_count_t<Func>::value> GatherFunctionArguments()
+{
+    return GatherFunctionArguments(function_args(Func));
 }
 
 template<auto Func, size_t I>
@@ -248,19 +254,19 @@ FORCEINLINE std::enable_if_t<(I < sizeof...(TArgs)), void> _translate_args_to_ho
     _translate_args_to_host<Func, I + 1>(ctx, base, tpl);
 }
 
-template<auto Func, int I = 0, typename ...TArgs>
+template<int I = 0, typename ...TArgs>
 FORCEINLINE void _translate_args_to_guest(PPCContext& ctx, uint8_t* base, std::tuple<TArgs...>&) noexcept
     requires (I >= sizeof...(TArgs))
 {
 }
 
-template <auto Func, int I = 0, typename ...TArgs>
+template <int I = 0, typename ...TArgs>
 FORCEINLINE std::enable_if_t<(I < sizeof...(TArgs)), void> _translate_args_to_guest(PPCContext& ctx, uint8_t* base, std::tuple<TArgs...>& tpl) noexcept
 {
     using T = std::tuple_element_t<I, std::remove_reference_t<decltype(tpl)>>;
-    ArgTranslator::SetValue<T>(ctx, base, I, std::get<I>(tpl));
+    ArgTranslator::SetValue<T>(ctx, base, GatherFunctionArguments(std::tuple<TArgs...>{})[I].ordinal, std::get<I>(tpl));
 
-    _translate_args_to_guest<Func, I + 1>(ctx, base, tpl);
+    _translate_args_to_guest<I + 1>(ctx, base, tpl);
 }
 
 template<auto Func>
@@ -302,9 +308,9 @@ FORCEINLINE PPC_FUNC(HostToGuestFunction)
 }
 
 template<typename T, typename TFunction, typename... TArgs>
-FORCEINLINE T GuestToHostFunction(const TFunction& func, TArgs... argv)
+FORCEINLINE T GuestToHostFunction(const TFunction& func, TArgs&&... argv)
 {
-    auto args = std::make_tuple(argv...);
+    auto args = std::make_tuple(std::forward<TArgs>(argv)...);
     auto& currentCtx = *GetPPCContext();
 
     PPCContext newCtx; // NOTE: No need for zero initialization, has lots of unnecessary code generation.
@@ -313,7 +319,7 @@ FORCEINLINE T GuestToHostFunction(const TFunction& func, TArgs... argv)
     newCtx.r13 = currentCtx.r13;
     newCtx.fpscr = currentCtx.fpscr;
 
-    _translate_args_to_guest<GuestToHostFunction<T, TFunction, TArgs...>>(newCtx, (uint8_t*)g_memory.base, args);
+    _translate_args_to_guest(newCtx, (uint8_t*)g_memory.base, args);
 
     SetPPCContext(newCtx);
 
