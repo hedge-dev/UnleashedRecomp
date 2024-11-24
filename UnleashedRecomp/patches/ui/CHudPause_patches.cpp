@@ -5,18 +5,10 @@
 
 void CHudPauseAddOptionsItemMidAsmHook(PPCRegister& pThis)
 {
-    auto pStrMemory = __HH_ALLOC(8);
+    guest_stack_var<Hedgehog::Base::CSharedString> menu("TopMenu");
+    guest_stack_var<Hedgehog::Base::CSharedString> name("option");
 
-    auto menu = Hedgehog::Base::CSharedString("TopMenu");
-    auto name = Hedgehog::Base::CSharedString("option");
-
-    // TODO: replace with wrapper to put these into guest memory.
-    memcpy(pStrMemory, &menu, 4);
-    memcpy((void*)((size_t)pStrMemory + 4), &name, 4);
-
-    GuestToHostFunction<int>(0x824AE690, pThis.u32, pStrMemory, (void*)((size_t)pStrMemory + 4));
-
-    __HH_FREE(pStrMemory);
+    GuestToHostFunction<int>(0x824AE690, pThis.u32, menu.get(), name.get());
 }
 
 bool InjectOptionsBehaviour(uint32_t pThis, uint32_t count)
