@@ -1,0 +1,50 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "windows-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang-cl.exe",
+                "CMAKE_CXX_COMPILER": "clang-cl.exe",
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                    "type": "FILEPATH"
+                }
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "toolset": "ClangCL"
+        },
+        {
+            "name": "x64-Clang-Debug",
+            "displayName": "Debug",
+            "inherits": "windows-base",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "VCPKG_TARGET_TRIPLET": {
+                    "value": "x64-windows-static",
+                    "type": "STRING"
+                }
+            }
+        },
+        {
+            "name": "x64-Clang-Release",
+            "displayName": "Release",
+            "inherits": "x64-Clang-Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ]
+}
