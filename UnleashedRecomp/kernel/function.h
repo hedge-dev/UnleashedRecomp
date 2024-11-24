@@ -301,8 +301,8 @@ FORCEINLINE PPC_FUNC(HostToGuestFunction)
     }
 }
 
-template<typename T, typename... TArgs>
-FORCEINLINE T GuestToHostFunction(uint32_t addr, TArgs... argv)
+template<typename T, typename TFunction, typename... TArgs>
+FORCEINLINE T GuestToHostFunction(const TFunction& func, TArgs... argv)
 {
     auto args = std::make_tuple(argv...);
     auto& currentCtx = *GetPPCContext();
@@ -313,10 +313,15 @@ FORCEINLINE T GuestToHostFunction(uint32_t addr, TArgs... argv)
     newCtx.r13 = currentCtx.r13;
     newCtx.fpscr = currentCtx.fpscr;
 
-    _translate_args_to_guest<GuestToHostFunction<T, TArgs...>>(newCtx, (uint8_t*)g_memory.base, args);
+    _translate_args_to_guest<GuestToHostFunction<T, TFunction, TArgs...>>(newCtx, (uint8_t*)g_memory.base, args);
 
     SetPPCContext(newCtx);
-    (*(PPCFunc**)(newCtx.fn + uint64_t(addr) * 2))(newCtx, (uint8_t*)g_memory.base);
+
+    if constexpr (std::is_function_v<TFunction>)
+        func(newCtx, (uint8_t*)g_memory.base);
+    else
+        (*(PPCFunc**)(newCtx.fn + uint64_t(func) * 2))(newCtx, (uint8_t*)g_memory.base);
+
     currentCtx.fpscr = newCtx.fpscr;
     SetPPCContext(currentCtx);
 
