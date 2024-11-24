@@ -1,13 +1,14 @@
 namespace Chao::CSD
 {
-    inline void RCPtrAbs::RCObject::Release()
+    inline RCPtrAbs::RCObject::~RCObject()
     {
-        GuestToHostFunction<void>(0x830BA068, this);
+        GuestToHostFunction<void>(m_pVftable->m_fpDtor, this);
     }
 
     inline RCPtrAbs::~RCPtrAbs()
     {
-        RCObject* pObj = m_pObject;
+        RCPtrAbs::RCObject* pObj = m_pObject;
+
         m_pObject = nullptr;
 
         if (pObj)
@@ -20,5 +21,15 @@ namespace Chao::CSD
             return nullptr;
 
         return m_pObject->m_pMemory;
+    }
+
+    inline void RCPtrAbs::RCObject::Deallocate(void* in_pMemory)
+    {
+        GuestToHostFunction<void>(m_pVftable->m_fpDeallocate, this, in_pMemory);
+    }
+
+    inline void RCPtrAbs::RCObject::Release()
+    {
+        GuestToHostFunction<void>(0x830BA068, this);
     }
 }

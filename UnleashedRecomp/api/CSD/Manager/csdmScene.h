@@ -23,7 +23,7 @@ namespace Chao::CSD
     class CScene : public CResourceBase<Scene>, SubjectBase<CSceneObserver, CScene>, CBase
     {
     public:
-        SWA_INSERT_PADDING(0x5C);
+        SWA_INSERT_PADDING(0x60);
         be<float> m_PrevMotionFrame;
         be<float> m_MotionFrame;
         be<float> m_MotionSpeed;
@@ -35,22 +35,9 @@ namespace Chao::CSD
         be<EMotionRepeatType> m_MotionRepeatType;
         SWA_INSERT_PADDING(0x2C);
 
-        ~CScene() override = default;
-
-        // Update should be called with a delta time of zero
-        // after making changes to a motion.
-
-        // Example:
-        // SetMotion("Intro_Anim");
-        // SetMotionFrame(0.0);
-        // m_MotionSpeed = 2.0f;
-        // Update(0.0f);
-
-        // Changes are not going to be recognized if
-        // update is not called.
-
-        virtual void Update(float in_DeltaTime = 0.0f);
-        virtual void Render(void*);
+        ~CScene();
+        void Update(float in_DeltaTime = 0.0f);
+        void Render(void* in_pUnk);
 
         RCPtr<CNode> GetNode(const char* in_pName) const;
 
@@ -62,3 +49,5 @@ namespace Chao::CSD
         void SetScale(float in_X, float in_Y);
     };
 }
+
+#include "CSD/Manager/csdmScene.inl"

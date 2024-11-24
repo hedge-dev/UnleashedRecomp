@@ -5,8 +5,5 @@
 namespace Chao::CSD
 {
     template<typename T>
-    class RCPtr<T>::RCObjectImp : public RCObject
-    {
-        void Deallocate(void* in_pMemory) override;
-    };
+    class RCPtr<T>::RCObjectImp : public RCObject {};
 }

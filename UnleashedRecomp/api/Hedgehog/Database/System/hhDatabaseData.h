@@ -15,11 +15,18 @@ namespace Hedgehog::Database
     class CDatabaseData : public Base::CObject
     {
     public:
-        uint8_t m_Flags; // see EDatabaseDataFlags
-        SWA_INSERT_PADDING(0x04); // TODO: Base::CSharedString m_TypeAndName;
+        struct Vftable
+        {
+            be<uint32_t> m_fpDtor;
+            be<uint32_t> m_fpCheckMadeAll;
+        };
 
-        virtual ~CDatabaseData() = default;
-        virtual bool CheckMadeAll();
+        xpointer<Vftable> m_pVftable;
+        uint8_t m_Flags;
+        Base::CSharedString m_TypeAndName;
+
+        ~CDatabaseData();
+        bool CheckMadeAll();
 
         bool IsMadeOne() const;
         void SetMadeOne();

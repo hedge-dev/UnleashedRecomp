@@ -8,7 +8,7 @@ namespace Hedgehog::Universe
     class IParallelJob
     {
     public:
-        SWA_INSERT_PADDING(0x04); // vftable ptr
+        xpointer<void> m_pVftable;
 
         IParallelJob() {}
         IParallelJob(const swa_null_ctor&) {}

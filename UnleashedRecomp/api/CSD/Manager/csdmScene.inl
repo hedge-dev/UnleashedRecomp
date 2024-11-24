@@ -1,5 +1,20 @@
 namespace Chao::CSD
 {
+    inline CScene::~CScene()
+    {
+        SWA_VIRTUAL_FUNCTION(void, 0, this);
+    }
+
+    inline void CScene::Update(float in_DeltaTime)
+    {
+        SWA_VIRTUAL_FUNCTION(void, 2, this, in_DeltaTime);
+    }
+
+    inline void CScene::Render(void* in_pUnk)
+    {
+        SWA_VIRTUAL_FUNCTION(void, 3, this, in_pUnk);
+    }
+
     inline RCPtr<CNode> CScene::GetNode(const char* in_pName) const
     {
         RCPtr<CNode> rcNode;

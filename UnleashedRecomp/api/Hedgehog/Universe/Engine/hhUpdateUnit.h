@@ -8,8 +8,8 @@ namespace Hedgehog::Universe
     class CUpdateUnit : public Base::CObject, public IParallelJob
     {
     public:
-        SWA_INSERT_PADDING(0x04); // vftable ptr
-        SWA_INSERT_PADDING(0x24);
+        xpointer<void> m_pVftable;
+        SWA_INSERT_PADDING(0x20);
 
         CUpdateUnit(const swa_null_ctor& nil) : CObject(nil), IParallelJob(nil) {}
         CUpdateUnit();

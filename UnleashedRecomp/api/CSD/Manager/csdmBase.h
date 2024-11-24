@@ -2,7 +2,5 @@
 
 namespace Chao::CSD
 {
-    class CBase
-    {
-    };
+    class CBase {};
 }

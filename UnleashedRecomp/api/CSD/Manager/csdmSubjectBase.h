@@ -8,9 +8,18 @@ namespace Chao::CSD
     class SubjectBase
     {
     public:
+        struct Vftable
+        {
+            be<uint32_t> m_fpDtor;
+            be<uint32_t> m_fpGetObservee;
+        };
+
+        xpointer<Vftable> m_pVftable;
         SWA_INSERT_PADDING(0x0C);
 
-        virtual ~SubjectBase() = default;
-        virtual TObservee* GetObservee() const { return nullptr; }
+        ~SubjectBase();
+        TObservee* GetObservee() const;
     };
 }
+
+#include "CSD/Manager/csdmSubjectBase.inl"

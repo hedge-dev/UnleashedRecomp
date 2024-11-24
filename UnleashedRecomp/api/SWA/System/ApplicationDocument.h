@@ -21,6 +21,12 @@ namespace SWA
         eVoiceLanguage_Japanese
     };
 
+    enum ERegion : uint32_t
+    {
+        eRegion_Japan,
+        eRegion_RestOfWorld
+    };
+
     class CApplicationDocument : public Hedgehog::Base::CSynchronizedObject
     {
     public:
@@ -39,8 +45,10 @@ namespace SWA
         xpointer<CMember> m_pMember;
         be<ELanguage> m_Language;
         be<EVoiceLanguage> m_VoiceLanguage;
-        SWA_INSERT_PADDING(0x0D);
-        bool m_Subtitles;
+        SWA_INSERT_PADDING(0x08);
+        be<ERegion> m_Region;
+        bool m_InspireVoices;
+        bool m_InspireSubtitles;
     };
 }
 

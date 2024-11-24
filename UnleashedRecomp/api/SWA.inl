@@ -9,4 +9,7 @@
 #define SWA_INSERT_PADDING(length) \
     uint8_t SWA_CONCAT2(pad, __LINE__)[length]
 
+#define SWA_VIRTUAL_FUNCTION(returnType, virtualIndex, ...) \
+    GuestToHostFunction<returnType>(*(be<uint32_t>*)(g_memory.Translate(*(be<uint32_t>*)(this) + (4 * virtualIndex))), __VA_ARGS__)
+
 struct swa_null_ctor {};

@@ -20,6 +20,11 @@ namespace Chao::CSD
         in_rPtr.m_pObject = nullptr;
     }
 
+    inline RCPtrAbs::RCObject* RCPtrAbs::CreateRCObject()
+    {
+        return GuestToHostFunction<RCPtrAbs::RCObject*>(m_pVftable->m_fpCreateRCObject, this);
+    }
+
     inline void RCPtrAbs::AttachAbs(void* in_pMemory)
     {
         GuestToHostFunction<void>(0x830BA298, this, in_pMemory);

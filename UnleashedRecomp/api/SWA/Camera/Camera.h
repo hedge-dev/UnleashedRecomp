@@ -8,6 +8,7 @@ namespace SWA
     class CCamera : public CGameObject // , public Hedgehog::Universe::TStateMachine<CCamera>
     {
     public:
+        xpointer<void> m_pVftable;
         SWA_INSERT_PADDING(0xC4);
         be<float> m_VertAspectRatio;
         SWA_INSERT_PADDING(0x48);

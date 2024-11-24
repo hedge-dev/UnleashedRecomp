@@ -26,7 +26,7 @@ void ToggleSubtitlesMidAsmHook(PPCRegister& r27)
 {
     auto pApplicationDocument = (SWA::CApplicationDocument*)g_memory.Translate(r27.u32);
 
-    pApplicationDocument->m_Subtitles = Config::Subtitles;
+    pApplicationDocument->m_InspireSubtitles = Config::Subtitles;
 }
 
 void WerehogBattleMusicMidAsmHook(PPCRegister& r11)

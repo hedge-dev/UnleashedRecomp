@@ -15,8 +15,6 @@ namespace Chao::CSD
         RCPtr(const RCPtr& in_rOther) : RCPtrAbs(in_rOther) {}
         RCPtr(RCPtr&& in_rOther) : RCPtrAbs(std::move(in_rOther)) {}
 
-        RCObject* CreateRCObject() override;
-
         void Attach(T* in_pObject);
 
         T* Get() const;
@@ -30,3 +28,5 @@ namespace Chao::CSD
         operator bool() const;
     };
 }
+
+#include "CSD/Manager/csdmRCPtr.inl"

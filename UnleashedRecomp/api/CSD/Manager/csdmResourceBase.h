@@ -8,11 +8,19 @@ namespace Chao::CSD
     class CResourceBase
     {
     public:
+        struct Vftable
+        {
+            be<uint32_t> m_fpDtor;
+            be<uint32_t> m_fpCopyResource;
+        };
+
+        xpointer<Vftable> m_pVftable;
         RCPtr<uint8_t> m_rcResourceHolder;
         xpointer<T> m_pResource;
 
-        virtual ~CResourceBase() = default;
-
-        virtual void CopyResource(const CResourceBase& in_rOther);
+        ~CResourceBase();
+        void CopyResource(const CResourceBase& in_rOther);
     };
 }
+
+#include "CSD/Manager/csdmResourceBase.h"

@@ -21,6 +21,7 @@ namespace SWA::Player
     class CEvilHudGuide : public CGameObject
     {
     public:
+        xpointer<void> m_pVftable;
         SWA_INSERT_PADDING(0x8D);
         bool m_IsShown;
         bool m_IsVisible;

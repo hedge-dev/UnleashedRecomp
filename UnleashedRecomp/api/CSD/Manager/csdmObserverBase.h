@@ -8,8 +8,16 @@ namespace Chao::CSD
     class CObserverBase
     {
     public:
-        SWA_INSERT_PADDING(0x0C);
+        struct Vftable
+        {
+            be<uint32_t> m_fpDtor;
+        };
 
-        virtual ~CObserverBase() = default;
+        xpointer<Vftable> m_pVftable;
+        SWA_INSERT_PADDING(0x08);
+
+        ~CObserverBase();
     };
 }
+
+#include "CSD/Manager/csdmObserverBase.inl"

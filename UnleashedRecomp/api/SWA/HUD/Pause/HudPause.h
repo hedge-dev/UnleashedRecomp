@@ -46,6 +46,7 @@ namespace SWA
     class CHudPause : public CGameObject
     {
     public:
+        xpointer<void> m_pVftable;
         SWA_INSERT_PADDING(0xC8);
         be<EActionType> m_Action;
         be<EMenuType> m_Menu;

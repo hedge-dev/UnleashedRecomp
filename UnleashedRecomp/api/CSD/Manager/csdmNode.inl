@@ -2,6 +2,11 @@
 
 namespace Chao::CSD
 {
+    inline CNode::~CNode()
+    {
+        SWA_VIRTUAL_FUNCTION(void, 0, this);
+    }
+
     inline void CNode::SetText(const char* in_pText)
     {
         GuestToHostFunction<int>(0x830BF640, this, in_pText);
