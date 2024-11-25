@@ -6,7 +6,7 @@
 // DO NOT use this type as anything other than a local variable.
 // This includes returning. It'll cause memory to leak in the guest stack!
 
-template<typename T>
+template<typename T, bool Init = true>
 class guest_stack_var
 {
 private:
@@ -36,19 +36,25 @@ public:
     guest_stack_var(Args&&... args)
     {
         AllocGuestStackMemory();
-        new (get()) T(std::forward<Args>(args)...);
+
+        if (Init)
+            new (get()) T(std::forward<Args>(args)...);
     }
 
     guest_stack_var(const guest_stack_var<T>& other)
     {
         AllocGuestStackMemory();
-        new (get()) T(*other->get());
+
+        if (Init)
+            new (get()) T(*other->get());
     }
 
     guest_stack_var(guest_stack_var<T>&& other)
     {
         AllocGuestStackMemory();
-        new (get()) T(std::move(*other->get()));
+
+        if (Init)
+            new (get()) T(std::move(*other->get()));
     }
 
     ~guest_stack_var()
