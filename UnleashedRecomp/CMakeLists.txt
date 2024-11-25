@@ -79,6 +79,7 @@ set(SWA_UI_CXX_SOURCES
 )
 
 set(SWA_CXX_SOURCES
+    "app.cpp"
     "main.cpp"
     "misc_impl.cpp"
     "stdafx.cpp"
@@ -188,6 +189,7 @@ function(compile_pixel_shader FILE_PATH)
 endfunction()
 
 compile_vertex_shader(copy_vs)
+compile_pixel_shader(gamma_correction_ps)
 compile_pixel_shader(imgui_ps)
 compile_vertex_shader(imgui_vs)
 compile_pixel_shader(movie_ps)

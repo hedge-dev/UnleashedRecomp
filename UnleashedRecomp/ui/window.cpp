@@ -1,7 +1,6 @@
 #include "window.h"
 #include "sdl_listener.h"
 #include <cfg/config.h>
-#include <kernel/function.h>
 #include <SDL_syswm.h>
 
 bool m_isFullscreenKeyReleased = true;
@@ -174,16 +173,4 @@ void Window::Update()
         Config::WindowWidth = Window::s_width;
         Config::WindowHeight = Window::s_height;
     }
-}
-
-// CApplication::Update
-PPC_FUNC_IMPL(__imp__sub_822C1130);
-PPC_FUNC(sub_822C1130)
-{
-    SDL_PumpEvents();
-    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-
-    Window::Update();
-
-    __imp__sub_822C1130(ctx, base);
 }

@@ -15,6 +15,8 @@
 
 #include "shader/copy_vs.hlsl.dxil.h"
 #include "shader/copy_vs.hlsl.spirv.h"
+#include "shader/gamma_correction_ps.hlsl.dxil.h"
+#include "shader/gamma_correction_ps.hlsl.spirv.h"
 #include "shader/imgui_ps.hlsl.dxil.h"
 #include "shader/imgui_ps.hlsl.spirv.h"
 #include "shader/imgui_vs.hlsl.dxil.h"
@@ -171,10 +173,19 @@ static std::unique_ptr<RenderSwapChain> g_swapChain;
 static bool g_swapChainValid;
 static bool g_needsResize;
 
+static constexpr RenderFormat BACKBUFFER_FORMAT = RenderFormat::B8G8R8A8_UNORM;
+
 static std::unique_ptr<RenderCommandSemaphore> g_acquireSemaphores[NUM_FRAMES];
 static std::unique_ptr<RenderCommandSemaphore> g_renderSemaphores[NUM_FRAMES];
 static uint32_t g_backBufferIndex;
 static GuestSurface* g_backBuffer;
+
+static std::unique_ptr<RenderTexture> g_intermediaryBackBufferTexture;
+static uint32_t g_intermediaryBackBufferTextureWidth;
+static uint32_t g_intermediaryBackBufferTextureHeight;
+static uint32_t g_intermediaryBackBufferTextureDescriptorIndex;
+
+static std::unique_ptr<RenderPipeline> g_gammaCorrectionPipeline;
 
 struct std::unique_ptr<RenderDescriptorSet> g_textureDescriptorSet;
 struct std::unique_ptr<RenderDescriptorSet> g_samplerDescriptorSet;
@@ -1080,7 +1091,7 @@ static void CreateImGuiBackend()
     pipelineDesc.pipelineLayout = g_imPipelineLayout.get();
     pipelineDesc.vertexShader = vertexShader.get();
     pipelineDesc.pixelShader = pixelShader.get();
-    pipelineDesc.renderTargetFormat[0] = RenderFormat::B8G8R8A8_UNORM;
+    pipelineDesc.renderTargetFormat[0] = BACKBUFFER_FORMAT;
     pipelineDesc.renderTargetBlend[0] = RenderBlendDesc::AlphaBlend();
     pipelineDesc.renderTargetCount = 1;
     pipelineDesc.inputElements = inputElements;
@@ -1121,7 +1132,7 @@ static void CreateHostDevice()
     g_copyCommandList = g_device->createCommandList(RenderCommandListType::COPY);
     g_copyCommandFence = g_device->createCommandFence();
 
-    g_swapChain = g_queue->createSwapChain(Window::s_handle, Config::TripleBuffering ? 3 : 2, RenderFormat::B8G8R8A8_UNORM);
+    g_swapChain = g_queue->createSwapChain(Window::s_handle, Config::TripleBuffering ? 3 : 2, BACKBUFFER_FORMAT);
     g_swapChain->setVsyncEnabled(Config::VSync);
     g_swapChainValid = !g_swapChain->needsResize();
 
@@ -1253,6 +1264,17 @@ static void CreateHostDevice()
     }
 
     CreateImGuiBackend();
+
+    auto gammaCorrectionShader = CREATE_SHADER(gamma_correction_ps);
+
+    RenderGraphicsPipelineDesc desc;
+    desc.pipelineLayout = g_pipelineLayout.get();
+    desc.vertexShader = copyShader.get();
+    desc.pixelShader = gammaCorrectionShader.get();
+    desc.renderTargetFormat[0] = BACKBUFFER_FORMAT;
+    desc.renderTargetBlend[0] = RenderBlendDesc::Copy();
+    desc.renderTargetCount = 1;
+    g_gammaCorrectionPipeline = g_device->createGraphicsPipeline(desc);
 }
 
 static void WaitForGPU()
@@ -1290,7 +1312,7 @@ static void BeginCommandList()
     g_depthStencil = nullptr;
     g_framebuffer = nullptr;
 
-    g_pipelineState.renderTargetFormat = g_backBuffer->format;
+    g_pipelineState.renderTargetFormat = BACKBUFFER_FORMAT;
     g_pipelineState.depthStencilFormat = RenderFormat::UNKNOWN;
 
     g_swapChainValid &= !g_swapChain->needsResize();
@@ -1307,9 +1329,40 @@ static void BeginCommandList()
         g_swapChainValid = g_swapChain->acquireTexture(g_acquireSemaphores[g_frame].get(), &g_backBufferIndex);
 
     if (g_swapChainValid)
-        g_backBuffer->texture = g_swapChain->getTexture(g_backBufferIndex);
+    {
+        bool applyingGammaCorrection = Config::Xbox360ColourCorrection || abs(Config::Brightness - 0.5f) > 0.001f;
+
+        if (applyingGammaCorrection)
+        {
+            uint32_t width = g_swapChain->getWidth();
+            uint32_t height = g_swapChain->getHeight();
+
+            if (g_intermediaryBackBufferTextureWidth != width ||
+                g_intermediaryBackBufferTextureHeight != height)
+            {
+                if (g_intermediaryBackBufferTextureDescriptorIndex == NULL)
+                    g_intermediaryBackBufferTextureDescriptorIndex = g_textureDescriptorAllocator.allocate();
+
+                WaitForGPU(); // Fine to wait for GPU, this'll only happen during resize.
+
+                g_intermediaryBackBufferTexture = g_device->createTexture(RenderTextureDesc::Texture2D(width, height, 1, BACKBUFFER_FORMAT, RenderTextureFlag::RENDER_TARGET));
+                g_textureDescriptorSet->setTexture(g_intermediaryBackBufferTextureDescriptorIndex, g_intermediaryBackBufferTexture.get(), RenderTextureLayout::SHADER_READ);
+
+                g_intermediaryBackBufferTextureWidth = width;
+                g_intermediaryBackBufferTextureHeight = height;
+            }
+
+            g_backBuffer->texture = g_intermediaryBackBufferTexture.get();
+        }
+        else
+        {
+            g_backBuffer->texture = g_swapChain->getTexture(g_backBufferIndex);
+        }
+    }
     else
+    {
         g_backBuffer->texture = g_backBuffer->textureHolder.get();
+    }
 
     g_backBuffer->layout = RenderTextureLayout::UNKNOWN;
 
@@ -1339,8 +1392,8 @@ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
     g_backBuffer = g_userHeap.AllocPhysical<GuestSurface>(ResourceType::RenderTarget);
     g_backBuffer->width = 1280;
     g_backBuffer->height = 720;
-    g_backBuffer->format = RenderFormat::B8G8R8A8_UNORM;
-    g_backBuffer->textureHolder = g_device->createTexture(RenderTextureDesc::Texture2D(16, 16, 1, g_backBuffer->format, RenderTextureFlag::RENDER_TARGET));
+    g_backBuffer->format = BACKBUFFER_FORMAT;
+    g_backBuffer->textureHolder = g_device->createTexture(RenderTextureDesc::Texture2D(1, 1, 1, BACKBUFFER_FORMAT, RenderTextureFlag::RENDER_TARGET));
 
     BeginCommandList();
 
@@ -1639,12 +1692,84 @@ static void Present()
     g_renderQueue.enqueue(cmd);
 }
 
+static void SetRootDescriptor(const UploadAllocation& allocation, size_t index)
+{
+    auto& commandList = g_commandLists[g_frame];
+
+    if (g_vulkan)
+        commandList->setGraphicsPushConstants(0, &allocation.deviceAddress, 8 * index, 8);
+    else
+        commandList->setGraphicsRootDescriptor(allocation.buffer->at(allocation.offset), index);
+}
+
 static void ProcPresent(const RenderCommand& cmd)
 {
     if (g_swapChainValid)
-        AddBarrier(g_backBuffer, RenderTextureLayout::PRESENT);
+    {
+        auto swapChainTexture = g_swapChain->getTexture(g_backBufferIndex);
+        if (g_backBuffer->texture == g_intermediaryBackBufferTexture.get())
+        {
+            struct
+            {
+                float gammaR;
+                float gammaG;
+                float gammaB;
+                uint32_t textureDescriptorIndex;
+            } constants;
 
-    FlushBarriers();
+            if (Config::Xbox360ColourCorrection)
+            {
+                constants.gammaR = 1.2f;
+                constants.gammaG = 1.17f;
+                constants.gammaB = 0.98f;
+            }
+            else
+            {
+                constants.gammaR = 1.0f;
+                constants.gammaG = 1.0f;
+                constants.gammaB = 1.0f;
+            }
+
+            float offset = (Config::Brightness - 0.5f) * 1.2f;
+
+            constants.gammaR = 1.0f / std::clamp(constants.gammaR + offset, 0.1f, 4.0f);
+            constants.gammaG = 1.0f / std::clamp(constants.gammaG + offset, 0.1f, 4.0f);
+            constants.gammaB = 1.0f / std::clamp(constants.gammaB + offset, 0.1f, 4.0f);
+            constants.textureDescriptorIndex = g_intermediaryBackBufferTextureDescriptorIndex;
+
+            auto& framebuffer = g_backBuffer->framebuffers[swapChainTexture];
+            if (!framebuffer)
+            {
+                RenderFramebufferDesc desc;
+                desc.colorAttachments = const_cast<const RenderTexture**>(&swapChainTexture);
+                desc.colorAttachmentsCount = 1;
+                framebuffer = g_device->createFramebuffer(desc);
+            }
+
+            RenderTextureBarrier srcBarriers[] =
+            {
+                RenderTextureBarrier(g_intermediaryBackBufferTexture.get(), RenderTextureLayout::SHADER_READ),
+                RenderTextureBarrier(swapChainTexture, RenderTextureLayout::COLOR_WRITE)
+            };
+
+            auto& commandList = g_commandLists[g_frame];
+            commandList->barriers(RenderBarrierStage::GRAPHICS, srcBarriers, std::size(srcBarriers));
+            commandList->setGraphicsPipelineLayout(g_pipelineLayout.get());
+            commandList->setPipeline(g_gammaCorrectionPipeline.get());
+            commandList->setGraphicsDescriptorSet(g_textureDescriptorSet.get(), 0);
+            SetRootDescriptor(g_uploadAllocators[g_frame].allocate<false>(&constants, sizeof(constants), 0x100), 2);
+            commandList->setFramebuffer(framebuffer.get());
+            commandList->setViewports(RenderViewport(0.0f, 0.0f, g_intermediaryBackBufferTextureWidth, g_intermediaryBackBufferTextureHeight));
+            commandList->setScissors(RenderRect(0, 0, g_intermediaryBackBufferTextureWidth, g_intermediaryBackBufferTextureHeight));
+            commandList->drawInstanced(6, 1, 0, 0);
+            commandList->barriers(RenderBarrierStage::GRAPHICS, RenderTextureBarrier(swapChainTexture, RenderTextureLayout::PRESENT));
+        }
+        else
+        {
+            AddBarrier(g_backBuffer, RenderTextureLayout::PRESENT);
+            FlushBarriers();
+        }
+    }
 
     auto& commandList = g_commandLists[g_frame];
     commandList->end();
@@ -2535,16 +2660,6 @@ static void ProcSetSamplerState(const RenderCommand& cmd)
 
         SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.samplerIndices[args.index], descriptorIndex - 1);
     }
-}
-
-static void SetRootDescriptor(const UploadAllocation& allocation, size_t index)
-{
-    auto& commandList = g_commandLists[g_frame];
-
-    if (g_vulkan)
-        commandList->setGraphicsPushConstants(0, &allocation.deviceAddress, 8 * index, 8);
-    else
-        commandList->setGraphicsRootDescriptor(allocation.buffer->at(allocation.offset), index);
 }
 
 static void ProcSetVertexShaderConstants(const RenderCommand& cmd)

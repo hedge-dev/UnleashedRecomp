@@ -2,6 +2,7 @@
 #include <api/SWA.h>
 #include <ui/window.h>
 #include <cfg/config.h>
+#include <app.h>
 
 float m_lastLoadingFrameDelta = 0.0f;
 std::chrono::steady_clock::time_point m_lastLoadingFrameTime;
@@ -36,14 +37,16 @@ static double ComputeLerpFactor(double t, double deltaTime)
     return 1.0 - pow(1.0 - t, (30.0 + bias) / (fps + bias));
 }
 
-void CameraLerpFixMidAsmHook(PPCRegister& t, PPCRegister& deltaTime)
+// It's important to use global delta time here instead of function provided
+// delta time, as it might be time scaled and not match with 30 FPS behavior.
+void CameraLerpFixMidAsmHook(PPCRegister& t)
 {
-    t.f64 = ComputeLerpFactor(t.f64, deltaTime.f64);
+    t.f64 = ComputeLerpFactor(t.f64, g_deltaTime);
 }
 
-void CameraTargetSideOffsetLerpFixMidAsmHook(PPCVRegister& v13, PPCVRegister& v62, PPCRegister& deltaTime)
+void CameraTargetSideOffsetLerpFixMidAsmHook(PPCVRegister& v13, PPCVRegister& v62)
 {
-    float factor = float(ComputeLerpFactor(double(v13.f32[0] * v62.f32[0]), deltaTime.f64));
+    float factor = float(ComputeLerpFactor(double(v13.f32[0] * v62.f32[0]), g_deltaTime));
 
     for (size_t i = 0; i < 4; i++)
     {
