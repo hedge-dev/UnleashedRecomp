@@ -98,7 +98,7 @@ void AudioPatches::Update(float deltaTime)
         *pMusicVolume = Config::MusicVolume;
     }
 
-    *pEffectsVolume = Config::SEVolume;
+    *pEffectsVolume = Config::EffectsVolume;
 }
 
 // Stub volume setter.
