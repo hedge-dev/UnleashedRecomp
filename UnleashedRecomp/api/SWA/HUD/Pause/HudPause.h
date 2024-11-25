@@ -2,6 +2,8 @@
 
 #include <SWA.inl>
 
+using namespace Chao::CSD;
+
 namespace SWA
 {
     enum EActionType : uint32_t
@@ -47,7 +49,16 @@ namespace SWA
     {
     public:
         xpointer<void> m_pVftable;
-        SWA_INSERT_PADDING(0xC8);
+        SWA_INSERT_PADDING(0x2C);
+        RCPtr<CProject> m_rcPause;
+        RCPtr<CScene> m_rcBg;
+        RCPtr<CScene> m_rcBg1;
+        RCPtr<CScene> m_rcBg1_2;
+        RCPtr<CScene> m_rcBg1Select;
+        RCPtr<CScene> m_rcBg1Select_2;
+        RCPtr<CScene> m_rcStatusTitle;
+        RCPtr<CScene> m_rcFooterA;
+        SWA_INSERT_PADDING(0x5C);
         be<EActionType> m_Action;
         be<EMenuType> m_Menu;
         be<EStatusType> m_Status;

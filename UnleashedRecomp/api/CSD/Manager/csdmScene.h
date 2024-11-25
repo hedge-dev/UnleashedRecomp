@@ -39,7 +39,7 @@ namespace Chao::CSD
         void Update(float in_DeltaTime = 0.0f);
         void Render(void* in_pUnk);
 
-        RCPtr<CNode> GetNode(const char* in_pName) const;
+        void GetNode(RCPtr<CNode>& out_rResult, const char* in_pName);
 
         bool SetMotion(const char* in_pName);
         void SetMotionFrame(float in_MotionFrame);

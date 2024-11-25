@@ -17,6 +17,7 @@
 #include "Hedgehog/Universe/Thread/hhParallelJob.h"
 
 #include "CSD/Manager/csdmBase.h"
+#include "CSD/Manager/csdmMotionPattern.h"
 #include "CSD/Manager/csdmNode.h"
 #include "CSD/Manager/csdmNodeObserver.h"
 #include "CSD/Manager/csdmObserverBase.h"
@@ -36,6 +37,7 @@
 #include "SWA/CSD/CsdProject.h"
 #include "SWA/CSD/CsdTexListMirage.h"
 #include "SWA/CSD/GameObjectCSD.h"
+#include "SWA/HUD/GeneralWindow/GeneralWindow.h"
 #include "SWA/HUD/Loading/Loading.h"
 #include "SWA/HUD/Pause/HudPause.h"
 #include "SWA/HUD/Sonic/HudSonicStage.h"
