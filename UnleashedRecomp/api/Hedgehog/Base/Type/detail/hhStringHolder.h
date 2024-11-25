@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SWA.inl"
+#include <SWA.inl>
 
 namespace Hedgehog::Base
 {
@@ -41,4 +41,4 @@ namespace Hedgehog::Base
     };
 }
 
-#include "Hedgehog/Base/Type/detail/hhStringHolder.inl"
+#include <Hedgehog/Base/Type/detail/hhStringHolder.inl>

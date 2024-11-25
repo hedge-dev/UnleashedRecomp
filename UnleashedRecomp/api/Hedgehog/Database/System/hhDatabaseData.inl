@@ -7,7 +7,7 @@ namespace Hedgehog::Database
 
     inline bool CDatabaseData::CheckMadeAll()
     {
-        return true;
+        return GuestToHostFunction<bool>(m_pVftable->m_fpCheckMadeAll, this);
     }
 
     inline bool CDatabaseData::IsMadeOne() const
