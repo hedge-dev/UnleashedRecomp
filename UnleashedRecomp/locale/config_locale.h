@@ -166,6 +166,11 @@ CONFIG_DEFINE_LOCALE(EffectsVolume)
     { ELanguage::English, { "Effects Volume", "Adjust the volume for sound effects." } }
 };
 
+CONFIG_DEFINE_LOCALE(MusicAttenuation)
+{
+    { ELanguage::English, { "Music Attenuation", "Fade out the game's music when external media is playing." } }
+};
+
 CONFIG_DEFINE_LOCALE(VoiceLanguage)
 {
     { ELanguage::English, { "Voice Language", "Change the language used for character voices." } }

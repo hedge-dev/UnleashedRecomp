@@ -59,6 +59,12 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         {
             { ELanguage::English, "This option is not available without MSAA." }
         }
+    },
+    {
+        "Options_Desc_OSNotSupported",
+        {
+            { ELanguage::English, "This option is not supported by your operating system." }
+        }
     }
 };
 

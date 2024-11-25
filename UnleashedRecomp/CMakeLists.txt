@@ -38,6 +38,7 @@ set(SWA_KERNEL_CXX_SOURCES
     "kernel/xdm.cpp"
     "kernel/heap.cpp"
     "kernel/memory.cpp"
+    "kernel/platform.cpp"
     "kernel/xam.cpp"
     "kernel/io/file_system.cpp"
 )
