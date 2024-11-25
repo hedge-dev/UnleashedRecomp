@@ -13,13 +13,15 @@ namespace Chao::CSD
     class CNode : public CResourceBase<Node>, SubjectBase<CNodeObserver, CNode>, CBase
     {
     public:
-        SWA_INSERT_PADDING(0x4C);
+        SWA_INSERT_PADDING(0x34);
+        xpointer<CMotionPattern> m_pMotionPattern;
+        SWA_INSERT_PADDING(0x18);
 
-        ~CNode() override = default;
+        ~CNode();
 
         void SetText(const char* in_pText);
         void SetText(const wchar_t* in_pText);
-        Hedgehog::Math::CVector2 GetPosition() const;
+        Hedgehog::Math::CVector2* GetPosition() const;
         void SetPosition(float in_X, float in_Y);
         void SetHideFlag(uint32_t in_HideFlag);
         void SetRotation(float in_Rotation);

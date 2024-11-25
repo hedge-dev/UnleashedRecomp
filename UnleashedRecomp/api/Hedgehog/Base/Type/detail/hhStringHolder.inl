@@ -20,7 +20,7 @@ namespace Hedgehog::Base
         const size_t memSize = GetMemorySize(in_Length);
         const size_t memSizeAligned = GetMemorySizeAligned(in_Length);
 
-        SStringHolder* pHolder = (SStringHolder*)__HH_ALLOC(memSizeAligned);
+        auto pHolder = (SStringHolder*)__HH_ALLOC(memSizeAligned);
         pHolder->RefCount = 1;
         pHolder->Length = (uint16_t)in_Length;
 

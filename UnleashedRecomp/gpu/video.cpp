@@ -3831,8 +3831,8 @@ void SetShadowResolutionMidAsmHook(PPCRegister& r11)
 
 static void SetResolution(be<uint32_t>* device)
 {
-    uint32_t width = uint32_t(g_swapChain->getWidth() * Config::ResolutionScale);
-    uint32_t height = uint32_t(g_swapChain->getHeight() * Config::ResolutionScale);
+    uint32_t width = uint32_t(round(g_swapChain->getWidth() * Config::ResolutionScale));
+    uint32_t height = uint32_t(round(g_swapChain->getHeight() * Config::ResolutionScale));
     device[46] = width == 0 ? 880 : width;
     device[47] = height == 0 ? 720 : height;
 }

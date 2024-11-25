@@ -332,7 +332,7 @@ namespace Hedgehog::Base
     inline int CSharedString::compare(const CSharedString& in_rOther) const
     {
         // TODO: DO NOT PASS BY REFERENCE.
-        GuestToHostFunction<int>(0x82DFB028, this, &in_rOther);
+        return GuestToHostFunction<int>(0x82DFB028, this, &in_rOther);
     }
 
     inline CSharedString& CSharedString::operator=(const CSharedString& in_rOther)

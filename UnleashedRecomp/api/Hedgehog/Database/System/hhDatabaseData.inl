@@ -1,5 +1,10 @@
 namespace Hedgehog::Database
 {
+    inline CDatabaseData::~CDatabaseData()
+    {
+        GuestToHostFunction<void>(m_pVftable->m_fpDtor, this);
+    }
+
     inline bool CDatabaseData::CheckMadeAll()
     {
         return true;

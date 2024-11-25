@@ -3,7 +3,7 @@ namespace SWA
     // TODO: Hedgehog::Base::TSynchronizedPtr<CInputState>
     inline CInputState* CInputState::GetInstance()
     {
-        return *(xpointer<CInputState>*)MmGetHostAddress(0x833671EC);
+        return *(xpointer<CInputState>*)MmGetHostAddress(0x83361F5C);
     }
 
     inline const SPadState& CInputState::GetPadState() const

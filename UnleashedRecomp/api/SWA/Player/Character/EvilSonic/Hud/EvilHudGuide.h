@@ -18,12 +18,13 @@ namespace SWA::Player
         eGuideType_Y
     };
 
-    class CEvilHudGuide
+    class CEvilHudGuide : public CGameObject
     {
     public:
-        SWA_INSERT_PADDING(0x14D);
+        xpointer<void> m_pVftable;
+        SWA_INSERT_PADDING(0x8D);
         bool m_IsShown;
         bool m_IsVisible;
-        EGuideType m_GuideType;
+        be<EGuideType> m_GuideType;
     };
 }

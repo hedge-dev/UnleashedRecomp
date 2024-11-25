@@ -16,11 +16,17 @@ public:
 
     void* Translate(size_t offset) const noexcept
     {
+        if (offset)
+            assert(offset < 0x100000000ull);
+
         return base + offset;
     }
 
     uint32_t MapVirtual(void* host) const noexcept
     {
+        if (host)
+            assert(host >= base && host < (base + size));
+
         return static_cast<uint32_t>(static_cast<char*>(host) - base);
     }
 };

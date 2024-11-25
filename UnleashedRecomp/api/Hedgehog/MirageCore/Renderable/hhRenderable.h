@@ -8,7 +8,7 @@ namespace Hedgehog::Mirage
     class CRenderable : public Base::CObject
     {
     public:
+        xpointer<void> m_pVftable;
         bool m_Enabled;
-        be<float> m_SortDepth;
     };
 }

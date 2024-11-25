@@ -14,7 +14,7 @@ namespace SWA
     class CGameObjectCSD : public CGameObject
     {
     public:
+        xpointer<void> m_pVftable;
         Chao::CSD::RCPtr<Chao::CSD::CProject> m_rcProject;
-        SWA_INSERT_PADDING(0x38);
     };
 }

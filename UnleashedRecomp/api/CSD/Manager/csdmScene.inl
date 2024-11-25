@@ -1,10 +1,23 @@
 namespace Chao::CSD
 {
-    inline RCPtr<CNode> CScene::GetNode(const char* in_pName) const
+    inline CScene::~CScene()
     {
-        RCPtr<CNode> rcNode;
-        GuestToHostFunction<void>(0x830BCCA8, this, rcNode, in_pName);
-        return rcNode;
+        SWA_VIRTUAL_FUNCTION(void, 0, this);
+    }
+
+    inline void CScene::Update(float in_DeltaTime)
+    {
+        SWA_VIRTUAL_FUNCTION(void, 2, this, in_DeltaTime);
+    }
+
+    inline void CScene::Render(void* in_pUnk)
+    {
+        SWA_VIRTUAL_FUNCTION(void, 3, this, in_pUnk);
+    }
+
+    inline void CScene::GetNode(RCPtr<CNode>& out_rResult, const char* in_pName)
+    {
+        GuestToHostFunction<void>(sub_830BCCA8, &out_rResult, this, in_pName);
     }
 
     inline bool CScene::SetMotion(const char* in_pName)

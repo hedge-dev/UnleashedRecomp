@@ -9,6 +9,13 @@ namespace Chao::CSD
     public:
         class RCObject;
 
+        struct Vftable
+        {
+            be<uint32_t> m_fpDtor;
+            be<uint32_t> m_fpCreateRCObject;
+        };
+
+        xpointer<Vftable> m_pVftable;
         xpointer<RCObject> m_pObject;
 
         RCPtrAbs();
@@ -16,8 +23,8 @@ namespace Chao::CSD
         RCPtrAbs(const RCPtrAbs& in_rOther);
         RCPtrAbs(RCPtrAbs&& in_rPtr);
 
-        virtual ~RCPtrAbs();
-        virtual RCObject* CreateRCObject() = 0;
+        ~RCPtrAbs();
+        RCObject* CreateRCObject();
 
         void AttachAbs(void* in_pMemory);
         void* GetAbs() const;
@@ -31,3 +38,5 @@ namespace Chao::CSD
         operator bool() const;
     };
 }
+
+#include "CSD/Manager/csdmRCPtrAbs.inl"

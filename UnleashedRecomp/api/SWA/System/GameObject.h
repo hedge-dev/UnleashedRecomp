@@ -18,9 +18,10 @@ namespace SWA
         public:
             Hedgehog::Base::TSynchronizedPtr<CGameDocument> m_pGameDocument;
             Hedgehog::Base::TSynchronizedPtr<CWorld> m_pWorld;
-            SWA_INSERT_PADDING(0x78);
+            SWA_INSERT_PADDING(0x70);
         };
 
+        xpointer<void> m_pVftable;
         xpointer<CMember> m_pMember;
     };
 }

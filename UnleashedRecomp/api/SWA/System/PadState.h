@@ -43,14 +43,10 @@ namespace SWA
 
     struct SPadState
     {
-        SWA_INSERT_PADDING(0x20);
-
         be<uint32_t> DownState;
         be<uint32_t> UpState;
         be<uint32_t> TappedState;
         be<uint32_t> ReleasedState;
-
-        SWA_INSERT_PADDING(0x04);
 
         be<float> LeftStickHorizontal;
         be<float> LeftStickVertical;
@@ -65,7 +61,7 @@ namespace SWA
         be<float> LeftTrigger;
         be<float> RightTrigger;
 
-        SWA_INSERT_PADDING(0x20);
+        SWA_INSERT_PADDING(0x08);
 
         bool IsDown(const EKeyState in_Keys) const;
         bool IsUp(const EKeyState in_Keys) const;

@@ -6,7 +6,5 @@ namespace Chao::CSD
 {
     class CNode;
 
-    class CNodeObserver : public CObserverBase<CNode>
-    {
-    };
+    class CNodeObserver : public CObserverBase<CNode> {};
 }
