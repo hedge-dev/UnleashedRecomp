@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cpu/guest_code.h>
+#include <cpu/guest_stack_var.h>
 #include <kernel/function.h>
 
 #define SWA__CONCAT2(x, y) x##y
