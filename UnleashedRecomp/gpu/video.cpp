@@ -4364,8 +4364,8 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             pipelineState.pixelShader = reinterpret_cast<GuestShader*>(pixelShader->m_spCode->m_pD3DPixelShader.get());
             pipelineState.vertexDeclaration = reinterpret_cast<GuestVertexDeclaration*>(mesh->m_VertexDeclarationPtr.m_pD3DVertexDeclaration.get());
             pipelineState.zWriteEnable = layer != MeshLayer::Transparent;
-            pipelineState.srcBlend = material->m_Additive ? RenderBlend::ONE : RenderBlend::SRC_ALPHA;
-            pipelineState.destBlend = RenderBlend::INV_SRC_ALPHA;
+            pipelineState.srcBlend = RenderBlend::SRC_ALPHA;
+            pipelineState.destBlend = material->m_Additive ? RenderBlend::ONE : RenderBlend::INV_SRC_ALPHA;
             pipelineState.cullMode = material->m_DoubleSided ? RenderCullMode::NONE : RenderCullMode::BACK;
             pipelineState.zFunc = RenderComparisonFunction::GREATER_EQUAL; // Reverse Z
             pipelineState.alphaBlendEnable = layer == MeshLayer::Transparent || layer == MeshLayer::Special;
