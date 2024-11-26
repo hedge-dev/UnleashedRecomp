@@ -4171,6 +4171,181 @@ void MotionBlurPrevInvViewProjectionMidAsmHook(PPCRegister& r10)
     mtxProjection[14] = -mtxProjection[14];
 }
 
+#include <Hedgehog/MirageCore/RenderData/hhMaterialData.h>
+#include <Hedgehog/MirageCore/RenderData/hhMeshData.h>
+#include <Hedgehog/MirageCore/RenderData/hhModelData.h>
+#include <Hedgehog/MirageCore/RenderData/hhNodeGroupModelData.h>
+#include <Hedgehog/MirageCore/RenderData/hhTerrainModelData.h>
+
+// Normally, we could delay setting IsMadeOne, but the game relies on that flag
+// being present to handle load priority. To work around that, we can prevent
+// IsMadeAll from being set until the compilation is finished. Time for a custom flag!
+enum
+{
+    eDatabaseDataFlags_CompilingPipelines = 0x80
+};
+
+static moodycamel::BlockingConcurrentQueue<Hedgehog::Database::CDatabaseData*> g_readyModelQueue;
+
+static void PipelineCompilerThread()
+{
+    while (true)
+    {
+        Hedgehog::Database::CDatabaseData* databaseData;
+        g_readyModelQueue.wait_dequeue(databaseData);
+
+        databaseData->m_Flags &= ~eDatabaseDataFlags_CompilingPipelines;
+    }
+}
+
+static std::thread g_pipelineCompilerThread(PipelineCompilerThread);
+
+static Mutex g_pendingModelMutex;
+static std::vector<Hedgehog::Database::CDatabaseData*> g_pendingModelQueue;
+
+static constexpr uint32_t MODEL_DATA_VFTABLE = 0x82073A44;
+static constexpr uint32_t TERRAIN_MODEL_DATA_VFTABLE = 0x8211D25C;
+
+// CModelData::CheckMadeAll
+PPC_FUNC_IMPL(__imp__sub_82E2EFB0);
+PPC_FUNC(sub_82E2EFB0)
+{   
+    if (reinterpret_cast<Hedgehog::Database::CDatabaseData*>(base + ctx.r3.u32)->m_Flags & eDatabaseDataFlags_CompilingPipelines)
+    {
+        ctx.r3.u64 = 0;
+    }
+    else
+    {
+        __imp__sub_82E2EFB0(ctx, base);
+    }
+}
+
+// CTerrainModelData::CheckMadeAll
+PPC_FUNC_IMPL(__imp__sub_82E243D8);
+PPC_FUNC(sub_82E243D8)
+{   
+    if (reinterpret_cast<Hedgehog::Database::CDatabaseData*>(base + ctx.r3.u32)->m_Flags & eDatabaseDataFlags_CompilingPipelines)
+    {
+        ctx.r3.u64 = 0;
+    }
+    else
+    {
+        __imp__sub_82E243D8(ctx, base);
+    }
+}
+
+static void SetMadeOne(Hedgehog::Database::CDatabaseData* databaseData)
+{
+    if (databaseData->m_pVftable.ptr == MODEL_DATA_VFTABLE ||
+        databaseData->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
+    {
+        databaseData->m_Flags |= eDatabaseDataFlags_CompilingPipelines;
+
+        std::lock_guard lock(g_pendingModelMutex);
+        g_pendingModelQueue.push_back(databaseData);
+    }
+
+    databaseData->m_Flags |= Hedgehog::Database::eDatabaseDataFlags_IsMadeOne;
+}
+
+static bool CheckMadeAll(Hedgehog::Mirage::CMeshData* meshData)
+{
+    return meshData->IsMadeOne() && (meshData->m_spMaterial.get() == nullptr || meshData->m_spMaterial->IsMadeOne());
+}
+
+template<typename T>
+static bool CheckMadeAll(const T& modelData)
+{
+    for (auto& meshGroup : modelData.m_NodeGroupModels)
+    {
+        for (auto& mesh : meshGroup->m_OpaqueMeshes)
+        {
+            if (!CheckMadeAll(mesh.get()))
+                return false;
+        }     
+
+        for (auto& mesh : meshGroup->m_TransparentMeshes)
+        {
+            if (!CheckMadeAll(mesh.get()))
+                return false;
+        }    
+
+        for (auto& mesh : meshGroup->m_PunchThroughMeshes)
+        {
+            if (!CheckMadeAll(mesh.get()))
+                return false;
+        }
+
+        for (auto& specialMeshGroup : meshGroup->m_SpecialMeshGroups)
+        {
+            for (auto& mesh : specialMeshGroup)
+            {
+                if (!CheckMadeAll(mesh.get()))
+                    return false;
+            }
+        }
+    }
+
+    for (auto& mesh : modelData.m_OpaqueMeshes)
+    {
+        if (!CheckMadeAll(mesh.get()))
+            return false;
+    }
+
+    for (auto& mesh : modelData.m_TransparentMeshes)
+    {
+        if (!CheckMadeAll(mesh.get()))
+            return false;
+    }
+
+    for (auto& mesh : modelData.m_PunchThroughMeshes)
+    {
+        if (!CheckMadeAll(mesh.get()))
+            return false;
+    }
+
+    return true;
+}
+
+static void ModelConsumerThread()
+{
+    std::vector<Hedgehog::Database::CDatabaseData*> localPendingModelQueue;
+
+    // TODO: This sucks
+    while (true)
+    {
+        {
+            std::lock_guard lock(g_pendingModelMutex);
+            localPendingModelQueue.insert(localPendingModelQueue.end(), g_pendingModelQueue.begin(), g_pendingModelQueue.end());
+            g_pendingModelQueue.clear();
+        }
+
+        for (auto it = localPendingModelQueue.begin(); it != localPendingModelQueue.end();)
+        {
+            bool ready = false;
+
+            if ((*it)->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
+                ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(*it));
+            else
+                ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(*it));
+
+            if (ready)
+            {
+                g_readyModelQueue.enqueue(*it);
+                it = localPendingModelQueue.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+
+        Sleep(5);
+    }
+}
+
+static std::thread g_modelConsumerThread(ModelConsumerThread);
+
 GUEST_FUNCTION_HOOK(sub_82BD99B0, CreateDevice);
 
 GUEST_FUNCTION_HOOK(sub_82BE6230, DestructResource);
@@ -4235,6 +4410,8 @@ GUEST_FUNCTION_HOOK(sub_82E43FC8, MakePictureData);
 GUEST_FUNCTION_HOOK(sub_82E9EE38, SetResolution);
 
 GUEST_FUNCTION_HOOK(sub_82AE2BF8, ScreenShaderInit);
+
+GUEST_FUNCTION_HOOK(sub_82E06CB8, SetMadeOne);
 
 GUEST_FUNCTION_STUB(sub_822C15D8);
 GUEST_FUNCTION_STUB(sub_822C1810);
