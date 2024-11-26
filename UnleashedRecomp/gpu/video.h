@@ -240,11 +240,12 @@ struct GuestVertexDeclaration : GuestResource
 // VertexShader/PixelShader
 struct GuestShader : GuestResource
 {
+    Mutex mutex;
     std::unique_ptr<RenderShader> shader;
     struct ShaderCacheEntry* shaderCacheEntry = nullptr;
     ankerl::unordered_dense::map<uint32_t, std::unique_ptr<RenderShader>> linkedShaders;
-    std::vector<IDxcBlob*> shaderBlobs;
-    bool libraryRegistered = false;
+    std::vector<ComPtr<IDxcBlob>> shaderBlobs;
+    ComPtr<IDxcBlobEncoding> libraryBlob;
 };
 
 struct GuestViewport

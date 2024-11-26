@@ -29,6 +29,9 @@
 #include <imgui_impl_sdl2.h>
 #include <o1heap.h>
 #include <cstddef>
+#include <wrl/client.h>
+
+using Microsoft::WRL::ComPtr;
 
 #include "framework.h"
 #include "mutex.h"

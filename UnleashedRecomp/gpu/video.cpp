@@ -472,12 +472,7 @@ static void DestructTempResources()
         case ResourceType::VertexShader:
         case ResourceType::PixelShader:
         {
-            const auto shader = reinterpret_cast<GuestShader*>(resource);
-
-            for (auto blob : shader->shaderBlobs)
-                blob->Release();
-
-            shader->~GuestShader();
+            reinterpret_cast<GuestShader*>(resource)->~GuestShader();
             break;
         }
         }
@@ -2466,20 +2461,17 @@ static void ProcSetScissorRect(const RenderCommand& cmd)
     SetDirtyValue<int32_t>(g_dirtyStates.scissorRect, g_scissorRect.right, args.right);
 }
 
-static IDxcCompiler3* g_dxcCompiler;
-static IDxcLinker* g_dxcLinker;
-static IDxcUtils* g_dxcUtils;
-static ankerl::unordered_dense::set<uint32_t> g_compiledSpecConstantLibraryBlobs;
-static Mutex g_linkMutex;
+static Mutex g_compiledSpecConstantLibraryBlobMutex;
+static ankerl::unordered_dense::map<uint32_t, ComPtr<IDxcBlob>> g_compiledSpecConstantLibraryBlobs;
 
 static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specConstants)
 {
-    std::lock_guard lock(g_linkMutex); // TODO: VERY BAD!!!!!!!!!!
-
     if (g_vulkan ||
         guestShader->shaderCacheEntry == nullptr || 
         guestShader->shaderCacheEntry->specConstantsMask == 0)
     {
+        std::lock_guard lock(guestShader->mutex);
+
         if (guestShader->shader == nullptr)
         {
             assert(guestShader->shaderCacheEntry != nullptr);
@@ -2495,18 +2487,33 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
 
     specConstants &= guestShader->shaderCacheEntry->specConstantsMask;
 
-    auto& shader = guestShader->linkedShaders[specConstants];
+    RenderShader* shader;
+    {
+        std::lock_guard lock(guestShader->mutex);
+        shader = guestShader->linkedShaders[specConstants].get();
+    }
+
     if (shader == nullptr)
     {
+        thread_local ComPtr<IDxcCompiler3> s_dxcCompiler;
+        thread_local ComPtr<IDxcLinker> s_dxcLinker;
+        thread_local ComPtr<IDxcUtils> s_dxcUtils;
+
         wchar_t specConstantsLibName[0x100];
         swprintf_s(specConstantsLibName, L"SpecConstants_%d", specConstants);
 
-        if (!g_compiledSpecConstantLibraryBlobs.contains(specConstants))
+        ComPtr<IDxcBlob> specConstantLibraryBlob;
         {
-            if (g_dxcCompiler == nullptr)
+            std::lock_guard lock(g_compiledSpecConstantLibraryBlobMutex);
+            specConstantLibraryBlob = g_compiledSpecConstantLibraryBlobs[specConstants];
+        }
+
+        if (specConstantLibraryBlob == nullptr)
+        {
+            if (s_dxcCompiler == nullptr)
             {
-                HRESULT hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&g_dxcCompiler));
-                assert(SUCCEEDED(hr) && g_dxcCompiler != nullptr);
+                HRESULT hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(s_dxcCompiler.GetAddressOf()));
+                assert(SUCCEEDED(hr) && s_dxcCompiler != nullptr);
             }
 
             char libraryHlsl[0x100];
@@ -2519,74 +2526,83 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
             const wchar_t* args[1];
             args[0] = L"-T lib_6_3";
 
-            IDxcResult* result = nullptr;
-            HRESULT hr = g_dxcCompiler->Compile(&buffer, args, std::size(args), nullptr, IID_PPV_ARGS(&result));
+            ComPtr<IDxcResult> result;
+            HRESULT hr = s_dxcCompiler->Compile(&buffer, args, std::size(args), nullptr, IID_PPV_ARGS(result.GetAddressOf()));
             assert(SUCCEEDED(hr) && result != nullptr);
 
-            if (g_dxcLinker == nullptr)
-            {
-                HRESULT hr = DxcCreateInstance(CLSID_DxcLinker, IID_PPV_ARGS(&g_dxcLinker));
-                assert(SUCCEEDED(hr) && g_dxcLinker != nullptr);
-            }
+            hr = result->GetResult(specConstantLibraryBlob.GetAddressOf());
+            assert(SUCCEEDED(hr) && specConstantLibraryBlob != nullptr);
 
-            IDxcBlob* blob = nullptr;
-            hr = result->GetResult(&blob);
-            assert(SUCCEEDED(hr) && blob != nullptr);
-
-            g_dxcLinker->RegisterLibrary(specConstantsLibName, blob);
-
-            blob->Release();
-            result->Release();
-
-            g_compiledSpecConstantLibraryBlobs.emplace(specConstants);
+            std::lock_guard lock(g_compiledSpecConstantLibraryBlobMutex);
+            g_compiledSpecConstantLibraryBlobs.emplace(specConstants, specConstantLibraryBlob);
         }
+
+        if (s_dxcLinker == nullptr)
+        {
+            HRESULT hr = DxcCreateInstance(CLSID_DxcLinker, IID_PPV_ARGS(s_dxcLinker.GetAddressOf()));
+            assert(SUCCEEDED(hr) && s_dxcLinker != nullptr);
+        }
+
+        s_dxcLinker->RegisterLibrary(specConstantsLibName, specConstantLibraryBlob.Get());
 
         wchar_t shaderLibName[0x100];
         swprintf_s(shaderLibName, L"Shader_%d", guestShader->shaderCacheEntry->dxilOffset);
 
-        if (!guestShader->libraryRegistered)
+        ComPtr<IDxcBlobEncoding> shaderLibraryBlob;
         {
-            if (g_dxcUtils == nullptr)
+            std::lock_guard lock(guestShader->mutex);
+            shaderLibraryBlob = guestShader->libraryBlob;
+        }
+
+        if (shaderLibraryBlob == nullptr)
+        {
+            if (s_dxcUtils == nullptr)
             {
-                HRESULT hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&g_dxcUtils));
-                assert(SUCCEEDED(hr) && g_dxcUtils != nullptr);
+                HRESULT hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(s_dxcUtils.GetAddressOf()));
+                assert(SUCCEEDED(hr) && s_dxcUtils != nullptr);
             }
 
-            IDxcBlobEncoding* blob = nullptr;
-            HRESULT hr = g_dxcUtils->CreateBlobFromPinned(
+            HRESULT hr = s_dxcUtils->CreateBlobFromPinned(
                 g_shaderCache.get() + guestShader->shaderCacheEntry->dxilOffset,
                 guestShader->shaderCacheEntry->dxilSize,
                 DXC_CP_ACP,
-                &blob);
+                shaderLibraryBlob.GetAddressOf());
 
-            assert(SUCCEEDED(hr) && blob != nullptr);
+            assert(SUCCEEDED(hr) && shaderLibraryBlob != nullptr);
 
-            g_dxcLinker->RegisterLibrary(shaderLibName, blob);
-
-            blob->Release();
-
-            guestShader->libraryRegistered = true;
+            std::lock_guard lock(guestShader->mutex);
+            guestShader->libraryBlob = shaderLibraryBlob;
         }
+
+        s_dxcLinker->RegisterLibrary(shaderLibName, shaderLibraryBlob.Get());
 
         const wchar_t* libraryNames[] = { specConstantsLibName, shaderLibName };
 
-        IDxcOperationResult* result = nullptr;
-        HRESULT hr = g_dxcLinker->Link(L"main", guestShader->type == ResourceType::VertexShader ? L"vs_6_0" : L"ps_6_0",
-            libraryNames, std::size(libraryNames), nullptr, 0, &result);
+        ComPtr<IDxcOperationResult> result;
+        HRESULT hr = s_dxcLinker->Link(L"main", guestShader->type == ResourceType::VertexShader ? L"vs_6_0" : L"ps_6_0",
+            libraryNames, std::size(libraryNames), nullptr, 0, result.GetAddressOf());
 
         assert(SUCCEEDED(hr) && result != nullptr);
 
-        IDxcBlob* blob = nullptr;
-        hr = result->GetResult(&blob);
+        ComPtr<IDxcBlob> blob;
+        hr = result->GetResult(blob.GetAddressOf());
         assert(SUCCEEDED(hr) && blob != nullptr);
 
-        shader = g_device->createShader(blob->GetBufferPointer(), blob->GetBufferSize(), "main", RenderShaderFormat::DXIL);
-        guestShader->shaderBlobs.push_back(blob);
+        {
+            std::lock_guard lock(guestShader->mutex);
 
-        result->Release();
+            auto& linkedShader = guestShader->linkedShaders[specConstants];
+            if (linkedShader == nullptr)
+            {
+                linkedShader = g_device->createShader(blob->GetBufferPointer(), blob->GetBufferSize(), "main", RenderShaderFormat::DXIL);
+                guestShader->shaderBlobs.push_back(std::move(blob));
+            }
+
+            shader = linkedShader.get();
+        }        
     }
 
-    return shader.get();
+    return shader;
 }
 
 static void SanitizePipelineState(PipelineState& pipelineState)
