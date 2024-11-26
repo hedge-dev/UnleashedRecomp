@@ -4,6 +4,7 @@
 #include <kernel/heap.h>
 #include <cpu/code_cache.h>
 #include <cpu/guest_code.h>
+#include <cpu/guest_thread.h>
 #include <kernel/memory.h>
 #include <xxHashMap.h>
 #include <shader/shader_cache.h>
@@ -3523,6 +3524,8 @@ static void ProcSetPixelShader(const RenderCommand& cmd)
 
 static std::thread g_renderThread([]
     {
+        GuestThread::SetThreadName(GetCurrentThreadId(), "Render Thread");
+
         RenderCommand commands[32];
 
         while (true)
@@ -3890,7 +3893,7 @@ static RenderFormat ConvertDXGIFormat(ddspp::DXGIFormat format)
 
 static void MakePictureData(GuestPictureData* pictureData, uint8_t* data, uint32_t dataSize)
 {
-    if ((pictureData->flags & 0x1) == 0)
+    if ((pictureData->flags & 0x1) == 0 && data != nullptr)
     {
         ddspp::Descriptor ddsDesc;
         if (ddspp::decode_header(data, ddsDesc) != ddspp::Error)
@@ -4243,8 +4246,8 @@ enum
 static constexpr uint32_t MODEL_DATA_VFTABLE = 0x82073A44;
 static constexpr uint32_t TERRAIN_MODEL_DATA_VFTABLE = 0x8211D25C;
 
-static moodycamel::BlockingConcurrentQueue<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_loadedModelQueue;
-static std::atomic<uint32_t> g_pendingModelCount;
+static moodycamel::BlockingConcurrentQueue<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_compilingModelQueue;
+static std::atomic<uint32_t> g_compilingModelCount;
 
 // Having this separate, because I don't want to lock a mutex in the render thread before
 // every single draw. Might be worth profiling to see if it actually has an impact and merge them.
@@ -4442,13 +4445,15 @@ static void CompileMeshPipelines(const T& modelData, const CompilationArgs& args
 
 static void PipelineCompilerThread()
 {
+    GuestThread::SetThreadName(GetCurrentThreadId(), "Pipeline Compiler Thread");
+
     uint8_t* stack = nullptr;
     PPCContext ppcContext{};
 
     while (true)
     {
         boost::shared_ptr<Hedgehog::Database::CDatabaseData> databaseData;
-        g_loadedModelQueue.wait_dequeue(databaseData);
+        g_compilingModelQueue.wait_dequeue(databaseData);
 
         if (stack == nullptr)
         {
@@ -4471,17 +4476,14 @@ static void PipelineCompilerThread()
 
         databaseData->m_Flags &= ~eDatabaseDataFlags_CompilingPipelines;
 
-        if ((--g_pendingModelCount) == 0)
-            g_pendingModelCount.notify_all();
+        if ((--g_compilingModelCount) == 0)
+            g_compilingModelCount.notify_all();
     }
 
     g_userHeap.Free(stack);
 }
 
 static std::thread g_pipelineCompilerThread(PipelineCompilerThread);
-
-static Mutex g_pendingModelMutex;
-static std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_pendingModelQueue;
 
 // Hedgehog::Database::WaitForArchiveLoadFinish
 PPC_FUNC_IMPL(__imp__sub_82E0C288);
@@ -4491,8 +4493,8 @@ PPC_FUNC(sub_82E0C288)
 
     // Wait for pipeline compilations to finish.
     uint32_t value;
-    while ((value = g_pendingModelCount.load()) != 0)
-        g_pendingModelCount.wait(value);
+    while ((value = g_compilingModelCount.load()) != 0)
+        g_compilingModelCount.wait(value);
 }
 
 // CModelData::CheckMadeAll
@@ -4523,16 +4525,28 @@ PPC_FUNC(sub_82E243D8)
     }
 }
 
-void GetModelDataMidAsmHook(PPCRegister& r1)
+static Mutex g_pendingModelMutex;
+static std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_pendingModelQueue;
+static std::atomic<uint32_t> g_pendingModelCount;
+
+void GetModelDataMidAsmHook(PPCRegister& r1, PPCRegister& r31)
 {
-    auto databaseData = *reinterpret_cast<boost::shared_ptr<Hedgehog::Database::CDatabaseData>*>(
+    auto& databaseData = *reinterpret_cast<boost::shared_ptr<Hedgehog::Database::CDatabaseData>*>(
         g_memory.Translate(r1.u32 + 0x58));
 
-    ++g_pendingModelCount;
-    databaseData->m_Flags |= eDatabaseDataFlags_CompilingPipelines;
-    
-    std::lock_guard lock(g_pendingModelMutex);
-    g_pendingModelQueue.push_back(databaseData);
+    if (!databaseData->IsMadeOne() && r31.u32 != NULL)
+    {
+        ++g_compilingModelCount;
+        databaseData->m_Flags |= eDatabaseDataFlags_CompilingPipelines;
+
+        {
+            std::lock_guard lock(g_pendingModelMutex);
+            g_pendingModelQueue.push_back(databaseData);
+        }
+
+        ++g_pendingModelCount;
+        g_pendingModelCount.notify_all();
+    }
 }
 
 static bool CheckMadeAll(Hedgehog::Mirage::CMeshData* meshData)
@@ -4543,6 +4557,9 @@ static bool CheckMadeAll(Hedgehog::Mirage::CMeshData* meshData)
 template<typename T>
 static bool CheckMadeAll(const T& modelData)
 {
+    if (!modelData.IsMadeOne())
+        return false;
+
     for (auto& meshGroup : modelData.m_NodeGroupModels)
     {
         for (auto& mesh : meshGroup->m_OpaqueMeshes)
@@ -4596,38 +4613,50 @@ static bool CheckMadeAll(const T& modelData)
 
 static void ModelConsumerThread()
 {
+    GuestThread::SetThreadName(GetCurrentThreadId(), "Model Consumer Thread");
+
     std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> localPendingModelQueue;
 
-    // TODO: This sucks
     while (true)
     {
+        // Wait for models to arrive.
+        uint32_t pendingModelCount;
+        while ((pendingModelCount = g_pendingModelCount.load()) == 0)
+            g_pendingModelCount.wait(pendingModelCount);
+
         {
             std::lock_guard lock(g_pendingModelMutex);
             localPendingModelQueue.insert(localPendingModelQueue.end(), g_pendingModelQueue.begin(), g_pendingModelQueue.end());
             g_pendingModelQueue.clear();
         }
 
-        for (auto it = localPendingModelQueue.begin(); it != localPendingModelQueue.end();)
+        bool allHandled = true;
+
+        for (auto& pendingModel : localPendingModelQueue)
         {
-            bool ready = false;
-
-            if ((*it)->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
-                ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(it->get()));
-            else
-                ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(it->get()));
-
-            if (ready)
+            if (pendingModel.get() != nullptr)
             {
-                g_loadedModelQueue.enqueue(*it);
-                it = localPendingModelQueue.erase(it);
-            }
-            else
-            {
-                ++it;
+                bool ready = false;
+
+                if (pendingModel->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
+                    ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(pendingModel.get()));
+                else
+                    ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(pendingModel.get()));
+
+                if (ready)
+                {
+                    g_compilingModelQueue.enqueue(std::move(pendingModel));
+                    --g_pendingModelCount;
+                }
+                else
+                {
+                    allHandled = false;
+                }
             }
         }
 
-        Sleep(5);
+        if (allHandled)
+            localPendingModelQueue.clear();
     }
 }
 

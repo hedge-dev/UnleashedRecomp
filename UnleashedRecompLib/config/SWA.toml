@@ -431,9 +431,9 @@ registers = ["r10"]
 [[midasm_hook]]
 name = "GetModelDataMidAsmHook"
 address = 0x82E38688
-registers = ["r1"]
+registers = ["r1", "r31"]
 
 [[midasm_hook]]
 name = "GetModelDataMidAsmHook"
 address = 0x82E39650
-registers = ["r1"]
+registers = ["r1", "r31"]
