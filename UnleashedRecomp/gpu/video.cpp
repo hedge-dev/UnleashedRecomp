@@ -4243,7 +4243,7 @@ enum
 static constexpr uint32_t MODEL_DATA_VFTABLE = 0x82073A44;
 static constexpr uint32_t TERRAIN_MODEL_DATA_VFTABLE = 0x8211D25C;
 
-static moodycamel::BlockingConcurrentQueue<Hedgehog::Database::CDatabaseData*> g_loadedModelQueue;
+static moodycamel::BlockingConcurrentQueue<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_loadedModelQueue;
 static std::atomic<uint32_t> g_pendingModelCount;
 
 // Having this separate, because I don't want to lock a mutex in the render thread before
@@ -4447,7 +4447,7 @@ static void PipelineCompilerThread()
 
     while (true)
     {
-        Hedgehog::Database::CDatabaseData* databaseData;
+        boost::shared_ptr<Hedgehog::Database::CDatabaseData> databaseData;
         g_loadedModelQueue.wait_dequeue(databaseData);
 
         if (stack == nullptr)
@@ -4461,11 +4461,11 @@ static void PipelineCompilerThread()
 
         if (databaseData->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
         {
-            CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(databaseData), { false, false });
+            CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(databaseData.get()), { false, false });
         }
         else
         {
-            auto modelData = reinterpret_cast<Hedgehog::Mirage::CModelData*>(databaseData);
+            auto modelData = reinterpret_cast<Hedgehog::Mirage::CModelData*>(databaseData.get());
             CompileMeshPipelines(*modelData, { modelData->m_NodeNum > 1, true });
         }
 
@@ -4481,7 +4481,7 @@ static void PipelineCompilerThread()
 static std::thread g_pipelineCompilerThread(PipelineCompilerThread);
 
 static Mutex g_pendingModelMutex;
-static std::vector<Hedgehog::Database::CDatabaseData*> g_pendingModelQueue;
+static std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_pendingModelQueue;
 
 // Hedgehog::Database::WaitForArchiveLoadFinish
 PPC_FUNC_IMPL(__imp__sub_82E0C288);
@@ -4523,19 +4523,16 @@ PPC_FUNC(sub_82E243D8)
     }
 }
 
-static void SetMadeOne(Hedgehog::Database::CDatabaseData* databaseData)
+void GetModelDataMidAsmHook(PPCRegister& r1)
 {
-    if (databaseData->m_pVftable.ptr == MODEL_DATA_VFTABLE ||
-        databaseData->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
-    {
-        ++g_pendingModelCount;
-        databaseData->m_Flags |= eDatabaseDataFlags_CompilingPipelines;
+    auto databaseData = *reinterpret_cast<boost::shared_ptr<Hedgehog::Database::CDatabaseData>*>(
+        g_memory.Translate(r1.u32 + 0x58));
 
-        std::lock_guard lock(g_pendingModelMutex);
-        g_pendingModelQueue.push_back(databaseData);
-    }
-
-    databaseData->m_Flags |= Hedgehog::Database::eDatabaseDataFlags_IsMadeOne;
+    ++g_pendingModelCount;
+    databaseData->m_Flags |= eDatabaseDataFlags_CompilingPipelines;
+    
+    std::lock_guard lock(g_pendingModelMutex);
+    g_pendingModelQueue.push_back(databaseData);
 }
 
 static bool CheckMadeAll(Hedgehog::Mirage::CMeshData* meshData)
@@ -4599,7 +4596,7 @@ static bool CheckMadeAll(const T& modelData)
 
 static void ModelConsumerThread()
 {
-    std::vector<Hedgehog::Database::CDatabaseData*> localPendingModelQueue;
+    std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> localPendingModelQueue;
 
     // TODO: This sucks
     while (true)
@@ -4615,9 +4612,9 @@ static void ModelConsumerThread()
             bool ready = false;
 
             if ((*it)->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
-                ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(*it));
+                ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(it->get()));
             else
-                ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(*it));
+                ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(it->get()));
 
             if (ready)
             {
@@ -4700,8 +4697,6 @@ GUEST_FUNCTION_HOOK(sub_82E43FC8, MakePictureData);
 GUEST_FUNCTION_HOOK(sub_82E9EE38, SetResolution);
 
 GUEST_FUNCTION_HOOK(sub_82AE2BF8, ScreenShaderInit);
-
-GUEST_FUNCTION_HOOK(sub_82E06CB8, SetMadeOne);
 
 GUEST_FUNCTION_STUB(sub_822C15D8);
 GUEST_FUNCTION_STUB(sub_822C1810);

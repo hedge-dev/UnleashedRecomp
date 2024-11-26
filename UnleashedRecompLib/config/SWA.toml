@@ -427,3 +427,13 @@ registers = ["r4"]
 name = "MotionBlurPrevInvViewProjectionMidAsmHook"
 address = 0x82BA9E7C
 registers = ["r10"]
+
+[[midasm_hook]]
+name = "GetModelDataMidAsmHook"
+address = 0x82E38688
+registers = ["r1"]
+
+[[midasm_hook]]
+name = "GetModelDataMidAsmHook"
+address = 0x82E39650
+registers = ["r1"]
