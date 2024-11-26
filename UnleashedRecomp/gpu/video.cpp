@@ -4668,7 +4668,7 @@ static void ModelConsumerThread()
                 else
                     ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(pendingModel.get()));
 
-                if (ready)
+                if (ready || pendingModel.unique())
                 {
                     g_compilingModelQueue.enqueue(std::move(pendingModel));
                     --g_pendingModelCount;

@@ -69,7 +69,12 @@ namespace boost
 
             uint32_t use_count() const
             {
-                return use_count_;
+                return std::byteswap(static_cast<uint32_t const volatile &>(use_count_.value));
+            }
+
+            bool unique() const
+            {
+                return use_count() == 1;
             }
         };
 
@@ -158,6 +163,7 @@ namespace boost
         explicit operator bool() const { return px != nullptr; }
 
         size_t use_count() const { return pn ? pn->use_count() : 0; }
+        bool unique() const { return !pn || pn->unique(); }
     };
 
     using anonymous_shared_ptr = shared_ptr<void>;
