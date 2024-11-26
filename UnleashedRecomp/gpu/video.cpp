@@ -4523,16 +4523,16 @@ static void PipelineCompilerThread()
 
 static std::thread g_pipelineCompilerThread(PipelineCompilerThread);
 
-// Hedgehog::Database::WaitForArchiveLoadFinish
-PPC_FUNC_IMPL(__imp__sub_82E0C288);
-PPC_FUNC(sub_82E0C288)
+// SWA::CGameModeStage::ExitLoading
+PPC_FUNC_IMPL(__imp__sub_825369A0);
+PPC_FUNC(sub_825369A0)
 {
-    __imp__sub_82E0C288(ctx, base);
-
     // Wait for pipeline compilations to finish.
     uint32_t value;
     while ((value = g_compilingModelCount.load()) != 0)
         g_compilingModelCount.wait(value);
+
+    __imp__sub_825369A0(ctx, base);
 }
 
 // CModelData::CheckMadeAll
