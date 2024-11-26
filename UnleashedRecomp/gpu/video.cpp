@@ -36,6 +36,8 @@
 #include "shader/resolve_msaa_depth_8x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.spirv.h"
 
+//#define ASYNC_PSO_DEBUG
+
 extern "C"
 {
     __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -235,9 +237,11 @@ static TextureDescriptorAllocator g_textureDescriptorAllocator;
 static std::unique_ptr<RenderPipelineLayout> g_pipelineLayout;
 static xxHashMap<std::unique_ptr<RenderPipeline>> g_pipelines;
 
+#ifdef ASYNC_PSO_DEBUG
 static std::atomic<uint32_t> g_pipelinesCreatedInRenderThread;
 static std::atomic<uint32_t> g_pipelinesCreatedAsynchronously;
 static std::atomic<uint32_t> g_pipelinesDropped;
+#endif
 
 static std::atomic<uint32_t> g_compilingModelCount;
 static std::atomic<uint32_t> g_pendingModelCount;
@@ -1670,6 +1674,7 @@ static void DrawImGui()
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
+#ifdef ASYNC_PSO_DEBUG
     if (ImGui::Begin("Async PSO Stats"))
     {
         ImGui::Text("Pipelines Created In Render Thread: %d", g_pipelinesCreatedInRenderThread.load());
@@ -1679,6 +1684,7 @@ static void DrawImGui()
         ImGui::Text("Pending Model Count: %d", g_pendingModelCount.load());
     }
     ImGui::End();
+#endif
 
     ImGui::Render();
 
@@ -2729,10 +2735,12 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
     {
         pipeline = CreateGraphicsPipeline(pipelineState);
 
+#ifdef ASYNC_PSO_DEBUG
         if (pipelineState.zEnable) // Should ignore most post effect/2D shaders.
             ++g_pipelinesCreatedInRenderThread;
 
         pipeline->setName(std::format("Render Thread Pipeline {:X}", hash));
+#endif
     }
     
     return pipeline.get();
@@ -2934,11 +2942,15 @@ static void ProcAddPipeline(const RenderCommand& cmd)
     if (pipeline == nullptr)
     {
         pipeline = std::unique_ptr<RenderPipeline>(args.pipeline);
+#ifdef ASYNC_PSO_DEBUG
         ++g_pipelinesCreatedAsynchronously;
+#endif
     }
     else
     {
+#ifdef ASYNC_PSO_DEBUG
         ++g_pipelinesDropped;
+#endif
         delete args.pipeline;
     }
 }
