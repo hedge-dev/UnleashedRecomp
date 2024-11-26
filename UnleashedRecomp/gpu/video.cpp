@@ -4329,6 +4329,9 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
         pipelineState.vertexStrides[0] = mesh->m_VertexSize;
         pipelineState.depthStencilFormat = RenderFormat::D32_FLOAT;
 
+        if (args.hasBone)
+            pipelineState.specConstants |= SPEC_CONSTANT_HAS_BONE;
+
         if (layer == MeshLayer::PunchThrough)
             pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
 
