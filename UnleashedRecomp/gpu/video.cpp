@@ -4451,7 +4451,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
 
             if (layer == MeshLayer::PunchThrough)
             {
-                if (Config::AlphaToCoverage)
+                if (Config::MSAA > 1 && Config::AlphaToCoverage)
                 {
                     pipelineState.enableAlphaToCoverage = true;
                     pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TO_COVERAGE;
