@@ -2736,9 +2736,7 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
         pipeline = CreateGraphicsPipeline(pipelineState);
 
 #ifdef ASYNC_PSO_DEBUG
-        if (pipelineState.zEnable) // Should ignore most post effect/2D shaders.
-            ++g_pipelinesCreatedInRenderThread;
-
+        ++g_pipelinesCreatedInRenderThread;
         pipeline->setName(std::format("Render Thread Pipeline {:X}", hash));
 #endif
     }
@@ -2866,15 +2864,6 @@ static void FlushRenderStateForMainThread(GuestDevice* device, LocalRenderComman
 static void ProcSetBooleans(const RenderCommand& cmd)
 {
     SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.booleans, cmd.setBooleans.booleans);
-
-    // mrgHasBone
-    uint32_t specConstants = g_pipelineState.specConstants;
-    if ((cmd.setBooleans.booleans & 0x1) != 0)
-        specConstants |= SPEC_CONSTANT_HAS_BONE;
-    else
-        specConstants &= ~SPEC_CONSTANT_HAS_BONE;
-
-    SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.specConstants, specConstants);
 }
 
 static void ProcSetSamplerState(const RenderCommand& cmd)
@@ -4320,7 +4309,6 @@ static void CreateGraphicsPipelineInPipelineThread(const PipelineState& pipeline
 
 struct CompilationArgs
 {
-    bool hasBone;
     bool noGI;
 };
 
@@ -4378,9 +4366,6 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
         pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
         pipelineState.vertexStrides[0] = mesh->m_VertexSize;
         pipelineState.depthStencilFormat = RenderFormat::D32_FLOAT;
-
-        if (args.hasBone)
-            pipelineState.specConstants |= SPEC_CONSTANT_HAS_BONE;
 
         if (layer == MeshLayer::PunchThrough)
             pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
@@ -4442,9 +4427,6 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
 
             if (pipelineState.vertexDeclaration->hasR11G11B10Normal)
                 pipelineState.specConstants |= SPEC_CONSTANT_R11G11B10_NORMAL;
-
-            if (args.hasBone)
-                pipelineState.specConstants |= SPEC_CONSTANT_HAS_BONE;
 
             if (Config::GITextureFiltering == EGITextureFiltering::Bicubic)
                 pipelineState.specConstants |= SPEC_CONSTANT_BICUBIC_GI_FILTER;
@@ -4525,14 +4507,9 @@ static void PipelineCompilerThread()
         }
 
         if (databaseData->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
-        {
-            CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(databaseData.get()), { false, false });
-        }
+            CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(databaseData.get()), { false });
         else
-        {
-            auto modelData = reinterpret_cast<Hedgehog::Mirage::CModelData*>(databaseData.get());
-            CompileMeshPipelines(*modelData, { modelData->m_NodeNum > 1, true });
-        }
+            CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(databaseData.get()), { true });
 
         databaseData->m_Flags &= ~eDatabaseDataFlags_CompilingPipelines;
 
