@@ -32,6 +32,7 @@
 #include "CSD/Manager/csdmSubjectBase.h"
 #include "CSD/Platform/csdTexList.h"
 
+#include "SWA/Achievement/AchievementManager.h"
 #include "SWA/Camera/Camera.h"
 #include "SWA/CSD/CsdDatabaseWrapper.h"
 #include "SWA/CSD/CsdProject.h"
@@ -40,6 +41,7 @@
 #include "SWA/HUD/GeneralWindow/GeneralWindow.h"
 #include "SWA/HUD/Loading/Loading.h"
 #include "SWA/HUD/Pause/HudPause.h"
+#include "SWA/HUD/SaveIcon/SaveIcon.h"
 #include "SWA/HUD/Sonic/HudSonicStage.h"
 #include "SWA/Movie/MovieDisplayer.h"
 #include "SWA/Movie/MovieManager.h"

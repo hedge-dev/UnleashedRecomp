@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cfg/config_detail.h>
+#include <user/config_detail.h>
 #include <locale/config_locale.h>
+#include <user/paths.h>
 #include <exports.h>
 
 class Config
@@ -12,6 +13,7 @@ public:
     CONFIG_DEFINE_ENUM_LOCALISED("System", ELanguage, Language, ELanguage::English);
     CONFIG_DEFINE_LOCALISED("System", bool, Hints, true);
     CONFIG_DEFINE_LOCALISED("System", bool, ControlTutorial, true);
+    CONFIG_DEFINE_LOCALISED("System", bool, AchievementNotifications, true);
     CONFIG_DEFINE_LOCALISED("System", bool, SaveScoreAtCheckpoints, false);
     CONFIG_DEFINE_ENUM_LOCALISED("System", EUnleashGaugeBehaviour, UnleashGaugeBehaviour, EUnleashGaugeBehaviour::Original);
     CONFIG_DEFINE_ENUM_LOCALISED("System", ETimeOfDayTransition, TimeOfDayTransition, ETimeOfDayTransition::Xbox);
@@ -65,31 +67,9 @@ public:
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EMovieScaleMode, MovieScaleMode, EMovieScaleMode::Fit);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EUIScaleMode, UIScaleMode, EUIScaleMode::Centre);
 
-    static std::filesystem::path GetUserPath()
-    {
-        if (std::filesystem::exists("portable.txt"))
-            return std::filesystem::current_path();
-
-        std::filesystem::path userPath{};
-
-        // TODO: handle platform-specific paths.
-        PWSTR knownPath = NULL;
-        if (SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &knownPath) == S_OK)
-            userPath = std::filesystem::path{ knownPath } / USER_DIRECTORY;
-
-        CoTaskMemFree(knownPath);
-
-        return userPath;
-    }
-
     static std::filesystem::path GetConfigPath()
     {
-        return GetUserPath() / TOML_FILE;
-    }
-
-    static std::filesystem::path GetSavePath()
-    {
-        return GetUserPath() / "save";
+        return GetUserPath() / "config.toml";
     }
 
     static void Load();

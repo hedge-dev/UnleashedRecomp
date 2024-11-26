@@ -28,11 +28,6 @@ set(SWA_PRECOMPILED_HEADERS
     "stdafx.h"
 )
 
-set(SWA_CFG_CXX_SOURCES
-    "cfg/config.cpp"
-    "cfg/config_detail.cpp"
-)
-
 set(SWA_KERNEL_CXX_SOURCES
     "kernel/imports.cpp"
     "kernel/xdm.cpp"
@@ -80,8 +75,15 @@ set(SWA_PATCHES_CXX_SOURCES
 )
 
 set(SWA_UI_CXX_SOURCES
+    "ui/achievement_overlay.cpp"
     "ui/options_menu.cpp"
     "ui/window.cpp"
+)
+
+set(SWA_USER_CXX_SOURCES
+    "user/achievement_data.cpp"
+    "user/config.cpp"
+    "user/config_detail.cpp"
 )
 
 set(SWA_CXX_SOURCES
@@ -91,7 +93,6 @@ set(SWA_CXX_SOURCES
     "misc_impl.cpp"
     "stdafx.cpp"
     
-    ${SWA_CFG_CXX_SOURCES}
     ${SWA_KERNEL_CXX_SOURCES}
     ${SWA_CPU_CXX_SOURCES}
     ${SWA_GPU_CXX_SOURCES}
@@ -99,6 +100,7 @@ set(SWA_CXX_SOURCES
     ${SWA_HID_CXX_SOURCES}
     ${SWA_PATCHES_CXX_SOURCES}
     ${SWA_UI_CXX_SOURCES}
+    ${SWA_USER_CXX_SOURCES}
 )
 
 if (WIN32)

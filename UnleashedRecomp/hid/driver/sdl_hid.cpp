@@ -1,6 +1,6 @@
 #include <stdafx.h>
 #include <SDL.h>
-#include <cfg/config.h>
+#include <user/config.h>
 #include <hid/hid_detail.h>
 #include <ui/window.h>
 

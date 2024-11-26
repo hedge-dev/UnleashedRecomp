@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cfg/config.h>
+#include <user/config.h>
 
 inline static std::string g_localeMissing = "<missing string>";
 
@@ -64,6 +64,18 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         "Options_Desc_OSNotSupported",
         {
             { ELanguage::English, "This option is not supported by your operating system." }
+        }
+    },
+    {
+        "Achievements_Name",
+        {
+            { ELanguage::English, "Achievements" }
+        }
+    },
+    {
+        "Achievements_Unlock",
+        {
+            { ELanguage::English, "Achievement Unlocked!" }
         }
     }
 };

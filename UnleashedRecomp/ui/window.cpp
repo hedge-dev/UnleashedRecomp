@@ -1,6 +1,6 @@
 #include "window.h"
 #include "sdl_listener.h"
-#include <cfg/config.h>
+#include <user/config.h>
 #include <SDL_syswm.h>
 
 bool m_isFullscreenKeyReleased = true;

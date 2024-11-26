@@ -1,7 +1,13 @@
 #include <cpu/guest_code.h>
 #include <api/SWA.h>
 #include <ui/window.h>
-#include <cfg/config.h>
+#include <user/achievement_data.h>
+#include <user/config.h>
+
+void AchievementManagerUnlockMidAsmHook(PPCRegister& id)
+{
+    AchievementData::Unlock(id.u32);
+}
 
 bool DisableHintsMidAsmHook()
 {

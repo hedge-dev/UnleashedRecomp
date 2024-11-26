@@ -1,9 +1,5 @@
 #pragma once
 
-#define USER_DIRECTORY "SWA"
-
-#define TOML_FILE "config.toml"
-
 #define CONFIG_DEFINE(section, type, name, defaultValue) \
     inline static ConfigDef<type> name{section, #name, defaultValue};
 

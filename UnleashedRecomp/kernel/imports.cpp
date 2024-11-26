@@ -11,7 +11,7 @@
 #include "xam.h"
 #include "xdm.h"
 #include <timeapi.h>
-#include <cfg/config.h>
+#include <user/config.h>
 
 #include <ntstatus.h>
 

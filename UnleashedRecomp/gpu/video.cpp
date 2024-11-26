@@ -7,13 +7,14 @@
 #include <kernel/memory.h>
 #include <xxHashMap.h>
 #include <shader/shader_cache.h>
+#include <ui/achievement_overlay.h>
 #include <ui/options_menu.h>
 
 #include "imgui_snapshot.h"
 #include "imgui_common.h"
 #include "video.h"
 #include <ui/window.h>
-#include <cfg/config.h>
+#include <user/config.h>
 
 #include "shader/copy_vs.hlsl.dxil.h"
 #include "shader/copy_vs.hlsl.spirv.h"
@@ -1011,6 +1012,7 @@ static void CreateImGuiBackend()
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
     OptionsMenu::Init();
+    AchievementOverlay::Init();
     ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
 
     g_imFontTexture = std::make_unique<GuestTexture>(ResourceType::Texture);
@@ -1649,6 +1651,7 @@ static void DrawImGui()
 {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
+    AchievementOverlay::Draw();
     OptionsMenu::Draw();
     ImGui::Render();
 

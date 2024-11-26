@@ -1,8 +1,11 @@
 #include <cpu/guest_code.h>
-#include <cfg/config.h>
+#include <user/achievement_data.h>
+#include <user/config.h>
 #include <api/SWA.h>
 
 const char* m_pStageID;
+
+bool m_isSavedAchievementData = false;
 
 void GetStageIDMidAsmHook(PPCRegister& r5)
 {
@@ -42,13 +45,38 @@ PPC_FUNC(sub_824EB9B0)
     __imp__sub_824EB9B0(ctx, base);
 }
 
-// CApplicationDocument::LoadArchiveDatabases
+// SWA::CSaveIcon::Update
+PPC_FUNC_IMPL(__imp__sub_824E5170);
+PPC_FUNC(sub_824E5170)
+{
+    auto pSaveIcon = (SWA::CSaveIcon*)g_memory.Translate(ctx.r3.u32);
+
+    __imp__sub_824E5170(ctx, base);
+
+    if (pSaveIcon->m_IsVisible)
+    {
+        if (!m_isSavedAchievementData)
+        {
+            printf("[*] Saving achievements...\n");
+
+            AchievementData::Save();
+
+            m_isSavedAchievementData = true;
+        }
+    }
+    else
+    {
+        m_isSavedAchievementData = false;
+    }
+}
+
+// SWA::CApplicationDocument::LoadArchiveDatabases
 PPC_FUNC_IMPL(__imp__sub_824EFD28);
 PPC_FUNC(sub_824EFD28)
 {
     auto r3 = ctx.r3;
 
-    // CSigninXenon::InitializeDLC
+    // SWA::CSigninXenon::InitializeDLC
     ctx.r3.u64 = PPC_LOAD_U32(r3.u32 + 4) + 200;
     ctx.r4.u64 = 0;
     sub_822C57D8(ctx, base);
@@ -57,7 +85,7 @@ PPC_FUNC(sub_824EFD28)
     __imp__sub_824EFD28(ctx, base);
 }
 
-// CFileReaderXenon_DLC::InitializeParallel
+// SWA::CFileReaderXenon_DLC::InitializeParallel
 PPC_FUNC(sub_822C3778)
 {
     if (!PPC_LOAD_U8(0x83361F10)) // ms_DLCInitialized

@@ -1,7 +1,7 @@
 #include <cpu/guest_code.h>
+#include <user/config.h>
 #include <api/SWA.h>
 #include <ui/window.h>
-#include <cfg/config.h>
 
 // TODO: to be removed.
 constexpr float m_baseAspectRatio = 16.0f / 9.0f;

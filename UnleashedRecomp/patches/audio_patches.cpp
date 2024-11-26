@@ -1,5 +1,5 @@
 #include <cpu/guest_code.h>
-#include <cfg/config.h>
+#include <user/config.h>
 #include <kernel/function.h>
 #include <kernel/platform.h>
 #include <patches/audio_patches.h>

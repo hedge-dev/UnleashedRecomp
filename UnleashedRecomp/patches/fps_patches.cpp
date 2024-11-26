@@ -1,7 +1,7 @@
 #include <cpu/guest_code.h>
 #include <api/SWA.h>
 #include <ui/window.h>
-#include <cfg/config.h>
+#include <user/config.h>
 #include <app.h>
 
 float m_lastLoadingFrameDelta = 0.0f;

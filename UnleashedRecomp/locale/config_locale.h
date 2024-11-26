@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cfg/config_detail.h>
+#include <user/config_detail.h>
 
 #define CONFIG_DEFINE_LOCALE(name) \
     inline static std::unordered_map<ELanguage, std::tuple<std::string, std::string>> g_##name##_locale =
@@ -87,6 +87,11 @@ CONFIG_DEFINE_LOCALE(Hints)
 CONFIG_DEFINE_LOCALE(ControlTutorial)
 {
     { ELanguage::English, { "Control Tutorial", "Show controller hints in stages." } }
+};
+
+CONFIG_DEFINE_LOCALE(AchievementNotifications)
+{
+    { ELanguage::English, { "Achievement Notifications", "Show notifications for unlocking achievements.\n\nAchievements will still be rewarded with notifications disabled." } }
 };
 
 CONFIG_DEFINE_LOCALE(SaveScoreAtCheckpoints)

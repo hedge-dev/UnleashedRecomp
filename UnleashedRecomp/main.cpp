@@ -11,7 +11,10 @@
 #include <xex.h>
 #include <apu/audio.h>
 #include <hid/hid.h>
-#include <cfg/config.h>
+#include <user/achievement_data.h>
+#include <user/config.h>
+#include <user/paths.h>
+#include <xdbf_wrapper.h>
 
 #define GAME_XEX_PATH "game:\\default.xex"
 
@@ -21,6 +24,7 @@ const size_t XMAIOEnd = XMAIOBegin + 0x0000FFFF;
 Memory g_memory{ reinterpret_cast<void*>(0x100000000), 0x100000000 };
 Heap g_userHeap;
 CodeCache g_codeCache;
+XDBFWrapper g_xdbf;
 
 // Name inspired from nt's entry point
 void KiSystemStartup()
@@ -40,7 +44,7 @@ void KiSystemStartup()
     XamRegisterContent(gameContent, DirectoryExists(".\\game") ? ".\\game" : ".");
     XamRegisterContent(updateContent, ".\\update");
 
-    const auto savePath = Config::GetSavePath();
+    const auto savePath = GetSavePath();
     const auto saveName = "SYS-DATA";
 
     // TODO: implement save slots?
@@ -118,12 +122,17 @@ uint32_t LdrLoadModule(const char* path)
         }
     }
 
+    auto res = Xex2FindOptionalHeader<XEX_RESOURCE_INFO>(xex, XEX_HEADER_RESOURCE_INFO);
+
+    g_xdbf = XDBFWrapper((uint8_t*)g_memory.Translate(res->Offset.get()), res->SizeOfData);
+
     return entry;
 }
 
 int main()
 {
     Config::Load();
+    AchievementData::Load();
 
     KiSystemStartup();
 

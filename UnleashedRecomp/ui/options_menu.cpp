@@ -1,4 +1,5 @@
 #include "options_menu.h"
+#include "imgui_utils.h"
 #include "window.h"
 #include "exports.h"
 
@@ -75,73 +76,6 @@ static void SetShaderModifier(uint32_t shaderModifier)
 {
     auto callbackData = AddCallback(ImGuiCallback::SetShaderModifier);
     callbackData->setShaderModifier.shaderModifier = shaderModifier;
-}
-
-static void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 color, const char* text, double time, double delay, double speed)
-{
-    auto drawList = ImGui::GetForegroundDrawList();
-    auto rectWidth = max.x - min.x;
-    auto textSize = g_seuratFont->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text);
-    auto textX = pos.x - fmodf(std::max(0.0, ImGui::GetTime() - (time + delay)) * speed, textSize.x + rectWidth);
-
-    drawList->PushClipRect(min, max, true);
-
-    if (textX <= pos.x)
-        drawList->AddText(font, fontSize, { textX, pos.y }, color, text);
-
-    if (textX + textSize.x < pos.x)
-        drawList->AddText(font, fontSize, { textX + textSize.x + rectWidth, pos.y }, color, text);
-
-    drawList->PopClipRect();
-}
-
-static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, int32_t outlineSize, ImU32 outlineColor)
-{
-    auto drawList = ImGui::GetForegroundDrawList();
-
-    // TODO: This is very inefficient!
-    for (int32_t i = -outlineSize + 1; i < outlineSize; i++)
-    {
-        for (int32_t j = -outlineSize + 1; j < outlineSize; j++)
-        {
-            drawList->AddText(font, fontSize, { pos.x + i, pos.y + j }, outlineColor, text);
-        }
-    }
-
-    drawList->AddText(font, fontSize, pos, color, text);
-}
-
-// Not aspect ratio aware. Will stretch.
-static float ScaleX(float x)
-{
-    auto& io = ImGui::GetIO();
-    return x * io.DisplaySize.x / 1280.0f;
-}
-
-static float ScaleY(float y)
-{
-    auto& io = ImGui::GetIO();
-    return y * io.DisplaySize.y / 720.0f;
-}
-
-// Aspect ratio aware.
-static float Scale(float size)
-{
-    auto& io = ImGui::GetIO();
-    if (io.DisplaySize.x > io.DisplaySize.y)
-        return size * std::max(1.0f, io.DisplaySize.y / 720.0f);
-    else
-        return size * std::max(1.0f, io.DisplaySize.x / 1280.0f);
-}
-
-static float Lerp(float a, float b, float t)
-{
-    return a + (b - a) * t;
-}
-
-static ImVec2 Lerp(const ImVec2& a, const ImVec2& b, float t)
-{
-    return { a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t };
 }
 
 static void DrawScanlineBars()
@@ -854,6 +788,7 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::Language, !OptionsMenu::s_isPause, cmnReason);
         DrawConfigOption(rowCount++, yOffset, &Config::Hints, !isStage, cmnReason);
         DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, !isStage, cmnReason);
+        DrawConfigOption(rowCount++, yOffset, &Config::AchievementNotifications, true);
         DrawConfigOption(rowCount++, yOffset, &Config::SaveScoreAtCheckpoints, true);
         DrawConfigOption(rowCount++, yOffset, &Config::UnleashGaugeBehaviour, true);
         DrawConfigOption(rowCount++, yOffset, &Config::TimeOfDayTransition, true);
@@ -1099,6 +1034,8 @@ void OptionsMenu::Close()
     s_isVisible = false;
 
     *(bool*)g_memory.Translate(0x8328BB26) = true;
+
+    Config::Save();
 
     // TODO: animate Miles Electric out if we're in a stage.
 }

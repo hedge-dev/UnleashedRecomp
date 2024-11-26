@@ -35,7 +35,9 @@ namespace SWA
         public:
             SWA_INSERT_PADDING(0x20);
             boost::shared_ptr<CGame> m_pGame;
-            SWA_INSERT_PADDING(0x114);
+            SWA_INSERT_PADDING(0xD4);
+            xpointer<Achievement::CManager> m_pAchievementManager;
+            SWA_INSERT_PADDING(0x3C);
             xpointer<void> m_spGameParameter;
         };
 
