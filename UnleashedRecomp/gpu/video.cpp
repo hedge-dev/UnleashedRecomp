@@ -4298,21 +4298,16 @@ static void CreateGraphicsPipelineInPipelineThread(const PipelineState& pipeline
 {
     XXH64_hash_t hash = XXH3_64bits(&pipelineState, sizeof(pipelineState));
 
-    bool found = false;
+    bool shouldCompile = false;
     {
         std::lock_guard lock(g_asyncPipelineMutex);
-        found = g_asyncPipelines.contains(hash);
+        shouldCompile = g_asyncPipelines.emplace(hash).second;
     }
 
-    if (!found)
+    if (shouldCompile)
     {
         auto pipeline = CreateGraphicsPipeline(pipelineState);
         pipeline->setName(std::format("Async Pipeline {:X}", hash));
-
-        {
-            std::lock_guard lock(g_asyncPipelineMutex);
-            g_asyncPipelines.emplace(hash);
-        }
 
         // Will get dropped in render thread if a different thread already managed to compile this.
         RenderCommand cmd;
