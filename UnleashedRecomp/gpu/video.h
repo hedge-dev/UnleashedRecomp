@@ -1,5 +1,7 @@
 #pragma once
 
+//#define ASYNC_PSO_DEBUG
+
 #include "rhi/rt64_render_interface.h"
 
 #define D3DCLEAR_TARGET  0x1
@@ -246,6 +248,9 @@ struct GuestShader : GuestResource
     ankerl::unordered_dense::map<uint32_t, std::unique_ptr<RenderShader>> linkedShaders;
     std::vector<ComPtr<IDxcBlob>> shaderBlobs;
     ComPtr<IDxcBlobEncoding> libraryBlob;
+#ifdef ASYNC_PSO_DEBUG
+    const char* name = "<unknown>";
+#endif
 };
 
 struct GuestViewport

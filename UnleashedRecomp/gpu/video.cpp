@@ -36,8 +36,6 @@
 #include "shader/resolve_msaa_depth_8x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.spirv.h"
 
-//#define ASYNC_PSO_DEBUG
-
 extern "C"
 {
     __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -2737,7 +2735,8 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
 
 #ifdef ASYNC_PSO_DEBUG
         ++g_pipelinesCreatedInRenderThread;
-        pipeline->setName(std::format("Render Thread Pipeline {:X}", hash));
+        pipeline->setName(std::format("{} {} {:X}", 
+            pipelineState.vertexShader->name, pipelineState.pixelShader != nullptr ? pipelineState.pixelShader->name : "<none>", hash));
 #endif
     }
     
@@ -4296,7 +4295,7 @@ static void CreateGraphicsPipelineInPipelineThread(const PipelineState& pipeline
     if (shouldCompile)
     {
         auto pipeline = CreateGraphicsPipeline(pipelineState);
-        pipeline->setName(std::format("Async Pipeline {} {:X}", name, hash));
+        pipeline->setName(std::format("ASYNC {} {:X}", name, hash));
 
         // Will get dropped in render thread if a different thread already managed to compile this.
         RenderCommand cmd;
@@ -4720,6 +4719,26 @@ static void ModelConsumerThread()
 }
 
 static std::thread g_modelConsumerThread(ModelConsumerThread);
+
+#ifdef ASYNC_PSO_DEBUG
+
+PPC_FUNC_IMPL(__imp__sub_82E33330);
+PPC_FUNC(sub_82E33330)
+{
+    auto vertexShaderCode = reinterpret_cast<Hedgehog::Mirage::CVertexShaderCodeData*>(g_memory.Translate(ctx.r4.u32));
+    __imp__sub_82E33330(ctx, base);
+    reinterpret_cast<GuestShader*>(vertexShaderCode->m_pD3DVertexShader.get())->name = vertexShaderCode->m_TypeAndName.c_str() + 3;
+}
+
+PPC_FUNC_IMPL(__imp__sub_82E328D8);
+PPC_FUNC(sub_82E328D8)
+{
+    auto pixelShaderCode = reinterpret_cast<Hedgehog::Mirage::CPixelShaderCodeData*>(g_memory.Translate(ctx.r4.u32));
+    __imp__sub_82E328D8(ctx, base);
+    reinterpret_cast<GuestShader*>(pixelShaderCode->m_pD3DPixelShader.get())->name = pixelShaderCode->m_TypeAndName.c_str() + 2;
+}
+
+#endif
 
 GUEST_FUNCTION_HOOK(sub_82BD99B0, CreateDevice);
 
