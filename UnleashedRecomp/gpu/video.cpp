@@ -4283,7 +4283,7 @@ static moodycamel::BlockingConcurrentQueue<boost::shared_ptr<Hedgehog::Database:
 static ankerl::unordered_dense::set<XXH64_hash_t> g_asyncPipelines;
 static Mutex g_asyncPipelineMutex;
 
-static void CreateGraphicsPipelineInPipelineThread(const PipelineState& pipelineState)
+static void CreateGraphicsPipelineInPipelineThread(const PipelineState& pipelineState, const char* name)
 {
     XXH64_hash_t hash = XXH3_64bits(&pipelineState, sizeof(pipelineState));
 
@@ -4296,7 +4296,7 @@ static void CreateGraphicsPipelineInPipelineThread(const PipelineState& pipeline
     if (shouldCompile)
     {
         auto pipeline = CreateGraphicsPipeline(pipelineState);
-        pipeline->setName(std::format("Async Pipeline {:X}", hash));
+        pipeline->setName(std::format("Async Pipeline {} {:X}", name, hash));
 
         // Will get dropped in render thread if a different thread already managed to compile this.
         RenderCommand cmd;
@@ -4327,6 +4327,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
 
     auto& material = mesh->m_spMaterial;
     auto& shaderList = material->m_spShaderListData;
+    bool isSky = strstr(shaderList->m_TypeAndName.c_str(), "Sky") != nullptr;
 
     bool constTexCoord = true;
     if (material->m_spTexsetData.get() != nullptr)
@@ -4343,7 +4344,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
     }
 
     // Shadow pipeline.
-    if (layer == MeshLayer::Opaque || layer == MeshLayer::PunchThrough)
+    if (!isSky && (layer == MeshLayer::Opaque || layer == MeshLayer::PunchThrough))
     {
         PipelineState pipelineState{};
 
@@ -4371,7 +4372,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
 
         SanitizePipelineState(pipelineState);
-        CreateGraphicsPipelineInPipelineThread(pipelineState);
+        CreateGraphicsPipelineInPipelineThread(pipelineState, layer == MeshLayer::PunchThrough ? "MakeShadowMapTransparent" : "MakeShadowMap");
     }
 
     guest_stack_var<Hedgehog::Base::CStringSymbol> defaultSymbol(reinterpret_cast<const char*>(g_memory.Translate(0x8202DDBC)));
@@ -4383,8 +4384,8 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
     if (constTexCoord) pixelShaderSubPermutationsToCompile |= 0x1;
     if (args.noGI) pixelShaderSubPermutationsToCompile |= 0x2;
 
-    if ((defaultFindResult->second.m_SubPermutations.get() & (1 << pixelShaderSubPermutationsToCompile)) == 0)
-        pixelShaderSubPermutationsToCompile &= ~0x1;
+    if ((defaultFindResult->second.m_SubPermutations.get() & (1 << pixelShaderSubPermutationsToCompile)) == 0) pixelShaderSubPermutationsToCompile &= ~0x1;
+    if ((defaultFindResult->second.m_SubPermutations.get() & (1 << pixelShaderSubPermutationsToCompile)) == 0) pixelShaderSubPermutationsToCompile &= ~0x2;
 
     guest_stack_var<Hedgehog::Base::CStringSymbol> noneSymbol(reinterpret_cast<const char*>(g_memory.Translate(0x8200D938)));
     auto noneFindResult = defaultFindResult->second.m_VertexShaderPermutations.find(*noneSymbol);
@@ -4411,7 +4412,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             pipelineState.vertexShader = reinterpret_cast<GuestShader*>(vertexShader->m_spCode->m_pD3DVertexShader.get());
             pipelineState.pixelShader = reinterpret_cast<GuestShader*>(pixelShader->m_spCode->m_pD3DPixelShader.get());
             pipelineState.vertexDeclaration = reinterpret_cast<GuestVertexDeclaration*>(mesh->m_VertexDeclarationPtr.m_pD3DVertexDeclaration.get());
-            pipelineState.zWriteEnable = layer != MeshLayer::Transparent;
+            pipelineState.zWriteEnable = !isSky && layer != MeshLayer::Transparent;
             pipelineState.srcBlend = RenderBlend::SRC_ALPHA;
             pipelineState.destBlend = material->m_Additive ? RenderBlend::ONE : RenderBlend::INV_SRC_ALPHA;
             pipelineState.cullMode = material->m_DoubleSided ? RenderCullMode::NONE : RenderCullMode::BACK;
@@ -4444,10 +4445,11 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
                 }
             }
 
-            pipelineState.specConstants |= SPEC_CONSTANT_REVERSE_Z;
+            if (!isSky)
+                pipelineState.specConstants |= SPEC_CONSTANT_REVERSE_Z;
 
             SanitizePipelineState(pipelineState);
-            CreateGraphicsPipelineInPipelineThread(pipelineState);
+            CreateGraphicsPipelineInPipelineThread(pipelineState, shaderList->m_TypeAndName.c_str() + 3);
         }
     }
 }
