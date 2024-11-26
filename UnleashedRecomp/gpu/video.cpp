@@ -4288,7 +4288,15 @@ struct CompilationArgs
     bool noGI;
 };
 
-static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, bool isTransparent, bool isPunchThrough, const CompilationArgs& args)
+enum class MeshLayer
+{
+    Opaque,
+    Transparent,
+    PunchThrough,
+    Special
+};
+
+static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer layer, const CompilationArgs& args)
 {
     if (mesh->m_spMaterial.get() == nullptr || mesh->m_spMaterial->m_spShaderListData.get() == nullptr)
         return;
@@ -4297,11 +4305,11 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, bool isTransp
     auto& shaderList = material->m_spShaderListData;
 
     // Shadow pipeline.
-    if (!isTransparent)
+    if (layer == MeshLayer::Opaque || layer == MeshLayer::PunchThrough)
     {
         PipelineState pipelineState{};
 
-        if (isPunchThrough)
+        if (layer == MeshLayer::PunchThrough)
         {
             pipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0xDD4FA7BB53876300)->userData);
             pipelineState.pixelShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0xE2ECA594590DDE8B)->userData);
@@ -4321,7 +4329,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, bool isTransp
         pipelineState.vertexStrides[0] = mesh->m_VertexSize;
         pipelineState.depthStencilFormat = RenderFormat::D32_FLOAT;
 
-        if (isPunchThrough)
+        if (layer == MeshLayer::PunchThrough)
             pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
 
         SanitizePipelineState(pipelineState);
@@ -4352,12 +4360,12 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, bool isTransp
             pipelineState.vertexShader = reinterpret_cast<GuestShader*>(vertexShader->m_spCode->m_pD3DVertexShader.get());
             pipelineState.pixelShader = reinterpret_cast<GuestShader*>(pixelShader->m_spCode->m_pD3DPixelShader.get());
             pipelineState.vertexDeclaration = reinterpret_cast<GuestVertexDeclaration*>(mesh->m_VertexDeclarationPtr.m_pD3DVertexDeclaration.get());
-            pipelineState.zWriteEnable = !isTransparent;
+            pipelineState.zWriteEnable = layer != MeshLayer::Transparent;
             pipelineState.srcBlend = material->m_Additive ? RenderBlend::ONE : RenderBlend::SRC_ALPHA;
             pipelineState.destBlend = RenderBlend::INV_SRC_ALPHA;
             pipelineState.cullMode = material->m_DoubleSided ? RenderCullMode::NONE : RenderCullMode::BACK;
             pipelineState.zFunc = RenderComparisonFunction::GREATER_EQUAL; // Reverse Z
-            pipelineState.alphaBlendEnable = isTransparent;
+            pipelineState.alphaBlendEnable = layer == MeshLayer::Transparent || layer == MeshLayer::Special;
             pipelineState.srcBlendAlpha = RenderBlend::SRC_ALPHA;
             pipelineState.destBlendAlpha = RenderBlend::INV_SRC_ALPHA;
             pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
@@ -4375,7 +4383,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, bool isTransp
             if (Config::GITextureFiltering == EGITextureFiltering::Bicubic)
                 pipelineState.specConstants |= SPEC_CONSTANT_BICUBIC_GI_FILTER;
 
-            if (isPunchThrough)
+            if (layer == MeshLayer::PunchThrough)
             {
                 if (Config::AlphaToCoverage)
                 {
@@ -4404,29 +4412,29 @@ static void CompileMeshPipelines(const T& modelData, const CompilationArgs& args
     for (auto& meshGroup : modelData.m_NodeGroupModels)
     {
         for (auto& mesh : meshGroup->m_OpaqueMeshes)
-            CompileMeshPipeline(mesh.get(), false, false, args);
+            CompileMeshPipeline(mesh.get(), MeshLayer::Opaque, args);
 
         for (auto& mesh : meshGroup->m_TransparentMeshes)
-            CompileMeshPipeline(mesh.get(), true, false, args);
+            CompileMeshPipeline(mesh.get(), MeshLayer::Transparent, args);
 
         for (auto& mesh : meshGroup->m_PunchThroughMeshes)
-            CompileMeshPipeline(mesh.get(), false, true, args);
+            CompileMeshPipeline(mesh.get(), MeshLayer::PunchThrough, args);
 
         for (auto& specialMeshGroup : meshGroup->m_SpecialMeshGroups)
         {
             for (auto& mesh : specialMeshGroup)
-                CompileMeshPipeline(mesh.get(), true, false, args); // TODO: Are there layer types other than water in this game??
+                CompileMeshPipeline(mesh.get(), MeshLayer::Special, args); // TODO: Are there layer types other than water in this game??
         }
     }
 
     for (auto& mesh : modelData.m_OpaqueMeshes)
-        CompileMeshPipeline(mesh.get(), false, false, args);
+        CompileMeshPipeline(mesh.get(), MeshLayer::Opaque, args);
 
     for (auto& mesh : modelData.m_TransparentMeshes)
-        CompileMeshPipeline(mesh.get(), true, false, args);
+        CompileMeshPipeline(mesh.get(), MeshLayer::Transparent, args);
 
     for (auto& mesh : modelData.m_PunchThroughMeshes)
-        CompileMeshPipeline(mesh.get(), false, true, args);
+        CompileMeshPipeline(mesh.get(), MeshLayer::PunchThrough, args);
 }
 
 static void PipelineCompilerThread()
