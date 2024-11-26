@@ -4340,6 +4340,20 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
     auto& material = mesh->m_spMaterial;
     auto& shaderList = material->m_spShaderListData;
 
+    bool constTexCoord = true;
+    if (material->m_spTexsetData.get() != nullptr)
+    {
+        for (size_t i = 1; i < material->m_spTexsetData->m_TextureList.size(); i++)
+        {
+            if (material->m_spTexsetData->m_TextureList[i]->m_TexcoordIndex !=
+                material->m_spTexsetData->m_TextureList[0]->m_TexcoordIndex)
+            {
+                constTexCoord = false;
+                break;
+            }
+        }
+    }
+
     // Shadow pipeline.
     if (layer == MeshLayer::Opaque || layer == MeshLayer::PunchThrough)
     {
@@ -4380,19 +4394,32 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
     if (defaultFindResult == shaderList->m_PixelShaderPermutations.end())
         return;
 
+    uint32_t pixelShaderSubPermutationsToCompile = 0;
+    if (constTexCoord) pixelShaderSubPermutationsToCompile |= 0x1;
+    if (args.noGI) pixelShaderSubPermutationsToCompile |= 0x2;
+
+    if ((defaultFindResult->second.m_SubPermutations.get() & (1 << pixelShaderSubPermutationsToCompile)) == 0)
+        pixelShaderSubPermutationsToCompile &= ~0x1;
+
     guest_stack_var<Hedgehog::Base::CStringSymbol> noneSymbol(reinterpret_cast<const char*>(g_memory.Translate(0x8200D938)));
     auto noneFindResult = defaultFindResult->second.m_VertexShaderPermutations.find(*noneSymbol);
     if (noneFindResult == defaultFindResult->second.m_VertexShaderPermutations.end())
         return;
 
+    uint32_t vertexShaderSubPermutationsToCompile = 0;
+    if (constTexCoord) vertexShaderSubPermutationsToCompile |= 0x1;
+
+    if ((noneFindResult->second->m_SubPermutations.get() & (1 << vertexShaderSubPermutationsToCompile)) == 0)
+        vertexShaderSubPermutationsToCompile &= ~0x1;
+
     for (auto& [pixelShaderSubPermutations, pixelShader] : defaultFindResult->second.m_PixelShaders)
     {
-        if (pixelShader.get() == nullptr || (pixelShaderSubPermutations & 0x2) != (args.noGI ? 0x2 : 0x0))
+        if (pixelShader.get() == nullptr || (pixelShaderSubPermutations & 0x3) != pixelShaderSubPermutationsToCompile)
             continue;
 
         for (auto& [vertexShaderSubPermutations, vertexShader] : noneFindResult->second->m_VertexShaders)
         {
-            if (vertexShader.get() == nullptr)
+            if (vertexShader.get() == nullptr || (vertexShaderSubPermutations & 0x1) != vertexShaderSubPermutationsToCompile)
                 continue;
 
             PipelineState pipelineState{};
@@ -4583,7 +4610,28 @@ void GetModelDataMidAsmHook(PPCRegister& r1, PPCRegister& r31)
 
 static bool CheckMadeAll(Hedgehog::Mirage::CMeshData* meshData)
 {
-    return meshData->IsMadeOne() && (meshData->m_spMaterial.get() == nullptr || meshData->m_spMaterial->IsMadeOne());
+    if (!meshData->IsMadeOne())
+        return false;
+
+    if (meshData->m_spMaterial.get() != nullptr)
+    {
+        if (!meshData->m_spMaterial->IsMadeOne())
+            return false;
+
+        if (meshData->m_spMaterial->m_spTexsetData.get() != nullptr)
+        {
+            if (!meshData->m_spMaterial->m_spTexsetData->IsMadeOne())
+                return false;
+
+            for (auto& texture : meshData->m_spMaterial->m_spTexsetData->m_TextureList)
+            {
+                if (!texture->IsMadeOne())
+                    return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 template<typename T>

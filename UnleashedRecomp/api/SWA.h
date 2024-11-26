@@ -37,6 +37,8 @@
 #include "Hedgehog/MirageCore/RenderData/hhPixelShaderData.h"
 #include "Hedgehog/MirageCore/RenderData/hhShaderListData.h"
 #include "Hedgehog/MirageCore/RenderData/hhTerrainModelData.h"
+#include "Hedgehog/MirageCore/RenderData/hhTexsetData.h"
+#include "Hedgehog/MirageCore/RenderData/hhTextureData.h"
 #include "Hedgehog/MirageCore/RenderData/hhVertexShaderCodeData.h"
 #include "Hedgehog/MirageCore/RenderData/hhVertexShaderData.h"
 #include "Hedgehog/MirageCore/Renderable/hhRenderable.h"

@@ -27,7 +27,7 @@ namespace Hedgehog::Mirage
     public:
         hh::map<Base::CStringSymbol, boost::shared_ptr<CVertexShaderPermutationData>> m_VertexShaderPermutations;
         hh::map<be<uint32_t>, boost::shared_ptr<CPixelShaderData>> m_PixelShaders;
-        uint32_t m_SubPermutations;
+        be<uint32_t> m_SubPermutations;
     };
 
     SWA_ASSERT_OFFSETOF(CPixelShaderPermutationData, m_VertexShaderPermutations, 0x0);
