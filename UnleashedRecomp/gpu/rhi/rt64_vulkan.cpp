@@ -1316,6 +1316,10 @@ namespace RT64 {
         }
     }
 
+    void VulkanComputePipeline::setName(const std::string& name) const {
+        setObjectName(device->vk, VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT, uint64_t(vk), name);
+    }
+
     RenderPipelineProgram VulkanComputePipeline::getProgram(const std::string &name) const {
         assert(false && "Compute pipelines can't retrieve shader programs.");
         return RenderPipelineProgram();
@@ -1552,6 +1556,10 @@ namespace RT64 {
         }
     }
 
+    void VulkanGraphicsPipeline::setName(const std::string& name) const {
+        setObjectName(device->vk, VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT, uint64_t(vk), name);
+    }
+
     RenderPipelineProgram VulkanGraphicsPipeline::getProgram(const std::string &name) const {
         assert(false && "Graphics pipelines can't retrieve shader programs.");
         return RenderPipelineProgram();
@@ -1750,6 +1758,10 @@ namespace RT64 {
         if (vk != VK_NULL_HANDLE) {
             vkDestroyPipeline(device->vk, vk, nullptr);
         }
+    }
+
+    void VulkanRaytracingPipeline::setName(const std::string& name) const {
+        setObjectName(device->vk, VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT, uint64_t(vk), name);
     }
 
     RenderPipelineProgram VulkanRaytracingPipeline::getProgram(const std::string &name) const {

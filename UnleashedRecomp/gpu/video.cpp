@@ -2699,12 +2699,16 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
 {
     SanitizePipelineState(pipelineState);
 
-    auto& pipeline = g_pipelines[XXH3_64bits(&pipelineState, sizeof(pipelineState))];
+    XXH64_hash_t hash = XXH3_64bits(&pipelineState, sizeof(pipelineState));
+    auto& pipeline = g_pipelines[hash];
     if (pipeline == nullptr)
     {
         pipeline = CreateGraphicsPipeline(pipelineState);
+
         if (pipelineState.zEnable) // Should ignore most post effect/2D shaders.
             ++g_pipelinesCreatedInRenderThread;
+
+        pipeline->setName(std::format("Render Thread Pipeline {:X}", hash));
     }
     
     return pipeline.get();
@@ -4247,7 +4251,7 @@ static std::atomic<uint32_t> g_pendingModelCount;
 static ankerl::unordered_dense::set<XXH64_hash_t> g_asyncPipelines;
 static Mutex g_asyncPipelineMutex;
 
-static void CompileGraphicsPipelineInPipelineThread(const PipelineState& pipelineState)
+static void CreateGraphicsPipelineInPipelineThread(const PipelineState& pipelineState)
 {
     XXH64_hash_t hash = XXH3_64bits(&pipelineState, sizeof(pipelineState));
 
@@ -4261,6 +4265,8 @@ static void CompileGraphicsPipelineInPipelineThread(const PipelineState& pipelin
     {
         auto pipeline = CreateGraphicsPipeline(pipelineState);
         ++g_pipelinesCreatedAsynchronously;
+
+        pipeline->setName(std::format("Async Pipeline {:X}", hash));
 
         {
             std::lock_guard lock(g_asyncPipelineMutex);
@@ -4319,7 +4325,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, bool isTransp
             pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
 
         SanitizePipelineState(pipelineState);
-        CompileGraphicsPipelineInPipelineThread(pipelineState);
+        CreateGraphicsPipelineInPipelineThread(pipelineState);
     }
 
     guest_stack_var<Hedgehog::Base::CStringSymbol> defaultSymbol(reinterpret_cast<const char*>(g_memory.Translate(0x8202DDBC)));
@@ -4334,12 +4340,12 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, bool isTransp
 
     for (auto& [pixelShaderSubPermutations, pixelShader] : defaultFindResult->second.m_PixelShaders)
     {
-        if ((pixelShaderSubPermutations & 0x2) != (args.noGI ? 0x2 : 0x0))
+        if (pixelShader.get() == nullptr || (pixelShaderSubPermutations & 0x2) != (args.noGI ? 0x2 : 0x0))
             continue;
 
         for (auto& [vertexShaderSubPermutations, vertexShader] : noneFindResult->second->m_VertexShaders)
         {
-            if (vertexShader.get() == nullptr || pixelShader.get() == nullptr)
+            if (vertexShader.get() == nullptr)
                 continue;
 
             PipelineState pipelineState{};
@@ -4385,7 +4391,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, bool isTransp
             pipelineState.specConstants |= SPEC_CONSTANT_REVERSE_Z;
 
             SanitizePipelineState(pipelineState);
-            CompileGraphicsPipelineInPipelineThread(pipelineState);
+            CreateGraphicsPipelineInPipelineThread(pipelineState);
         }
     }
 }

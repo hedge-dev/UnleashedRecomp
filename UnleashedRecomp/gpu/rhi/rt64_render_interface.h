@@ -53,6 +53,7 @@ namespace RT64 {
 
     struct RenderPipeline {
         virtual ~RenderPipeline() { }
+        virtual void setName(const std::string& name) const = 0;
         virtual RenderPipelineProgram getProgram(const std::string &name) const = 0;
     };
 

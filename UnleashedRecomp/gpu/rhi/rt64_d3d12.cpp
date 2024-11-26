@@ -2672,6 +2672,10 @@ namespace RT64 {
         }
     }
 
+    void D3D12ComputePipeline::setName(const std::string& name) const {
+        setObjectName(d3d, name);
+    }
+
     RenderPipelineProgram D3D12ComputePipeline::getProgram(const std::string &name) const {
         assert(false && "Compute pipelines can't retrieve shader programs.");
         return RenderPipelineProgram();
@@ -2789,6 +2793,10 @@ namespace RT64 {
         if (d3d != nullptr) {
             d3d->Release();
         }
+    }
+
+    void D3D12GraphicsPipeline::setName(const std::string& name) const {
+        setObjectName(d3d, name);
     }
 
     RenderPipelineProgram D3D12GraphicsPipeline::getProgram(const std::string &name) const {
@@ -3009,6 +3017,10 @@ namespace RT64 {
         if (stateObject != nullptr) {
             stateObject->Release();
         }
+    }
+
+    void D3D12RaytracingPipeline::setName(const std::string& name) const {
+        setObjectName(stateObject, name);
     }
 
     RenderPipelineProgram D3D12RaytracingPipeline::getProgram(const std::string &name) const {

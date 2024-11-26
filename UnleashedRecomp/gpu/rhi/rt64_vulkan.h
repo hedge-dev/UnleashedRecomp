@@ -158,6 +158,7 @@ namespace RT64 {
 
         VulkanComputePipeline(VulkanDevice *device, const RenderComputePipelineDesc &desc);
         ~VulkanComputePipeline() override;
+        void setName(const std::string& name) const override;
         RenderPipelineProgram getProgram(const std::string &name) const override;
     };
 
@@ -167,6 +168,7 @@ namespace RT64 {
 
         VulkanGraphicsPipeline(VulkanDevice *device, const RenderGraphicsPipelineDesc &desc);
         ~VulkanGraphicsPipeline() override;
+        void setName(const std::string& name) const override;
         RenderPipelineProgram getProgram(const std::string &name) const override;
         static VkRenderPass createRenderPass(VulkanDevice *device, const VkFormat *renderTargetFormat, uint32_t renderTargetCount, VkFormat depthTargetFormat, VkSampleCountFlagBits sampleCount);
     };
@@ -179,6 +181,7 @@ namespace RT64 {
 
         VulkanRaytracingPipeline(VulkanDevice *device, const RenderRaytracingPipelineDesc &desc, const RenderPipeline *previousPipeline);
         ~VulkanRaytracingPipeline() override;
+        void setName(const std::string& name) const override;
         RenderPipelineProgram getProgram(const std::string &name) const override;
     };
 

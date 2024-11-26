@@ -355,6 +355,7 @@ namespace RT64 {
 
         D3D12ComputePipeline(D3D12Device *device, const RenderComputePipelineDesc &desc);
         ~D3D12ComputePipeline() override;
+        virtual void setName(const std::string& name) const override;
         virtual RenderPipelineProgram getProgram(const std::string &name) const override;
     };
 
@@ -365,6 +366,7 @@ namespace RT64 {
 
         D3D12GraphicsPipeline(D3D12Device *device, const RenderGraphicsPipelineDesc &desc);
         ~D3D12GraphicsPipeline() override;
+        virtual void setName(const std::string& name) const override;
         virtual RenderPipelineProgram getProgram(const std::string &name) const override;
     };
 
@@ -377,6 +379,7 @@ namespace RT64 {
 
         D3D12RaytracingPipeline(D3D12Device *device, const RenderRaytracingPipelineDesc &desc, const RenderPipeline *previousPipeline);
         ~D3D12RaytracingPipeline() override;
+        virtual void setName(const std::string& name) const override;
         virtual RenderPipelineProgram getProgram(const std::string &name) const override;
     };
 
