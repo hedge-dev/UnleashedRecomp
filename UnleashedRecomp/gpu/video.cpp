@@ -4676,7 +4676,7 @@ static void ModelConsumerThread()
                 bool ready = false;
 
                 if (pendingModel->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
-                    ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(pendingModel.get()));
+                    ready = pendingModel->IsMadeOne(); // Terrain groups will already have all references made by the time they are created
                 else
                     ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(pendingModel.get()));
 
