@@ -237,6 +237,10 @@ static xxHashMap<std::unique_ptr<RenderPipeline>> g_pipelines;
 
 static std::atomic<uint32_t> g_pipelinesCreatedInRenderThread;
 static std::atomic<uint32_t> g_pipelinesCreatedAsynchronously;
+static std::atomic<uint32_t> g_pipelinesDropped;
+
+static std::atomic<uint32_t> g_compilingModelCount;
+static std::atomic<uint32_t> g_pendingModelCount;
 
 static xxHashMap<std::pair<uint32_t, std::unique_ptr<RenderSampler>>> g_samplerStates;
 
@@ -1666,10 +1670,13 @@ static void DrawImGui()
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    if (ImGui::Begin("Async PSO Stats", nullptr, ImGuiWindowFlags_NoTitleBar))
+    if (ImGui::Begin("Async PSO Stats"))
     {
         ImGui::Text("Pipelines Created In Render Thread: %d", g_pipelinesCreatedInRenderThread.load());
         ImGui::Text("Pipelines Created Asynchronously: %d", g_pipelinesCreatedAsynchronously.load());
+        ImGui::Text("Pipelines Dropped: %d", g_pipelinesDropped.load());
+        ImGui::Text("Compiling Model Count: %d", g_compilingModelCount.load());
+        ImGui::Text("Pending Model Count: %d", g_pendingModelCount.load());
     }
     ImGui::End();
 
@@ -2925,9 +2932,15 @@ static void ProcAddPipeline(const RenderCommand& cmd)
     auto& pipeline = g_pipelines[args.hash];
 
     if (pipeline == nullptr)
+    {
         pipeline = std::unique_ptr<RenderPipeline>(args.pipeline);
+        ++g_pipelinesCreatedAsynchronously;
+    }
     else
+    {
+        ++g_pipelinesDropped;
         delete args.pipeline;
+    }
 }
 
 static void FlushRenderStateForRenderThread()
@@ -4263,7 +4276,6 @@ static constexpr uint32_t MODEL_DATA_VFTABLE = 0x82073A44;
 static constexpr uint32_t TERRAIN_MODEL_DATA_VFTABLE = 0x8211D25C;
 
 static moodycamel::BlockingConcurrentQueue<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_compilingModelQueue;
-static std::atomic<uint32_t> g_compilingModelCount;
 
 // Having this separate, because I don't want to lock a mutex in the render thread before
 // every single draw. Might be worth profiling to see if it actually has an impact and merge them.
@@ -4283,8 +4295,6 @@ static void CreateGraphicsPipelineInPipelineThread(const PipelineState& pipeline
     if (!found)
     {
         auto pipeline = CreateGraphicsPipeline(pipelineState);
-        ++g_pipelinesCreatedAsynchronously;
-
         pipeline->setName(std::format("Async Pipeline {:X}", hash));
 
         {
@@ -4543,7 +4553,6 @@ PPC_FUNC(sub_82E243D8)
 
 static Mutex g_pendingModelMutex;
 static std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_pendingModelQueue;
-static std::atomic<uint32_t> g_pendingModelCount;
 
 void GetModelDataMidAsmHook(PPCRegister& r1, PPCRegister& r31)
 {
