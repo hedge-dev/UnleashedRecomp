@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <Type Name="be&lt;*&gt;">
+        <DisplayString>{get()}</DisplayString>
+        <Expand>
+          <Item Name="Value">get()</Item>
+        </Expand>
+    </Type>
+    <Type Name="xpointer&lt;*&gt;">
+        <DisplayString>{get()}</DisplayString>
+        <Expand>
+          <Item Name="Value">get()</Item>
+        </Expand>
+    </Type>
+    <Type Name="boost::shared_ptr&lt;*&gt;">
+        <DisplayString>{get()}</DisplayString>
+        <Expand>
+          <Item Name="Value">get()</Item>
+        </Expand>
+    </Type>
+</AutoVisualizer>

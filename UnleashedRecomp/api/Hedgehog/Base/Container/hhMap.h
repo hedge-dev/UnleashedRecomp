@@ -74,7 +74,7 @@ namespace hh
         SNode* Find(const Key& in_rKey) const
         {
             const SFindResult result = FindLowerBound(in_rKey);
-            return LowerBoundDuplicate(result.pBound, in_rKey) ? result.pBound : m_pHead;
+            return LowerBoundDuplicate(result.pBound, in_rKey) ? result.pBound : m_pHead.get();
         }
 
         static SNode* Max(SNode* pNode)
