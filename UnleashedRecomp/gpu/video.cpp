@@ -36,6 +36,10 @@
 #include "shader/resolve_msaa_depth_8x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.spirv.h"
 
+#ifdef ASYNC_PSO_DEBUG
+#include <magic_enum.hpp>
+#endif
+
 extern "C"
 {
     __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -2743,11 +2747,6 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
         pipeline->setName(std::format("{} {} {:X}", 
             pipelineState.vertexShader->name, pipelineState.pixelShader != nullptr ? pipelineState.pixelShader->name : "<none>", hash));
         
-        auto enumToString = []<typename T>(T value)
-        {
-            return FIX8::conjure_enum<T>::enum_to_string(value);
-        };
-
         std::lock_guard lock(g_debugMutex);
         g_pipelineDebugText = std::format(
             "PipelineState {:X}:\n"
@@ -2784,25 +2783,25 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
             pipelineState.instancing,
             pipelineState.zEnable,
             pipelineState.zWriteEnable,
-            enumToString(pipelineState.srcBlend),
-            enumToString(pipelineState.destBlend),
-            enumToString(pipelineState.cullMode),
-            enumToString(pipelineState.zFunc),
+            magic_enum::enum_name(pipelineState.srcBlend),
+            magic_enum::enum_name(pipelineState.destBlend),
+            magic_enum::enum_name(pipelineState.cullMode),
+            magic_enum::enum_name(pipelineState.zFunc),
             pipelineState.alphaBlendEnable,
-            enumToString(pipelineState.blendOp),
+            magic_enum::enum_name(pipelineState.blendOp),
             pipelineState.slopeScaledDepthBias,
             pipelineState.depthBias,
-            enumToString(pipelineState.srcBlendAlpha),
-            enumToString(pipelineState.destBlendAlpha),
-            enumToString(pipelineState.blendOpAlpha),
+            magic_enum::enum_name(pipelineState.srcBlendAlpha),
+            magic_enum::enum_name(pipelineState.destBlendAlpha),
+            magic_enum::enum_name(pipelineState.blendOpAlpha),
             pipelineState.colorWriteEnable,
-            enumToString(pipelineState.primitiveTopology),
+            magic_enum::enum_name(pipelineState.primitiveTopology),
             pipelineState.vertexStrides[0],
             pipelineState.vertexStrides[1],
             pipelineState.vertexStrides[2],
             pipelineState.vertexStrides[3],
-            enumToString(pipelineState.renderTargetFormat),
-            enumToString(pipelineState.depthStencilFormat),
+            magic_enum::enum_name(pipelineState.renderTargetFormat),
+            magic_enum::enum_name(pipelineState.depthStencilFormat),
             pipelineState.sampleCount,
             pipelineState.enableAlphaToCoverage,
             pipelineState.specConstants)
