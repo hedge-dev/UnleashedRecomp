@@ -4453,18 +4453,16 @@ static void PipelineCompilerThread()
     }
 }
 
-static std::thread g_pipelineCompilerThread(PipelineCompilerThread);
-static std::thread g_pipelineCompilerThread1(PipelineCompilerThread);
-static std::thread g_pipelineCompilerThread2(PipelineCompilerThread);
-static std::thread g_pipelineCompilerThread3(PipelineCompilerThread);
-static std::thread g_pipelineCompilerThread4(PipelineCompilerThread);
-static std::thread g_pipelineCompilerThread5(PipelineCompilerThread);
-static std::thread g_pipelineCompilerThread6(PipelineCompilerThread);
-static std::thread g_pipelineCompilerThread7(PipelineCompilerThread);
-static std::thread g_pipelineCompilerThread8(PipelineCompilerThread);
-static std::thread g_pipelineCompilerThread9(PipelineCompilerThread);
-static std::thread g_pipelineCompilerThread10(PipelineCompilerThread);
-static std::thread g_pipelineCompilerThread11(PipelineCompilerThread);
+static std::vector<std::unique_ptr<std::thread>> g_pipelineCompilerThreads = []()
+    {
+        size_t threadCount = std::max(2u, (std::thread::hardware_concurrency() * 2) / 3);
+
+        std::vector<std::unique_ptr<std::thread>> threads(threadCount);
+        for (auto& thread : threads)
+            thread = std::make_unique<std::thread>(PipelineCompilerThread);
+
+        return threads;
+    }();
 
 static constexpr uint32_t MODEL_DATA_VFTABLE = 0x82073A44;
 static constexpr uint32_t TERRAIN_MODEL_DATA_VFTABLE = 0x8211D25C;
