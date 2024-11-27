@@ -4570,20 +4570,29 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
 
             createGraphicsPipeline(pipelineState);
 
+            bool planarReflectionEnabled = reinterpret_cast<bool*>(g_memory.Translate(0x832FA0D8));
+
+            auto noMsaaPipeline = pipelineState;
+            noMsaaPipeline.sampleCount = 1;
+            noMsaaPipeline.enableAlphaToCoverage = false;
+
+            if ((noMsaaPipeline.specConstants & SPEC_CONSTANT_ALPHA_TO_COVERAGE) != 0)
+            {
+                noMsaaPipeline.specConstants &= ~SPEC_CONSTANT_ALPHA_TO_COVERAGE;
+                noMsaaPipeline.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
+            }
+
+            if (planarReflectionEnabled)
+            {
+                // Planar reflections don't use MSAA.
+                createGraphicsPipeline(noMsaaPipeline);
+            }
+
             if (args.objectIcon) 
             {
                 // Object icons get rendered to a SDR buffer without MSAA.
-                auto iconPipelineState = pipelineState;
+                auto iconPipelineState = noMsaaPipeline;
                 iconPipelineState.renderTargetFormat = RenderFormat::R8G8B8A8_UNORM;
-                iconPipelineState.sampleCount = 1;
-                iconPipelineState.enableAlphaToCoverage = false;
-
-                if ((iconPipelineState.specConstants & SPEC_CONSTANT_ALPHA_TO_COVERAGE) != 0)
-                {
-                    iconPipelineState.specConstants &= ~SPEC_CONSTANT_ALPHA_TO_COVERAGE;
-                    iconPipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
-                }
-
                 createGraphicsPipeline(iconPipelineState);
             }
 
@@ -4593,6 +4602,13 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
                 auto mouthPipelineState = pipelineState;
                 mouthPipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0x689AA3140AB9EBAA)->userData);
                 createGraphicsPipeline(mouthPipelineState);
+
+                if (planarReflectionEnabled)
+                {
+                    auto noMsaaMouthPipelineState = noMsaaPipeline;
+                    noMsaaMouthPipelineState.vertexShader = mouthPipelineState.vertexShader;
+                    createGraphicsPipeline(noMsaaMouthPipelineState);
+                }
             }
         }
     }
@@ -4751,6 +4767,17 @@ void GetModelDataMidAsmHook(PPCRegister& r1, PPCRegister& r31)
 
     if (!databaseData->IsMadeOne() && r31.u32 != NULL)
     {
+        if (databaseData->m_pVftable.ptr == MODEL_DATA_VFTABLE)
+        {
+            // Ignore particle models, the materials they point at don't actually
+            // get used and give the threads unnecessary work.
+            bool isParticleModel = *reinterpret_cast<be<uint32_t>*>(g_memory.Translate(r31.u32 + 4)) != 5 &&
+                strncmp(databaseData->m_TypeAndName.c_str() + 2, "eff_", 4) == 0;
+
+            if (isParticleModel)
+                return;
+        }
+
         ++g_compilingModelCount;
         databaseData->m_Flags |= eDatabaseDataFlags_CompilingPipelines;
 
@@ -4875,7 +4902,7 @@ static void ModelConsumerThread()
                 bool ready = false;
 
                 if (pendingModel->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
-                    ready = pendingModel->IsMadeOne(); // Terrain groups will already have all references made by the time they are created
+                    ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(pendingModel.get()));
                 else
                     ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(pendingModel.get()));
 
