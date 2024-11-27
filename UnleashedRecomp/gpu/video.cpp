@@ -4377,7 +4377,8 @@ static void CreateGraphicsPipelineInPipelineThread(const PipelineState& pipeline
 
 struct CompilationArgs
 {
-    bool noGI;
+    bool noGI{};
+    bool objectIcon{};
 };
 
 enum class MeshLayer
@@ -4516,8 +4517,29 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             if (!isSky)
                 pipelineState.specConstants |= SPEC_CONSTANT_REVERSE_Z;
 
-            SanitizePipelineState(pipelineState);
-            CreateGraphicsPipelineInPipelineThread(pipelineState, shaderList->m_TypeAndName.c_str() + 3);
+            auto createGraphicsPipeline = [&]()
+                {
+                    SanitizePipelineState(pipelineState);
+                    CreateGraphicsPipelineInPipelineThread(pipelineState, shaderList->m_TypeAndName.c_str() + 3);
+                };
+
+            createGraphicsPipeline();
+
+            if (args.objectIcon) 
+            {
+                // Object icons get rendered to a SDR buffer without MSAA.
+                pipelineState.renderTargetFormat = RenderFormat::R8G8B8A8_UNORM;
+                pipelineState.sampleCount = 1;
+                pipelineState.enableAlphaToCoverage = false;
+
+                if ((pipelineState.specConstants & SPEC_CONSTANT_ALPHA_TO_COVERAGE) != 0)
+                {
+                    pipelineState.specConstants &= ~SPEC_CONSTANT_ALPHA_TO_COVERAGE;
+                    pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
+                }
+
+                createGraphicsPipeline();
+            }
         }
     }
 }
@@ -4577,9 +4599,28 @@ static void PipelineCompilerThread()
         }
 
         if (databaseData->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
-            CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(databaseData.get()), { false });
+        {
+            CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(databaseData.get()), {});
+        }
         else
-            CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(databaseData.get()), { true });
+        {
+            CompilationArgs args{};
+            args.noGI = true;
+
+            // Check for the on screen items, eg. rings going to HUD.
+            auto items = reinterpret_cast<xpointer<const char>*>(g_memory.Translate(0x832A8DD0));
+            for (size_t i = 0; i < 50; i++)
+            {
+                if (strcmp(databaseData->m_TypeAndName.c_str() + 2, (*items).get()) == 0)
+                {
+                    args.objectIcon = true;
+                    break;
+                }
+                items += 7;
+            }
+
+            CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(databaseData.get()), args);
+        }
 
         databaseData->m_Flags &= ~eDatabaseDataFlags_CompilingPipelines;
 
