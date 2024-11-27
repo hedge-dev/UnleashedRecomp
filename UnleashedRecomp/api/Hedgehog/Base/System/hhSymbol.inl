@@ -1,10 +1,5 @@
 namespace Hedgehog::Base
 {
-    inline const char* SSymbolNode::GetValue() const
-    {
-        return reinterpret_cast<const char*>(this) + sizeof(SSymbolNode);
-    }
-
     inline CStringSymbol::CStringSymbol()
     {
     }
@@ -19,23 +14,18 @@ namespace Hedgehog::Base
         GuestToHostFunction<void>(sub_82E013B0, this, &in_rName);
     }
 
-    inline const char* CStringSymbol::GetValue() const
-    {
-        return m_pSymbolNode->GetValue();
-    }
-
     inline bool CStringSymbol::operator==(const CStringSymbol& in_rOther) const
     {
-        return m_pSymbolNode == in_rOther.m_pSymbolNode;
+        return m_Index == in_rOther.m_Index;
     }
 
     inline bool CStringSymbol::operator!=(const CStringSymbol& in_rOther) const
     {
-        return m_pSymbolNode != in_rOther.m_pSymbolNode;
+        return m_Index != in_rOther.m_Index;
     }
 
     inline bool CStringSymbol::operator<(const CStringSymbol& in_rOther) const
     {
-        return m_pSymbolNode < in_rOther.m_pSymbolNode;
+        return m_Index < in_rOther.m_Index;
     }
 }
