@@ -4410,12 +4410,13 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
 
     auto& material = mesh->m_spMaterial;
     auto& shaderList = material->m_spShaderListData;
-    if (strstr(shaderList->m_TypeAndName.c_str(), "Fur") != nullptr) // Skip fur, these do instancing and should not be compiled here.
-        return;
 
+    bool isFur = strstr(shaderList->m_TypeAndName.c_str(), "Fur") != nullptr;
     bool isSky = strstr(shaderList->m_TypeAndName.c_str(), "Sky") != nullptr;
     bool isSonicMouth = strcmp(material->m_TypeAndName.c_str() + 2, "sonic_gm_mouth_duble") == 0 &&
         strcmp(shaderList->m_TypeAndName.c_str() + 3, "SonicSkin_dspf[b]") == 0;
+
+    bool compiledOutsideMainFramebuffer = !isFur && !isSky;
 
     bool constTexCoord = true;
     if (material->m_spTexsetData.get() != nullptr)
@@ -4431,8 +4432,10 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
         }
     }
 
+    auto vertexDeclaration = reinterpret_cast<GuestVertexDeclaration*>(mesh->m_VertexDeclarationPtr.m_pD3DVertexDeclaration.get());
+
     // Shadow pipeline.
-    if (!isSky && (layer == MeshLayer::Opaque || layer == MeshLayer::PunchThrough))
+    if (compiledOutsideMainFramebuffer && (layer == MeshLayer::Opaque || layer == MeshLayer::PunchThrough))
     {
         PipelineState pipelineState{};
 
@@ -4446,7 +4449,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             pipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0x8E4BB23465BD909E)->userData);
         }
 
-        pipelineState.vertexDeclaration = reinterpret_cast<GuestVertexDeclaration*>(mesh->m_VertexDeclarationPtr.m_pD3DVertexDeclaration.get());
+        pipelineState.vertexDeclaration = vertexDeclaration;
         pipelineState.cullMode = material->m_DoubleSided ? RenderCullMode::NONE : RenderCullMode::BACK;
         pipelineState.zFunc = RenderComparisonFunction::LESS_EQUAL;
         pipelineState.depthBias = (1 << 24) * (*reinterpret_cast<be<float>*>(g_memory.Translate(0x83302760)));
@@ -4465,12 +4468,12 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
 
     // Motion blur pipeline. We could normally do the player here only, but apparently Werehog enemies also have object blur.
     // TODO: Do punch through meshes get rendered?
-    if (!isSky && args.hasMoreThanOneBone && layer == MeshLayer::Opaque)
+    if (compiledOutsideMainFramebuffer && args.hasMoreThanOneBone && layer == MeshLayer::Opaque)
     {
         PipelineState pipelineState{};
         pipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0x4620B236DC38100C)->userData);
         pipelineState.pixelShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0xBBDB735BEACC8F41)->userData);
-        pipelineState.vertexDeclaration = reinterpret_cast<GuestVertexDeclaration*>(mesh->m_VertexDeclarationPtr.m_pD3DVertexDeclaration.get());
+        pipelineState.vertexDeclaration = vertexDeclaration;
         pipelineState.cullMode = RenderCullMode::NONE;
         pipelineState.zFunc = RenderComparisonFunction::GREATER_EQUAL;
         pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
@@ -4513,6 +4516,19 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
     if ((noneFindResult->second->m_SubPermutations.get() & (1 << vertexShaderSubPermutationsToCompile)) == 0)
         vertexShaderSubPermutationsToCompile &= ~0x1;
 
+    // Fur requires an instanced variant of the vertex declaration.
+    if (isFur)
+    {
+        GuestVertexElement vertexElements[64];
+        memcpy(vertexElements, vertexDeclaration->vertexElements.get(), (vertexDeclaration->vertexElementCount - 1) * sizeof(GuestVertexElement));
+
+        vertexElements[vertexDeclaration->vertexElementCount - 1] = { 1, 0, 0x2C82A1, 0, 0, 1 };
+        vertexElements[vertexDeclaration->vertexElementCount] = { 2, 0, 0x2C83A4, 0, 0, 2 };
+        vertexElements[vertexDeclaration->vertexElementCount + 1] = D3DDECL_END();
+
+        vertexDeclaration = CreateVertexDeclaration(vertexElements);
+    }
+
     for (auto& [pixelShaderSubPermutations, pixelShader] : defaultFindResult->second.m_PixelShaders)
     {
         if (pixelShader.get() == nullptr || (pixelShaderSubPermutations & 0x3) != pixelShaderSubPermutationsToCompile)
@@ -4526,7 +4542,8 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             PipelineState pipelineState{};
             pipelineState.vertexShader = reinterpret_cast<GuestShader*>(vertexShader->m_spCode->m_pD3DVertexShader.get());
             pipelineState.pixelShader = reinterpret_cast<GuestShader*>(pixelShader->m_spCode->m_pD3DPixelShader.get());
-            pipelineState.vertexDeclaration = reinterpret_cast<GuestVertexDeclaration*>(mesh->m_VertexDeclarationPtr.m_pD3DVertexDeclaration.get());
+            pipelineState.vertexDeclaration = vertexDeclaration;
+            pipelineState.instancing = isFur;
             pipelineState.zWriteEnable = !isSky && layer != MeshLayer::Transparent;
             pipelineState.srcBlend = RenderBlend::SRC_ALPHA;
             pipelineState.destBlend = material->m_Additive ? RenderBlend::ONE : RenderBlend::INV_SRC_ALPHA;
@@ -4537,6 +4554,8 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             pipelineState.destBlendAlpha = RenderBlend::INV_SRC_ALPHA;
             pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
             pipelineState.vertexStrides[0] = mesh->m_VertexSize;
+            pipelineState.vertexStrides[1] = isFur ? 4 : 0;
+            pipelineState.vertexStrides[2] = isFur ? 4 : 0;
             pipelineState.renderTargetFormat = RenderFormat::R16G16B16A16_FLOAT;
             pipelineState.depthStencilFormat = RenderFormat::D32_FLOAT;
             pipelineState.sampleCount = Config::MSAA > 1 ? Config::MSAA : 1;
@@ -4613,6 +4632,10 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             }
         }
     }
+
+    // We created a vertex declaration beforehand that we need to release.
+    if (isFur)
+        vertexDeclaration->Release();
 }
 
 // TODO: Might be a better idea to queue meshes to the concurrent queue
@@ -4713,6 +4736,9 @@ static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMa
     pipelineState.depthStencilFormat = RenderFormat::D32_FLOAT;
     pipelineState.sampleCount = Config::MSAA > 1 ? Config::MSAA : 1;
     pipelineState.specConstants = SPEC_CONSTANT_REVERSE_Z;
+
+    if (pipelineState.vertexDeclaration->hasR11G11B10Normal)
+        pipelineState.specConstants |= SPEC_CONSTANT_R11G11B10_NORMAL;
 
     switch (material.m_BlendMode.get())
     {

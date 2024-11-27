@@ -241,6 +241,8 @@ struct GuestVertexElement
     uint8_t padding;
 };
 
+#define D3DDECL_END() { 255, 0, 0xFFFFFFFF, 0, 0, 0 }
+
 struct GuestVertexDeclaration : GuestResource
 {
     std::unique_ptr<RenderInputElement[]> inputElements;
