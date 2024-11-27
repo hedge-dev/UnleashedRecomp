@@ -4396,6 +4396,9 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
 
     auto& material = mesh->m_spMaterial;
     auto& shaderList = material->m_spShaderListData;
+    if (strstr(shaderList->m_TypeAndName.c_str(), "Fur") != nullptr) // Skip fur, these do instancing and should not be compiled here.
+        return;
+
     bool isSky = strstr(shaderList->m_TypeAndName.c_str(), "Sky") != nullptr;
 
     bool constTexCoord = true;
