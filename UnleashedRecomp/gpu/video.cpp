@@ -243,6 +243,7 @@ static xxHashMap<std::unique_ptr<RenderPipeline>> g_pipelines;
 static std::atomic<uint32_t> g_pipelinesCreatedInRenderThread;
 static std::atomic<uint32_t> g_pipelinesCreatedAsynchronously;
 static std::atomic<uint32_t> g_pipelinesDropped;
+static std::atomic<uint32_t> g_pipelinesCurrentlyCompiling;
 static std::string g_pipelineDebugText;
 static Mutex g_debugMutex;
 #endif
@@ -1684,6 +1685,7 @@ static void DrawImGui()
         ImGui::Text("Pipelines Created In Render Thread: %d", g_pipelinesCreatedInRenderThread.load());
         ImGui::Text("Pipelines Created Asynchronously: %d", g_pipelinesCreatedAsynchronously.load());
         ImGui::Text("Pipelines Dropped: %d", g_pipelinesDropped.load());
+        ImGui::Text("Pipelines Currently Compiling: %d", g_pipelinesCurrentlyCompiling.load());
         ImGui::Text("Compiling Data Count: %d", g_compilingDataCount.load());
         ImGui::Text("Pending Data Count: %d", g_pendingDataCount.load());
 
@@ -2667,6 +2669,10 @@ static void SanitizePipelineState(PipelineState& pipelineState)
 
 static std::unique_ptr<RenderPipeline> CreateGraphicsPipeline(const PipelineState& pipelineState)
 {
+#ifdef ASYNC_PSO_DEBUG
+    ++g_pipelinesCurrentlyCompiling;
+#endif
+
     RenderGraphicsPipelineDesc desc;
     desc.pipelineLayout = g_pipelineLayout.get();
     desc.vertexShader = GetOrLinkShader(pipelineState.vertexShader, pipelineState.specConstants);
@@ -2729,7 +2735,13 @@ static std::unique_ptr<RenderPipeline> CreateGraphicsPipeline(const PipelineStat
     desc.inputSlots = inputSlots;
     desc.inputSlotsCount = inputSlotCount;
     
-    return g_device->createGraphicsPipeline(desc);
+    auto pipeline = g_device->createGraphicsPipeline(desc);
+
+#ifdef ASYNC_PSO_DEBUG
+    --g_pipelinesCurrentlyCompiling;
+#endif
+
+    return pipeline;
 }
 
 static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipelineState)
@@ -4352,43 +4364,148 @@ enum
     eDatabaseDataFlags_CompilingPipelines = 0x80
 };
 
-static constexpr uint32_t MODEL_DATA_VFTABLE = 0x82073A44;
-static constexpr uint32_t TERRAIN_MODEL_DATA_VFTABLE = 0x8211D25C;
-static constexpr uint32_t PARTICLE_MATERIAL_VFTABLE = 0x8211F198;
-
-static moodycamel::BlockingConcurrentQueue<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_compilingDataQueue;
-
-// Having this separate, because I don't want to lock a mutex in the render thread before
-// every single draw. Might be worth profiling to see if it actually has an impact and merge them.
-static ankerl::unordered_dense::set<XXH64_hash_t> g_asyncPipelines;
-static Mutex g_asyncPipelineMutex;
-
-static void CreateGraphicsPipelineInPipelineThread(const PipelineState& pipelineState, const char* name)
+// This is passed to pipeline compilation threads to keep the loading screen busy until 
+// all of them are finished. A shared pointer makes sure the destructor is called only once.
+struct DatabaseDataHolder
 {
-    XXH64_hash_t hash = XXH3_64bits(&pipelineState, sizeof(pipelineState));
+    boost::shared_ptr<Hedgehog::Database::CDatabaseData> databaseData;
 
-    bool shouldCompile = false;
+    DatabaseDataHolder() : databaseData()
     {
-        std::lock_guard lock(g_asyncPipelineMutex);
-        shouldCompile = g_asyncPipelines.emplace(hash).second;
     }
 
-    if (shouldCompile)
+    DatabaseDataHolder(const DatabaseDataHolder&) = delete;
+    DatabaseDataHolder(DatabaseDataHolder&& other)
+        : databaseData(std::exchange(other.databaseData, nullptr))
     {
-        auto pipeline = CreateGraphicsPipeline(pipelineState);
-        pipeline->setName(std::format("ASYNC {} {:X}", name, hash));
+    }
+
+    ~DatabaseDataHolder()
+    {
+        if (databaseData.get() != nullptr)
+        {
+            databaseData->m_Flags &= ~eDatabaseDataFlags_CompilingPipelines;
+
+            if ((--g_compilingDataCount) == 0)
+                g_compilingDataCount.notify_all();
+        }
+    }
+};
+
+struct PipelineStateQueueItem
+{
+    XXH64_hash_t pipelineHash;
+    PipelineState pipelineState;
+    std::shared_ptr<DatabaseDataHolder> databaseDataHolder;
+#ifdef ASYNC_PSO_DEBUG
+    std::string pipelineName;
+#endif
+};
+
+static moodycamel::BlockingConcurrentQueue<PipelineStateQueueItem> g_pipelineStateQueue;
+
+struct MinimalGuestThreadContext
+{
+    uint8_t* stack = nullptr;
+    PPCContext ppcContext{};
+
+    ~MinimalGuestThreadContext()
+    {
+        if (stack != nullptr)
+            g_userHeap.Free(stack);
+    }
+
+    void ensureValid()
+    {
+        if (stack == nullptr)
+        {
+            stack = reinterpret_cast<uint8_t*>(g_userHeap.Alloc(0x4000));
+            ppcContext.fn = (uint8_t*)g_codeCache.bucket;
+            ppcContext.r1.u64 = g_memory.MapVirtual(stack + 0x4000);
+            SetPPCContext(ppcContext);
+        }
+    }
+};
+
+static void PipelineCompilerThread()
+{
+    GuestThread::SetThreadName(GetCurrentThreadId(), "Pipeline Compiler Thread");
+    MinimalGuestThreadContext ctx;
+
+    while (true)
+    {
+        PipelineStateQueueItem queueItem;
+        g_pipelineStateQueue.wait_dequeue(queueItem);
+
+        ctx.ensureValid();
+
+        auto pipeline = CreateGraphicsPipeline(queueItem.pipelineState);
+#ifdef ASYNC_PSO_DEBUG
+        pipeline->setName(queueItem.pipelineName);
+#endif
 
         // Will get dropped in render thread if a different thread already managed to compile this.
         RenderCommand cmd;
         cmd.type = RenderCommandType::AddPipeline;
-        cmd.addPipeline.hash = hash;
+        cmd.addPipeline.hash = queueItem.pipelineHash;
         cmd.addPipeline.pipeline = pipeline.release();
         g_renderQueue.enqueue(cmd);
     }
 }
 
+static std::thread g_pipelineCompilerThread(PipelineCompilerThread);
+static std::thread g_pipelineCompilerThread1(PipelineCompilerThread);
+static std::thread g_pipelineCompilerThread2(PipelineCompilerThread);
+static std::thread g_pipelineCompilerThread3(PipelineCompilerThread);
+static std::thread g_pipelineCompilerThread4(PipelineCompilerThread);
+static std::thread g_pipelineCompilerThread5(PipelineCompilerThread);
+static std::thread g_pipelineCompilerThread6(PipelineCompilerThread);
+static std::thread g_pipelineCompilerThread7(PipelineCompilerThread);
+static std::thread g_pipelineCompilerThread8(PipelineCompilerThread);
+static std::thread g_pipelineCompilerThread9(PipelineCompilerThread);
+static std::thread g_pipelineCompilerThread10(PipelineCompilerThread);
+static std::thread g_pipelineCompilerThread11(PipelineCompilerThread);
+
+static constexpr uint32_t MODEL_DATA_VFTABLE = 0x82073A44;
+static constexpr uint32_t TERRAIN_MODEL_DATA_VFTABLE = 0x8211D25C;
+static constexpr uint32_t PARTICLE_MATERIAL_VFTABLE = 0x8211F198;
+
+// Allocate the shared pointer only when new compilations are happening.
+// If nothing was compiled, the local "holder" variable will get destructed with RAII instead.
+struct DatabaseDataHolderPair
+{
+    DatabaseDataHolder holder;
+    std::shared_ptr<DatabaseDataHolder> counter;
+};
+
+// Having this separate, because I don't want to lock a mutex in the render thread before
+// every single draw. Might be worth profiling to see if it actually has an impact and merge them.
+static ankerl::unordered_dense::set<XXH64_hash_t, xxHash> g_asyncPipelines;
+
+static void EnqueueGraphicsPipelineCompilation(const PipelineState& pipelineState, DatabaseDataHolderPair& databaseDataHolderPair, const char* name)
+{
+    XXH64_hash_t hash = XXH3_64bits(&pipelineState, sizeof(pipelineState));
+    bool shouldCompile = g_asyncPipelines.emplace(hash).second;
+
+    if (shouldCompile)
+    {
+        if (databaseDataHolderPair.counter == nullptr)
+            databaseDataHolderPair.counter = std::make_unique<DatabaseDataHolder>(std::move(databaseDataHolderPair.holder));
+
+        PipelineStateQueueItem queueItem;
+        queueItem.pipelineHash = hash;
+        queueItem.pipelineState = pipelineState;
+        queueItem.databaseDataHolder = databaseDataHolderPair.counter;
+#ifdef ASYNC_PSO_DEBUG
+        queueItem.pipelineName = std::format("ASYNC {} {:X}", name, hash);
+#endif
+        g_pipelineStateQueue.enqueue(queueItem);
+    }
+}
+
 struct CompilationArgs
 {
+    DatabaseDataHolderPair holderPair;
     bool noGI{};
     bool hasMoreThanOneBone{};
     bool velocityMapQuickStep{};
@@ -4403,7 +4520,7 @@ enum class MeshLayer
     Special
 };
 
-static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer layer, const CompilationArgs& args)
+static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer layer, CompilationArgs& args)
 {
     if (mesh->m_spMaterial.get() == nullptr || mesh->m_spMaterial->m_spShaderListData.get() == nullptr)
         return;
@@ -4463,7 +4580,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
 
         SanitizePipelineState(pipelineState);
-        CreateGraphicsPipelineInPipelineThread(pipelineState, layer == MeshLayer::PunchThrough ? "MakeShadowMapTransparent" : "MakeShadowMap");
+        EnqueueGraphicsPipelineCompilation(pipelineState, args.holderPair, layer == MeshLayer::PunchThrough ? "MakeShadowMapTransparent" : "MakeShadowMap");
     }
 
     // Motion blur pipeline. We could normally do the player here only, but apparently Werehog enemies also have object blur.
@@ -4483,13 +4600,13 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
         pipelineState.specConstants = SPEC_CONSTANT_REVERSE_Z;
 
         SanitizePipelineState(pipelineState);
-        CreateGraphicsPipelineInPipelineThread(pipelineState, "FxVelocityMap");
+        EnqueueGraphicsPipelineCompilation(pipelineState, args.holderPair, "FxVelocityMap");
 
         if (args.velocityMapQuickStep)
         {
             pipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0x99DC3F27E402700D)->userData);
             SanitizePipelineState(pipelineState);
-            CreateGraphicsPipelineInPipelineThread(pipelineState, "FxVelocityMapQuickStep");
+            EnqueueGraphicsPipelineCompilation(pipelineState, args.holderPair, "FxVelocityMapQuickStep");
         }
     }
 
@@ -4585,7 +4702,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             auto createGraphicsPipeline = [&](PipelineState& pipelineStateToCreate)
                 {
                     SanitizePipelineState(pipelineStateToCreate);
-                    CreateGraphicsPipelineInPipelineThread(pipelineStateToCreate, shaderList->m_TypeAndName.c_str() + 3);
+                    EnqueueGraphicsPipelineCompilation(pipelineStateToCreate, args.holderPair, shaderList->m_TypeAndName.c_str() + 3);
                 };
 
             createGraphicsPipeline(pipelineState);
@@ -4638,10 +4755,8 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
         vertexDeclaration->Release();
 }
 
-// TODO: Might be a better idea to queue meshes to the concurrent queue
-// instead of whole models to better spread the compilation workload.
 template<typename T>
-static void CompileMeshPipelines(const T& modelData, const CompilationArgs& args)
+static void CompileMeshPipelines(const T& modelData, CompilationArgs& args)
 {
     for (auto& meshGroup : modelData.m_NodeGroupModels)
     {
@@ -4681,7 +4796,7 @@ static void CompileMeshPipelines(const T& modelData, const CompilationArgs& args
         CompileMeshPipeline(mesh.get(), MeshLayer::PunchThrough, args);
 }
 
-static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMaterial& material)
+static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMaterial& material, DatabaseDataHolderPair& holderPair)
 {
     auto& shaderList = material.m_spShaderListData;
     if (shaderList.get() == nullptr)
@@ -4761,7 +4876,7 @@ static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMa
     auto createGraphicsPipeline = [&](PipelineState& pipelineStateToCreate)
         {
             SanitizePipelineState(pipelineStateToCreate);
-            CreateGraphicsPipelineInPipelineThread(pipelineStateToCreate, shaderList->m_TypeAndName.c_str() + 3);
+            EnqueueGraphicsPipelineCompilation(pipelineStateToCreate, holderPair, shaderList->m_TypeAndName.c_str() + 3);
         };
 
     // TODO: See if this is necessary for everything.
@@ -4799,72 +4914,6 @@ static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMa
     unoptimizedVertexDeclaration->Release();
     sparkleVertexDeclaration->Release();
 }
-
-static void PipelineCompilerThread()
-{
-    GuestThread::SetThreadName(GetCurrentThreadId(), "Pipeline Compiler Thread");
-
-    uint8_t* stack = nullptr;
-    PPCContext ppcContext{};
-
-    while (true)
-    {
-        boost::shared_ptr<Hedgehog::Database::CDatabaseData> databaseData;
-        g_compilingDataQueue.wait_dequeue(databaseData);
-
-        if (stack == nullptr)
-        {
-            // Bare minimum required.
-            stack = reinterpret_cast<uint8_t*>(g_userHeap.AllocPhysical(0x4000, 0x10));
-            ppcContext.fn = (uint8_t*)g_codeCache.bucket;
-            ppcContext.r1.u64 = g_memory.MapVirtual(stack + 0x4000);
-            SetPPCContext(ppcContext);
-        }
-
-        if (databaseData->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
-        {
-            CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(databaseData.get()), {});
-        }        
-        else if (databaseData->m_pVftable.ptr == PARTICLE_MATERIAL_VFTABLE)
-        {
-            CompileParticleMaterialPipeline(*reinterpret_cast<Hedgehog::Sparkle::CParticleMaterial*>(databaseData.get()));
-        }
-        else
-        {
-            assert(databaseData->m_pVftable.ptr == MODEL_DATA_VFTABLE);
-
-            auto modelData = reinterpret_cast<Hedgehog::Mirage::CModelData*>(databaseData.get());
-
-            CompilationArgs args{};
-            args.noGI = true;
-            args.hasMoreThanOneBone = modelData->m_NodeNum > 1;
-            args.velocityMapQuickStep = strcmp(databaseData->m_TypeAndName.c_str() + 2, "SonicRoot") == 0;
-
-            // Check for the on screen items, eg. rings going to HUD.
-            auto items = reinterpret_cast<xpointer<const char>*>(g_memory.Translate(0x832A8DD0));
-            for (size_t i = 0; i < 50; i++)
-            {
-                if (strcmp(databaseData->m_TypeAndName.c_str() + 2, (*items).get()) == 0)
-                {
-                    args.objectIcon = true;
-                    break;
-                }
-                items += 7;
-            }
-
-            CompileMeshPipelines(*modelData, args);
-        }
-
-        databaseData->m_Flags &= ~eDatabaseDataFlags_CompilingPipelines;
-
-        if ((--g_compilingDataCount) == 0)
-            g_compilingDataCount.notify_all();
-    }
-
-    g_userHeap.Free(stack);
-}
-
-static std::thread g_pipelineCompilerThread(PipelineCompilerThread);
 
 // SWA::CGameModeStage::ExitLoading
 PPC_FUNC_IMPL(__imp__sub_825369A0);
@@ -5042,6 +5091,7 @@ static void ModelConsumerThread()
     GuestThread::SetThreadName(GetCurrentThreadId(), "Model Consumer Thread");
 
     std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> localPendingDataQueue;
+    MinimalGuestThreadContext ctx;
 
     while (true)
     {
@@ -5049,6 +5099,8 @@ static void ModelConsumerThread()
         uint32_t pendingDataCount;
         while ((pendingDataCount = g_pendingDataCount.load()) == 0)
             g_pendingDataCount.wait(pendingDataCount);
+
+        ctx.ensureValid();
 
         {
             std::lock_guard lock(g_pendingModelMutex);
@@ -5071,7 +5123,46 @@ static void ModelConsumerThread()
 
                 if (ready || pendingData.unique())
                 {
-                    g_compilingDataQueue.enqueue(std::move(pendingData));
+                    if (pendingData->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
+                    {
+                        CompilationArgs args{};
+                        args.holderPair.holder.databaseData = pendingData;
+                        CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(pendingData.get()), args);
+                    }
+                    else if (pendingData->m_pVftable.ptr == PARTICLE_MATERIAL_VFTABLE)
+                    {
+                        DatabaseDataHolderPair holderPair;
+                        holderPair.holder.databaseData = pendingData;
+                        CompileParticleMaterialPipeline(*reinterpret_cast<Hedgehog::Sparkle::CParticleMaterial*>(pendingData.get()), holderPair);
+                    }
+                    else
+                    {
+                        assert(pendingData->m_pVftable.ptr == MODEL_DATA_VFTABLE);
+
+                        auto modelData = reinterpret_cast<Hedgehog::Mirage::CModelData*>(pendingData.get());
+
+                        CompilationArgs args{};
+                        args.holderPair.holder.databaseData = pendingData;
+                        args.noGI = true;
+                        args.hasMoreThanOneBone = modelData->m_NodeNum > 1;
+                        args.velocityMapQuickStep = strcmp(pendingData->m_TypeAndName.c_str() + 2, "SonicRoot") == 0;
+
+                        // Check for the on screen items, eg. rings going to HUD.
+                        auto items = reinterpret_cast<xpointer<const char>*>(g_memory.Translate(0x832A8DD0));
+                        for (size_t i = 0; i < 50; i++)
+                        {
+                            if (strcmp(pendingData->m_TypeAndName.c_str() + 2, (*items).get()) == 0)
+                            {
+                                args.objectIcon = true;
+                                break;
+                            }
+                            items += 7;
+                        }
+
+                        CompileMeshPipelines(*modelData, args);
+                    }
+
+                    pendingData = nullptr;
                     --g_pendingDataCount;
                 }
                 else

@@ -155,6 +155,16 @@ namespace boost
             return *this;
         }
 
+        shared_ptr& operator=(std::nullptr_t)
+        {
+            release();
+            
+            px = NULL;
+            pn = NULL;
+
+            return *this;
+        }
+
         T* get() const { return px; }
 
         detail::sp_dereference<T> operator*() const { assert(px); return *px; }
