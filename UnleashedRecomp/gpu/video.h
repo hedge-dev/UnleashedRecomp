@@ -80,6 +80,19 @@ struct GuestResource
             incrementedValue = std::byteswap(std::byteswap(originalValue) + 1);
         } while (InterlockedCompareExchange(reinterpret_cast<LONG*>(&refCount), incrementedValue, originalValue) != originalValue);
     }
+
+    void Release()
+    {
+        uint32_t originalValue, decrementedValue;
+        do
+        {
+            originalValue = refCount.value;
+            decrementedValue = std::byteswap(std::byteswap(originalValue) - 1);
+        } while (InterlockedCompareExchange(reinterpret_cast<LONG*>(&refCount), decrementedValue, originalValue) != originalValue);
+
+        // Normally we are supposed to release here, so only use this
+        // function when you know you won't be the one destructing it.
+    }
 };
 
 enum GuestFormat

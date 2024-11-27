@@ -42,6 +42,7 @@
 #include "Hedgehog/MirageCore/RenderData/hhVertexShaderCodeData.h"
 #include "Hedgehog/MirageCore/RenderData/hhVertexShaderData.h"
 #include "Hedgehog/MirageCore/Renderable/hhRenderable.h"
+#include "Hedgehog/Sparkle/hhParticleMaterial.h"
 #include "Hedgehog/Universe/Engine/hhMessageActor.h"
 #include "Hedgehog/Universe/Engine/hhMessageProcess.h"
 #include "Hedgehog/Universe/Engine/hhUpdateInfo.h"

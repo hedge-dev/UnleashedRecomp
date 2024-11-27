@@ -247,8 +247,8 @@ static std::string g_pipelineDebugText;
 static Mutex g_debugMutex;
 #endif
 
-static std::atomic<uint32_t> g_compilingModelCount;
-static std::atomic<uint32_t> g_pendingModelCount;
+static std::atomic<uint32_t> g_compilingDataCount;
+static std::atomic<uint32_t> g_pendingDataCount;
 
 static xxHashMap<std::pair<uint32_t, std::unique_ptr<RenderSampler>>> g_samplerStates;
 
@@ -1684,8 +1684,8 @@ static void DrawImGui()
         ImGui::Text("Pipelines Created In Render Thread: %d", g_pipelinesCreatedInRenderThread.load());
         ImGui::Text("Pipelines Created Asynchronously: %d", g_pipelinesCreatedAsynchronously.load());
         ImGui::Text("Pipelines Dropped: %d", g_pipelinesDropped.load());
-        ImGui::Text("Compiling Model Count: %d", g_compilingModelCount.load());
-        ImGui::Text("Pending Model Count: %d", g_pendingModelCount.load());
+        ImGui::Text("Compiling Data Count: %d", g_compilingDataCount.load());
+        ImGui::Text("Pending Data Count: %d", g_pendingDataCount.load());
 
         std::lock_guard lock(g_debugMutex);
         ImGui::TextUnformatted(g_pipelineDebugText.c_str());
@@ -4354,8 +4354,9 @@ enum
 
 static constexpr uint32_t MODEL_DATA_VFTABLE = 0x82073A44;
 static constexpr uint32_t TERRAIN_MODEL_DATA_VFTABLE = 0x8211D25C;
+static constexpr uint32_t PARTICLE_MATERIAL_VFTABLE = 0x8211F198;
 
-static moodycamel::BlockingConcurrentQueue<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_compilingModelQueue;
+static moodycamel::BlockingConcurrentQueue<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_compilingDataQueue;
 
 // Having this separate, because I don't want to lock a mutex in the render thread before
 // every single draw. Might be worth profiling to see if it actually has an impact and merge them.
@@ -4657,6 +4658,122 @@ static void CompileMeshPipelines(const T& modelData, const CompilationArgs& args
         CompileMeshPipeline(mesh.get(), MeshLayer::PunchThrough, args);
 }
 
+static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMaterial& material)
+{
+    auto& shaderList = material.m_spShaderListData;
+    if (shaderList.get() == nullptr)
+        return;
+
+    guest_stack_var<Hedgehog::Base::CStringSymbol> defaultSymbol(reinterpret_cast<const char*>(g_memory.Translate(0x8202DDBC)));
+    auto defaultFindResult = shaderList->m_PixelShaderPermutations.find(*defaultSymbol);
+    if (defaultFindResult == shaderList->m_PixelShaderPermutations.end())
+        return;
+
+    guest_stack_var<Hedgehog::Base::CStringSymbol> noneSymbol(reinterpret_cast<const char*>(g_memory.Translate(0x8200D938)));
+    auto noneFindResult = defaultFindResult->second.m_VertexShaderPermutations.find(*noneSymbol);
+    if (noneFindResult == defaultFindResult->second.m_VertexShaderPermutations.end())
+        return;
+
+    // All the particle models in the game come with the unoptimized format, so we can assume it.
+    uint8_t unoptimizedVertexElements[144] = 
+    {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x2A, 0x23, 0xB9, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x0C, 0x00, 0x2A, 0x23, 0xB9, 0x00, 0x03, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x18, 0x00, 0x2A, 0x23, 0xB9, 0x00, 0x06, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x24, 0x00, 0x2A, 0x23, 0xB9, 0x00, 0x07, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x30, 0x00, 0x2C, 0x23, 0xA5, 0x00, 0x05, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x38, 0x00, 0x2C, 0x23, 0xA5, 0x00, 0x05, 0x01, 0x00,
+        0x00, 0x00, 0x00, 0x40, 0x00, 0x2C, 0x23, 0xA5, 0x00, 0x05, 0x02, 0x00,
+        0x00, 0x00, 0x00, 0x48, 0x00, 0x2C, 0x23, 0xA5, 0x00, 0x05, 0x03, 0x00,
+        0x00, 0x00, 0x00, 0x50, 0x00, 0x1A, 0x23, 0xA6, 0x00, 0x0A, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x60, 0x00, 0x1A, 0x23, 0x86, 0x00, 0x02, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x64, 0x00, 0x1A, 0x20, 0x86, 0x00, 0x01, 0x00, 0x00,
+        0x00, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00
+    };
+
+    auto unoptimizedVertexDeclaration = CreateVertexDeclaration(reinterpret_cast<GuestVertexElement*>(unoptimizedVertexElements));
+    auto sparkleVertexDeclaration = CreateVertexDeclaration(reinterpret_cast<GuestVertexElement*>(g_memory.Translate(0x8211F540)));
+
+    bool isMeshShader = strstr(shaderList->m_TypeAndName.c_str(), "Mesh") != nullptr;
+
+    PipelineState pipelineState{};
+    pipelineState.vertexShader = reinterpret_cast<GuestShader*>(noneFindResult->second->m_VertexShaders.begin()->second->m_spCode->m_pD3DVertexShader.get());
+    pipelineState.pixelShader = reinterpret_cast<GuestShader*>(defaultFindResult->second.m_PixelShaders.begin()->second->m_spCode->m_pD3DPixelShader.get());
+    pipelineState.vertexDeclaration = isMeshShader ? unoptimizedVertexDeclaration : sparkleVertexDeclaration;
+    pipelineState.zWriteEnable = false;
+    pipelineState.srcBlend = RenderBlend::SRC_ALPHA;
+    pipelineState.destBlend = RenderBlend::INV_SRC_ALPHA;
+    pipelineState.zFunc = RenderComparisonFunction::GREATER_EQUAL;
+    pipelineState.alphaBlendEnable = true;
+    pipelineState.srcBlendAlpha = RenderBlend::SRC_ALPHA;
+    pipelineState.destBlendAlpha = RenderBlend::INV_SRC_ALPHA;
+    pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
+    pipelineState.vertexStrides[0] = isMeshShader ? 104 : 28;
+    pipelineState.renderTargetFormat = RenderFormat::R16G16B16A16_FLOAT;
+    pipelineState.depthStencilFormat = RenderFormat::D32_FLOAT;
+    pipelineState.sampleCount = Config::MSAA > 1 ? Config::MSAA : 1;
+    pipelineState.specConstants = SPEC_CONSTANT_REVERSE_Z;
+
+    switch (material.m_BlendMode.get())
+    {
+    case Hedgehog::Sparkle::CParticleMaterial::eBlendMode_Zero:
+        // TODO: What are the render states for this??
+        break;
+    case Hedgehog::Sparkle::CParticleMaterial::eBlendMode_Typical:
+        // Leave default.
+        break;
+    case Hedgehog::Sparkle::CParticleMaterial::eBlendMode_Add:
+        pipelineState.destBlend = RenderBlend::ONE;
+        break;
+    case Hedgehog::Sparkle::CParticleMaterial::eBlendMode_Subtract:
+        // TODO: Is this correct?
+        pipelineState.destBlend = RenderBlend::ONE;
+        pipelineState.blendOp = RenderBlendOperation::SUBTRACT;
+        break;
+    }
+
+    auto createGraphicsPipeline = [&](PipelineState& pipelineStateToCreate)
+        {
+            SanitizePipelineState(pipelineStateToCreate);
+            CreateGraphicsPipelineInPipelineThread(pipelineStateToCreate, shaderList->m_TypeAndName.c_str() + 3);
+        };
+
+    // TODO: See if this is necessary for everything.
+    RenderCullMode cullModes[] = { RenderCullMode::NONE, RenderCullMode::BACK };
+
+    for (auto cullMode : cullModes)
+    {
+        pipelineState.cullMode = cullMode;
+        createGraphicsPipeline(pipelineState);
+
+        bool planarReflectionEnabled = reinterpret_cast<bool*>(g_memory.Translate(0x832FA0D8));
+
+        auto noMsaaPipelineState = pipelineState;
+        noMsaaPipelineState.sampleCount = 1;
+
+        if (planarReflectionEnabled)
+            createGraphicsPipeline(noMsaaPipelineState);
+
+        if (!isMeshShader)
+        {
+            // Previous compilation was for locus particles. This one will be for quads.
+            auto quadPipelineState = pipelineState;
+            quadPipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_LIST;
+            createGraphicsPipeline(quadPipelineState);
+
+            if (planarReflectionEnabled)
+            {
+                auto noMsaaQuadPipelineState = noMsaaPipelineState;
+                noMsaaQuadPipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_LIST;
+                createGraphicsPipeline(noMsaaQuadPipelineState);
+            }
+        }
+    }
+
+    unoptimizedVertexDeclaration->Release();
+    sparkleVertexDeclaration->Release();
+}
+
 static void PipelineCompilerThread()
 {
     GuestThread::SetThreadName(GetCurrentThreadId(), "Pipeline Compiler Thread");
@@ -4667,7 +4784,7 @@ static void PipelineCompilerThread()
     while (true)
     {
         boost::shared_ptr<Hedgehog::Database::CDatabaseData> databaseData;
-        g_compilingModelQueue.wait_dequeue(databaseData);
+        g_compilingDataQueue.wait_dequeue(databaseData);
 
         if (stack == nullptr)
         {
@@ -4681,9 +4798,15 @@ static void PipelineCompilerThread()
         if (databaseData->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
         {
             CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(databaseData.get()), {});
+        }        
+        else if (databaseData->m_pVftable.ptr == PARTICLE_MATERIAL_VFTABLE)
+        {
+            CompileParticleMaterialPipeline(*reinterpret_cast<Hedgehog::Sparkle::CParticleMaterial*>(databaseData.get()));
         }
         else
         {
+            assert(databaseData->m_pVftable.ptr == MODEL_DATA_VFTABLE);
+
             auto modelData = reinterpret_cast<Hedgehog::Mirage::CModelData*>(databaseData.get());
 
             CompilationArgs args{};
@@ -4708,8 +4831,8 @@ static void PipelineCompilerThread()
 
         databaseData->m_Flags &= ~eDatabaseDataFlags_CompilingPipelines;
 
-        if ((--g_compilingModelCount) == 0)
-            g_compilingModelCount.notify_all();
+        if ((--g_compilingDataCount) == 0)
+            g_compilingDataCount.notify_all();
     }
 
     g_userHeap.Free(stack);
@@ -4723,8 +4846,8 @@ PPC_FUNC(sub_825369A0)
 {
     // Wait for pipeline compilations to finish.
     uint32_t value;
-    while ((value = g_compilingModelCount.load()) != 0)
-        g_compilingModelCount.wait(value);
+    while ((value = g_compilingDataCount.load()) != 0)
+        g_compilingDataCount.wait(value);
 
     __imp__sub_825369A0(ctx, base);
 }
@@ -4757,37 +4880,51 @@ PPC_FUNC(sub_82E243D8)
     }
 }
 
-static Mutex g_pendingModelMutex;
-static std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_pendingModelQueue;
+// CParticleMaterial::CheckMadeAll
+PPC_FUNC_IMPL(__imp__sub_82E87598);
+PPC_FUNC(sub_82E87598)
+{   
+    if (reinterpret_cast<Hedgehog::Database::CDatabaseData*>(base + ctx.r3.u32)->m_Flags & eDatabaseDataFlags_CompilingPipelines)
+    {
+        ctx.r3.u64 = 0;
+    }
+    else
+    {
+        __imp__sub_82E87598(ctx, base);
+    }
+}
 
-void GetModelDataMidAsmHook(PPCRegister& r1, PPCRegister& r31)
+static Mutex g_pendingModelMutex;
+static std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> g_pendingDataQueue;
+
+void GetDatabaseDataMidAsmHook(PPCRegister& r1, PPCRegister& r4)
 {
     auto& databaseData = *reinterpret_cast<boost::shared_ptr<Hedgehog::Database::CDatabaseData>*>(
         g_memory.Translate(r1.u32 + 0x58));
 
-    if (!databaseData->IsMadeOne() && r31.u32 != NULL)
+    if (!databaseData->IsMadeOne() && r4.u32 != NULL)
     {
         if (databaseData->m_pVftable.ptr == MODEL_DATA_VFTABLE)
         {
             // Ignore particle models, the materials they point at don't actually
             // get used and give the threads unnecessary work.
-            bool isParticleModel = *reinterpret_cast<be<uint32_t>*>(g_memory.Translate(r31.u32 + 4)) != 5 &&
+            bool isParticleModel = *reinterpret_cast<be<uint32_t>*>(g_memory.Translate(r4.u32 + 4)) != 5 &&
                 strncmp(databaseData->m_TypeAndName.c_str() + 2, "eff_", 4) == 0;
 
             if (isParticleModel)
                 return;
         }
 
-        ++g_compilingModelCount;
+        ++g_compilingDataCount;
         databaseData->m_Flags |= eDatabaseDataFlags_CompilingPipelines;
 
         {
             std::lock_guard lock(g_pendingModelMutex);
-            g_pendingModelQueue.push_back(databaseData);
+            g_pendingDataQueue.push_back(databaseData);
         }
 
-        ++g_pendingModelCount;
-        g_pendingModelCount.notify_all();
+        ++g_pendingDataCount;
+        g_pendingDataCount.notify_all();
     }
 }
 
@@ -4878,38 +5015,38 @@ static void ModelConsumerThread()
 {
     GuestThread::SetThreadName(GetCurrentThreadId(), "Model Consumer Thread");
 
-    std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> localPendingModelQueue;
+    std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> localPendingDataQueue;
 
     while (true)
     {
         // Wait for models to arrive.
-        uint32_t pendingModelCount;
-        while ((pendingModelCount = g_pendingModelCount.load()) == 0)
-            g_pendingModelCount.wait(pendingModelCount);
+        uint32_t pendingDataCount;
+        while ((pendingDataCount = g_pendingDataCount.load()) == 0)
+            g_pendingDataCount.wait(pendingDataCount);
 
         {
             std::lock_guard lock(g_pendingModelMutex);
-            localPendingModelQueue.insert(localPendingModelQueue.end(), g_pendingModelQueue.begin(), g_pendingModelQueue.end());
-            g_pendingModelQueue.clear();
+            localPendingDataQueue.insert(localPendingDataQueue.end(), g_pendingDataQueue.begin(), g_pendingDataQueue.end());
+            g_pendingDataQueue.clear();
         }
 
         bool allHandled = true;
 
-        for (auto& pendingModel : localPendingModelQueue)
+        for (auto& pendingData : localPendingDataQueue)
         {
-            if (pendingModel.get() != nullptr)
+            if (pendingData.get() != nullptr)
             {
                 bool ready = false;
 
-                if (pendingModel->m_pVftable.ptr == TERRAIN_MODEL_DATA_VFTABLE)
-                    ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(pendingModel.get()));
+                if (pendingData->m_pVftable.ptr == MODEL_DATA_VFTABLE)
+                    ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(pendingData.get()));
                 else
-                    ready = CheckMadeAll(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(pendingModel.get()));
+                    ready = pendingData->IsMadeOne();
 
-                if (ready || pendingModel.unique())
+                if (ready || pendingData.unique())
                 {
-                    g_compilingModelQueue.enqueue(std::move(pendingModel));
-                    --g_pendingModelCount;
+                    g_compilingDataQueue.enqueue(std::move(pendingData));
+                    --g_pendingDataCount;
                 }
                 else
                 {
@@ -4919,7 +5056,7 @@ static void ModelConsumerThread()
         }
 
         if (allHandled)
-            localPendingModelQueue.clear();
+            localPendingDataQueue.clear();
     }
 }
 

@@ -429,11 +429,21 @@ address = 0x82BA9E7C
 registers = ["r10"]
 
 [[midasm_hook]]
-name = "GetModelDataMidAsmHook"
-address = 0x82E38688
+name = "GetDatabaseDataMidAsmHook"
+address = 0x82E38688 # Model
 registers = ["r1", "r31"]
 
 [[midasm_hook]]
-name = "GetModelDataMidAsmHook"
-address = 0x82E39650
+name = "GetDatabaseDataMidAsmHook"
+address = 0x82E39650 # Terrain Model
 registers = ["r1", "r31"]
+
+[[midasm_hook]]
+name = "GetDatabaseDataMidAsmHook"
+address = 0x827D614C # Particle Material Binary
+registers = ["r1", "r29"]
+
+[[midasm_hook]]
+name = "GetDatabaseDataMidAsmHook"
+address = 0x827D6018 # Particle Material XML
+registers = ["r1", "r30"]
