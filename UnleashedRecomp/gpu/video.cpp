@@ -4389,6 +4389,8 @@ static void CreateGraphicsPipelineInPipelineThread(const PipelineState& pipeline
 struct CompilationArgs
 {
     bool noGI{};
+    bool hasMoreThanOneBone{};
+    bool velocityMapQuickStep{};
     bool objectIcon{};
 };
 
@@ -4411,6 +4413,8 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
         return;
 
     bool isSky = strstr(shaderList->m_TypeAndName.c_str(), "Sky") != nullptr;
+    bool isSonicMouth = strcmp(material->m_TypeAndName.c_str() + 2, "sonic_gm_mouth_duble") == 0 &&
+        strcmp(shaderList->m_TypeAndName.c_str() + 3, "SonicSkin_dspf[b]") == 0;
 
     bool constTexCoord = true;
     if (material->m_spTexsetData.get() != nullptr)
@@ -4456,6 +4460,33 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
 
         SanitizePipelineState(pipelineState);
         CreateGraphicsPipelineInPipelineThread(pipelineState, layer == MeshLayer::PunchThrough ? "MakeShadowMapTransparent" : "MakeShadowMap");
+    }
+
+    // Motion blur pipeline. We could normally do the player here only, but apparently Werehog enemies also have object blur.
+    // TODO: Do punch through meshes get rendered?
+    if (!isSky && args.hasMoreThanOneBone && layer == MeshLayer::Opaque)
+    {
+        PipelineState pipelineState{};
+        pipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0x4620B236DC38100C)->userData);
+        pipelineState.pixelShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0xBBDB735BEACC8F41)->userData);
+        pipelineState.vertexDeclaration = reinterpret_cast<GuestVertexDeclaration*>(mesh->m_VertexDeclarationPtr.m_pD3DVertexDeclaration.get());
+        pipelineState.cullMode = RenderCullMode::NONE;
+        pipelineState.zFunc = RenderComparisonFunction::GREATER_EQUAL;
+        pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
+        pipelineState.vertexStrides[0] = mesh->m_VertexSize;
+        pipelineState.renderTargetFormat = RenderFormat::R8G8B8A8_UNORM;
+        pipelineState.depthStencilFormat = RenderFormat::D32_FLOAT;
+        pipelineState.specConstants = SPEC_CONSTANT_REVERSE_Z;
+
+        SanitizePipelineState(pipelineState);
+        CreateGraphicsPipelineInPipelineThread(pipelineState, "FxVelocityMap");
+
+        if (args.velocityMapQuickStep)
+        {
+            pipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0x99DC3F27E402700D)->userData);
+            SanitizePipelineState(pipelineState);
+            CreateGraphicsPipelineInPipelineThread(pipelineState, "FxVelocityMapQuickStep");
+        }
     }
 
     guest_stack_var<Hedgehog::Base::CStringSymbol> defaultSymbol(reinterpret_cast<const char*>(g_memory.Translate(0x8202DDBC)));
@@ -4531,28 +4562,37 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             if (!isSky)
                 pipelineState.specConstants |= SPEC_CONSTANT_REVERSE_Z;
 
-            auto createGraphicsPipeline = [&]()
+            auto createGraphicsPipeline = [&](PipelineState& pipelineStateToCreate)
                 {
-                    SanitizePipelineState(pipelineState);
-                    CreateGraphicsPipelineInPipelineThread(pipelineState, shaderList->m_TypeAndName.c_str() + 3);
+                    SanitizePipelineState(pipelineStateToCreate);
+                    CreateGraphicsPipelineInPipelineThread(pipelineStateToCreate, shaderList->m_TypeAndName.c_str() + 3);
                 };
 
-            createGraphicsPipeline();
+            createGraphicsPipeline(pipelineState);
 
             if (args.objectIcon) 
             {
                 // Object icons get rendered to a SDR buffer without MSAA.
-                pipelineState.renderTargetFormat = RenderFormat::R8G8B8A8_UNORM;
-                pipelineState.sampleCount = 1;
-                pipelineState.enableAlphaToCoverage = false;
+                auto iconPipelineState = pipelineState;
+                iconPipelineState.renderTargetFormat = RenderFormat::R8G8B8A8_UNORM;
+                iconPipelineState.sampleCount = 1;
+                iconPipelineState.enableAlphaToCoverage = false;
 
-                if ((pipelineState.specConstants & SPEC_CONSTANT_ALPHA_TO_COVERAGE) != 0)
+                if ((iconPipelineState.specConstants & SPEC_CONSTANT_ALPHA_TO_COVERAGE) != 0)
                 {
-                    pipelineState.specConstants &= ~SPEC_CONSTANT_ALPHA_TO_COVERAGE;
-                    pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
+                    iconPipelineState.specConstants &= ~SPEC_CONSTANT_ALPHA_TO_COVERAGE;
+                    iconPipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
                 }
 
-                createGraphicsPipeline();
+                createGraphicsPipeline(iconPipelineState);
+            }
+
+            if (isSonicMouth)
+            {
+                // Sonic's mouth switches between "SonicSkin_dspf[b]" or "SonicSkinNodeInvX_dspf[b]" depending on the view angle.
+                auto mouthPipelineState = pipelineState;
+                mouthPipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0x689AA3140AB9EBAA)->userData);
+                createGraphicsPipeline(mouthPipelineState);
             }
         }
     }
@@ -4566,7 +4606,12 @@ static void CompileMeshPipelines(const T& modelData, const CompilationArgs& args
     for (auto& meshGroup : modelData.m_NodeGroupModels)
     {
         for (auto& mesh : meshGroup->m_OpaqueMeshes)
+        {
             CompileMeshPipeline(mesh.get(), MeshLayer::Opaque, args);
+
+            if (args.noGI) // For models that can be shown transparent (eg. medals)
+                CompileMeshPipeline(mesh.get(), MeshLayer::Transparent, args);
+        }
 
         for (auto& mesh : meshGroup->m_TransparentMeshes)
             CompileMeshPipeline(mesh.get(), MeshLayer::Transparent, args);
@@ -4582,7 +4627,12 @@ static void CompileMeshPipelines(const T& modelData, const CompilationArgs& args
     }
 
     for (auto& mesh : modelData.m_OpaqueMeshes)
+    {
         CompileMeshPipeline(mesh.get(), MeshLayer::Opaque, args);
+
+        if (args.noGI)
+            CompileMeshPipeline(mesh.get(), MeshLayer::Transparent, args);
+    }
 
     for (auto& mesh : modelData.m_TransparentMeshes)
         CompileMeshPipeline(mesh.get(), MeshLayer::Transparent, args);
@@ -4618,8 +4668,12 @@ static void PipelineCompilerThread()
         }
         else
         {
+            auto modelData = reinterpret_cast<Hedgehog::Mirage::CModelData*>(databaseData.get());
+
             CompilationArgs args{};
             args.noGI = true;
+            args.hasMoreThanOneBone = modelData->m_NodeNum > 1;
+            args.velocityMapQuickStep = strcmp(databaseData->m_TypeAndName.c_str() + 2, "SonicRoot") == 0;
 
             // Check for the on screen items, eg. rings going to HUD.
             auto items = reinterpret_cast<xpointer<const char>*>(g_memory.Translate(0x832A8DD0));
@@ -4633,7 +4687,7 @@ static void PipelineCompilerThread()
                 items += 7;
             }
 
-            CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CModelData*>(databaseData.get()), args);
+            CompileMeshPipelines(*modelData, args);
         }
 
         databaseData->m_Flags &= ~eDatabaseDataFlags_CompilingPipelines;
