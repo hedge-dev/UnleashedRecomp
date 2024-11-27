@@ -30,6 +30,7 @@
 #include <o1heap.h>
 #include <cstddef>
 #include <wrl/client.h>
+#include <conjure_enum.hpp>
 
 using Microsoft::WRL::ComPtr;
 

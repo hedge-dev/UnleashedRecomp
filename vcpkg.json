@@ -19,6 +19,7 @@
         {
             "name": "imgui",
             "features": [ "sdl2-binding" ]
-        }
+        },
+        "conjure-enum"
     ]
 }

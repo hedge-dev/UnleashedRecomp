@@ -122,6 +122,7 @@ find_package(zstd CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 find_package(unofficial-concurrentqueue REQUIRED)
 find_package(imgui CONFIG REQUIRED)
+find_path(CONJURE_ENUM_INCLUDE_DIRS "conjure_enum.hpp")
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
 add_custom_command(TARGET UnleashedRecomp POST_BUILD
@@ -164,6 +165,7 @@ target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/api
     ${SWA_THIRDPARTY_ROOT}/ddspp 
     ${Stb_INCLUDE_DIR}
+    ${CONJURE_ENUM_INCLUDE_DIRS}
 )
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${SWA_PRECOMPILED_HEADERS})

@@ -239,6 +239,8 @@ static xxHashMap<std::unique_ptr<RenderPipeline>> g_pipelines;
 static std::atomic<uint32_t> g_pipelinesCreatedInRenderThread;
 static std::atomic<uint32_t> g_pipelinesCreatedAsynchronously;
 static std::atomic<uint32_t> g_pipelinesDropped;
+static std::string g_pipelineDebugText;
+static Mutex g_debugMutex;
 #endif
 
 static std::atomic<uint32_t> g_compilingModelCount;
@@ -1680,6 +1682,9 @@ static void DrawImGui()
         ImGui::Text("Pipelines Dropped: %d", g_pipelinesDropped.load());
         ImGui::Text("Compiling Model Count: %d", g_compilingModelCount.load());
         ImGui::Text("Pending Model Count: %d", g_pendingModelCount.load());
+
+        std::lock_guard lock(g_debugMutex);
+        ImGui::TextUnformatted(g_pipelineDebugText.c_str());
     }
     ImGui::End();
 #endif
@@ -2737,6 +2742,71 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
         ++g_pipelinesCreatedInRenderThread;
         pipeline->setName(std::format("{} {} {:X}", 
             pipelineState.vertexShader->name, pipelineState.pixelShader != nullptr ? pipelineState.pixelShader->name : "<none>", hash));
+        
+        auto enumToString = []<typename T>(T value)
+        {
+            return FIX8::conjure_enum<T>::enum_to_string(value);
+        };
+
+        std::lock_guard lock(g_debugMutex);
+        g_pipelineDebugText = std::format(
+            "PipelineState {:X}:\n"
+            "  vertexShader: {}\n"
+            "  pixelShader: {}\n"
+            "  instancing: {}\n"
+            "  zEnable: {}\n"
+            "  zWriteEnable: {}\n"
+            "  srcBlend: {}\n"
+            "  destBlend: {}\n"
+            "  cullMode: {}\n"
+            "  zFunc: {}\n"
+            "  alphaBlendEnable: {}\n"
+            "  blendOp: {}\n"
+            "  slopeScaledDepthBias: {}\n"
+            "  depthBias: {}\n"
+            "  srcBlendAlpha: {}\n"
+            "  destBlendAlpha: {}\n"
+            "  blendOpAlpha: {}\n"
+            "  colorWriteEnable: {:X}\n"
+            "  primitiveTopology: {}\n"
+            "  vertexStrides[0]: {}\n"
+            "  vertexStrides[1]: {}\n"
+            "  vertexStrides[2]: {}\n"
+            "  vertexStrides[3]: {}\n"
+            "  renderTargetFormat: {}\n"
+            "  depthStencilFormat: {}\n"
+            "  sampleCount: {}\n"
+            "  enableAlphaToCoverage: {}\n"
+            "  specConstants: {:X}\n", 
+            hash,
+            pipelineState.vertexShader->name,
+            pipelineState.pixelShader != nullptr ? pipelineState.pixelShader->name : "<none>",
+            pipelineState.instancing,
+            pipelineState.zEnable,
+            pipelineState.zWriteEnable,
+            enumToString(pipelineState.srcBlend),
+            enumToString(pipelineState.destBlend),
+            enumToString(pipelineState.cullMode),
+            enumToString(pipelineState.zFunc),
+            pipelineState.alphaBlendEnable,
+            enumToString(pipelineState.blendOp),
+            pipelineState.slopeScaledDepthBias,
+            pipelineState.depthBias,
+            enumToString(pipelineState.srcBlendAlpha),
+            enumToString(pipelineState.destBlendAlpha),
+            enumToString(pipelineState.blendOpAlpha),
+            pipelineState.colorWriteEnable,
+            enumToString(pipelineState.primitiveTopology),
+            pipelineState.vertexStrides[0],
+            pipelineState.vertexStrides[1],
+            pipelineState.vertexStrides[2],
+            pipelineState.vertexStrides[3],
+            enumToString(pipelineState.renderTargetFormat),
+            enumToString(pipelineState.depthStencilFormat),
+            pipelineState.sampleCount,
+            pipelineState.enableAlphaToCoverage,
+            pipelineState.specConstants)
+            + g_pipelineDebugText;
 #endif
     }
     
