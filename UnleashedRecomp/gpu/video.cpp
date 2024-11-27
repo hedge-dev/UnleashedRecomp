@@ -2743,69 +2743,80 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
         pipeline = CreateGraphicsPipeline(pipelineState);
 
 #ifdef ASYNC_PSO_DEBUG
-        ++g_pipelinesCreatedInRenderThread;
-        pipeline->setName(std::format("{} {} {:X}", 
+        bool loading = *reinterpret_cast<bool*>(g_memory.Translate(0x83367A4C));
+
+        if (loading)
+            ++g_pipelinesCreatedAsynchronously;
+        else
+            ++g_pipelinesCreatedInRenderThread;
+
+        pipeline->setName(std::format("{} {} {} {:X}", loading ? "ASYNC" : "",
             pipelineState.vertexShader->name, pipelineState.pixelShader != nullptr ? pipelineState.pixelShader->name : "<none>", hash));
         
-        std::lock_guard lock(g_debugMutex);
-        g_pipelineDebugText = std::format(
-            "PipelineState {:X}:\n"
-            "  vertexShader: {}\n"
-            "  pixelShader: {}\n"
-            "  instancing: {}\n"
-            "  zEnable: {}\n"
-            "  zWriteEnable: {}\n"
-            "  srcBlend: {}\n"
-            "  destBlend: {}\n"
-            "  cullMode: {}\n"
-            "  zFunc: {}\n"
-            "  alphaBlendEnable: {}\n"
-            "  blendOp: {}\n"
-            "  slopeScaledDepthBias: {}\n"
-            "  depthBias: {}\n"
-            "  srcBlendAlpha: {}\n"
-            "  destBlendAlpha: {}\n"
-            "  blendOpAlpha: {}\n"
-            "  colorWriteEnable: {:X}\n"
-            "  primitiveTopology: {}\n"
-            "  vertexStrides[0]: {}\n"
-            "  vertexStrides[1]: {}\n"
-            "  vertexStrides[2]: {}\n"
-            "  vertexStrides[3]: {}\n"
-            "  renderTargetFormat: {}\n"
-            "  depthStencilFormat: {}\n"
-            "  sampleCount: {}\n"
-            "  enableAlphaToCoverage: {}\n"
-            "  specConstants: {:X}\n", 
-            hash,
-            pipelineState.vertexShader->name,
-            pipelineState.pixelShader != nullptr ? pipelineState.pixelShader->name : "<none>",
-            pipelineState.instancing,
-            pipelineState.zEnable,
-            pipelineState.zWriteEnable,
-            magic_enum::enum_name(pipelineState.srcBlend),
-            magic_enum::enum_name(pipelineState.destBlend),
-            magic_enum::enum_name(pipelineState.cullMode),
-            magic_enum::enum_name(pipelineState.zFunc),
-            pipelineState.alphaBlendEnable,
-            magic_enum::enum_name(pipelineState.blendOp),
-            pipelineState.slopeScaledDepthBias,
-            pipelineState.depthBias,
-            magic_enum::enum_name(pipelineState.srcBlendAlpha),
-            magic_enum::enum_name(pipelineState.destBlendAlpha),
-            magic_enum::enum_name(pipelineState.blendOpAlpha),
-            pipelineState.colorWriteEnable,
-            magic_enum::enum_name(pipelineState.primitiveTopology),
-            pipelineState.vertexStrides[0],
-            pipelineState.vertexStrides[1],
-            pipelineState.vertexStrides[2],
-            pipelineState.vertexStrides[3],
-            magic_enum::enum_name(pipelineState.renderTargetFormat),
-            magic_enum::enum_name(pipelineState.depthStencilFormat),
-            pipelineState.sampleCount,
-            pipelineState.enableAlphaToCoverage,
-            pipelineState.specConstants)
-            + g_pipelineDebugText;
+        if (!loading)
+        {
+            std::lock_guard lock(g_debugMutex);
+            g_pipelineDebugText = std::format(
+                "PipelineState {:X}:\n"
+                "  vertexShader: {}\n"
+                "  pixelShader: {}\n"
+                "  vertexDeclaration: {:X}\n"
+                "  instancing: {}\n"
+                "  zEnable: {}\n"
+                "  zWriteEnable: {}\n"
+                "  srcBlend: {}\n"
+                "  destBlend: {}\n"
+                "  cullMode: {}\n"
+                "  zFunc: {}\n"
+                "  alphaBlendEnable: {}\n"
+                "  blendOp: {}\n"
+                "  slopeScaledDepthBias: {}\n"
+                "  depthBias: {}\n"
+                "  srcBlendAlpha: {}\n"
+                "  destBlendAlpha: {}\n"
+                "  blendOpAlpha: {}\n"
+                "  colorWriteEnable: {:X}\n"
+                "  primitiveTopology: {}\n"
+                "  vertexStrides[0]: {}\n"
+                "  vertexStrides[1]: {}\n"
+                "  vertexStrides[2]: {}\n"
+                "  vertexStrides[3]: {}\n"
+                "  renderTargetFormat: {}\n"
+                "  depthStencilFormat: {}\n"
+                "  sampleCount: {}\n"
+                "  enableAlphaToCoverage: {}\n"
+                "  specConstants: {:X}\n",
+                hash,
+                pipelineState.vertexShader->name,
+                pipelineState.pixelShader != nullptr ? pipelineState.pixelShader->name : "<none>",
+                reinterpret_cast<size_t>(pipelineState.vertexDeclaration),
+                pipelineState.instancing,
+                pipelineState.zEnable,
+                pipelineState.zWriteEnable,
+                magic_enum::enum_name(pipelineState.srcBlend),
+                magic_enum::enum_name(pipelineState.destBlend),
+                magic_enum::enum_name(pipelineState.cullMode),
+                magic_enum::enum_name(pipelineState.zFunc),
+                pipelineState.alphaBlendEnable,
+                magic_enum::enum_name(pipelineState.blendOp),
+                pipelineState.slopeScaledDepthBias,
+                pipelineState.depthBias,
+                magic_enum::enum_name(pipelineState.srcBlendAlpha),
+                magic_enum::enum_name(pipelineState.destBlendAlpha),
+                magic_enum::enum_name(pipelineState.blendOpAlpha),
+                pipelineState.colorWriteEnable,
+                magic_enum::enum_name(pipelineState.primitiveTopology),
+                pipelineState.vertexStrides[0],
+                pipelineState.vertexStrides[1],
+                pipelineState.vertexStrides[2],
+                pipelineState.vertexStrides[3],
+                magic_enum::enum_name(pipelineState.renderTargetFormat),
+                magic_enum::enum_name(pipelineState.depthStencilFormat),
+                pipelineState.sampleCount,
+                pipelineState.enableAlphaToCoverage,
+                pipelineState.specConstants)
+                + g_pipelineDebugText;
+        }
 #endif
     }
     
