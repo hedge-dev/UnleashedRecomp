@@ -1,7 +1,12 @@
 #include <cpu/guest_code.h>
 #include <kernel/function.h>
 #include <api/SWA.h>
+#include <ui/achievement_menu.h>
 #include <ui/options_menu.h>
+#include <app.h>
+
+float m_ungracefulExitWaitTime = 0.0f;
+constexpr float m_ungracefulExitWaitThreshold = 3.0f;
 
 void CHudPauseAddOptionsItemMidAsmHook(PPCRegister& pThis)
 {
@@ -11,7 +16,7 @@ void CHudPauseAddOptionsItemMidAsmHook(PPCRegister& pThis)
     GuestToHostFunction<int>(0x824AE690, pThis.u32, menu.get(), name.get());
 }
 
-bool InjectOptionsBehaviour(uint32_t pThis, uint32_t count)
+bool InjectMenuBehaviour(uint32_t pThis, uint32_t count)
 {
     auto pHudPause = (SWA::CHudPause*)g_memory.Translate(pThis);
     auto cursorIndex = *(be<uint32_t>*)g_memory.Translate(4 * (*(be<uint32_t>*)g_memory.Translate(pThis + 0x19C) + 0x68) + pThis);
@@ -33,6 +38,19 @@ bool InjectOptionsBehaviour(uint32_t pThis, uint32_t count)
             actionType = SWA::eActionType_Return;
             transitionType = SWA::eTransitionType_Hide;
             break;
+    }
+
+    if (auto pInputState = SWA::CInputState::GetInstance())
+    {
+        if (pInputState->GetPadState().IsTapped(SWA::eKeyState_Select))
+        {
+            AchievementMenu::Open();
+    
+            pHudPause->m_Action = SWA::eActionType_Undefined;
+            pHudPause->m_Transition = SWA::eTransitionType_SubMenu;
+    
+            return false;
+        }
     }
 
     if (pHudPause->m_Status == SWA::eStatusType_Accept)
@@ -62,14 +80,14 @@ bool CHudPauseItemCountMidAsmHook(PPCRegister& pThis, PPCRegister& count)
 {
     count.u32 += 1;
 
-    return InjectOptionsBehaviour(pThis.u32, count.u32);
+    return InjectMenuBehaviour(pThis.u32, count.u32);
 }
 
 void CHudPauseVillageItemCountMidAsmHook(PPCRegister& pThis, PPCRegister& count)
 {
     count.u32 += 1;
 
-    InjectOptionsBehaviour(pThis.u32, count.u32);
+    InjectMenuBehaviour(pThis.u32, count.u32);
 }
 
 bool CHudPauseMiscItemCountMidAsmHook(PPCRegister& count)
@@ -82,28 +100,45 @@ bool CHudPauseMiscItemCountMidAsmHook(PPCRegister& count)
 
 bool CHudPauseMiscInjectOptionsMidAsmHook(PPCRegister& pThis)
 {
-    return InjectOptionsBehaviour(pThis.u32, 3);
+    return InjectMenuBehaviour(pThis.u32, 3);
 }
 
 // SWA::CHudPause::Update
 PPC_FUNC_IMPL(__imp__sub_824B0930);
 PPC_FUNC(sub_824B0930)
 {
-    if (!OptionsMenu::s_isVisible || !OptionsMenu::s_isPause)
-    {
-        __imp__sub_824B0930(ctx, base);
-        return;
-    }
+    auto pHudPause = (SWA::CHudPause*)g_memory.Translate(ctx.r3.u32);
+    auto pInputState = SWA::CInputState::GetInstance();
 
-    if (auto pInputState = SWA::CInputState::GetInstance())
+    m_ungracefulExitWaitTime += g_deltaTime;
+
+    // TODO: disable Start button closing menu.
+    if (AchievementMenu::s_isVisible)
     {
-        // TODO: disable Start button closing menu.
+        // HACK: wait for transition to finish before restoring control.
+        if (m_ungracefulExitWaitThreshold >= m_ungracefulExitWaitTime)
+            __imp__sub_824B0930(ctx, base);
+
+        if (pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
+        {
+            AchievementMenu::Close();
+
+            GuestToHostFunction<int>(0x824AFD28, pHudPause, 0, 1, 0, 0);
+        }
+    }
+    else if (OptionsMenu::s_isVisible && OptionsMenu::s_isPause)
+    {
         if (OptionsMenu::CanClose() && pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
         {
             OptionsMenu::Close();
 
-            // Re-open pause menu.
-            GuestToHostFunction<int>(0x824AFD28, ctx.r3.u32, 0, 0, 0, 1);
+            GuestToHostFunction<int>(0x824AFD28, pHudPause, 0, 0, 0, 1);
         }
+    }
+    else
+    {
+        m_ungracefulExitWaitTime = 0.0f;
+
+        __imp__sub_824B0930(ctx, base);
     }
 }

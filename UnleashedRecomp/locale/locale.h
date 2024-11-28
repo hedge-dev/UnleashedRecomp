@@ -73,6 +73,12 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         }
     },
     {
+        "Achievements_Name_Uppercase",
+        {
+            { ELanguage::English, "ACHIEVEMENTS" }
+        }
+    },
+    {
         "Achievements_Unlock",
         {
             { ELanguage::English, "Achievement Unlocked!" }

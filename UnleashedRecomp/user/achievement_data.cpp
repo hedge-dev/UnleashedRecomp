@@ -5,7 +5,7 @@
 
 bool AchievementData::IsUnlocked(uint16_t id)
 {
-    for (int i = 0; i < sizeof(Data.Records); i++)
+    for (int i = 0; i < sizeof(Data.Records) / sizeof(Record); i++)
     {
         if (Data.Records[i].ID == id)
             return true;
@@ -19,7 +19,7 @@ void AchievementData::Unlock(uint16_t id)
     if (IsUnlocked(id))
         return;
 
-    for (int i = 0; i < sizeof(Data.Records); i++)
+    for (int i = 0; i < sizeof(Data.Records) / sizeof(Record); i++)
     {
         if (Data.Records[i].ID == 0)
         {

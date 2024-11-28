@@ -131,7 +131,7 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
         }
     }
 
-    for (auto listener : Window::s_eventListeners)
+    for (auto listener : GetEventListeners())
         listener->OnSDLEvent(event);
 
     return 0;

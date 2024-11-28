@@ -1,7 +1,5 @@
 #pragma once
 
-#include "ui/window.h"
-
 class ISDLEventListener
 {
 public:
@@ -9,12 +7,14 @@ public:
     virtual void OnSDLEvent(SDL_Event* event) = 0;
 };
 
+std::vector<ISDLEventListener*>& GetEventListeners();
+
 class SDLEventListener : public ISDLEventListener
 {
 public:
     SDLEventListener()
     {
-        Window::s_eventListeners.emplace_back(this);
+        GetEventListeners().emplace_back(this);
     }
 
     void OnSDLEvent(SDL_Event* event) override {}

@@ -2,13 +2,13 @@
 
 #include "imgui_view.h"
 
-class AchievementOverlay : ImGuiView
+class AchievementMenu : ImGuiView
 {
 public:
     inline static bool s_isVisible = false;
 
     void Init() override;
     void Draw() override;
-    static void Open(int id);
+    static void Open();
     static void Close();
 };

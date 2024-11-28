@@ -1,5 +1,46 @@
 #pragma once
 
+#include <gpu/imgui_common.h>
+
+static std::vector<std::unique_ptr<ImGuiCallbackData>> g_callbackData;
+static uint32_t g_callbackDataIndex = 0;
+
+static ImGuiCallbackData* AddCallback(ImGuiCallback callback)
+{
+    if (g_callbackDataIndex >= g_callbackData.size())
+        g_callbackData.emplace_back(std::make_unique<ImGuiCallbackData>());
+
+    auto& callbackData = g_callbackData[g_callbackDataIndex];
+    ++g_callbackDataIndex;
+
+    ImGui::GetForegroundDrawList()->AddCallback(reinterpret_cast<ImDrawCallback>(callback), callbackData.get());
+
+    return callbackData.get();
+}
+
+static void SetGradient(const ImVec2& min, const ImVec2& max, ImU32 top, ImU32 bottom)
+{
+    auto callbackData = AddCallback(ImGuiCallback::SetGradient);
+    callbackData->setGradient.gradientMin[0] = min.x;
+    callbackData->setGradient.gradientMin[1] = min.y;
+    callbackData->setGradient.gradientMax[0] = max.x;
+    callbackData->setGradient.gradientMax[1] = max.y;
+    callbackData->setGradient.gradientTop = top;
+    callbackData->setGradient.gradientBottom = bottom;
+}
+
+static void ResetGradient()
+{
+    auto callbackData = AddCallback(ImGuiCallback::SetGradient);
+    memset(&callbackData->setGradient, 0, sizeof(callbackData->setGradient));
+}
+
+static void SetShaderModifier(uint32_t shaderModifier)
+{
+    auto callbackData = AddCallback(ImGuiCallback::SetShaderModifier);
+    callbackData->setShaderModifier.shaderModifier = shaderModifier;
+}
+
 // Aspect ratio aware.
 static float Scale(float size)
 {
@@ -43,26 +84,62 @@ static void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2
     drawList->PopClipRect();
 }
 
-static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, int32_t outlineSize, ImU32 outlineColor)
+template<typename T>
+static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, T outlineSize, ImU32 outlineColor)
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    // TODO: This is very inefficient!
-    for (int32_t i = -outlineSize + 1; i < outlineSize; i++)
+    if constexpr (std::is_same_v<float, T> || std::is_same_v<double, T>)
     {
-        for (int32_t j = -outlineSize + 1; j < outlineSize; j++)
-            drawList->AddText(font, fontSize, { pos.x + i, pos.y + j }, outlineColor, text);
+        // TODO: This is still very inefficient!
+        for (float i = -outlineSize; i <= outlineSize; i += 0.5f)
+        {
+            for (float j = -outlineSize; j <= outlineSize; j += 0.5f)
+            {
+                if (i == 0.0f && j == 0.0f)
+                    continue;
+
+                drawList->AddText(font, fontSize, { pos.x + i, pos.y + j }, outlineColor, text);
+            }
+        }
+    }
+    else if constexpr (std::is_integral_v<T>)
+    {
+        // TODO: This is very inefficient!
+        for (int32_t i = -outlineSize + 1; i < outlineSize; i++)
+        {
+            for (int32_t j = -outlineSize + 1; j < outlineSize; j++)
+                drawList->AddText(font, fontSize, { pos.x + i, pos.y + j }, outlineColor, text);
+        }
     }
 
     drawList->AddText(font, fontSize, pos, color, text);
 }
 
-static void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text, float offset = 2.5f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))
+static void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text, float offset = 2.0f, float radius = 0.4f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    drawList->AddText(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text);
+    DrawTextWithOutline<float>(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text, radius, shadowColour);
     drawList->AddText(font, fontSize, pos, colour, text);
+}
+
+static void DrawTextWithMarqueeShadow(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 colour, const char* text, double time, double delay, double speed, float offset = 2.0f, float radius = 0.4f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+    auto rectWidth = max.x - min.x;
+    auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text);
+    auto textX = pos.x - fmodf(std::max(0.0, ImGui::GetTime() - (time + delay)) * speed, textSize.x + rectWidth);
+
+    drawList->PushClipRect(min, max, true);
+
+    if (textX <= pos.x)
+        DrawTextWithShadow(font, fontSize, { textX, pos.y }, colour, text, offset, radius, shadowColour);
+
+    if (textX + textSize.x < pos.x)
+        DrawTextWithShadow(font, fontSize, { textX + textSize.x + rectWidth, pos.y }, colour, text, offset, radius, shadowColour);
+
+    drawList->PopClipRect();
 }
 
 static float Lerp(float a, float b, float t)

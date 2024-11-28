@@ -1,8 +1,9 @@
 #pragma once
 
+#include "imgui_view.h"
 #include <api/SWA.h>
 
-struct OptionsMenu
+struct OptionsMenu : ImGuiView
 {
 public:
     inline static bool s_isVisible = false;
@@ -10,8 +11,8 @@ public:
 
     inline static SWA::EMenuType s_pauseMenuType;
 
-    static void Init();
-    static void Draw();
+    void Init() override;
+    void Draw() override;
     static void Open(bool isPause = false, SWA::EMenuType pauseMenuType = SWA::eMenuType_WorldMap);
     static void Close();
 

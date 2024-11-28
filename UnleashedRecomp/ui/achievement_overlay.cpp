@@ -9,6 +9,8 @@
 #include <app.h>
 #include <exports.h>
 
+AchievementOverlay m_achievementOverlay;
+
 constexpr double OVERLAY_CONTAINER_MOTION_START = 0.0;
 constexpr double OVERLAY_CONTAINER_MOTION_END = 8.0;
 constexpr double OVERLAY_CONTAINER_FADE_IN_START = 5.0;
@@ -30,7 +32,9 @@ void AchievementOverlay::Init()
 {
     auto& io = ImGui::GetIO();
 
-    g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 30.0f);
+    constexpr float FONT_SCALE = 2.0f;
+
+    g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 26.0f * FONT_SCALE);
 }
 
 static double ComputeMotion(double frameOffset, double frames)
@@ -39,8 +43,7 @@ static double ComputeMotion(double frameOffset, double frames)
     return sqrt(t);
 }
 
-// TODO: move this somewhere where it can be re-used.
-void DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25.0f)
+static void DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25.0f)
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
@@ -71,29 +74,27 @@ void DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25.0f)
     ImVec2 v6 = { max.x - cornerRadius, max.y };
     ImVec2 v7 = { min.x, max.y };
     ImVec2 v8 = { min.x, max.y - cornerRadius };
-
-    ImVec2 top[] = { v1, v2, v3, v4 };
-    ImVec2 bottom[] = { v5, v6, v7, v8 };
-    ImVec2 border[] = { v1, v2, v3, v4, v5, v6, v7, v8 };
+    ImVec2 vertices[] = { v1, v2, v3, v4, v5, v6, v7, v8 };
 
     auto colourMotion = ComputeMotion(g_isClosing ? OVERLAY_CONTAINER_MOTION_START : OVERLAY_CONTAINER_FADE_IN_START,
         g_isClosing ? OVERLAY_CONTAINER_FADE_OUT_START : OVERLAY_CONTAINER_MOTION_END);
 
     auto colShadow = IM_COL32(0, 0, 0, (int)CubicEase(g_isClosing ? 156 : 0, g_isClosing ? 0 : 156, colourMotion));
     auto colGradientTop = IM_COL32(197, 194, 197, (int)CubicEase(g_isClosing ? 200 : 0, g_isClosing ? 0 : 200, colourMotion));
-    auto colGradientBottom = IM_COL32(121, 120, 121, (int)CubicEase(g_isClosing ? 236 : 0, g_isClosing ? 0 : 236, colourMotion)); // TODO: match gradient used by the game (115, 113, 115, 236).
+    auto colGradientBottom = IM_COL32(115, 113, 115, (int)CubicEase(g_isClosing ? 236 : 0, g_isClosing ? 0 : 236, colourMotion));
 
     // TODO: add a drop shadow.
 
-    drawList->AddConvexPolyFilled(top, IM_ARRAYSIZE(top), colGradientTop);
-    drawList->AddRectFilledMultiColor({ min.x, min.y + cornerRadius }, { max.x, max.y - cornerRadius }, colGradientTop, colGradientTop, colGradientBottom, colGradientBottom);
-    drawList->AddConvexPolyFilled(bottom, IM_ARRAYSIZE(bottom), colGradientBottom);
-    drawList->AddPolyline(border, IM_ARRAYSIZE(border), IM_COL32(247, 247, 247, (int)CubicEase(g_isClosing ? 255 : 0, g_isClosing ? 0 : 255, colourMotion)), true, Scale(2.5f));
+    SetGradient(min, max, colGradientTop, colGradientBottom);
+    drawList->AddConvexPolyFilled(vertices, IM_ARRAYSIZE(vertices), IM_COL32(255, 255, 255, 255));
+    ResetGradient();
 
-    for (int i = 0; i < IM_ARRAYSIZE(border); i++)
+    drawList->AddPolyline(vertices, IM_ARRAYSIZE(vertices), IM_COL32(247, 247, 247, (int)CubicEase(g_isClosing ? 255 : 0, g_isClosing ? 0 : 255, colourMotion)), true, Scale(2.5f));
+
+    for (int i = 0; i < IM_ARRAYSIZE(vertices); i++)
     {
-        border[i].x -= 0.4f;
-        border[i].y -= 0.2f;
+        vertices[i].x -= 0.4f;
+        vertices[i].y -= 0.2f;
     }
 
     auto lineAlpha = (int)CubicEase(g_isClosing ? 230 : 0, g_isClosing ? 0 : 230, colourMotion);
@@ -102,13 +103,13 @@ void DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25.0f)
     auto lineThickness = Scale(1.0f);
 
     // Top left corner bottom to top left corner top.
-    drawList->AddLine(border[0], border[1], colLineTop, lineThickness * 0.5f);
+    drawList->AddLine(vertices[0], vertices[1], colLineTop, lineThickness * 0.5f);
 
     // Top left corner bottom to bottom left.
-    drawList->AddRectFilledMultiColor({ border[0].x - 0.2f, border[0].y }, { border[6].x + lineThickness - 0.2f, border[6].y }, colLineTop, colLineTop, colLineBottom, colLineBottom);
+    drawList->AddRectFilledMultiColor({ vertices[0].x - 0.2f, vertices[0].y }, { vertices[6].x + lineThickness - 0.2f, vertices[6].y }, colLineTop, colLineTop, colLineBottom, colLineBottom);
 
     // Top left corner top to top right.
-    drawList->AddLine(border[1], border[2], colLineTop, lineThickness);
+    drawList->AddLine(vertices[1], vertices[2], colLineTop, lineThickness);
 
     drawList->PushClipRect(min, max);
 }
@@ -151,8 +152,11 @@ void AchievementOverlay::Draw()
 
     drawList->AddImage(g_upAchievementIcon.get(), { min.x + imageX, min.y + imageY }, { min.x + imageX + imageSize, min.y + imageY + imageSize }, { 0, 0 }, { 1, 1 }, IM_COL32(255, 255, 255, alpha));
 
-    DrawTextWithShadow(g_fntSeurat, fontSize, { min.x + textX + (longestTextSize - headerTextSize.x) / 2.0f, min.y + 30.0f}, IM_COL32(252, 243, 5, alpha), strAchievementUnlocked, 2.0f, IM_COL32(0, 0, 0, alpha));
-    DrawTextWithShadow(g_fntSeurat, fontSize, { min.x + textX + (longestTextSize - bodyTextSize.x) / 2.0f, min.y + 68.0f}, IM_COL32(255, 255, 255, alpha), strAchievementName, 2.0f, IM_COL32(0, 0, 0, alpha));
+    auto cmnShadowOffset = Scale(2.0f);
+    auto cmnShadowScale = Scale(0.4f);
+
+    DrawTextWithShadow(g_fntSeurat, fontSize, { min.x + textX + (longestTextSize - headerTextSize.x) / 2.0f, min.y + 30.0f}, IM_COL32(252, 243, 5, alpha), strAchievementUnlocked, cmnShadowOffset, cmnShadowScale, IM_COL32(0, 0, 0, alpha));
+    DrawTextWithShadow(g_fntSeurat, fontSize, { min.x + textX + (longestTextSize - bodyTextSize.x) / 2.0f, min.y + 68.0f}, IM_COL32(255, 255, 255, alpha), strAchievementName, cmnShadowOffset, cmnShadowScale, IM_COL32(0, 0, 0, alpha));
 
     // Pop clip rect from DrawContainer
     drawList->PopClipRect();

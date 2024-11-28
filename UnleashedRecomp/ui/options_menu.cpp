@@ -12,6 +12,8 @@
 
 #include <patches/audio_patches.h>
 
+OptionsMenu m_optionsMenu;
+
 constexpr float COMMON_PADDING_POS_Y = 118.0f;
 constexpr float COMMON_PADDING_POS_X = 30.0f;
 constexpr float INFO_CONTAINER_POS_X = 870.0f;
@@ -37,45 +39,6 @@ void OptionsMenu::Init()
     g_seuratFont = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 26.0f * FONT_SCALE);
     g_dfsogeistdFont = io.Fonts->AddFontFromFileTTF("DFSoGeiStd-W7.otf", 48.0f * FONT_SCALE);
     g_newRodinFont = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
-}
-
-static std::vector<std::unique_ptr<ImGuiCallbackData>> g_callbackData;
-static uint32_t g_callbackDataIndex = 0;
-
-static ImGuiCallbackData* AddCallback(ImGuiCallback callback)
-{
-    if (g_callbackDataIndex >= g_callbackData.size())
-        g_callbackData.emplace_back(std::make_unique<ImGuiCallbackData>());
-
-    auto& callbackData = g_callbackData[g_callbackDataIndex];
-    ++g_callbackDataIndex;
-
-    ImGui::GetForegroundDrawList()->AddCallback(reinterpret_cast<ImDrawCallback>(callback), callbackData.get());
-
-    return callbackData.get();
-}
-
-static void SetGradient(const ImVec2& min, const ImVec2& max, ImU32 top, ImU32 bottom)
-{
-    auto callbackData = AddCallback(ImGuiCallback::SetGradient);
-    callbackData->setGradient.gradientMin[0] = min.x;
-    callbackData->setGradient.gradientMin[1] = min.y; 
-    callbackData->setGradient.gradientMax[0] = max.x;
-    callbackData->setGradient.gradientMax[1] = max.y;  
-    callbackData->setGradient.gradientTop = top;
-    callbackData->setGradient.gradientBottom = bottom;
-}
-
-static void ResetGradient()
-{
-    auto callbackData = AddCallback(ImGuiCallback::SetGradient);
-    memset(&callbackData->setGradient, 0, sizeof(callbackData->setGradient));
-}
-
-static void SetShaderModifier(uint32_t shaderModifier)
-{
-    auto callbackData = AddCallback(ImGuiCallback::SetShaderModifier);
-    callbackData->setShaderModifier.shaderModifier = shaderModifier;
 }
 
 static void DrawScanlineBars()
@@ -135,7 +98,8 @@ static void DrawScanlineBars()
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
     // Options text
-    DrawTextWithOutline(g_dfsogeistdFont, Scale(48.0f), { Scale(122.0f), Scale(56.0f) }, IM_COL32(255, 195, 0, 255), "OPTIONS", Scale(4), IM_COL32_BLACK);
+    // TODO: localise this.
+    DrawTextWithOutline<int>(g_dfsogeistdFont, Scale(48.0f), { Scale(122.0f), Scale(56.0f) }, IM_COL32(255, 195, 0, 255), "OPTIONS", Scale(4), IM_COL32_BLACK);
 
     // Top bar line
     drawList->AddLine(
@@ -417,7 +381,7 @@ static bool DrawCategories()
             IM_COL32(128, 255, 0, alpha),
             IM_COL32(255, 192, 0, alpha));
 
-        DrawTextWithOutline(
+        DrawTextWithOutline<int>(
             g_dfsogeistdFont,
             size,
             min,
@@ -752,7 +716,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         IM_COL32(128, 170, 0, 255)
     );
 
-    DrawTextWithOutline(
+    DrawTextWithOutline<int>(
         g_newRodinFont,
         size,
         min,
