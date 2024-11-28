@@ -79,6 +79,8 @@ set(SWA_UI_CXX_SOURCES
     "ui/window.cpp"
 )
 
+set(SMOLV_SOURCE_DIR "${SWA_THIRDPARTY_ROOT}/ShaderRecomp/thirdparty/smol-v/source")
+
 set(SWA_CXX_SOURCES
     "app.cpp"
     "main.cpp"
@@ -93,6 +95,8 @@ set(SWA_CXX_SOURCES
     ${SWA_HID_CXX_SOURCES}
     ${SWA_PATCHES_CXX_SOURCES}
     ${SWA_UI_CXX_SOURCES}
+
+    "${SMOLV_SOURCE_DIR}/smolv.cpp"
 )
 
 if (WIN32)
@@ -166,6 +170,7 @@ target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/api
     ${SWA_THIRDPARTY_ROOT}/ddspp 
     ${Stb_INCLUDE_DIR}
+    ${SMOLV_SOURCE_DIR}
 )
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${SWA_PRECOMPILED_HEADERS})

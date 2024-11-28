@@ -2499,9 +2499,20 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
             assert(guestShader->shaderCacheEntry != nullptr);
 
             if (g_vulkan)
-                guestShader->shader = g_device->createShader(g_shaderCache.get() + guestShader->shaderCacheEntry->spirvOffset, guestShader->shaderCacheEntry->spirvSize, "main", RenderShaderFormat::SPIRV);
+            {
+                auto compressedSpirvData = g_shaderCache.get() + guestShader->shaderCacheEntry->spirvOffset;
+
+                std::vector<uint8_t> decoded(smolv::GetDecodedBufferSize(compressedSpirvData, guestShader->shaderCacheEntry->spirvSize));
+                bool result = smolv::Decode(compressedSpirvData, guestShader->shaderCacheEntry->spirvSize, decoded.data(), decoded.size());
+                assert(result);
+
+                guestShader->shader = g_device->createShader(decoded.data(), decoded.size(), "main", RenderShaderFormat::SPIRV);
+            }
             else
-                guestShader->shader = g_device->createShader(g_shaderCache.get() + guestShader->shaderCacheEntry->dxilOffset, guestShader->shaderCacheEntry->dxilSize, "main", RenderShaderFormat::DXIL);
+            {
+                guestShader->shader = g_device->createShader(g_shaderCache.get() + guestShader->shaderCacheEntry->dxilOffset, 
+                    guestShader->shaderCacheEntry->dxilSize, "main", RenderShaderFormat::DXIL);
+            }
         }
 
         return guestShader->shader.get();

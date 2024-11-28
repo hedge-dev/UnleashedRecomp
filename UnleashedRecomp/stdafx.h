@@ -30,6 +30,7 @@
 #include <o1heap.h>
 #include <cstddef>
 #include <wrl/client.h>
+#include <smolv.h>
 
 using Microsoft::WRL::ComPtr;
 
