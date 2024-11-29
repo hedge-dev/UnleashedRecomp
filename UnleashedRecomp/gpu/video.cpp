@@ -812,36 +812,6 @@ static RenderBlend ConvertBlendMode(uint32_t blendMode)
     }
 }
 
-// The game renders the main scene with reverse Z where the viewport's minDepth and maxDepth
-// values are swapped. We negate this to improve compatibility with old hardware.
-static RenderComparisonFunction ConvertComparisonFunc(uint32_t cmpFunc, bool reverseZ)
-{
-    switch (cmpFunc)
-    {
-    case D3DCMP_LESS:
-        return reverseZ ? RenderComparisonFunction::GREATER : RenderComparisonFunction::LESS;
-    case D3DCMP_LESSEQUAL:
-        return reverseZ ? RenderComparisonFunction::GREATER_EQUAL : RenderComparisonFunction::LESS_EQUAL;
-    case D3DCMP_GREATER:
-        return reverseZ ? RenderComparisonFunction::LESS : RenderComparisonFunction::GREATER;
-    case D3DCMP_GREATEREQUAL:
-        return reverseZ ? RenderComparisonFunction::LESS_EQUAL : RenderComparisonFunction::GREATER_EQUAL;
-
-    case D3DCMP_NEVER:
-        return RenderComparisonFunction::NEVER;
-    case D3DCMP_EQUAL:
-        return RenderComparisonFunction::EQUAL;
-    case D3DCMP_NOTEQUAL:
-        return RenderComparisonFunction::NOT_EQUAL;
-    case D3DCMP_ALWAYS:
-        return RenderComparisonFunction::ALWAYS;
-
-    default:
-        assert(false && "Unknown comparison function");
-        return RenderComparisonFunction::NEVER;
-    }
-}
-
 static RenderBlendOperation ConvertBlendOp(uint32_t blendOp)
 {
     switch (blendOp)
