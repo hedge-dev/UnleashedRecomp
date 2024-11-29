@@ -1,6 +1,7 @@
 #pragma once
 
 //#define ASYNC_PSO_DEBUG
+#define PSO_CACHING
 
 #include "rhi/rt64_render_interface.h"
 
@@ -245,6 +246,7 @@ struct GuestVertexElement
 
 struct GuestVertexDeclaration : GuestResource
 {
+    XXH64_hash_t hash = 0;
     std::unique_ptr<RenderInputElement[]> inputElements;
     std::unique_ptr<GuestVertexElement[]> vertexElements;
     uint32_t inputElementCount = 0;

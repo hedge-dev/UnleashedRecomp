@@ -31,6 +31,7 @@
 #include <cstddef>
 #include <wrl/client.h>
 #include <smolv.h>
+#include <print>
 
 using Microsoft::WRL::ComPtr;
 

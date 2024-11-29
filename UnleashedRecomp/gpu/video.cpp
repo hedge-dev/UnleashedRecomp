@@ -11,7 +11,7 @@
 
 #include "imgui_snapshot.h"
 #include "video.h"
-#include <ui/window.h>
+#include <ui/sdl_listener.h>
 #include <cfg/config.h>
 
 #include <SWA.h>
@@ -36,7 +36,7 @@
 #include "shader/resolve_msaa_depth_8x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.spirv.h"
 
-#ifdef ASYNC_PSO_DEBUG
+#if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)
 #include <magic_enum.hpp>
 #endif
 
@@ -248,8 +248,27 @@ static std::string g_pipelineDebugText;
 static Mutex g_debugMutex;
 #endif
 
+#ifdef PSO_CACHING
+static std::vector<PipelineState> g_pipelineStatesToCache;
+static Mutex g_pipelineCacheMutex;
+#endif
+
 static std::atomic<uint32_t> g_compilingDataCount;
 static std::atomic<uint32_t> g_pendingDataCount;
+
+static const PipelineState g_pipelineStateCache[] =
+{
+#include "cache/pipeline_state_cache.h"
+};
+
+static bool g_pendingPipelineStateCache = true;
+
+#include "cache/vertex_element_cache.h"
+
+static uint8_t* const g_vertexDeclarationCache[] =
+{
+#include "cache/vertex_declaration_cache.h"
+};
 
 static xxHashMap<std::pair<uint32_t, std::unique_ptr<RenderSampler>>> g_samplerStates;
 
@@ -1758,6 +1777,8 @@ static void ProcDrawImGui(const RenderCommand& cmd)
     }
 }
 
+static bool g_precompiledPipelineStateCache = false;
+
 static void Present() 
 {
     DrawImGui();
@@ -1768,6 +1789,18 @@ static void Present()
     RenderCommand cmd;
     cmd.type = RenderCommandType::Present;
     g_renderQueue.enqueue(cmd);
+
+    // All the shaders are available at this point. We can precompile embedded PSOs then.
+    if (!g_precompiledPipelineStateCache)
+    {
+        // This is all the model consumer thread needs to see.
+        ++g_compilingDataCount;
+
+        if ((++g_pendingDataCount) == 1)
+            g_pendingDataCount.notify_all();
+
+        g_precompiledPipelineStateCache = true;
+    }
 }
 
 static void SetRootDescriptor(const UploadAllocation& allocation, size_t index)
@@ -2841,6 +2874,11 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
                 + g_pipelineDebugText;
         }
 #endif
+
+#ifdef PSO_CACHING
+        std::lock_guard lock(g_pipelineCacheMutex);
+        g_pipelineStatesToCache.push_back(pipelineState);
+#endif
     }
     
     return pipeline.get();
@@ -3321,7 +3359,7 @@ static RenderFormat ConvertDeclType(uint32_t type)
     }
 }
 
-static GuestVertexDeclaration* CreateVertexDeclaration(GuestVertexElement* vertexElements) 
+static GuestVertexDeclaration* CreateVertexDeclarationWithoutAddRef(GuestVertexElement* vertexElements) 
 {
     size_t vertexElementCount = 0;
     auto vertexElement = vertexElements;
@@ -3335,12 +3373,13 @@ static GuestVertexDeclaration* CreateVertexDeclaration(GuestVertexElement* verte
 
     std::lock_guard lock(g_vertexDeclarationMutex);
 
-    auto& vertexDeclaration = g_vertexDeclarations[
-        XXH3_64bits(vertexElements, vertexElementCount * sizeof(GuestVertexElement))];
+    XXH64_hash_t hash = XXH3_64bits(vertexElements, vertexElementCount * sizeof(GuestVertexElement));
+    auto& vertexDeclaration = g_vertexDeclarations[hash];
 
     if (vertexDeclaration == nullptr)
     {
         vertexDeclaration = g_userHeap.AllocPhysical<GuestVertexDeclaration>(ResourceType::VertexDeclaration);
+        vertexDeclaration->hash = hash;
 
         static std::vector<RenderInputElement> inputElements;
         inputElements.clear();
@@ -3501,6 +3540,13 @@ static GuestVertexDeclaration* CreateVertexDeclaration(GuestVertexElement* verte
     return vertexDeclaration;
 }
 
+static GuestVertexDeclaration* CreateVertexDeclaration(GuestVertexElement* vertexElements)
+{
+    auto vertexDeclaration = CreateVertexDeclarationWithoutAddRef(vertexElements);
+    vertexDeclaration->AddRef();
+    return vertexDeclaration;
+}
+
 static void SetVertexDeclaration(GuestDevice* device, GuestVertexDeclaration* vertexDeclaration) 
 {
     RenderCommand cmd;
@@ -3550,16 +3596,16 @@ static GuestShader* CreateShader(const be<uint32_t>* function, ResourceType reso
 
     if (findResult != nullptr)
     {
-        if (findResult->userData == nullptr)
+        if (findResult->guestShader == nullptr)
         {
             shader = g_userHeap.AllocPhysical<GuestShader>(resourceType);
             shader->shaderCacheEntry = findResult;
 
-            findResult->userData = shader;
+            findResult->guestShader = shader;
         }
         else
         {
-            shader = reinterpret_cast<GuestShader*>(findResult->userData);
+            shader = findResult->guestShader;
         }
     }
 
@@ -4246,7 +4292,7 @@ static void ScreenShaderInit(be<uint32_t>* a1, uint32_t a2, uint32_t a3, GuestVe
     }
 
     if (g_movieVertexDeclaration == nullptr)
-        g_movieVertexDeclaration = CreateVertexDeclaration(vertexElements);
+        g_movieVertexDeclaration = CreateVertexDeclarationWithoutAddRef(vertexElements);
 
     g_moviePixelShader->AddRef();
     g_movieVertexShader->AddRef();
@@ -4498,7 +4544,7 @@ static void EnqueueGraphicsPipelineCompilation(const PipelineState& pipelineStat
 
     if (shouldCompile)
     {
-        if (databaseDataHolderPair.counter == nullptr)
+        if (databaseDataHolderPair.counter == nullptr && databaseDataHolderPair.holder.databaseData.get() != nullptr)
             databaseDataHolderPair.counter = std::make_unique<DatabaseDataHolder>(std::move(databaseDataHolderPair.holder));
 
         PipelineStateQueueItem queueItem;
@@ -4567,12 +4613,12 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
 
         if (layer == MeshLayer::PunchThrough)
         {
-            pipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0xDD4FA7BB53876300)->userData);
-            pipelineState.pixelShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0xE2ECA594590DDE8B)->userData);
+            pipelineState.vertexShader = FindShaderCacheEntry(0xDD4FA7BB53876300)->guestShader;
+            pipelineState.pixelShader = FindShaderCacheEntry(0xE2ECA594590DDE8B)->guestShader;
         }
         else
         {
-            pipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0x8E4BB23465BD909E)->userData);
+            pipelineState.vertexShader = FindShaderCacheEntry(0x8E4BB23465BD909E)->guestShader;
         }
 
         pipelineState.vertexDeclaration = vertexDeclaration;
@@ -4597,8 +4643,8 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
     if (compiledOutsideMainFramebuffer && args.hasMoreThanOneBone && layer == MeshLayer::Opaque)
     {
         PipelineState pipelineState{};
-        pipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0x4620B236DC38100C)->userData);
-        pipelineState.pixelShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0xBBDB735BEACC8F41)->userData);
+        pipelineState.vertexShader = FindShaderCacheEntry(0x4620B236DC38100C)->guestShader;
+        pipelineState.pixelShader = FindShaderCacheEntry(0xBBDB735BEACC8F41)->guestShader;
         pipelineState.vertexDeclaration = vertexDeclaration;
         pipelineState.cullMode = RenderCullMode::NONE;
         pipelineState.zFunc = RenderComparisonFunction::GREATER_EQUAL;
@@ -4613,7 +4659,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
 
         if (args.velocityMapQuickStep)
         {
-            pipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0x99DC3F27E402700D)->userData);
+            pipelineState.vertexShader = FindShaderCacheEntry(0x99DC3F27E402700D)->guestShader;
             SanitizePipelineState(pipelineState);
             EnqueueGraphicsPipelineCompilation(pipelineState, args.holderPair, "FxVelocityMapQuickStep");
         }
@@ -4652,7 +4698,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
         vertexElements[vertexDeclaration->vertexElementCount] = { 2, 0, 0x2C83A4, 0, 0, 2 };
         vertexElements[vertexDeclaration->vertexElementCount + 1] = D3DDECL_END();
 
-        vertexDeclaration = CreateVertexDeclaration(vertexElements);
+        vertexDeclaration = CreateVertexDeclarationWithoutAddRef(vertexElements);
     }
 
     for (auto& [pixelShaderSubPermutations, pixelShader] : defaultFindResult->second.m_PixelShaders)
@@ -4746,7 +4792,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             {
                 // Sonic's mouth switches between "SonicSkin_dspf[b]" or "SonicSkinNodeInvX_dspf[b]" depending on the view angle.
                 auto mouthPipelineState = pipelineState;
-                mouthPipelineState.vertexShader = reinterpret_cast<GuestShader*>(FindShaderCacheEntry(0x689AA3140AB9EBAA)->userData);
+                mouthPipelineState.vertexShader = FindShaderCacheEntry(0x689AA3140AB9EBAA)->guestShader;
                 createGraphicsPipeline(mouthPipelineState);
 
                 if (planarReflectionEnabled)
@@ -4758,10 +4804,6 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             }
         }
     }
-
-    // We created a vertex declaration beforehand that we need to release.
-    if (isFur)
-        vertexDeclaration->Release();
 }
 
 template<typename T>
@@ -4838,8 +4880,8 @@ static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMa
         0x00, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00
     };
 
-    auto unoptimizedVertexDeclaration = CreateVertexDeclaration(reinterpret_cast<GuestVertexElement*>(unoptimizedVertexElements));
-    auto sparkleVertexDeclaration = CreateVertexDeclaration(reinterpret_cast<GuestVertexElement*>(g_memory.Translate(0x8211F540)));
+    auto unoptimizedVertexDeclaration = CreateVertexDeclarationWithoutAddRef(reinterpret_cast<GuestVertexElement*>(unoptimizedVertexElements));
+    auto sparkleVertexDeclaration = CreateVertexDeclarationWithoutAddRef(reinterpret_cast<GuestVertexElement*>(g_memory.Translate(0x8211F540)));
 
     bool isMeshShader = strstr(shaderList->m_TypeAndName.c_str(), "Mesh") != nullptr;
 
@@ -4919,9 +4961,6 @@ static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMa
             }
         }
     }
-
-    unoptimizedVertexDeclaration->Release();
-    sparkleVertexDeclaration->Release();
 }
 
 // SWA::CGameModeStage::ExitLoading
@@ -5007,8 +5046,8 @@ void GetDatabaseDataMidAsmHook(PPCRegister& r1, PPCRegister& r4)
             g_pendingDataQueue.push_back(databaseData);
         }
 
-        ++g_pendingDataCount;
-        g_pendingDataCount.notify_all();
+        if ((++g_pendingDataCount) == 1)
+            g_pendingDataCount.notify_all();
     }
 }
 
@@ -5111,6 +5150,59 @@ static void ModelConsumerThread()
 
         ctx.ensureValid();
 
+        if (g_pendingPipelineStateCache)
+        {
+            DatabaseDataHolderPair emptyHolderPair;
+
+            for (auto vertexElements : g_vertexDeclarationCache)
+                CreateVertexDeclarationWithoutAddRef(reinterpret_cast<GuestVertexElement*>(vertexElements));
+
+            for (auto pipelineState : g_pipelineStateCache)
+            {
+                // The hashes were reinterpret casted to pointers in the cache.
+                pipelineState.vertexShader = FindShaderCacheEntry(reinterpret_cast<XXH64_hash_t>(pipelineState.vertexShader))->guestShader;
+
+                if (pipelineState.pixelShader != nullptr)
+                    pipelineState.pixelShader = FindShaderCacheEntry(reinterpret_cast<XXH64_hash_t>(pipelineState.pixelShader))->guestShader;
+
+                {
+                    std::lock_guard lock(g_vertexDeclarationMutex);
+                    pipelineState.vertexDeclaration = g_vertexDeclarations[reinterpret_cast<XXH64_hash_t>(pipelineState.vertexDeclaration)];
+                }
+
+                if (Config::GITextureFiltering == EGITextureFiltering::Bicubic)
+                    pipelineState.specConstants |= SPEC_CONSTANT_BICUBIC_GI_FILTER;
+
+                // Compile both MSAA and non MSAA variants to work with reflection maps. The render formats are an assumption but it should hold true.
+                if (Config::MSAA > 1 &&
+                    pipelineState.renderTargetFormat == RenderFormat::R16G16B16A16_FLOAT && 
+                    pipelineState.depthStencilFormat == RenderFormat::D32_FLOAT)
+                {
+                    auto msaaPipelineState = pipelineState;
+                    msaaPipelineState.sampleCount = Config::MSAA;
+
+                    if (Config::AlphaToCoverage && (msaaPipelineState.specConstants & SPEC_CONSTANT_ALPHA_TEST) != 0)
+                    {
+                        msaaPipelineState.enableAlphaToCoverage = true;
+                        msaaPipelineState.specConstants &= ~SPEC_CONSTANT_ALPHA_TEST;
+                        msaaPipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TO_COVERAGE;
+                    }
+
+                    SanitizePipelineState(msaaPipelineState);
+                    EnqueueGraphicsPipelineCompilation(msaaPipelineState, emptyHolderPair, "Precompiled Pipeline MSAA");
+                }
+
+                SanitizePipelineState(pipelineState);
+                EnqueueGraphicsPipelineCompilation(pipelineState, emptyHolderPair, "Precompiled Pipeline");
+            }
+
+            g_pendingPipelineStateCache = false;
+            --g_pendingDataCount;
+
+            if ((--g_compilingDataCount) == 0)
+                g_compilingDataCount.notify_all();
+        }
+
         {
             std::lock_guard lock(g_pendingModelMutex);
             localPendingDataQueue.insert(localPendingDataQueue.end(), g_pendingDataQueue.begin(), g_pendingDataQueue.end());
@@ -5206,6 +5298,137 @@ PPC_FUNC(sub_82E328D8)
     reinterpret_cast<GuestShader*>(pixelShaderCode->m_pD3DPixelShader.get())->name = pixelShaderCode->m_TypeAndName.c_str() + 2;
 }
 
+#endif
+
+#ifdef PSO_CACHING
+class SDLEventListenerForPSOCaching : public SDLEventListener
+{
+public:
+    void OnSDLEvent(SDL_Event* event) override 
+    {
+        if (event->type != SDL_QUIT)
+            return;
+
+        std::lock_guard lock(g_pipelineCacheMutex);
+        if (g_pipelineStatesToCache.empty())
+            return;
+
+        FILE* f = fopen("send_this_file_to_skyth.txt", "ab");
+        if (f != nullptr)
+        {
+            ankerl::unordered_dense::set<GuestVertexDeclaration*> vertexDeclarations;
+            xxHashMap<PipelineState> pipelineStatesToCache;
+
+            for (auto& pipelineState : g_pipelineStatesToCache)
+            {
+                if (pipelineState.vertexShader->shaderCacheEntry == nullptr ||
+                    (pipelineState.pixelShader != nullptr && pipelineState.pixelShader->shaderCacheEntry == nullptr))
+                {
+                    continue;
+                }
+
+                vertexDeclarations.emplace(pipelineState.vertexDeclaration);
+
+                // Mask out the config options.
+                pipelineState.sampleCount = 1;
+                pipelineState.enableAlphaToCoverage = false;
+
+                pipelineState.specConstants &= ~SPEC_CONSTANT_BICUBIC_GI_FILTER;
+                if ((pipelineState.specConstants & SPEC_CONSTANT_ALPHA_TO_COVERAGE) != 0)
+                {
+                    pipelineState.specConstants &= ~SPEC_CONSTANT_ALPHA_TO_COVERAGE;
+                    pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
+                }
+
+                pipelineStatesToCache.emplace(XXH3_64bits(&pipelineState, sizeof(pipelineState)), pipelineState);
+            }
+
+            for (auto vertexDeclaration : vertexDeclarations)
+            {
+                std::print(f, "static uint8_t g_vertexElements_{:016X}[] = {{", vertexDeclaration->hash);
+
+                auto bytes = reinterpret_cast<uint8_t*>(vertexDeclaration->vertexElements.get());
+                for (size_t i = 0; i < vertexDeclaration->vertexElementCount * sizeof(GuestVertexElement); i++)
+                    std::print(f, "0x{:X},", bytes[i]);
+
+                std::println(f, "}};");
+            }
+
+            for (auto& [pipelineHash, pipelineState] : pipelineStatesToCache)
+            {
+                std::println(f, "{{ "
+                    "reinterpret_cast<GuestShader*>(0x{:X}),"
+                    "reinterpret_cast<GuestShader*>(0x{:X}),"
+                    "reinterpret_cast<GuestVertexDeclaration*>(0x{:X}),"
+                    "{},"
+                    "{},"
+                    "{},"
+                    "RenderBlend::{},"
+                    "RenderBlend::{},"
+                    "RenderCullMode::{},"
+                    "RenderComparisonFunction::{},"
+                    "{},"
+                    "RenderBlendOperation::{},"
+                    "{},"
+                    "{},"
+                    "RenderBlend::{},"
+                    "RenderBlend::{},"
+                    "RenderBlendOperation::{},"
+                    "0x{:X},"
+                    "RenderPrimitiveTopology::{},"
+                    "{{ {},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{} }},"
+                    "RenderFormat::{},"
+                    "RenderFormat::{},"
+                    "{},"
+                    "{},"
+                    "0x{:X} }},",
+                    pipelineState.vertexShader->shaderCacheEntry->hash,
+                    pipelineState.pixelShader != nullptr ? pipelineState.pixelShader->shaderCacheEntry->hash : 0,
+                    pipelineState.vertexDeclaration->hash,
+                    pipelineState.instancing,
+                    pipelineState.zEnable,
+                    pipelineState.zWriteEnable,
+                    magic_enum::enum_name(pipelineState.srcBlend),
+                    magic_enum::enum_name(pipelineState.destBlend),
+                    magic_enum::enum_name(pipelineState.cullMode),
+                    magic_enum::enum_name(pipelineState.zFunc),
+                    pipelineState.alphaBlendEnable,
+                    magic_enum::enum_name(pipelineState.blendOp),
+                    pipelineState.slopeScaledDepthBias,
+                    pipelineState.depthBias,
+                    magic_enum::enum_name(pipelineState.srcBlendAlpha),
+                    magic_enum::enum_name(pipelineState.destBlendAlpha),
+                    magic_enum::enum_name(pipelineState.blendOpAlpha),
+                    pipelineState.colorWriteEnable,
+                    magic_enum::enum_name(pipelineState.primitiveTopology),
+                    pipelineState.vertexStrides[0],
+                    pipelineState.vertexStrides[1],
+                    pipelineState.vertexStrides[2],
+                    pipelineState.vertexStrides[3],
+                    pipelineState.vertexStrides[4],
+                    pipelineState.vertexStrides[5],
+                    pipelineState.vertexStrides[6],
+                    pipelineState.vertexStrides[7],
+                    pipelineState.vertexStrides[8],
+                    pipelineState.vertexStrides[9],
+                    pipelineState.vertexStrides[10],
+                    pipelineState.vertexStrides[11],
+                    pipelineState.vertexStrides[12],
+                    pipelineState.vertexStrides[13],
+                    pipelineState.vertexStrides[14],
+                    pipelineState.vertexStrides[15],
+                    magic_enum::enum_name(pipelineState.renderTargetFormat),
+                    magic_enum::enum_name(pipelineState.depthStencilFormat),
+                    pipelineState.sampleCount,
+                    pipelineState.enableAlphaToCoverage,
+                    pipelineState.specConstants);
+            }
+
+            fclose(f);
+        }
+    }
+};
+SDLEventListenerForPSOCaching g_sdlEventListenerForPSOCaching;
 #endif
 
 GUEST_FUNCTION_HOOK(sub_82BD99B0, CreateDevice);

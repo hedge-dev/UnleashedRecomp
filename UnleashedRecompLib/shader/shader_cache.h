@@ -8,7 +8,7 @@ struct ShaderCacheEntry
     const uint32_t spirvOffset;
     const uint32_t spirvSize;
     const uint32_t specConstantsMask;
-    void* userData;
+    struct GuestShader* guestShader;
 };
 
 extern ShaderCacheEntry g_shaderCacheEntries[];
