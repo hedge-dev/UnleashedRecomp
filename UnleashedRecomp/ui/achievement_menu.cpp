@@ -9,30 +9,44 @@
 #include <app.h>
 #include <exports.h>
 
-static std::vector<Achievement> m_achievements;
+constexpr double HEADER_CONTAINER_COMMON_MOTION_START = 0;
+constexpr double HEADER_CONTAINER_COMMON_MOTION_END = 16;
 
-static ImFont* m_fntSeurat;
-static ImFont* m_fntNewRodin;
+constexpr double CONTENT_CONTAINER_COMMON_MOTION_START = 11;
+constexpr double CONTENT_CONTAINER_COMMON_MOTION_END = 12;
 
-static int m_firstVisibleRowIndex;
-static int m_prevSelectedRowIndex;
-static int m_selectedRowIndex;
-static double m_rowSelectionTime;
+constexpr double SELECTION_CONTAINER_BREATHE = 30;
 
-static bool m_upWasHeld;
-static bool m_downWasHeld;
+static bool g_isClosing = false;
+
+static double g_appearTime = 0;
+
+static std::vector<Achievement> g_achievements;
+
+static ImFont* g_fntSeurat;
+static ImFont* g_fntNewRodin;
+
+static int g_firstVisibleRowIndex;
+static int g_selectedRowIndex;
+static double g_rowSelectionTime;
+
+static bool g_upWasHeld;
+static bool g_downWasHeld;
+static bool g_leftWasHeld;
+static bool g_rightWasHeld;
+static bool g_upRSWasHeld;
+static bool g_downRSWasHeld;
 
 static void ResetSelection()
 {
-    m_firstVisibleRowIndex = 0;
-    m_selectedRowIndex = 0;
-    m_prevSelectedRowIndex = 0;
-    m_rowSelectionTime = ImGui::GetTime();
-    m_upWasHeld = false;
-    m_downWasHeld = false;
+    g_firstVisibleRowIndex = 0;
+    g_selectedRowIndex = 0;
+    g_rowSelectionTime = ImGui::GetTime();
+    g_upWasHeld = false;
+    g_downWasHeld = false;
 }
 
-static void DrawContainer(ImVec2 min, ImVec2 max, ImU32 gradientTop, ImU32 gradientBottom, float cornerRadius = 25)
+static void DrawContainer(ImVec2 min, ImVec2 max, ImU32 gradientTop, ImU32 gradientBottom, float alpha = 1, float cornerRadius = 25)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto vertices = GetPauseContainerVertices(min, max, cornerRadius);
@@ -40,10 +54,10 @@ static void DrawContainer(ImVec2 min, ImVec2 max, ImU32 gradientTop, ImU32 gradi
     // TODO: add a drop shadow.
 
     SetGradient(min, max, gradientTop, gradientBottom);
-    drawList->AddConvexPolyFilled(vertices.data(), vertices.size(), IM_COL32(255, 255, 255, 255));
+    drawList->AddConvexPolyFilled(vertices.data(), vertices.size(), IM_COL32(255, 255, 255, 255 * alpha));
     ResetGradient();
 
-    drawList->AddPolyline(vertices.data(), vertices.size(), IM_COL32(247, 247, 247, 255), true, Scale(2.5f));
+    drawList->AddPolyline(vertices.data(), vertices.size(), IM_COL32(247, 247, 247, 255 * alpha), true, Scale(2.5f));
 
     for (int i = 0; i < vertices.size(); i++)
     {
@@ -51,8 +65,8 @@ static void DrawContainer(ImVec2 min, ImVec2 max, ImU32 gradientTop, ImU32 gradi
         vertices[i].y -= Scale(0.2f);
     }
 
-    auto colLineTop = IM_COL32(165, 170, 165, 230);
-    auto colLineBottom = IM_COL32(190, 190, 190, 230);
+    auto colLineTop = IM_COL32(165, 170, 165, 230 * alpha);
+    auto colLineBottom = IM_COL32(190, 190, 190, 230 * alpha);
     auto lineThickness = Scale(1);
 
     // Top left corner bottom to top left corner top.
@@ -80,8 +94,11 @@ static void DrawSelectionContainer(ImVec2 min, ImVec2 max)
     auto drawList = ImGui::GetForegroundDrawList();
     auto vertices = GetPauseContainerVertices(min, max, 10);
 
-    SetGradient(min, max, IM_COL32(255, 246, 0, 129), IM_COL32(255, 194, 0, 118));
-    drawList->AddConvexPolyFilled(vertices.data(), vertices.size(), IM_COL32(255, 255, 255, 255));
+    static auto breatheStart = ImGui::GetTime();
+    auto alpha = Lerp(1.0f, 0.75f, (sin((ImGui::GetTime() - breatheStart) * (2.0f * M_PI / (55.0f / 60.0f))) + 1.0f) / 2.0f);
+
+    SetGradient(min, max, IM_COL32(255, 246, 0, 129), IM_COL32(255, 194, 0, 118 * alpha));
+    drawList->AddConvexPolyFilled(vertices.data(), vertices.size(), IM_COL32(255, 255, 255, 255 * alpha));
     ResetGradient();
 }
 
@@ -89,26 +106,38 @@ static void DrawHeaderContainer(const char* text)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto fontSize = Scale(26);
-    auto textSize = m_fntNewRodin->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
+    auto textSize = g_fntNewRodin->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
     auto cornerRadius = 23;
     auto textMarginX = Scale(16) + (Scale(cornerRadius) / 2);
 
-    ImVec2 min = { Scale(256), Scale(138) };
+    auto motion = ComputeMotion(g_appearTime, HEADER_CONTAINER_COMMON_MOTION_START, HEADER_CONTAINER_COMMON_MOTION_END);
+
+    // Slide animation.
+    auto containerMarginX = g_isClosing
+        ? Hermite(256, 156, motion)
+        : Hermite(156, 256, motion);
+
+    // Transparency fade animation.
+    auto alpha = g_isClosing
+        ? Hermite(1, 0, motion)
+        : Hermite(0, 1, motion);
+
+    ImVec2 min = { Scale(containerMarginX), Scale(138)};
     ImVec2 max = { min.x + textMarginX * 2 + textSize.x, Scale(185) };
 
-    DrawContainer(min, max, IM_COL32(140, 142, 140, 201), IM_COL32(66, 65, 66, 234), cornerRadius);
+    DrawContainer(min, max, IM_COL32(140, 142, 140, 201), IM_COL32(66, 65, 66, 234), alpha, cornerRadius);
     drawList->PopClipRect();
 
     // TODO: skew this text and apply bevel.
     DrawTextWithOutline<int>
     (
-        m_fntNewRodin,
+        g_fntNewRodin,
         fontSize,
         { /* X */ min.x + textMarginX, /* Y */ min.y + textSize.y / Scale(2) + Scale(2.5f) /* 2.5 = container outline thickness */ },
-        IM_COL32(255, 255, 255, 255),
+        IM_COL32(255, 255, 255, 255 * alpha),
         text,
         3,
-        IM_COL32(0, 0, 0, 255)
+        IM_COL32(0, 0, 0, 255 * alpha)
     );
 }
 
@@ -130,14 +159,14 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
     ImVec2 max = { itemMarginX + min.x + itemWidth, min.y + itemHeight };
 
     auto icon = g_xdbfTextureCache[achievement.ID];
-    auto isSelected = rowIndex == m_selectedRowIndex;
+    auto isSelected = rowIndex == g_selectedRowIndex;
 
     if (isSelected)
         DrawSelectionContainer(min, max);
 
     auto desc = isUnlocked ? achievement.UnlockedDesc.c_str() : achievement.LockedDesc.c_str();
     auto fontSize = Scale(24);
-    auto textSize = m_fntSeurat->CalcTextSizeA(fontSize, FLT_MAX, 0, desc);
+    auto textSize = g_fntSeurat->CalcTextSizeA(fontSize, FLT_MAX, 0, desc);
     auto textX = min.x + imageMarginX + imageSize + itemMarginX * 2;
     auto textMarqueeX = min.x + imageMarginX + imageSize;
     auto titleTextY = Scale(20);
@@ -168,7 +197,7 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
     // Draw achievement name.
     DrawTextWithShadow
     (
-        m_fntSeurat,
+        g_fntSeurat,
         fontSize,
         { textX, min.y + titleTextY },
         isUnlocked ? IM_COL32(252, 243, 5, 255) : colLockedText,
@@ -183,14 +212,14 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
         // Draw achievement description with marquee.
         DrawTextWithMarqueeShadow
         (
-            m_fntSeurat,
+            g_fntSeurat,
             fontSize,
             { textX, min.y + descTextY },
             { textMarqueeX, min.y },
             max,
             isUnlocked ? IM_COL32(255, 255, 255, 255) : colLockedText,
             desc,
-            m_rowSelectionTime,
+            g_rowSelectionTime,
             0.9,
             250.0,
             shadowOffset,
@@ -203,7 +232,7 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
         // Draw achievement description.
         DrawTextWithShadow
         (
-            m_fntSeurat,
+            g_fntSeurat,
             fontSize,
             { textX, min.y + descTextY },
             isUnlocked ? IM_COL32(255, 255, 255, 255) : colLockedText,
@@ -221,16 +250,50 @@ static void DrawContentContainer()
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    ImVec2 min = { Scale(256), Scale(192) };
-    ImVec2 max = { Scale(1026), Scale(601) };
+    // Expand/retract animation.
+    auto motion = ComputeMotion(g_appearTime, CONTENT_CONTAINER_COMMON_MOTION_START, CONTENT_CONTAINER_COMMON_MOTION_END);
 
-    DrawContainer(min, max, IM_COL32(197, 194, 197, 200), IM_COL32(115, 113, 115, 236));
+    auto minX = g_isClosing
+        ? Hermite(256, 306, motion)
+        : Hermite(306, 256, motion);
+
+    auto minY = g_isClosing
+        ? Hermite(192, 209, motion)
+        : Hermite(209, 192, motion);
+
+    auto maxX = g_isClosing
+        ? Hermite(1026, 973, motion)
+        : Hermite(973, 1026, motion);
+
+    auto maxY = g_isClosing
+        ? Hermite(601, 569, motion)
+        : Hermite(569, 601, motion);
+
+    ImVec2 min = { Scale(minX), Scale(minY) };
+    ImVec2 max = { Scale(maxX), Scale(maxY) };
+
+    // Transparency fade animation.
+    auto alpha = g_isClosing
+        ? Hermite(1, 0, motion)
+        : Hermite(0, 1, motion);
+
+    DrawContainer(min, max, IM_COL32(197, 194, 197, 200), IM_COL32(115, 113, 115, 236), alpha);
+
+    if (motion < 1.0f)
+    {
+        return;
+    }
+    else if (g_isClosing)
+    {
+        AchievementMenu::s_isVisible = false;
+        return;
+    }
 
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
     auto itemHeight = Scale(94);
-    auto yOffset = -m_firstVisibleRowIndex * itemHeight + Scale(2);
+    auto yOffset = -g_firstVisibleRowIndex * itemHeight + Scale(2);
     auto rowCount = 0;
 
     // Draw separators.
@@ -247,13 +310,13 @@ static void DrawContentContainer()
         drawList->AddLine({ lineMin.x, lineMin.y + Scale(1) }, { lineMax.x, lineMax.y + Scale(1) }, IM_COL32(143, 148, 143, 255));
     }
 
-    for (auto achievement : m_achievements)
+    for (auto achievement : g_achievements)
     {
         if (AchievementData::IsUnlocked(achievement.ID))
             DrawAchievement(rowCount++, yOffset, achievement, true);
     }
 
-    for (auto achievement : m_achievements)
+    for (auto achievement : g_achievements)
     {
         if (!AchievementData::IsUnlocked(achievement.ID))
             DrawAchievement(rowCount++, yOffset, achievement, false);
@@ -267,52 +330,81 @@ static void DrawContentContainer()
     bool downIsHeld = inputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
         inputState->GetPadState().LeftStickVertical < -0.5f;
 
-    bool scrollUp = !m_upWasHeld && upIsHeld;
-    bool scrollDown = !m_downWasHeld && downIsHeld;
+    bool leftIsHeld = inputState->GetPadState().IsDown(SWA::eKeyState_DpadLeft) ||
+        inputState->GetPadState().LeftStickHorizontal < -0.5f;
 
-    int prevSelectedRowIndex = m_selectedRowIndex;
+    bool rightIsHeld = inputState->GetPadState().IsDown(SWA::eKeyState_DpadRight) ||
+        inputState->GetPadState().LeftStickHorizontal > 0.5f;
+
+    bool upRSIsHeld = inputState->GetPadState().RightStickVertical > 0.5f;
+    bool downRSIsHeld = inputState->GetPadState().RightStickVertical < -0.5f;
+
+    bool isReachedTop = g_selectedRowIndex == 0;
+    bool isReachedBottom = g_selectedRowIndex == rowCount - 1;
+
+    bool scrollUp = !g_upWasHeld && upIsHeld;
+    bool scrollDown = !g_downWasHeld && downIsHeld;
+    bool scrollPageUp = !g_leftWasHeld && leftIsHeld && !isReachedTop;
+    bool scrollPageDown = !g_rightWasHeld && rightIsHeld && !isReachedBottom;
+    bool jumpToTop = !g_upRSWasHeld && upRSIsHeld && !isReachedTop;
+    bool jumpToBottom = !g_downRSWasHeld && downRSIsHeld && !isReachedBottom;
+
+    int prevSelectedRowIndex = g_selectedRowIndex;
 
     if (scrollUp)
     {
-        --m_selectedRowIndex;
-        if (m_selectedRowIndex < 0)
-            m_selectedRowIndex = rowCount - 1;
+        --g_selectedRowIndex;
+        if (g_selectedRowIndex < 0)
+            g_selectedRowIndex = rowCount - 1;
     }
     else if (scrollDown)
     {
-        ++m_selectedRowIndex;
-        if (m_selectedRowIndex >= rowCount)
-            m_selectedRowIndex = 0;
+        ++g_selectedRowIndex;
+        if (g_selectedRowIndex >= rowCount)
+            g_selectedRowIndex = 0;
+    }
+    else if (scrollPageUp)
+    {
+        g_selectedRowIndex -= 3;
+        if (g_selectedRowIndex < 0)
+            g_selectedRowIndex = 0;
+    }
+    else if (scrollPageDown)
+    {
+        g_selectedRowIndex += 3;
+        if (g_selectedRowIndex >= rowCount)
+            g_selectedRowIndex = rowCount - 1;
+    }
+    else if (jumpToTop)
+    {
+        g_selectedRowIndex = 0;
+    }
+    else if (jumpToBottom)
+    {
+        g_selectedRowIndex = rowCount - 1;
     }
 
-    if (scrollUp || scrollDown)
+    // lol
+    if (scrollUp || scrollDown || scrollPageUp || scrollPageDown || jumpToTop || jumpToBottom)
     {
-        m_rowSelectionTime = ImGui::GetTime();
-        m_prevSelectedRowIndex = prevSelectedRowIndex;
+        g_rowSelectionTime = ImGui::GetTime();
         Game_PlaySound("sys_actstg_pausecursor");
     }
 
-    m_upWasHeld = upIsHeld;
-    m_downWasHeld = downIsHeld;
+    g_upWasHeld = upIsHeld;
+    g_downWasHeld = downIsHeld;
+    g_leftWasHeld = leftIsHeld;
+    g_rightWasHeld = rightIsHeld;
+    g_upRSWasHeld = upRSIsHeld;
+    g_downRSWasHeld = downRSIsHeld;
 
     int visibleRowCount = int(floor((clipRectMax.y - clipRectMin.y) / itemHeight));
 
-    bool disableMoveAnimation = false;
+    if (g_firstVisibleRowIndex > g_selectedRowIndex)
+        g_firstVisibleRowIndex = g_selectedRowIndex;
 
-    if (m_firstVisibleRowIndex > m_selectedRowIndex)
-    {
-        m_firstVisibleRowIndex = m_selectedRowIndex;
-        disableMoveAnimation = true;
-    }
-
-    if (m_firstVisibleRowIndex + visibleRowCount - 1 < m_selectedRowIndex)
-    {
-        m_firstVisibleRowIndex = std::max(0, m_selectedRowIndex - visibleRowCount + 1);
-        disableMoveAnimation = true;
-    }
-
-    if (disableMoveAnimation)
-        m_prevSelectedRowIndex = m_selectedRowIndex;
+    if (g_firstVisibleRowIndex + visibleRowCount - 1 < g_selectedRowIndex)
+        g_firstVisibleRowIndex = std::max(0, g_selectedRowIndex - visibleRowCount + 1);
 
     // Pop clip rect from DrawContentContainer
     drawList->PopClipRect();
@@ -323,7 +415,7 @@ static void DrawContentContainer()
         float cornerRadius = Scale(25.0f);
         float totalHeight = (clipRectMax.y - clipRectMin.y - cornerRadius) - Scale(3.0f);
         float heightRatio = float(visibleRowCount) / float(rowCount);
-        float offsetRatio = float(m_firstVisibleRowIndex) / float(rowCount);
+        float offsetRatio = float(g_firstVisibleRowIndex) / float(rowCount);
         float offsetX = clipRectMax.x - Scale(31.0f);
         float offsetY = offsetRatio * totalHeight + clipRectMin.y + Scale(4.0f);
         float lineThickness = Scale(1.0f);
@@ -377,10 +469,10 @@ void AchievementMenu::Init()
 
     constexpr float FONT_SCALE = 2.0f;
 
-    m_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
-    m_fntNewRodin = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
+    g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
+    g_fntNewRodin = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
 
-    m_achievements = g_xdbfWrapper.GetAchievements((EXDBFLanguage)Config::Language.Value);
+    g_achievements = g_xdbfWrapper.GetAchievements((EXDBFLanguage)Config::Language.Value);
 }
 
 void AchievementMenu::Draw()
@@ -395,6 +487,8 @@ void AchievementMenu::Draw()
 void AchievementMenu::Open()
 {
     s_isVisible = true;
+    g_isClosing = false;
+    g_appearTime = ImGui::GetTime();
 
     ResetSelection();
     Game_PlaySound("sys_actstg_pausewinopen");
@@ -402,7 +496,11 @@ void AchievementMenu::Open()
 
 void AchievementMenu::Close()
 {
-    s_isVisible = false;
+    if (!g_isClosing)
+    {
+        g_appearTime = ImGui::GetTime();
+        g_isClosing = true;
+    }
 
     Game_PlaySound("sys_actstg_pausewinclose");
     Game_PlaySound("sys_actstg_pausecansel");

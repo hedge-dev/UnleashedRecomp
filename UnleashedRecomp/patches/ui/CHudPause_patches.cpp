@@ -5,8 +5,11 @@
 #include <ui/options_menu.h>
 #include <app.h>
 
-float m_ungracefulExitWaitTime = 0.0f;
-constexpr float m_ungracefulExitWaitThreshold = 3.0f;
+float g_achievementMenuIntroTime = 0.0f;
+constexpr float g_achievementMenuIntroThreshold = 3.0f;
+float g_achievementMenuOutroTime = 0.0f;
+constexpr float g_achievementMenuOutroThreshold = 0.53f;
+bool g_isAchievementMenuOutro = false;
 
 void CHudPauseAddOptionsItemMidAsmHook(PPCRegister& pThis)
 {
@@ -110,20 +113,34 @@ PPC_FUNC(sub_824B0930)
     auto pHudPause = (SWA::CHudPause*)g_memory.Translate(ctx.r3.u32);
     auto pInputState = SWA::CInputState::GetInstance();
 
-    m_ungracefulExitWaitTime += g_deltaTime;
+    g_achievementMenuIntroTime += g_deltaTime;
+
+    if (g_isAchievementMenuOutro)
+    {
+        g_achievementMenuOutroTime += g_deltaTime;
+
+        // Re-open pause menu after achievement menu closes with delay.
+        if (g_achievementMenuOutroTime >= g_achievementMenuOutroThreshold)
+        {
+            GuestToHostFunction<int>(0x824AFD28, pHudPause, 0, 1, 0, 0);
+
+            g_achievementMenuOutroTime = 0;
+            g_isAchievementMenuOutro = false;
+        }
+    }
 
     // TODO: disable Start button closing menu.
     if (AchievementMenu::s_isVisible)
     {
         // HACK: wait for transition to finish before restoring control.
-        if (m_ungracefulExitWaitThreshold >= m_ungracefulExitWaitTime)
+        if (g_achievementMenuIntroThreshold >= g_achievementMenuIntroTime)
             __imp__sub_824B0930(ctx, base);
 
         if (pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
         {
             AchievementMenu::Close();
 
-            GuestToHostFunction<int>(0x824AFD28, pHudPause, 0, 1, 0, 0);
+            g_isAchievementMenuOutro = true;
         }
     }
     else if (OptionsMenu::s_isVisible && OptionsMenu::s_isPause)
@@ -137,7 +154,7 @@ PPC_FUNC(sub_824B0930)
     }
     else
     {
-        m_ungracefulExitWaitTime = 0.0f;
+        g_achievementMenuIntroTime = 0;
 
         __imp__sub_824B0930(ctx, base);
     }
