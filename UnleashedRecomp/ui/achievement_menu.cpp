@@ -9,8 +9,14 @@
 #include <app.h>
 #include <exports.h>
 
-constexpr double HEADER_CONTAINER_COMMON_MOTION_START = 0;
-constexpr double HEADER_CONTAINER_COMMON_MOTION_END = 16;
+constexpr double HEADER_CONTAINER_INTRO_MOTION_START = 0;
+constexpr double HEADER_CONTAINER_INTRO_MOTION_END = 15;
+constexpr double HEADER_CONTAINER_OUTRO_MOTION_START = 0;
+constexpr double HEADER_CONTAINER_OUTRO_MOTION_END = 40;
+constexpr double HEADER_CONTAINER_INTRO_FADE_START = 5;
+constexpr double HEADER_CONTAINER_INTRO_FADE_END = 14;
+constexpr double HEADER_CONTAINER_OUTRO_FADE_START = 0;
+constexpr double HEADER_CONTAINER_OUTRO_FADE_END = 7;
 
 constexpr double CONTENT_CONTAINER_COMMON_MOTION_START = 11;
 constexpr double CONTENT_CONTAINER_COMMON_MOTION_END = 12;
@@ -110,19 +116,25 @@ static void DrawHeaderContainer(const char* text)
     auto cornerRadius = 23;
     auto textMarginX = Scale(16) + (Scale(cornerRadius) / 2);
 
-    auto motion = ComputeMotion(g_appearTime, HEADER_CONTAINER_COMMON_MOTION_START, HEADER_CONTAINER_COMMON_MOTION_END);
+    auto containerMotion = g_isClosing
+        ? ComputeMotion(g_appearTime, HEADER_CONTAINER_OUTRO_MOTION_START, HEADER_CONTAINER_OUTRO_MOTION_END)
+        : ComputeMotion(g_appearTime, HEADER_CONTAINER_INTRO_MOTION_START, HEADER_CONTAINER_INTRO_MOTION_END);
+
+    auto colourMotion = g_isClosing
+        ? ComputeMotion(g_appearTime, HEADER_CONTAINER_OUTRO_FADE_START, HEADER_CONTAINER_OUTRO_FADE_END)
+        : ComputeMotion(g_appearTime, HEADER_CONTAINER_INTRO_FADE_START, HEADER_CONTAINER_INTRO_FADE_END);
 
     // Slide animation.
     auto containerMarginX = g_isClosing
-        ? Hermite(256, 156, motion)
-        : Hermite(156, 256, motion);
+        ? Hermite(256, 156, containerMotion)
+        : Hermite(156, 256, containerMotion);
 
     // Transparency fade animation.
     auto alpha = g_isClosing
-        ? Hermite(1, 0, motion)
-        : Hermite(0, 1, motion);
+        ? Lerp(1, 0, colourMotion)
+        : Lerp(0, 1, colourMotion);
 
-    ImVec2 min = { Scale(containerMarginX), Scale(138)};
+    ImVec2 min = { Scale(containerMarginX), Scale(138) };
     ImVec2 max = { min.x + textMarginX * 2 + textSize.x, Scale(185) };
 
     DrawContainer(min, max, IM_COL32(140, 142, 140, 201), IM_COL32(66, 65, 66, 234), alpha, cornerRadius);
