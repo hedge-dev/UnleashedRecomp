@@ -85,6 +85,7 @@ set(SWA_PATCHES_CXX_SOURCES
 set(SWA_UI_CXX_SOURCES
     "ui/achievement_menu.cpp"
     "ui/achievement_overlay.cpp"
+    "ui/installer_wizard.cpp"
     "ui/options_menu.cpp"
     "ui/sdl_listener.cpp"
     "ui/window.cpp"
@@ -105,6 +106,16 @@ set(SWA_INSTALL_CXX_SOURCES
     "install/hashes/spagonia.cpp"
     "install/hashes/update.cpp"
 )
+
+set(INSTALLER_IMAGES_DIR "../UnleashedRecompResources/images/installer")
+BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_001.dds" HEADER_FILE "res/install_001_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install001DDS")
+BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_002.dds" HEADER_FILE "res/install_002_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install002DDS")
+BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_003.dds" HEADER_FILE "res/install_003_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install003DDS")
+BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_004.dds" HEADER_FILE "res/install_004_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install004DDS")
+BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_005.dds" HEADER_FILE "res/install_005_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install005DDS")
+BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_006.dds" HEADER_FILE "res/install_006_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install006DDS")
+BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_007.dds" HEADER_FILE "res/install_007_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install007DDS")
+BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_008.dds" HEADER_FILE "res/install_008_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install008DDS")
 
 set(LIBMSPACK_PATH ${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack)
 
@@ -172,6 +183,7 @@ find_package(imgui CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(unofficial-tiny-aes-c CONFIG REQUIRED)
 find_path(READERWRITERQUEUE_INCLUDE_DIRS "readerwriterqueue/atomicops.h")
+find_package(nfd CONFIG REQUIRED)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
 add_custom_command(TARGET UnleashedRecomp POST_BUILD
@@ -209,6 +221,7 @@ target_link_libraries(UnleashedRecomp PRIVATE
     imgui::imgui
     magic_enum::magic_enum
     unofficial::tiny-aes-c::tiny-aes-c
+    nfd::nfd
 )
 
 target_include_directories(UnleashedRecomp PRIVATE

@@ -22,6 +22,7 @@
             "features": [ "sdl2-binding" ]
         },
         "magic-enum",
-        "readerwriterqueue"
+        "readerwriterqueue",
+        "nativefiledialog-extended"
     ]
 }
