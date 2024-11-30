@@ -176,9 +176,14 @@ static float Lerp(float a, float b, float t)
     return a + (b - a) * t;
 }
 
-static float CubicEase(float a, float b, float t)
+static float Cubic(float a, float b, float t)
 {
     return a + (b - a) * (t * t * t);
+}
+
+static float Hermite(float a, float b, float t)
+{
+    return a + (b - a) * (t * t * (3 - 2 * t));
 }
 
 static ImVec2 Lerp(const ImVec2& a, const ImVec2& b, float t)
