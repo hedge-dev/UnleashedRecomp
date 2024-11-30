@@ -3,6 +3,7 @@
 #define NOMINMAX
 
 #include <windows.h>
+#include <dxcapi.h>
 #include <ShlObj_core.h>
 #include <algorithm>
 #include <mutex>
@@ -27,6 +28,12 @@
 #include <imgui_internal.h>
 #include <imgui_impl_sdl2.h>
 #include <o1heap.h>
+#include <cstddef>
+#include <wrl/client.h>
+#include <smolv.h>
+#include <print>
+
+using Microsoft::WRL::ComPtr;
 
 #include "framework.h"
 #include "mutex.h"

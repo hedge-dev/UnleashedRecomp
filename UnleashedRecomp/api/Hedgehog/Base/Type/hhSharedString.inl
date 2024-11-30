@@ -212,11 +212,6 @@ namespace Hedgehog::Base
         return find(str.c_str(), pos);
     }
 
-    inline size_t CSharedString::rfind(const CSharedString& str, size_t pos) const
-    {
-        return rfind(str.c_str(), pos);
-    }
-
     inline size_t CSharedString::find_first_of(const CSharedString& str, size_t pos) const
     {
         return find_first_of(str.c_str(), pos);

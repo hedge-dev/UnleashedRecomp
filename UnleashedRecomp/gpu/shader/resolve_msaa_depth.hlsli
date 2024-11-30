@@ -14,7 +14,7 @@ float main(in float4 position : SV_Position) : SV_Depth
     float result = g_Texture2DMSDescriptorHeap[g_PushConstants.ResourceDescriptorIndex].Load(int2(position.xy), 0);
     
     [unroll] for (int i = 1; i < SAMPLE_COUNT; i++)
-        result = max(result, g_Texture2DMSDescriptorHeap[g_PushConstants.ResourceDescriptorIndex].Load(int2(position.xy), i));
+        result = min(result, g_Texture2DMSDescriptorHeap[g_PushConstants.ResourceDescriptorIndex].Load(int2(position.xy), i));
 
     return result;
 }

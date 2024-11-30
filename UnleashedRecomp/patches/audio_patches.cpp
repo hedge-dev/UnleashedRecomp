@@ -10,8 +10,8 @@
 #include <winrt/Windows.Media.Control.h>
 
 using namespace winrt;
-using namespace Windows::Foundation;
-using namespace Windows::Media::Control;
+using namespace winrt::Windows::Foundation;
+using namespace winrt::Windows::Media::Control;
 
 GlobalSystemMediaTransportControlsSessionManager m_sessionManager = nullptr;
 

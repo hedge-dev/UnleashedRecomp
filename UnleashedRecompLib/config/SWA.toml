@@ -424,6 +424,31 @@ name = "LoadingScreenSpeedFixMidAsmHook"
 address = 0x824DAB60
 registers = ["r4"]
 
+[[midasm_hook]]
+name = "MotionBlurPrevInvViewProjectionMidAsmHook"
+address = 0x82BA9E7C
+registers = ["r10"]
+
+[[midasm_hook]]
+name = "GetDatabaseDataMidAsmHook"
+address = 0x82E38688 # Model
+registers = ["r1", "r31"]
+
+[[midasm_hook]]
+name = "GetDatabaseDataMidAsmHook"
+address = 0x82E39650 # Terrain Model
+registers = ["r1", "r31"]
+
+[[midasm_hook]]
+name = "GetDatabaseDataMidAsmHook"
+address = 0x827D614C # Particle Material Binary
+registers = ["r1", "r29"]
+
+[[midasm_hook]]
+name = "GetDatabaseDataMidAsmHook"
+address = 0x827D6018 # Particle Material XML
+registers = ["r1", "r30"]
+
 # World Map Pause Menu
 [[midasm_hook]]
 name = "CHudPauseAddOptionsItemMidAsmHook"

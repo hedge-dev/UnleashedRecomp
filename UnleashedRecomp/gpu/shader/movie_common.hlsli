@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../thirdparty/ShaderRecomp/ShaderRecomp/shader_common.hlsli"
+#include "../../../thirdparty/ShaderRecomp/ShaderRecomp/shader_common.h"
 
 #ifdef __spirv__
 

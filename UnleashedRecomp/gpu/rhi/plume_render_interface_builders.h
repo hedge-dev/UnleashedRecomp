@@ -1,12 +1,15 @@
 //
-// RT64
+// plume
+//
+// Copyright (c) 2024 renderbag and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file for details.
 //
 
 #pragma once
 
 #include <unordered_set>
 
-namespace RT64 {
+namespace plume {
     struct RenderDescriptorSetBuilder {
         std::list<std::vector<const RenderSampler *>> samplerPointerVectorList;
         std::vector<RenderDescriptorRange> descriptorRanges;

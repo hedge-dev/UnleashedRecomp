@@ -26,7 +26,7 @@ add_custom_command(
 )
 
 set(SHADER_RECOMP_ROOT "${SWA_THIRDPARTY_ROOT}/ShaderRecomp/ShaderRecomp")
-set(SHADER_RECOMP_INCLUDE "${SHADER_RECOMP_ROOT}/shader_common.hlsli")
+set(SHADER_RECOMP_INCLUDE "${SHADER_RECOMP_ROOT}/shader_common.h")
 
 target_compile_definitions(ShaderRecomp PRIVATE 
     SHADER_RECOMP_INPUT=\"${CMAKE_CURRENT_SOURCE_DIR}/private\" 

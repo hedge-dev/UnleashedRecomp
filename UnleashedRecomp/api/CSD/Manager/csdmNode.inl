@@ -17,11 +17,9 @@ namespace Chao::CSD
         GuestToHostFunction<int>(0x830BF640, this, in_pText);
     }
 
-    inline Hedgehog::Math::CVector2* CNode::GetPosition() const
+    inline void CNode::GetPosition(Hedgehog::Math::CVector2& out_rResult) const
     {
-        guest_stack_var<Hedgehog::Math::CVector2> pos;
-        GuestToHostFunction<void>(0x830BF008, pos.get(), this);
-        return pos.get();
+        GuestToHostFunction<void>(0x830BF008, &out_rResult, this);
     }
 
     inline void CNode::SetPosition(float in_X, float in_Y)

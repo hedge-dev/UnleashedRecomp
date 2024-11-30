@@ -11,6 +11,9 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
     if (ImGui::GetIO().BackendPlatformUserData != nullptr)
         ImGui_ImplSDL2_ProcessEvent(event);
 
+    for (auto listener : GetEventListeners())
+        listener->OnSDLEvent(event);
+
     switch (event->type)
     {
         case SDL_QUIT:
@@ -130,9 +133,6 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
             SDL_ShowCursor(SDL_ENABLE);
         }
     }
-
-    for (auto listener : GetEventListeners())
-        listener->OnSDLEvent(event);
 
     return 0;
 }

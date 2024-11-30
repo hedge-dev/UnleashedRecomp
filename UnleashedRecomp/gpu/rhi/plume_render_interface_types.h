@@ -1,5 +1,8 @@
 //
-// RT64
+// plume
+//
+// Copyright (c) 2024 renderbag and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file for details.
 //
 
 #pragma once
@@ -26,7 +29,7 @@
 typedef struct _NSWindow NSWindow;
 #endif
 
-namespace RT64 {
+namespace plume {
 #if defined(_WIN64)
     // Native HWND handle to the target window.
     typedef HWND RenderWindow;

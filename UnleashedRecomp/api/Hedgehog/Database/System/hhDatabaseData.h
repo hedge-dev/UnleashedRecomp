@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Hedgehog/Base/hhObject.h"
+#include <Hedgehog/Base/hhObject.h>
+#include <Hedgehog/Base/Type/hhSharedString.h>
 
 namespace Hedgehog::Database
 {

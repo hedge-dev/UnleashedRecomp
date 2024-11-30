@@ -1,14 +1,17 @@
 //
-// RT64
+// plume
+//
+// Copyright (c) 2024 renderbag and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file for details.
 //
 
 #pragma once
 
 #include <climits>
 
-#include "rt64_render_interface_types.h"
+#include "plume_render_interface_types.h"
 
-namespace RT64 {
+namespace plume {
     // Interfaces.
 
     struct RenderBufferFormattedView {
@@ -53,6 +56,7 @@ namespace RT64 {
 
     struct RenderPipeline {
         virtual ~RenderPipeline() { }
+        virtual void setName(const std::string& name) const = 0;
         virtual RenderPipelineProgram getProgram(const std::string &name) const = 0;
     };
 
@@ -242,4 +246,4 @@ namespace RT64 {
     extern void TestShutdown();
 };
 
-#include "rt64_render_interface_builders.h"
+#include "plume_render_interface_builders.h"

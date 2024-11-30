@@ -1,11 +1,14 @@
 #pragma once
 
-#include "rhi/rt64_render_interface.h"
+//#define ASYNC_PSO_DEBUG
+#define PSO_CACHING
+
+#include "rhi/plume_render_interface.h"
 
 #define D3DCLEAR_TARGET  0x1
 #define D3DCLEAR_ZBUFFER 0x10
 
-using namespace RT64;
+using namespace plume;
 
 struct GuestSamplerState
 {
@@ -77,6 +80,19 @@ struct GuestResource
             originalValue = refCount.value;
             incrementedValue = std::byteswap(std::byteswap(originalValue) + 1);
         } while (InterlockedCompareExchange(reinterpret_cast<LONG*>(&refCount), incrementedValue, originalValue) != originalValue);
+    }
+
+    void Release()
+    {
+        uint32_t originalValue, decrementedValue;
+        do
+        {
+            originalValue = refCount.value;
+            decrementedValue = std::byteswap(std::byteswap(originalValue) - 1);
+        } while (InterlockedCompareExchange(reinterpret_cast<LONG*>(&refCount), decrementedValue, originalValue) != originalValue);
+
+        // Normally we are supposed to release here, so only use this
+        // function when you know you won't be the one destructing it.
     }
 };
 
@@ -226,27 +242,32 @@ struct GuestVertexElement
     uint8_t padding;
 };
 
-enum InputLayoutFlags
-{
-    INPUT_LAYOUT_FLAG_HAS_R11G11B10_NORMAL = 1 << 0,
-    INPUT_LAYOUT_FLAG_HAS_BONE_WEIGHTS = 1 << 1
-};
+#define D3DDECL_END() { 255, 0, 0xFFFFFFFF, 0, 0, 0 }
 
 struct GuestVertexDeclaration : GuestResource
 {
+    XXH64_hash_t hash = 0;
     std::unique_ptr<RenderInputElement[]> inputElements;
     std::unique_ptr<GuestVertexElement[]> vertexElements;
     uint32_t inputElementCount = 0;
     uint32_t vertexElementCount = 0;
     uint32_t swappedTexcoords = 0;
-    uint32_t inputLayoutFlags = 0;
+    bool hasR11G11B10Normal = false;
     uint32_t indexVertexStream = 0;
 };
 
 // VertexShader/PixelShader
 struct GuestShader : GuestResource
 {
+    Mutex mutex;
     std::unique_ptr<RenderShader> shader;
+    struct ShaderCacheEntry* shaderCacheEntry = nullptr;
+    ankerl::unordered_dense::map<uint32_t, std::unique_ptr<RenderShader>> linkedShaders;
+    std::vector<ComPtr<IDxcBlob>> shaderBlobs;
+    ComPtr<IDxcBlobEncoding> libraryBlob;
+#ifdef ASYNC_PSO_DEBUG
+    const char* name = "<unknown>";
+#endif
 };
 
 struct GuestViewport

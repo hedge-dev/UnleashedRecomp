@@ -1,10 +1,11 @@
 #pragma once
 
-#include "SWA.inl"
-#include "CSD/Manager/csdmBase.h"
-#include "CSD/Manager/csdmResourceBase.h"
-#include "CSD/Manager/csdmNodeObserver.h"
-#include "CSD/Manager/csdmSubjectBase.h"
+#include <SWA.inl>
+#include <CSD/Manager/csdmBase.h>
+#include <CSD/Manager/csdmResourceBase.h>
+#include <CSD/Manager/csdmNodeObserver.h>
+#include <CSD/Manager/csdmSubjectBase.h>
+#include <Hedgehog/Math/Vector2.h>
 
 namespace Chao::CSD
 {
@@ -21,7 +22,7 @@ namespace Chao::CSD
 
         void SetText(const char* in_pText);
         void SetText(const wchar_t* in_pText);
-        Hedgehog::Math::CVector2* GetPosition() const;
+        void GetPosition(Hedgehog::Math::CVector2& out_rResult) const;
         void SetPosition(float in_X, float in_Y);
         void SetHideFlag(uint32_t in_HideFlag);
         void SetRotation(float in_Rotation);
@@ -30,4 +31,4 @@ namespace Chao::CSD
     };
 }
 
-#include "CSD/Manager/csdmNode.inl"
+#include <CSD/Manager/csdmNode.inl>

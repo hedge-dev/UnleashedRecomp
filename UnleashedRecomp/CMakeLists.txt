@@ -12,6 +12,7 @@ add_compile_options(
     -Wno-unused-but-set-variable
     -Wno-void-pointer-to-int-cast
     -Wno-int-to-void-pointer-cast
+    -Wno-invalid-offsetof
 )
 
 add_compile_definitions(
@@ -46,8 +47,8 @@ set(SWA_CPU_CXX_SOURCES
 set(SWA_GPU_CXX_SOURCES
     "gpu/video.cpp"
     "gpu/imgui_snapshot.cpp"
-    "gpu/rhi/rt64_d3d12.cpp"
-    "gpu/rhi/rt64_vulkan.cpp"
+    "gpu/rhi/plume_d3d12.cpp"
+    "gpu/rhi/plume_vulkan.cpp"
 )
 
 set(SWA_APU_CXX_SOURCES
@@ -82,6 +83,32 @@ set(SWA_UI_CXX_SOURCES
     "ui/window.cpp"
 )
 
+set(SWA_INSTALL_CXX_SOURCES
+    "install/installer.cpp"
+    "install/iso_file_system.cpp"
+    "install/memory_mapped_file.cpp"
+    "install/xcontent_file_system.cpp"
+    "install/xex_patcher.cpp"
+    "install/hashes/apotos_shamar.cpp"
+    "install/hashes/chunnan.cpp"
+    "install/hashes/empire_city_adabat.cpp"
+    "install/hashes/game.cpp"
+    "install/hashes/holoska.cpp"
+    "install/hashes/mazuri.cpp"
+    "install/hashes/spagonia.cpp"
+    "install/hashes/update.cpp"
+)
+
+set(LIBMSPACK_PATH ${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack)
+
+set(LIBMSPACK_C_SOURCES
+    ${LIBMSPACK_PATH}/lzxd.c
+)
+
+set_source_files_properties(${LIBMSPACK_C_SOURCES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+
+set(SMOLV_SOURCE_DIR "${SWA_THIRDPARTY_ROOT}/ShaderRecomp/thirdparty/smol-v/source")
+
 set(SWA_USER_CXX_SOURCES
     "user/achievement_data.cpp"
     "user/config.cpp"
@@ -102,6 +129,9 @@ set(SWA_CXX_SOURCES
     ${SWA_HID_CXX_SOURCES}
     ${SWA_PATCHES_CXX_SOURCES}
     ${SWA_UI_CXX_SOURCES}
+    ${SWA_INSTALL_CXX_SOURCES}
+    ${LIBMSPACK_C_SOURCES}
+    "${SMOLV_SOURCE_DIR}/smolv.cpp"
     ${SWA_USER_CXX_SOURCES}
 )
 
@@ -132,6 +162,8 @@ find_package(zstd CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 find_package(unofficial-concurrentqueue REQUIRED)
 find_package(imgui CONFIG REQUIRED)
+find_package(magic_enum CONFIG REQUIRED)
+find_package(unofficial-tiny-aes-c CONFIG REQUIRED)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
 add_custom_command(TARGET UnleashedRecomp POST_BUILD
@@ -140,10 +172,13 @@ add_custom_command(TARGET UnleashedRecomp POST_BUILD
    COMMAND_EXPAND_LISTS
 )
 
+file(COPY ${PACKAGE_PREFIX_DIR}/bin/dxil.dll DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 target_link_libraries(UnleashedRecomp PRIVATE
     Microsoft::DirectX-Headers 
     Microsoft::DirectX-Guids 
     Microsoft::DirectX12-Agility
+    Microsoft::DirectXShaderCompiler
     comctl32
     dxgi
     Vulkan::Headers
@@ -164,13 +199,18 @@ target_link_libraries(UnleashedRecomp PRIVATE
     unofficial::concurrentqueue::concurrentqueue
     Synchronization
     imgui::imgui
+    magic_enum::magic_enum
+    unofficial::tiny-aes-c::tiny-aes-c
 )
 
 target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/api
-    ${SWA_THIRDPARTY_ROOT}/ddspp 
+    ${SWA_THIRDPARTY_ROOT}/ddspp
+    ${SWA_THIRDPARTY_ROOT}/TinySHA1
+    ${LIBMSPACK_PATH}
     ${Stb_INCLUDE_DIR}
+    ${SMOLV_SOURCE_DIR}
 )
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${SWA_PRECOMPILED_HEADERS})
@@ -208,3 +248,32 @@ compile_vertex_shader(movie_vs)
 compile_pixel_shader(resolve_msaa_depth_2x)
 compile_pixel_shader(resolve_msaa_depth_4x)
 compile_pixel_shader(resolve_msaa_depth_8x)
+
+function(generate_aggregate_header INPUT_DIRECTORY OUTPUT_FILE)
+    get_filename_component(ABS_OUTPUT_FILE "${OUTPUT_FILE}" ABSOLUTE)
+    file(GLOB_RECURSE HEADER_FILES "${INPUT_DIRECTORY}/*.h")
+    set(HEADER_CONTENT "#pragma once\n\n")
+
+    foreach(HEADER_FILE IN LISTS HEADER_FILES)
+        get_filename_component(ABS_HEADER_FILE "${HEADER_FILE}" ABSOLUTE)
+        if (ABS_HEADER_FILE STREQUAL ABS_OUTPUT_FILE)
+            continue()
+        endif()
+        file(RELATIVE_PATH RELATIVE_HEADER_FILE "${INPUT_DIRECTORY}" "${HEADER_FILE}")
+        string(APPEND HEADER_CONTENT "#include \"${RELATIVE_HEADER_FILE}\"\n")
+    endforeach()
+
+    if (EXISTS "${OUTPUT_FILE}")
+        file(READ "${OUTPUT_FILE}" EXISTING_CONTENT)
+        if (EXISTING_CONTENT STREQUAL HEADER_CONTENT)
+            return()
+        endif()
+    endif()
+
+    file(WRITE "${OUTPUT_FILE}" "${HEADER_CONTENT}")
+endfunction()
+
+generate_aggregate_header(
+    "${CMAKE_CURRENT_SOURCE_DIR}/api"
+    "${CMAKE_CURRENT_SOURCE_DIR}/api/SWA.h"
+)
