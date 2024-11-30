@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gpu/imgui_common.h>
+#include <app.h>
 
 static std::vector<std::unique_ptr<ImGuiCallbackData>> g_callbackData;
 static uint32_t g_callbackDataIndex = 0;
@@ -66,11 +67,33 @@ static float ScaleY(float y)
     return y * io.DisplaySize.y / 720.0f;
 }
 
+static double ComputeMotion(double duration, double offset, double total)
+{
+    return sqrt(std::clamp((ImGui::GetTime() - duration - offset / 60.0) / total * 60.0, 0.0, 1.0));
+}
+
+static std::vector<ImVec2> GetPauseContainerVertices(ImVec2 min, ImVec2 max, float cornerRadius = 25)
+{
+    cornerRadius = Scale(cornerRadius);
+
+    return
+    {
+        { min.x, min.y + cornerRadius },
+        { min.x + cornerRadius, min.y },
+        { max.x, min.y },
+        { max.x, min.y + cornerRadius },
+        { max.x, max.y - cornerRadius },
+        { max.x - cornerRadius, max.y },
+        { min.x, max.y },
+        { min.x, max.y - cornerRadius }
+    };
+}
+
 static void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 color, const char* text, double time, double delay, double speed)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto rectWidth = max.x - min.x;
-    auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text);
+    auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
     auto textX = pos.x - fmodf(std::max(0.0, ImGui::GetTime() - (time + delay)) * speed, textSize.x + rectWidth);
 
     drawList->PushClipRect(min, max, true);
@@ -88,6 +111,8 @@ template<typename T>
 static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, T outlineSize, ImU32 outlineColor)
 {
     auto drawList = ImGui::GetForegroundDrawList();
+
+    outlineSize = Scale(outlineSize);
 
     if constexpr (std::is_same_v<float, T> || std::is_same_v<double, T>)
     {
@@ -120,7 +145,11 @@ static void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2&
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
+    offset = Scale(offset);
+    radius = Scale(radius);
+
     DrawTextWithOutline<float>(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text, radius, shadowColour);
+
     drawList->AddText(font, fontSize, pos, colour, text);
 }
 
@@ -128,7 +157,7 @@ static void DrawTextWithMarqueeShadow(const ImFont* font, float fontSize, const 
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto rectWidth = max.x - min.x;
-    auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text);
+    auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
     auto textX = pos.x - fmodf(std::max(0.0, ImGui::GetTime() - (time + delay)) * speed, textSize.x + rectWidth);
 
     drawList->PushClipRect(min, max, true);

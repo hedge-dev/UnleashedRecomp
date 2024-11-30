@@ -5,9 +5,12 @@
 #include <cpu/code_cache.h>
 #include <cpu/guest_code.h>
 #include <kernel/memory.h>
+#include <kernel/xdbf.h>
 #include <xxHashMap.h>
 #include <shader/shader_cache.h>
-#include <ui/imgui_view.h>
+#include <ui/achievement_menu.h>
+#include <ui/achievement_overlay.h>
+#include <ui/options_menu.h>
 
 #include "imgui_snapshot.h"
 #include "imgui_common.h"
@@ -1011,8 +1014,9 @@ static void CreateImGuiBackend()
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 
-    for (auto& view : GetImGuiViews())
-        view->Init();
+    AchievementMenu::Init();
+    AchievementOverlay::Init();
+    OptionsMenu::Init();
 
     ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
 
@@ -1310,6 +1314,18 @@ static void CreateHostDevice()
     desc.renderTargetBlend[0] = RenderBlendDesc::Copy();
     desc.renderTargetCount = 1;
     g_gammaCorrectionPipeline = g_device->createGraphicsPipeline(desc);
+
+    g_xdbfTextureCache = std::unordered_map<uint16_t, GuestTexture*>();
+
+    for (auto& achievement : g_xdbfWrapper.GetAchievements(XDBF_LANGUAGE_ENGLISH))
+    {
+        // huh?
+        if (!achievement.pImageBuffer || !achievement.ImageBufferSize)
+            continue;
+
+        g_xdbfTextureCache[achievement.ID] =
+            LoadTexture((uint8_t*)achievement.pImageBuffer, achievement.ImageBufferSize).release();
+    }
 }
 
 static void WaitForGPU()
@@ -1653,8 +1669,9 @@ static void DrawImGui()
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    for (auto& view : GetImGuiViews())
-        view->Draw();
+    AchievementMenu::Draw();
+    OptionsMenu::Draw();
+    AchievementOverlay::Draw();
 
     ImGui::Render();
 

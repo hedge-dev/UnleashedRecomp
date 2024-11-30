@@ -1,14 +1,12 @@
 #pragma once
 
-#include "imgui_view.h"
-
-class AchievementOverlay : ImGuiView
+class AchievementOverlay
 {
 public:
     inline static bool s_isVisible = false;
 
-    void Init() override;
-    void Draw() override;
+    static void Init();
+    static void Draw();
     static void Open(int id);
     static void Close();
 };

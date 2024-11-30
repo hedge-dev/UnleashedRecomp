@@ -14,7 +14,7 @@
 #include <user/achievement_data.h>
 #include <user/config.h>
 #include <user/paths.h>
-#include <xdbf_wrapper.h>
+#include <kernel/xdbf.h>
 
 #define GAME_XEX_PATH "game:\\default.xex"
 
@@ -24,7 +24,8 @@ const size_t XMAIOEnd = XMAIOBegin + 0x0000FFFF;
 Memory g_memory{ reinterpret_cast<void*>(0x100000000), 0x100000000 };
 Heap g_userHeap;
 CodeCache g_codeCache;
-XDBFWrapper g_xdbf;
+XDBFWrapper g_xdbfWrapper;
+std::unordered_map<uint16_t, GuestTexture*> g_xdbfTextureCache;
 
 // Name inspired from nt's entry point
 void KiSystemStartup()
@@ -124,7 +125,7 @@ uint32_t LdrLoadModule(const char* path)
 
     auto res = Xex2FindOptionalHeader<XEX_RESOURCE_INFO>(xex, XEX_HEADER_RESOURCE_INFO);
 
-    g_xdbf = XDBFWrapper((uint8_t*)g_memory.Translate(res->Offset.get()), res->SizeOfData);
+    g_xdbfWrapper = XDBFWrapper((uint8_t*)g_memory.Translate(res->Offset.get()), res->SizeOfData);
 
     return entry;
 }

@@ -1,57 +1,42 @@
 #include "achievement_overlay.h"
 #include "imgui_utils.h"
-
-#include <user/config.h>
-#include <user/achievement_data.h>
 #include <gpu/video.h>
 #include <kernel/memory.h>
+#include <kernel/xdbf.h>
 #include <locale/locale.h>
+#include <user/config.h>
+#include <user/achievement_data.h>
 #include <app.h>
 #include <exports.h>
 
-AchievementOverlay m_achievementOverlay;
+constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
+constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;
+constexpr double OVERLAY_CONTAINER_INTRO_FADE_START = 5;
+constexpr double OVERLAY_CONTAINER_INTRO_FADE_END = 9;
+constexpr double OVERLAY_CONTAINER_OUTRO_FADE_START = 0;
+constexpr double OVERLAY_CONTAINER_OUTRO_FADE_END = 5;
 
-constexpr double OVERLAY_CONTAINER_MOTION_START = 0.0;
-constexpr double OVERLAY_CONTAINER_MOTION_END = 8.0;
-constexpr double OVERLAY_CONTAINER_FADE_IN_START = 5.0;
-constexpr double OVERLAY_CONTAINER_FADE_OUT_START = 4.0;
-constexpr double OVERLAY_ELEMENTS_FADE_START = 10.0;
-constexpr double OVERLAY_ELEMENTS_FADE_END = 12.0;
-constexpr double OVERLAY_DURATION = 5.0;
+constexpr double OVERLAY_DURATION = 5;
 
-static bool g_isClosing = false;
+static bool m_isClosing = false;
 
-static double g_appearTime = 0.0;
+static double m_appearTime = 0;
 
-static Achievement g_achievement;
-static std::unique_ptr<GuestTexture> g_upAchievementIcon;
+static Achievement m_achievement;
 
-static ImFont* g_fntSeurat;
+static ImFont* m_fntSeurat;
 
-void AchievementOverlay::Init()
-{
-    auto& io = ImGui::GetIO();
-
-    constexpr float FONT_SCALE = 2.0f;
-
-    g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 26.0f * FONT_SCALE);
-}
-
-static double ComputeMotion(double frameOffset, double frames)
-{
-    double t = std::clamp((ImGui::GetTime() - g_appearTime - frameOffset / 60.0) / frames * 60.0, 0.0, 1.0);
-    return sqrt(t);
-}
-
-static void DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25.0f)
+static bool DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25)
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    auto containerMotion = ComputeMotion(OVERLAY_CONTAINER_MOTION_START, OVERLAY_CONTAINER_MOTION_END);
-    auto centreX = (min.x + max.x) / 2.0f;
-    auto centreY = (min.y + max.y) / 2.0f;
+    // Expand/retract animation.
+    auto containerMotion = ComputeMotion(m_appearTime, OVERLAY_CONTAINER_COMMON_MOTION_START, OVERLAY_CONTAINER_COMMON_MOTION_END);
 
-    if (g_isClosing)
+    auto centreX = (min.x + max.x) / 2;
+    auto centreY = (min.y + max.y) / 2;
+
+    if (m_isClosing)
     {
         min.x = CubicEase(min.x, centreX, containerMotion);
         max.x = CubicEase(max.x, centreX, containerMotion);
@@ -66,40 +51,47 @@ static void DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25.0f)
         max.y = CubicEase(centreY, max.y, containerMotion);
     }
 
-    ImVec2 v1 = { min.x, min.y + cornerRadius };
-    ImVec2 v2 = { min.x + cornerRadius, min.y };
-    ImVec2 v3 = { max.x, min.y };
-    ImVec2 v4 = { max.x, min.y + cornerRadius };
-    ImVec2 v5 = { max.x, max.y - cornerRadius };
-    ImVec2 v6 = { max.x - cornerRadius, max.y };
-    ImVec2 v7 = { min.x, max.y };
-    ImVec2 v8 = { min.x, max.y - cornerRadius };
-    ImVec2 vertices[] = { v1, v2, v3, v4, v5, v6, v7, v8 };
+    auto vertices = GetPauseContainerVertices(min, max, cornerRadius);
 
-    auto colourMotion = ComputeMotion(g_isClosing ? OVERLAY_CONTAINER_MOTION_START : OVERLAY_CONTAINER_FADE_IN_START,
-        g_isClosing ? OVERLAY_CONTAINER_FADE_OUT_START : OVERLAY_CONTAINER_MOTION_END);
+    // Transparency fade animation.
+    auto colourMotion = m_isClosing
+        ? ComputeMotion(m_appearTime, OVERLAY_CONTAINER_OUTRO_FADE_START, OVERLAY_CONTAINER_OUTRO_FADE_END)
+        : ComputeMotion(m_appearTime, OVERLAY_CONTAINER_INTRO_FADE_START, OVERLAY_CONTAINER_INTRO_FADE_END);
 
-    auto colShadow = IM_COL32(0, 0, 0, (int)CubicEase(g_isClosing ? 156 : 0, g_isClosing ? 0 : 156, colourMotion));
-    auto colGradientTop = IM_COL32(197, 194, 197, (int)CubicEase(g_isClosing ? 200 : 0, g_isClosing ? 0 : 200, colourMotion));
-    auto colGradientBottom = IM_COL32(115, 113, 115, (int)CubicEase(g_isClosing ? 236 : 0, g_isClosing ? 0 : 236, colourMotion));
+    auto alpha = m_isClosing
+        ? CubicEase(1, 0, colourMotion)
+        : CubicEase(0, 1, colourMotion);
+
+    auto colShadow = IM_COL32(0, 0, 0, 156 * alpha);
+    auto colGradientTop = IM_COL32(197, 194, 197, 200 * alpha);
+    auto colGradientBottom = IM_COL32(115, 113, 115, 236 * alpha);
 
     // TODO: add a drop shadow.
 
+    // Draw vertices with gradient.
     SetGradient(min, max, colGradientTop, colGradientBottom);
-    drawList->AddConvexPolyFilled(vertices, IM_ARRAYSIZE(vertices), IM_COL32(255, 255, 255, 255));
+    drawList->AddConvexPolyFilled(vertices.data(), vertices.size(), IM_COL32(255, 255, 255, 255 * alpha));
     ResetGradient();
 
-    drawList->AddPolyline(vertices, IM_ARRAYSIZE(vertices), IM_COL32(247, 247, 247, (int)CubicEase(g_isClosing ? 255 : 0, g_isClosing ? 0 : 255, colourMotion)), true, Scale(2.5f));
+    // Draw outline.
+    drawList->AddPolyline
+    (
+        vertices.data(),
+        vertices.size(),
+        IM_COL32(247, 247, 247, 255 * alpha),
+        true,
+        Scale(2.5f)
+    );
 
-    for (int i = 0; i < IM_ARRAYSIZE(vertices); i++)
+    // Offset vertices to draw 3D effect lines.
+    for (int i = 0; i < vertices.size(); i++)
     {
-        vertices[i].x -= 0.4f;
-        vertices[i].y -= 0.2f;
+        vertices[i].x -= Scale(0.4f);
+        vertices[i].y -= Scale(0.2f);
     }
 
-    auto lineAlpha = (int)CubicEase(g_isClosing ? 230 : 0, g_isClosing ? 0 : 230, colourMotion);
-    auto colLineTop = IM_COL32(165, 170, 165, lineAlpha);
-    auto colLineBottom = IM_COL32(190, 190, 190, lineAlpha);
+    auto colLineTop = IM_COL32(165, 170, 165, 230 * alpha);
+    auto colLineBottom = IM_COL32(190, 190, 190, 230 * alpha);
     auto lineThickness = Scale(1.0f);
 
     // Top left corner bottom to top left corner top.
@@ -112,76 +104,115 @@ static void DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25.0f)
     drawList->AddLine(vertices[1], vertices[2], colLineTop, lineThickness);
 
     drawList->PushClipRect(min, max);
+
+    return containerMotion >= 1.0f;
+}
+
+void AchievementOverlay::Init()
+{
+    auto& io = ImGui::GetIO();
+
+    constexpr float FONT_SCALE = 2.0f;
+
+    m_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
 }
 
 void AchievementOverlay::Draw()
 {
     if (!s_isVisible)
         return;
-
-    if (ImGui::GetTime() - g_appearTime >= OVERLAY_DURATION)
+    
+    if (ImGui::GetTime() - m_appearTime >= OVERLAY_DURATION)
         AchievementOverlay::Close();
 
     auto drawList = ImGui::GetForegroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
 
     auto strAchievementUnlocked = Localise("Achievements_Unlock").c_str();
-    auto strAchievementName = g_achievement.Name.c_str();
+    auto strAchievementName = m_achievement.Name.c_str();
 
-    auto fontSize = 30.0f;
-    auto headerTextSize = g_fntSeurat->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, strAchievementUnlocked);
-    auto bodyTextSize = g_fntSeurat->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, strAchievementName);
-    auto longestTextSize = std::max(headerTextSize.x, bodyTextSize.x);
+    // Calculate text sizes.
+    auto fontSize = Scale(24);
+    auto headerSize = m_fntSeurat->CalcTextSizeA(fontSize, FLT_MAX, 0, strAchievementUnlocked);
+    auto bodySize = m_fntSeurat->CalcTextSizeA(fontSize, FLT_MAX, 0, strAchievementName);
+    auto maxSize = std::max(headerSize.x, bodySize.x);
 
-    constexpr auto imageX = 25.0f;
-    constexpr auto imageY = 20.0f;
-    constexpr auto imageSize = 90.0f;
-    constexpr auto textX = 140.0f;
+    // Calculate image margins.
+    auto imageMarginX = Scale(20);
+    auto imageMarginY = Scale(20);
+    auto imageSize = Scale(60);
 
-    auto width = textX + longestTextSize + 30.0f;
+    // Calculate text margins.
+    auto textMarginX = imageMarginX * 2 + imageSize;
+    auto textMarginY = imageMarginY + Scale(2);
 
-    ImVec2 min = { (res.x / 2.0f) - (width / 2.0f), 50.0f };
-    ImVec2 max = { min.x + width, min.y + 125.0f };
+    auto containerWidth = imageMarginX + textMarginX + maxSize;
 
-    DrawContainer(min, max);
+    ImVec2 min = { (res.x / 2) - (containerWidth / 2), Scale(50) };
+    ImVec2 max = { min.x + containerWidth, min.y + Scale(100) };
 
-    auto colourMotion = ComputeMotion(g_isClosing ? OVERLAY_CONTAINER_MOTION_START : OVERLAY_ELEMENTS_FADE_START,
-        g_isClosing ? OVERLAY_CONTAINER_FADE_OUT_START : OVERLAY_ELEMENTS_FADE_END);
+    if (DrawContainer(min, max))
+    {
+        // Draw achievement icon.
+        drawList->AddImage
+        (
+            g_xdbfTextureCache[m_achievement.ID],                                                   // user_texture_id
+            { /* X */ min.x + imageMarginX, /* Y */ min.y + imageMarginY },                         // p_min
+            { /* X */ min.x + imageMarginX + imageSize, /* Y */ min.y + imageMarginY + imageSize }, // p_max
+            { 0, 0 },                                                                               // uv_min
+            { 1, 1 },                                                                               // uv_max
+            IM_COL32(255, 255, 255, 255)                                                            // col
+        );
 
-    auto alpha = (int)CubicEase(g_isClosing ? 255 : 0, g_isClosing ? 0 : 255, colourMotion);
+        // Draw header text.
+        DrawTextWithShadow
+        (
+            m_fntSeurat,                                                                                 // font
+            fontSize,                                                                                    // fontSize
+            { /* X */ min.x + textMarginX + (maxSize - headerSize.x) / 2, /* Y */ min.y + textMarginY }, // pos
+            IM_COL32(252, 243, 5, 255),                                                                  // colour
+            strAchievementUnlocked,                                                                      // text
+            2,                                                                                           // offset
+            0.4f,                                                                                        // radius
+            IM_COL32(0, 0, 0, 255)                                                                       // shadowColour
+        );
 
-    drawList->AddImage(g_upAchievementIcon.get(), { min.x + imageX, min.y + imageY }, { min.x + imageX + imageSize, min.y + imageY + imageSize }, { 0, 0 }, { 1, 1 }, IM_COL32(255, 255, 255, alpha));
+        // Draw achievement name.
+        DrawTextWithShadow
+        (
+            m_fntSeurat,                                                                                                       // font
+            fontSize,                                                                                                          // fontSize
+            { /* X */ min.x + textMarginX + (maxSize - bodySize.x) / 2, /* Y */ min.y + textMarginY + bodySize.y + Scale(6) }, // pos
+            IM_COL32(255, 255, 255, 255),                                                                                      // colour
+            strAchievementName,                                                                                                // text
+            2,                                                                                                                 // offset
+            0.4f,                                                                                                              // radius
+            IM_COL32(0, 0, 0, 255)                                                                                             // shadowColour
+        );
 
-    auto cmnShadowOffset = Scale(2.0f);
-    auto cmnShadowScale = Scale(0.4f);
-
-    DrawTextWithShadow(g_fntSeurat, fontSize, { min.x + textX + (longestTextSize - headerTextSize.x) / 2.0f, min.y + 30.0f}, IM_COL32(252, 243, 5, alpha), strAchievementUnlocked, cmnShadowOffset, cmnShadowScale, IM_COL32(0, 0, 0, alpha));
-    DrawTextWithShadow(g_fntSeurat, fontSize, { min.x + textX + (longestTextSize - bodyTextSize.x) / 2.0f, min.y + 68.0f}, IM_COL32(255, 255, 255, alpha), strAchievementName, cmnShadowOffset, cmnShadowScale, IM_COL32(0, 0, 0, alpha));
-
-    // Pop clip rect from DrawContainer
-    drawList->PopClipRect();
+        // Pop clip rect from DrawContainer.
+        drawList->PopClipRect();
+    }
 }
 
 void AchievementOverlay::Open(int id)
 {
     s_isVisible = true;
-    g_isClosing = false;
-    g_appearTime = ImGui::GetTime();
-
-    g_achievement = g_xdbf.GetAchievement((EXDBFLanguage)Config::Language.Value, id);
-    g_upAchievementIcon = LoadTexture((uint8_t*)g_achievement.pImageBuffer, g_achievement.ImageBufferSize);
+    m_isClosing = false;
+    m_appearTime = ImGui::GetTime();
+    m_achievement = g_xdbfWrapper.GetAchievement((EXDBFLanguage)Config::Language.Value, id);
 
     Game_PlaySound("obj_navi_appear");
 }
 
 void AchievementOverlay::Close()
 {
-    if (!g_isClosing)
+    if (!m_isClosing)
     {
-        g_appearTime = ImGui::GetTime();
-        g_isClosing = true;
+        m_appearTime = ImGui::GetTime();
+        m_isClosing = true;
     }
 
-    if (ImGui::GetTime() - g_appearTime >= OVERLAY_ELEMENTS_FADE_END)
+    if (ImGui::GetTime() - m_appearTime >= OVERLAY_CONTAINER_COMMON_MOTION_END)
         s_isVisible = false;
 }

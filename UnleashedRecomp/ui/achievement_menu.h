@@ -1,14 +1,12 @@
 #pragma once
 
-#include "imgui_view.h"
-
-class AchievementMenu : ImGuiView
+class AchievementMenu
 {
 public:
     inline static bool s_isVisible = false;
 
-    void Init() override;
-    void Draw() override;
+    static void Init();
+    static void Draw();
     static void Open();
     static void Close();
 };

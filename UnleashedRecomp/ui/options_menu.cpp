@@ -12,34 +12,59 @@
 
 #include <patches/audio_patches.h>
 
-OptionsMenu m_optionsMenu;
+static constexpr double CONTAINER_LINE_ANIMATION_DURATION = 8.0;
+
+static constexpr double CONTAINER_OUTER_TIME = CONTAINER_LINE_ANIMATION_DURATION + 8.0; // 8 frame delay
+static constexpr double CONTAINER_OUTER_DURATION = 8.0;
+
+static constexpr double CONTAINER_INNER_TIME = CONTAINER_OUTER_TIME + CONTAINER_OUTER_DURATION + 8.0; // 8 frame delay
+static constexpr double CONTAINER_INNER_DURATION = 8.0;
+
+static constexpr double CONTAINER_BACKGROUND_TIME = CONTAINER_INNER_TIME + CONTAINER_INNER_DURATION + 8.0; // 8 frame delay
+static constexpr double CONTAINER_BACKGROUND_DURATION = 12.0;
+
+static constexpr double CONTAINER_FULL_DURATION = CONTAINER_BACKGROUND_TIME + CONTAINER_BACKGROUND_DURATION;
+
+static constexpr double CONTAINER_CATEGORY_TIME = (CONTAINER_INNER_TIME + CONTAINER_BACKGROUND_TIME) / 2.0;
+static constexpr double CONTAINER_CATEGORY_DURATION = 12.0;
 
 constexpr float COMMON_PADDING_POS_Y = 118.0f;
 constexpr float COMMON_PADDING_POS_X = 30.0f;
 constexpr float INFO_CONTAINER_POS_X = 870.0f;
 
-static ImFont* g_seuratFont;
-static ImFont* g_dfsogeistdFont;
-static ImFont* g_newRodinFont;
+static constexpr int32_t m_categoryCount = 4;
+static int32_t m_categoryIndex;
+static ImVec2 m_categoryAnimMin;
+static ImVec2 m_categoryAnimMax;
 
-static const IConfigDef* g_selectedItem;
+static int32_t m_firstVisibleRowIndex;
+static int32_t m_prevSelectedRowIndex;
+static int32_t m_selectedRowIndex;
+static double m_rowSelectionTime;
 
-static std::string* g_inaccessibleReason;
+static bool m_leftWasHeld;
+static bool m_upWasHeld;
+static bool m_rightWasHeld;
+static bool m_downWasHeld;
 
-static bool g_isEnterKeyBuffered = false;
+static bool m_lockedOnOption;
+static double m_lastTappedTime;
+static double m_lastIncrementTime;
+static double m_lastIncrementSoundTime;
 
-static double g_appearTime = 0.0;
+static constexpr size_t GRID_SIZE = 9;
 
-void OptionsMenu::Init()
-{
-    auto& io = ImGui::GetIO();
+static ImFont* m_seuratFont;
+static ImFont* m_dfsogeistdFont;
+static ImFont* m_newRodinFont;
 
-    constexpr float FONT_SCALE = 2.0f;
+static const IConfigDef* m_selectedItem;
 
-    g_seuratFont = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 26.0f * FONT_SCALE);
-    g_dfsogeistdFont = io.Fonts->AddFontFromFileTTF("DFSoGeiStd-W7.otf", 48.0f * FONT_SCALE);
-    g_newRodinFont = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
-}
+static std::string* m_inaccessibleReason;
+
+static bool m_isEnterKeyBuffered = false;
+
+static double m_appearTime = 0.0;
 
 static void DrawScanlineBars()
 {
@@ -57,95 +82,85 @@ static void DrawScanlineBars()
     if (OptionsMenu::s_pauseMenuType != SWA::eMenuType_WorldMap)
     {
         // Top bar fade
-        drawList->AddRectFilledMultiColor(
+        drawList->AddRectFilledMultiColor
+        (
             { 0.0f, 0.0f },
             { res.x, height },
             FADE_COLOR0,
             FADE_COLOR0,
             FADE_COLOR1,
-            FADE_COLOR1);
+            FADE_COLOR1
+        );
 
         // Bottom bar fade
-        drawList->AddRectFilledMultiColor(
+        drawList->AddRectFilledMultiColor
+        (
             { res.x, res.y },
             { 0.0f, res.y - height },
             FADE_COLOR0,
             FADE_COLOR0,
             FADE_COLOR1,
-            FADE_COLOR1);
+            FADE_COLOR1
+        );
     }
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE);
 
     // Top bar
-    drawList->AddRectFilledMultiColor(
+    drawList->AddRectFilledMultiColor
+    (
         { 0.0f, 0.0f },
         { res.x, height },
         COLOR0,
         COLOR0,
         COLOR1,
-        COLOR1);
+        COLOR1
+    );
 
     // Bottom bar
-    drawList->AddRectFilledMultiColor(
+    drawList->AddRectFilledMultiColor
+    (
         { res.x, res.y },
         { 0.0f, res.y - height },
         COLOR0,
         COLOR0,
         COLOR1,
-        COLOR1);
+        COLOR1
+    );
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
     // Options text
     // TODO: localise this.
-    DrawTextWithOutline<int>(g_dfsogeistdFont, Scale(48.0f), { Scale(122.0f), Scale(56.0f) }, IM_COL32(255, 195, 0, 255), "OPTIONS", Scale(4), IM_COL32_BLACK);
+    DrawTextWithOutline<int>(m_dfsogeistdFont, Scale(48.0f), { Scale(122.0f), Scale(56.0f) }, IM_COL32(255, 195, 0, 255), "OPTIONS", 4, IM_COL32_BLACK);
 
     // Top bar line
-    drawList->AddLine(
+    drawList->AddLine
+    (
         { 0.0f, height },
         { res.x, height },
         OUTLINE_COLOR,
-        Scale(1));
+        Scale(1)
+    );
 
     // Bottom bar line
-    drawList->AddLine(
+    drawList->AddLine
+    (
         { 0.0f, res.y - height },
         { res.x, res.y - height },
         OUTLINE_COLOR,
-        Scale(1));
+        Scale(1)
+    );
 }
-
-static constexpr size_t GRID_SIZE = 9;
 
 static float AlignToNextGrid(float value)
 {
     return floor(value / GRID_SIZE) * GRID_SIZE;
 }
 
-static double ComputeMotion(double frameOffset, double frames)
-{
-    double t = std::clamp((ImGui::GetTime() - g_appearTime - frameOffset / 60.0) / frames * 60.0, 0.0, 1.0);
-    return sqrt(t);
-}
-
-// all in 60 FPS
-static constexpr double CONTAINER_LINE_ANIMATION_DURATION = 8.0;
-
-static constexpr double CONTAINER_OUTER_TIME = CONTAINER_LINE_ANIMATION_DURATION + 8.0; // 8 frame delay
-static constexpr double CONTAINER_OUTER_DURATION = 8.0;
-
-static constexpr double CONTAINER_INNER_TIME = CONTAINER_OUTER_TIME + CONTAINER_OUTER_DURATION + 8.0; // 8 frame delay
-static constexpr double CONTAINER_INNER_DURATION = 8.0;
-
-static constexpr double CONTAINER_BACKGROUND_TIME = CONTAINER_INNER_TIME + CONTAINER_INNER_DURATION + 8.0; // 8 frame delay
-static constexpr double CONTAINER_BACKGROUND_DURATION = 12.0;
-
-static constexpr double CONTAINER_FULL_DURATION = CONTAINER_BACKGROUND_TIME + CONTAINER_BACKGROUND_DURATION;
-
 static void DrawContainer(ImVec2 min, ImVec2 max)
 {
-    double containerHeight = ComputeMotion(0.0, CONTAINER_LINE_ANIMATION_DURATION);
+    double containerHeight = ComputeMotion(m_appearTime, 0.0, CONTAINER_LINE_ANIMATION_DURATION);
 
     float center = (min.y + max.y) / 2.0f;
     min.y = Lerp(center, min.y, containerHeight);
@@ -154,9 +169,9 @@ static void DrawContainer(ImVec2 min, ImVec2 max)
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
 
-    double outerAlpha = ComputeMotion(CONTAINER_OUTER_TIME, CONTAINER_OUTER_DURATION);
-    double innerAlpha = ComputeMotion(CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
-    double backgroundAlpha = ComputeMotion(CONTAINER_BACKGROUND_TIME, CONTAINER_BACKGROUND_DURATION);
+    double outerAlpha = ComputeMotion(m_appearTime, CONTAINER_OUTER_TIME, CONTAINER_OUTER_DURATION);
+    double innerAlpha = ComputeMotion(m_appearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
+    double backgroundAlpha = ComputeMotion(m_appearTime, CONTAINER_BACKGROUND_TIME, CONTAINER_BACKGROUND_DURATION);
 
     const uint32_t lineColor = IM_COL32(0, 89, 0, 255 * containerHeight);
     const uint32_t outerColor = IM_COL32(0, 49, 0, 255 * outerAlpha);
@@ -194,11 +209,6 @@ static void DrawContainer(ImVec2 min, ImVec2 max)
     drawList->PushClipRect({ min.x + gridSize * 2.0f, min.y + gridSize * 2.0f }, { max.x - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
 }
 
-static constexpr int32_t g_categoryCount = 4;
-static int32_t g_categoryIndex;
-static ImVec2 g_categoryAnimMin;
-static ImVec2 g_categoryAnimMax;
-
 static std::string& GetCategory(int index)
 {
     // TODO: Don't use raw numbers here!
@@ -213,61 +223,44 @@ static std::string& GetCategory(int index)
     return g_localeMissing;
 }
 
-static int32_t g_firstVisibleRowIndex;
-static int32_t g_prevSelectedRowIndex;
-static int32_t g_selectedRowIndex;
-static double g_rowSelectionTime;
-
-static bool g_leftWasHeld;
-static bool g_upWasHeld;
-static bool g_rightWasHeld;
-static bool g_downWasHeld;
-
-static bool g_lockedOnOption;
-static double g_lastTappedTime;
-static double g_lastIncrementTime;
-static double g_lastIncrementSoundTime;
-
 static void ResetSelection()
 {
-    g_firstVisibleRowIndex = 0;
-    g_selectedRowIndex = 0;
-    g_prevSelectedRowIndex = 0;
-    g_rowSelectionTime = ImGui::GetTime();
-    g_leftWasHeld = false;
-    g_upWasHeld = false;
-    g_rightWasHeld = false;
-    g_downWasHeld = false;
+    m_firstVisibleRowIndex = 0;
+    m_selectedRowIndex = 0;
+    m_prevSelectedRowIndex = 0;
+    m_rowSelectionTime = ImGui::GetTime();
+    m_leftWasHeld = false;
+    m_upWasHeld = false;
+    m_rightWasHeld = false;
+    m_downWasHeld = false;
 }
-
-static constexpr double CONTAINER_CATEGORY_TIME = (CONTAINER_INNER_TIME + CONTAINER_BACKGROUND_TIME) / 2.0;
-static constexpr double CONTAINER_CATEGORY_DURATION = 12.0;
 
 static bool DrawCategories()
 {
-    double motion = ComputeMotion(CONTAINER_CATEGORY_TIME, CONTAINER_CATEGORY_DURATION);
+    double motion = ComputeMotion(m_appearTime, CONTAINER_CATEGORY_TIME, CONTAINER_CATEGORY_DURATION);
+
     if (motion == 0.0)
         return false;
 
     auto inputState = SWA::CInputState::GetInstance();
 
-    bool moveLeft = !g_lockedOnOption && (inputState->GetPadState().IsTapped(SWA::eKeyState_LeftBumper) ||
+    bool moveLeft = !m_lockedOnOption && (inputState->GetPadState().IsTapped(SWA::eKeyState_LeftBumper) ||
         inputState->GetPadState().IsTapped(SWA::eKeyState_LeftTrigger));
 
-    bool moveRight = !g_lockedOnOption && (inputState->GetPadState().IsTapped(SWA::eKeyState_RightBumper) ||
+    bool moveRight = !m_lockedOnOption && (inputState->GetPadState().IsTapped(SWA::eKeyState_RightBumper) ||
         inputState->GetPadState().IsTapped(SWA::eKeyState_RightTrigger));
 
     if (moveLeft)
     {
-        --g_categoryIndex;
-        if (g_categoryIndex < 0)
-            g_categoryIndex = g_categoryCount - 1;
+        --m_categoryIndex;
+        if (m_categoryIndex < 0)
+            m_categoryIndex = m_categoryCount - 1;
     }
     else if (moveRight)
     {
-        ++g_categoryIndex;
-        if (g_categoryIndex >= g_categoryCount)
-            g_categoryIndex = 0;
+        ++m_categoryIndex;
+        if (m_categoryIndex >= m_categoryCount)
+            m_categoryIndex = 0;
     }
 
     if (moveLeft || moveRight)
@@ -285,22 +278,22 @@ static bool DrawCategories()
     float tabPadding = gridSize;
 
     float size = Scale(32.0f);
-    ImVec2 textSizes[g_categoryCount];
+    ImVec2 textSizes[m_categoryCount];
     float tabWidthSum = 0.0f;
-    for (size_t i = 0; i < g_categoryCount; i++)
+    for (size_t i = 0; i < m_categoryCount; i++)
     {
-        textSizes[i] = g_dfsogeistdFont->CalcTextSizeA(size, FLT_MAX, 0.0f, GetCategory(i).c_str());
+        textSizes[i] = m_dfsogeistdFont->CalcTextSizeA(size, FLT_MAX, 0.0f, GetCategory(i).c_str());
         tabWidthSum += textSizes[i].x + textPadding * 2.0f;
     }
-    tabWidthSum += (g_categoryCount - 1) * tabPadding;
+    tabWidthSum += (m_categoryCount - 1) * tabPadding;
 
     float tabHeight = gridSize * 4.0f;
     float xOffset = ((clipRectMax.x - clipRectMin.x) - tabWidthSum) / 2.0f;
     xOffset -= (1.0 - motion) * gridSize * 4.0;
 
-    ImVec2 minVec[g_categoryCount];
+    ImVec2 minVec[m_categoryCount];
 
-    for (size_t i = 0; i < g_categoryCount; i++)
+    for (size_t i = 0; i < m_categoryCount; i++)
     {
         ImVec2 min = { clipRectMin.x + xOffset, clipRectMin.y };
 
@@ -308,58 +301,64 @@ static bool DrawCategories()
         ImVec2 max = { clipRectMin.x + xOffset, clipRectMin.y + tabHeight };
         xOffset += tabPadding;
 
-        if (g_categoryIndex == i)
+        if (m_categoryIndex == i)
         {
             // Animation interrupted by entering/exiting or resizing the options menu
-            if (motion < 1.0 || abs(g_categoryAnimMin.y - min.y) > 0.01f || abs(g_categoryAnimMax.y - max.y) > 0.01f)
+            if (motion < 1.0 || abs(m_categoryAnimMin.y - min.y) > 0.01f || abs(m_categoryAnimMax.y - max.y) > 0.01f)
             {
-                g_categoryAnimMin = min;
-                g_categoryAnimMax = max;
+                m_categoryAnimMin = min;
+                m_categoryAnimMax = max;
             }
             else
             {
-                float animWidth = g_categoryAnimMax.x - g_categoryAnimMin.x;
+                float animWidth = m_categoryAnimMax.x - m_categoryAnimMin.x;
                 float width = max.x - min.x;
                 float height = max.y - min.y;
                 
                 animWidth = Lerp(animWidth, width, 1.0f - exp(-64.0f * ImGui::GetIO().DeltaTime));
 
                 auto center = Lerp(min, max, 0.5f);
-                auto animCenter = Lerp(g_categoryAnimMin, g_categoryAnimMax, 0.5f);
+                auto animCenter = Lerp(m_categoryAnimMin, m_categoryAnimMax, 0.5f);
                 auto animatedCenter = Lerp(animCenter, center, 1.0f - exp(-16.0f * ImGui::GetIO().DeltaTime));
 
                 float widthHalfExtent = width / 2.0f;
                 float heightHalfExtent = height / 2.0f;
 
-                g_categoryAnimMin = { animatedCenter.x - widthHalfExtent, animatedCenter.y - heightHalfExtent };
-                g_categoryAnimMax = { animatedCenter.x + widthHalfExtent, animatedCenter.y + heightHalfExtent };
+                m_categoryAnimMin = { animatedCenter.x - widthHalfExtent, animatedCenter.y - heightHalfExtent };
+                m_categoryAnimMax = { animatedCenter.x + widthHalfExtent, animatedCenter.y + heightHalfExtent };
             }
 
             SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE_BUTTON);
 
-            drawList->AddRectFilledMultiColor(
-                g_categoryAnimMin,
-                g_categoryAnimMax,
+            drawList->AddRectFilledMultiColor
+            (
+                m_categoryAnimMin,
+                m_categoryAnimMax,
                 IM_COL32(0, 130, 0, 223 * motion),
                 IM_COL32(0, 130, 0, 178 * motion), 
                 IM_COL32(0, 130, 0, 223 * motion),
-                IM_COL32(0, 130, 0, 178 * motion));
+                IM_COL32(0, 130, 0, 178 * motion)
+            );
 
-            drawList->AddRectFilledMultiColor(
-                g_categoryAnimMin, 
-                g_categoryAnimMax,
+            drawList->AddRectFilledMultiColor
+            (
+                m_categoryAnimMin, 
+                m_categoryAnimMax,
                 IM_COL32(0, 0, 0, 13 * motion),
                 IM_COL32(0, 0, 0, 0),
                 IM_COL32(0, 0, 0, 55 * motion),
-                IM_COL32(0, 0, 0, 6));
+                IM_COL32(0, 0, 0, 6)
+            );
 
-            drawList->AddRectFilledMultiColor(
-                g_categoryAnimMin, 
-                g_categoryAnimMax,
+            drawList->AddRectFilledMultiColor
+            (
+                m_categoryAnimMin, 
+                m_categoryAnimMax,
                 IM_COL32(0, 130, 0, 13 * motion),
                 IM_COL32(0, 130, 0, 111 * motion),
                 IM_COL32(0, 130, 0, 0), 
-                IM_COL32(0, 130, 0, 55 * motion));
+                IM_COL32(0, 130, 0, 55 * motion)
+            );
 
             SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
         }
@@ -370,30 +369,34 @@ static bool DrawCategories()
         minVec[i] = min; 
     }
 
-    for (size_t i = 0; i < g_categoryCount; i++)
+    for (size_t i = 0; i < m_categoryCount; i++)
     {
         auto& min = minVec[i];
-        uint8_t alpha = (i == g_categoryIndex ? 235 : 128) * motion;
+        uint8_t alpha = (i == m_categoryIndex ? 235 : 128) * motion;
 
-        SetGradient(
+        SetGradient
+        (
             min,
             { min.x + textSizes[i].x, min.y + textSizes[i].y },
             IM_COL32(128, 255, 0, alpha),
-            IM_COL32(255, 192, 0, alpha));
+            IM_COL32(255, 192, 0, alpha)
+        );
 
-        DrawTextWithOutline<int>(
-            g_dfsogeistdFont,
+        DrawTextWithOutline<int>
+        (
+            m_dfsogeistdFont,
             size,
             min,
             IM_COL32_WHITE,
             GetCategory(i).c_str(),
-            Scale(3),
-            IM_COL32_BLACK);
+            3,
+            IM_COL32_BLACK
+        );
 
         ResetGradient();
     }
 
-    if ((ImGui::GetTime() - g_appearTime) >= (CONTAINER_FULL_DURATION / 60.0))
+    if ((ImGui::GetTime() - m_appearTime) >= (CONTAINER_FULL_DURATION / 60.0))
     {
         drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, { clipRectMax.x - gridSize, clipRectMax.y - gridSize });
         return true;
@@ -427,18 +430,18 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
     auto configName = config->GetNameLocalised();
     auto size = Scale(26.0f);
-    auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, configName.c_str());
+    auto textSize = m_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, configName.c_str());
 
     ImVec2 textPos = { min.x + gridSize, min.y + (optionHeight - textSize.y) / 2.0f };
     ImVec4 textClipRect = { min.x, min.y, max.x, max.y };
 
     bool lockedOnOption = false;
-    if (g_selectedRowIndex == rowIndex)
+    if (m_selectedRowIndex == rowIndex)
     {
-        g_selectedItem = config;
-        g_inaccessibleReason = isAccessible ? nullptr : inaccessibleReason;
+        m_selectedItem = config;
+        m_inaccessibleReason = isAccessible ? nullptr : inaccessibleReason;
 
-        if (!g_isEnterKeyBuffered)
+        if (!m_isEnterKeyBuffered)
         {
             if (isAccessible)
             {
@@ -462,12 +465,12 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
                     if (padState.IsTapped(SWA::eKeyState_A))
                     {
-                        g_lockedOnOption ^= true;
+                        m_lockedOnOption ^= true;
 
-                        if (g_lockedOnOption)
+                        if (m_lockedOnOption)
                         {
-                            g_leftWasHeld = false;
-                            g_rightWasHeld = false;
+                            m_leftWasHeld = false;
+                            m_rightWasHeld = false;
                             // remember value
                             s_oldValue = config->Value;
 
@@ -486,12 +489,12 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                     {
                         // released lock, restore old value
                         config->Value = s_oldValue;
-                        g_lockedOnOption = false;
+                        m_lockedOnOption = false;
 
                         Game_PlaySound("sys_worldmap_cansel");
                     }
 
-                    lockedOnOption = g_lockedOnOption;
+                    lockedOnOption = m_lockedOnOption;
                 }
             }
             else
@@ -502,14 +505,14 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         }
     }
 
-    auto fadedOut = (g_lockedOnOption && g_selectedItem != config) || !isAccessible;
+    auto fadedOut = (m_lockedOnOption && m_selectedItem != config) || !isAccessible;
     auto alpha = fadedOut ? 0.5f : 1.0f;
     auto textColour = IM_COL32(255, 255, 255, 255 * alpha);
 
-    if (g_selectedItem == config)
+    if (m_selectedItem == config)
     {
-        float prevItemOffset = (g_prevSelectedRowIndex - g_selectedRowIndex) * (optionHeight + optionPadding);
-        double animRatio = std::clamp((ImGui::GetTime() - g_rowSelectionTime) * 60.0 / 8.0, 0.0, 1.0);
+        float prevItemOffset = (m_prevSelectedRowIndex - m_selectedRowIndex) * (optionHeight + optionPadding);
+        double animRatio = std::clamp((ImGui::GetTime() - m_rowSelectionTime) * 60.0 / 8.0, 0.0, 1.0);
         prevItemOffset *= pow(1.0 - animRatio, 3.0);
 
         auto c0 = IM_COL32(0xE2, 0x71, 0x22, isAccessible ? 0x80 : 0x30);
@@ -517,11 +520,11 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
         drawList->AddRectFilledMultiColor({ min.x, min.y + prevItemOffset }, { max.x, max.y + prevItemOffset }, c0, c0, c1, c1);
 
-        DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, textColour, configName.c_str(), g_rowSelectionTime, 0.9, 250.0);
+        DrawTextWithMarquee(m_seuratFont, size, textPos, min, max, textColour, configName.c_str(), m_rowSelectionTime, 0.9, 250.0);
     }
     else
     {
-        drawList->AddText(g_seuratFont, size, textPos, textColour, configName.c_str(), 0, 0.0f, &textClipRect);
+        drawList->AddText(m_seuratFont, size, textPos, textColour, configName.c_str(), 0, 0.0f, &textClipRect);
     }
 
     // Right side
@@ -543,13 +546,15 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         float xPadding = Scale(6.0f);
         float yPadding = Scale(3.0f);
 
-        drawList->AddRectFilledMultiColor(
+        drawList->AddRectFilledMultiColor
+        (
             { min.x + xPadding, min.y + yPadding }, 
             { max.x - xPadding, max.y - yPadding }, 
             innerColor0, 
             innerColor0, 
             innerColor1, 
-            innerColor1);
+            innerColor1
+        );
 
         // The actual slider
         const uint32_t sliderColor0 = IM_COL32(57, 241, 0, 255 * alpha);
@@ -580,34 +585,38 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         constexpr uint32_t COLOR = IM_COL32(0, 97, 0, 255);
 
         // Left
-        drawList->AddTriangleFilled(
+        drawList->AddTriangleFilled
+        (
             { min.x - trianglePadding, min.y },
             { min.x - trianglePadding, max.y }, 
             { min.x - trianglePadding - triangleWidth, (min.y + max.y) / 2.0f }, 
-            COLOR);
+            COLOR
+        );
 
         // Right
-        drawList->AddTriangleFilled(
+        drawList->AddTriangleFilled
+        (
             { max.x + trianglePadding, max.y },
             { max.x + trianglePadding, min.y },
             { max.x + trianglePadding + triangleWidth, (min.y + max.y) / 2.0f },
-            COLOR);
+            COLOR
+        );
 
         bool leftIsHeld = padState.IsDown(SWA::eKeyState_DpadLeft) || padState.LeftStickHorizontal < -0.5f;
         bool rightIsHeld = padState.IsDown(SWA::eKeyState_DpadRight) || padState.LeftStickHorizontal > 0.5f;
 
-        bool leftTapped = !g_leftWasHeld && leftIsHeld;
-        bool rightTapped = !g_rightWasHeld && rightIsHeld;
+        bool leftTapped = !m_leftWasHeld && leftIsHeld;
+        bool rightTapped = !m_rightWasHeld && rightIsHeld;
 
         double time = ImGui::GetTime();
 
         if (leftTapped || rightTapped)
-            g_lastTappedTime = time;
+            m_lastTappedTime = time;
 
         bool decrement = leftTapped;
         bool increment = rightTapped;
 
-        bool fastIncrement = (time - g_lastTappedTime) > 0.5;
+        bool fastIncrement = (time - m_lastTappedTime) > 0.5;
         constexpr double INCREMENT_TIME = 1.0 / 120.0;
 
         constexpr double INCREMENT_SOUND_TIME = 1.0 / 7.5;
@@ -615,12 +624,12 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
         if (fastIncrement)
         {
-            isPlayIncrementSound = (time - g_lastIncrementSoundTime) > INCREMENT_SOUND_TIME;
+            isPlayIncrementSound = (time - m_lastIncrementSoundTime) > INCREMENT_SOUND_TIME;
 
-            if ((time - g_lastIncrementTime) < INCREMENT_TIME)
+            if ((time - m_lastIncrementTime) < INCREMENT_TIME)
                 fastIncrement = false;
             else
-                g_lastIncrementTime = time;
+                m_lastIncrementTime = time;
         }
 
         if (fastIncrement)
@@ -629,8 +638,8 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             increment = rightIsHeld;
         }
 
-        g_leftWasHeld = leftIsHeld;
-        g_rightWasHeld = rightIsHeld;
+        m_leftWasHeld = leftIsHeld;
+        m_rightWasHeld = rightIsHeld;
 
         if constexpr (std::is_enum_v<T>)
         {
@@ -678,13 +687,14 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                 }
 
                 deltaTime -= INCREMENT_TIME;
-            } while (fastIncrement && deltaTime > 0.0f);
+            }
+            while (fastIncrement && deltaTime > 0.0f);
 
             bool isConfigValueInBounds = config->Value >= valueMin && config->Value <= valueMax;
 
             if ((increment || decrement) && isConfigValueInBounds && isPlayIncrementSound) 
             {
-                g_lastIncrementSoundTime = time;
+                m_lastIncrementSoundTime = time;
                 Game_PlaySound("sys_actstg_twn_speechbutton");
             }
 
@@ -697,33 +707,42 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
     std::string valueText;
     if constexpr (std::is_same_v<T, float>)
+    {
         valueText = std::format("{}%", int32_t(round(config->Value * 100.0f)));
+    }
     else if constexpr (std::is_same_v<T, int32_t>)
+    {
         valueText = config->Value >= valueMax ? Localise("Options_Value_Max") : std::format("{}", config->Value);
+    }
     else
+    {
         valueText = config->GetValueLocalised();
+    }
 
     size = Scale(20.0f);
-    textSize = g_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.data());
+    textSize = m_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.data());
 
     min.x += ((max.x - min.x) - textSize.x) / 2.0f;
     min.y += ((max.y - min.y) - textSize.y) / 2.0f;
 
-    SetGradient(
+    SetGradient
+    (
         min,
         { min.x + textSize.x, min.y + textSize.y },
         IM_COL32(192, 255, 0, 255),
         IM_COL32(128, 170, 0, 255)
     );
 
-    DrawTextWithOutline<int>(
-        g_newRodinFont,
+    DrawTextWithOutline<int>
+    (
+        m_newRodinFont,
         size,
         min,
         IM_COL32(255, 255, 255, 255 * alpha),
         valueText.data(),
-        Scale(2),
-        IM_COL32(0, 0, 0, 255 * alpha));
+        2,
+        IM_COL32(0, 0, 0, 255 * alpha)
+    );
 
     ResetGradient();
 }
@@ -734,11 +753,11 @@ static void DrawConfigOptions()
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
-    g_selectedItem = nullptr;
+    m_selectedItem = nullptr;
 
     float gridSize = Scale(GRID_SIZE);
     float optionHeightWithPadding = gridSize * 6.0f;
-    float yOffset = -g_firstVisibleRowIndex * optionHeightWithPadding;
+    float yOffset = -m_firstVisibleRowIndex * optionHeightWithPadding;
 
     int32_t rowCount = 0;
 
@@ -746,7 +765,7 @@ static void DrawConfigOptions()
     auto cmnReason = &Localise("Options_Desc_NotAvailable");
 
     // TODO: Don't use raw numbers here!
-    switch (g_categoryIndex)
+    switch (m_categoryIndex)
     {
     case 0: // SYSTEM
         DrawConfigOption(rowCount++, yOffset, &Config::Language, !OptionsMenu::s_isPause, cmnReason);
@@ -794,58 +813,58 @@ static void DrawConfigOptions()
 
     auto inputState = SWA::CInputState::GetInstance();
 
-    bool upIsHeld = !g_lockedOnOption && (inputState->GetPadState().IsDown(SWA::eKeyState_DpadUp) ||
+    bool upIsHeld = !m_lockedOnOption && (inputState->GetPadState().IsDown(SWA::eKeyState_DpadUp) ||
         inputState->GetPadState().LeftStickVertical > 0.5f);
 
-    bool downIsHeld = !g_lockedOnOption && (inputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
+    bool downIsHeld = !m_lockedOnOption && (inputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
         inputState->GetPadState().LeftStickVertical < -0.5f);
 
-    bool scrollUp = !g_upWasHeld && upIsHeld;
-    bool scrollDown = !g_downWasHeld && downIsHeld;
+    bool scrollUp = !m_upWasHeld && upIsHeld;
+    bool scrollDown = !m_downWasHeld && downIsHeld;
 
-    int32_t prevSelectedRowIndex = g_selectedRowIndex;
+    int32_t prevSelectedRowIndex = m_selectedRowIndex;
 
     if (scrollUp)
     {
-        --g_selectedRowIndex;
-        if (g_selectedRowIndex < 0)
-            g_selectedRowIndex = rowCount - 1;
+        --m_selectedRowIndex;
+        if (m_selectedRowIndex < 0)
+            m_selectedRowIndex = rowCount - 1;
     }
     else if (scrollDown)
     {
-        ++g_selectedRowIndex;
-        if (g_selectedRowIndex >= rowCount)
-            g_selectedRowIndex = 0;
+        ++m_selectedRowIndex;
+        if (m_selectedRowIndex >= rowCount)
+            m_selectedRowIndex = 0;
     }
 
     if (scrollUp || scrollDown)
     {
-        g_rowSelectionTime = ImGui::GetTime();
-        g_prevSelectedRowIndex = prevSelectedRowIndex;
+        m_rowSelectionTime = ImGui::GetTime();
+        m_prevSelectedRowIndex = prevSelectedRowIndex;
         Game_PlaySound("sys_worldmap_cursor");
     }
 
-    g_upWasHeld = upIsHeld;
-    g_downWasHeld = downIsHeld;
+    m_upWasHeld = upIsHeld;
+    m_downWasHeld = downIsHeld;
 
     int32_t visibleRowCount = int32_t(floor((clipRectMax.y - clipRectMin.y) / optionHeightWithPadding));
 
     bool disableMoveAnimation = false;
 
-    if (g_firstVisibleRowIndex > g_selectedRowIndex)
+    if (m_firstVisibleRowIndex > m_selectedRowIndex)
     {
-        g_firstVisibleRowIndex = g_selectedRowIndex;
+        m_firstVisibleRowIndex = m_selectedRowIndex;
         disableMoveAnimation = true;
     }
 
-    if (g_firstVisibleRowIndex + visibleRowCount - 1 < g_selectedRowIndex)
+    if (m_firstVisibleRowIndex + visibleRowCount - 1 < m_selectedRowIndex)
     {
-        g_firstVisibleRowIndex = std::max(0, g_selectedRowIndex - visibleRowCount + 1);
+        m_firstVisibleRowIndex = std::max(0, m_selectedRowIndex - visibleRowCount + 1);
         disableMoveAnimation = true;
     }
 
     if (disableMoveAnimation)
-        g_prevSelectedRowIndex = g_selectedRowIndex;
+        m_prevSelectedRowIndex = m_selectedRowIndex;
 
     // Pop clip rect from DrawCategories
     drawList->PopClipRect();
@@ -855,10 +874,11 @@ static void DrawConfigOptions()
     {
         float totalHeight = (clipRectMax.y - clipRectMin.y);
         float heightRatio = float(visibleRowCount) / float(rowCount);
-        float offsetRatio = float(g_firstVisibleRowIndex) / float(rowCount);
+        float offsetRatio = float(m_firstVisibleRowIndex) / float(rowCount);
         float minY = offsetRatio * totalHeight + clipRectMin.y;
 
-        drawList->AddRectFilled(
+        drawList->AddRectFilled
+        (
             { clipRectMax.x, minY },
             { clipRectMax.x + gridSize, minY + totalHeight * heightRatio },
             IM_COL32(0, 128, 0, 255)
@@ -876,9 +896,13 @@ static void DrawSettingsPanel()
     DrawContainer(settingsMin, settingsMax);
 
     if (DrawCategories())
+    {
         DrawConfigOptions();
+    }
     else
+    {
         ResetSelection();
+    }
 
     // Pop clip rect from DrawContainer
     drawList->PopClipRect();
@@ -901,21 +925,21 @@ static void DrawInfoPanel()
     // Thumbnail box
     drawList->AddRectFilled(clipRectMin, thumbnailMax, IM_COL32(0, 0, 0, 255));
 
-    if (g_selectedItem)
+    if (m_selectedItem)
     {
-        auto desc = g_selectedItem->GetDescription();
+        auto desc = m_selectedItem->GetDescription();
 
-        if (g_inaccessibleReason)
+        if (m_inaccessibleReason)
         {
-            desc = *g_inaccessibleReason;
+            desc = *m_inaccessibleReason;
         }
         else
         {
             // Specialised description for resolution scale
-            if (g_selectedItem->GetName() == "ResolutionScale")
+            if (m_selectedItem->GetName() == "ResolutionScale")
             {
                 char buf[100];
-                auto resScale = round(*(float*)g_selectedItem->GetValue() * 1000) / 1000;
+                auto resScale = round(*(float*)m_selectedItem->GetValue() * 1000) / 1000;
 
                 std::snprintf(buf, sizeof(buf), desc.c_str(),
                     (int)((float)Window::s_width * resScale),
@@ -924,13 +948,14 @@ static void DrawInfoPanel()
                 desc = buf;
             }
 
-            desc += "\n\n" + g_selectedItem->GetValueDescription();
+            desc += "\n\n" + m_selectedItem->GetValueDescription();
         }
 
         auto size = Scale(26.0f);
 
-        drawList->AddText(
-            g_seuratFont,
+        drawList->AddText
+        (
+            m_seuratFont,
             size,
             { clipRectMin.x, thumbnailMax.y + size - 5.0f },
             IM_COL32_WHITE,
@@ -944,6 +969,17 @@ static void DrawInfoPanel()
     drawList->PopClipRect();
 }
 
+void OptionsMenu::Init()
+{
+    auto& io = ImGui::GetIO();
+
+    constexpr float FONT_SCALE = 2.0f;
+
+    m_seuratFont = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 26.0f * FONT_SCALE);
+    m_dfsogeistdFont = io.Fonts->AddFontFromFileTTF("DFSoGeiStd-W7.otf", 48.0f * FONT_SCALE);
+    m_newRodinFont = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
+}
+
 void OptionsMenu::Draw()
 {
     auto pInputState = SWA::CInputState::GetInstance();
@@ -953,7 +989,7 @@ void OptionsMenu::Draw()
 
     // We've entered the menu now, no need to check this.
     if (pInputState->GetPadState().IsReleased(SWA::eKeyState_A))
-        g_isEnterKeyBuffered = false;
+        m_isEnterKeyBuffered = false;
 
     g_callbackDataIndex = 0;
     
@@ -975,16 +1011,16 @@ void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
 
     s_pauseMenuType = pauseMenuType;
 
-    g_appearTime = ImGui::GetTime();
-    g_categoryIndex = 0;
-    g_categoryAnimMin = { 0.0f, 0.0f };
-    g_categoryAnimMax = { 0.0f, 0.0f };
-    g_selectedItem = nullptr;
+    m_appearTime = ImGui::GetTime();
+    m_categoryIndex = 0;
+    m_categoryAnimMin = { 0.0f, 0.0f };
+    m_categoryAnimMax = { 0.0f, 0.0f };
+    m_selectedItem = nullptr;
 
     /* Store button state so we can track it later
        and prevent the first item being selected. */
     if (SWA::CInputState::GetInstance()->GetPadState().IsDown(SWA::eKeyState_A))
-        g_isEnterKeyBuffered = true;
+        m_isEnterKeyBuffered = true;
 
     ResetSelection();
 
@@ -1006,5 +1042,5 @@ void OptionsMenu::Close()
 
 bool OptionsMenu::CanClose()
 {
-    return !g_lockedOnOption;
+    return !m_lockedOnOption;
 }
