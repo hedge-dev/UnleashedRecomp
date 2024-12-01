@@ -27,10 +27,11 @@ static bool g_isClosing = false;
 
 static double g_appearTime = 0;
 
-static std::vector<Achievement> g_achievements;
+static std::vector<std::tuple<Achievement, time_t>> g_achievements;
 
 static ImFont* g_fntSeurat;
-static ImFont* g_fntNewRodin;
+static ImFont* g_fntNewRodinDB;
+static ImFont* g_fntNewRodinUB;
 
 static int g_firstVisibleRowIndex;
 static int g_selectedRowIndex;
@@ -112,7 +113,7 @@ static void DrawHeaderContainer(const char* text)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto fontSize = Scale(26);
-    auto textSize = g_fntNewRodin->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
+    auto textSize = g_fntNewRodinUB->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
     auto cornerRadius = 23;
     auto textMarginX = Scale(16) + (Scale(cornerRadius) / 2);
 
@@ -143,9 +144,9 @@ static void DrawHeaderContainer(const char* text)
     // TODO: skew this text and apply bevel.
     DrawTextWithOutline<int>
     (
-        g_fntNewRodin,
+        g_fntNewRodinUB,
         fontSize,
-        { /* X */ min.x + textMarginX, /* Y */ min.y + textSize.y / Scale(2) + Scale(2.5f) /* 2.5 = container outline thickness */ },
+        { /* X */ min.x + textMarginX, /* Y */ min.y + ((max.y - min.y) - textSize.y) / 2 },
         IM_COL32(255, 255, 255, 255 * alpha),
         text,
         3,
@@ -256,6 +257,97 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
     }
 
     drawList->PopClipRect();
+
+    if (!isUnlocked)
+        return;
+
+    auto timestamp = AchievementData::GetTimestamp(achievement.ID);
+
+    if (!timestamp)
+        return;
+
+    char buffer[32];
+    struct tm time;
+    localtime_s(&time, &timestamp);
+    strftime(buffer, sizeof(buffer), "%Y/%m/%d %H:%M", &time);
+
+    fontSize = Scale(14);
+    textSize = g_fntNewRodinDB->CalcTextSizeA(fontSize, FLT_MAX, 0, buffer);
+
+    auto containerMarginX = Scale(10);
+    auto textMarginX = Scale(3);
+
+    ImVec2 timestampMin = { max.x - containerMarginX - textSize.x - (textMarginX * 2), min.y + titleTextY };
+    ImVec2 timestampMax = { max.x - containerMarginX, min.y + Scale(46) };
+
+    drawList->PushClipRect(min, max, true);
+
+    auto bevelOffset = Scale(6);
+
+    // Left
+    drawList->AddRectFilledMultiColor
+    (
+        timestampMin,
+        { timestampMin.x + bevelOffset, timestampMax.y },
+        IM_COL32(255, 255, 255, 255),
+        IM_COL32(149, 149, 149, 40),
+        IM_COL32(149, 149, 149, 40),
+        IM_COL32(255, 255, 255, 255)
+    );
+
+    // Right
+    drawList->AddRectFilledMultiColor
+    (
+        { timestampMax.x - bevelOffset, timestampMin.y },
+        { timestampMax.x, timestampMax.y },
+        IM_COL32(149, 149, 149, 40),
+        IM_COL32(255, 255, 255, 255),
+        IM_COL32(255, 255, 255, 255),
+        IM_COL32(149, 149, 149, 40)
+    );
+
+    // Centre
+    drawList->AddRectFilled
+    (
+        { timestampMin.x, timestampMin.y + bevelOffset },
+        { timestampMax.x, timestampMax.y - bevelOffset },
+        IM_COL32(38, 38, 38, 172)
+    );
+
+    // Top
+    drawList->AddRectFilledMultiColor
+    (
+        timestampMin,
+        { timestampMax.x, timestampMin.y + bevelOffset },
+        IM_COL32(16, 16, 16, 192),
+        IM_COL32(16, 16, 16, 192),
+        IM_COL32(38, 38, 38, 172),
+        IM_COL32(38, 38, 38, 172)
+    );
+
+    // Bottom
+    drawList->AddRectFilledMultiColor
+    (
+        { timestampMin.x, timestampMax.y - bevelOffset },
+        { timestampMax.x, timestampMax.y },
+        IM_COL32(38, 40, 38, 169),
+        IM_COL32(38, 40, 38, 169),
+        IM_COL32(16, 16, 16, 192),
+        IM_COL32(16, 16, 16, 192)
+    );
+
+    DrawTextWithOutline<int>
+    (
+        g_fntNewRodinDB,
+        fontSize,
+        { /* X */ timestampMin.x + textMarginX, /* Y */ timestampMin.y + ((timestampMax.y - timestampMin.y) - textSize.y) / 2 },
+        IM_COL32(255, 255, 255, 255),
+        buffer,
+        2,
+        IM_COL32(8, 8, 8, 255)
+    );
+
+    drawList->PopClipRect();
 }
 
 static void DrawContentContainer()
@@ -322,14 +414,18 @@ static void DrawContentContainer()
         drawList->AddLine({ lineMin.x, lineMin.y + Scale(1) }, { lineMax.x, lineMax.y + Scale(1) }, IM_COL32(143, 148, 143, 255));
     }
 
-    for (auto achievement : g_achievements)
+    for (auto& tpl : g_achievements)
     {
+        auto achievement = std::get<0>(tpl);
+
         if (AchievementData::IsUnlocked(achievement.ID))
             DrawAchievement(rowCount++, yOffset, achievement, true);
     }
 
-    for (auto achievement : g_achievements)
+    for (auto& tpl : g_achievements)
     {
+        auto achievement = std::get<0>(tpl);
+
         if (!AchievementData::IsUnlocked(achievement.ID))
             DrawAchievement(rowCount++, yOffset, achievement, false);
     }
@@ -482,9 +578,8 @@ void AchievementMenu::Init()
     constexpr float FONT_SCALE = 2.0f;
 
     g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
-    g_fntNewRodin = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
-
-    g_achievements = g_xdbfWrapper.GetAchievements((EXDBFLanguage)Config::Language.Value);
+    g_fntNewRodinDB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
+    g_fntNewRodinUB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
 }
 
 void AchievementMenu::Draw()
@@ -501,6 +596,16 @@ void AchievementMenu::Open()
     s_isVisible = true;
     g_isClosing = false;
     g_appearTime = ImGui::GetTime();
+
+    g_achievements.clear();
+
+    for (auto& achievement : g_xdbfWrapper.GetAchievements((EXDBFLanguage)Config::Language.Value))
+        g_achievements.push_back(std::make_tuple(achievement, AchievementData::GetTimestamp(achievement.ID)));
+
+    std::sort(g_achievements.begin(), g_achievements.end(), [](const auto& a, const auto& b)
+    {
+        return std::get<1>(a) > std::get<1>(b);
+    });
 
     ResetSelection();
     Game_PlaySound("sys_actstg_pausewinopen");

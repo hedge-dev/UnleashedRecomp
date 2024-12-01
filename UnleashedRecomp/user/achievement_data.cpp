@@ -24,12 +24,24 @@ void AchievementData::Unlock(uint16_t id)
         if (Data.Records[i].ID == 0)
         {
             Data.Records[i].ID = id;
+            Data.Records[i].Timestamp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             break;
         }
     }
 
     if (Config::AchievementNotifications)
         AchievementOverlay::Open(id);
+}
+
+time_t AchievementData::GetTimestamp(uint16_t id)
+{
+    for (int i = 0; i < sizeof(Data.Records) / sizeof(Record); i++)
+    {
+        if (Data.Records[i].ID == id)
+            return Data.Records[i].Timestamp;
+    }
+
+    return 0;
 }
 
 void AchievementData::Load()

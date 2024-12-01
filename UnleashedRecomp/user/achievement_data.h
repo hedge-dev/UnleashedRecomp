@@ -13,7 +13,8 @@ public:
     struct Record
     {
         uint16_t ID;
-        uint16_t Reserved[7];
+        time_t Timestamp;
+        uint16_t Reserved[3];
     };
 #pragma pack(pop)
 
@@ -35,6 +36,7 @@ public:
 
     static bool IsUnlocked(uint16_t id);
     static void Unlock(uint16_t id);
+    static time_t GetTimestamp(uint16_t id);
     static void Load();
     static void Save();
 };
