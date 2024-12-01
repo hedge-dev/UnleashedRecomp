@@ -1,10 +1,9 @@
 #pragma once
 
-#include <cstdint>
 #include <user/paths.h>
 
-#define ACH_SIGNATURE 'ACH '
-#define ACH_VERSION 0x01000000
+#define ACH_SIGNATURE { 'A', 'C', 'H', ' ' }
+#define ACH_VERSION   { 1, 0, 0 }
 
 class AchievementData
 {
@@ -18,12 +17,28 @@ public:
     };
 #pragma pack(pop)
 
+    struct Version
+    {
+        uint8_t Major;
+        uint8_t Minor;
+        uint8_t Revision;
+        uint8_t Reserved;
+
+        bool operator==(const Version& other) const
+        {
+            return Major == other.Major &&
+                   Minor == other.Minor &&
+                   Revision == other.Revision;
+        }
+    };
+
     class Data
     {
     public:
-        uint32_t Signature{};
-        uint32_t Version{};
-        uint32_t Reserved[2];
+        char Signature[4];
+        Version Version{};
+        uint32_t Checksum;
+        uint32_t Reserved;
         Record Records[50];
     };
 
@@ -34,9 +49,13 @@ public:
         return GetSavePath() / "ACH-DATA";
     }
 
+    static time_t GetTimestamp(uint16_t id);
     static bool IsUnlocked(uint16_t id);
     static void Unlock(uint16_t id);
-    static time_t GetTimestamp(uint16_t id);
+    static uint32_t CalculateChecksum();
+    static bool VerifySignature();
+    static bool VerifyVersion();
+    static bool VerifyChecksum();
     static void Load();
     static void Save();
 };
