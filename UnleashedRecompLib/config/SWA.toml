@@ -542,3 +542,15 @@ registers = ["r27"]
 name = "AchievementManagerUnlockMidAsmHook"
 address = 0x82BCFF28
 registers = ["r31"]
+
+[[midasm_hook]]
+name = "TitleMenuRemoveStorageDeviceOptionMidAsmHook"
+address = 0x825854F8
+registers = ["r11"]
+jump_address = 0x825854FC
+
+[[midasm_hook]]
+name = "TitleMenuAddInstallOptionMidAsmHook"
+address = 0x8258547C
+registers = ["r3"]
+jump_address = 0x82585480

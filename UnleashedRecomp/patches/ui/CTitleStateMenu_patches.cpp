@@ -36,3 +36,13 @@ PPC_FUNC(sub_825882B8)
         }
     }
 }
+
+void TitleMenuRemoveStorageDeviceOptionMidAsmHook(PPCRegister& r11)
+{
+    r11.u32 = 0;
+}
+
+void TitleMenuAddInstallOptionMidAsmHook(PPCRegister& r3)
+{
+    r3.u32 = 1;
+}
