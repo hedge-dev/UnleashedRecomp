@@ -23,8 +23,6 @@ constexpr double CONTENT_CONTAINER_COMMON_MOTION_END = 12;
 
 constexpr double COUNTER_INTRO_FADE_START = 15;
 constexpr double COUNTER_INTRO_FADE_END = 16;
-constexpr double COUNTER_SPRITE_FRAME_START = 0;
-constexpr double COUNTER_SPRITE_FRAME_END = 30;
 
 constexpr double SELECTION_CONTAINER_BREATHE = 30;
 
@@ -371,10 +369,16 @@ static void DrawAchievementTotal(ImVec2 min, ImVec2 max)
     ImVec2 imageMin = { max.x - imageSize - imageMarginX, min.y - imageSize - imageMarginY };
     ImVec2 imageMax = { imageMin.x + imageSize, imageMin.y + imageSize };
 
-    auto frm = int32_t(floor(ImGui::GetTime() * 30.0f)) % 30;
-    auto w = 256.0f / 7680.0f;
-    auto uv0 = ImVec2(frm * w, 0);
-    auto uv1 = ImVec2((frm + 1) * w, 1);
+    constexpr auto columns = 8;
+    constexpr auto rows = 4;
+    constexpr auto spriteSize = 256.0f;
+    constexpr auto textureWidth = 2048.0f;
+    constexpr auto textureHeight = 1024.0f;
+    auto frameIndex = int32_t(floor(ImGui::GetTime() * 30.0f)) % 30;
+    auto columnIndex = frameIndex % columns;
+    auto rowIndex = frameIndex / columns;
+    auto uv0 = ImVec2(columnIndex * spriteSize / textureWidth, rowIndex * spriteSize / textureHeight);
+    auto uv1 = ImVec2((columnIndex + 1) * spriteSize / textureWidth, (rowIndex + 1) * spriteSize / textureHeight);
 
     drawList->AddImage(g_upTrophyIcon.get(), imageMin, imageMax, uv0, uv1, IM_COL32(255, 255, 255, 255 * alpha));
 
@@ -630,7 +634,7 @@ void AchievementMenu::Init()
     g_fntNewRodinUB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
 
     size_t bufferSize = 0;
-    auto buffer = ReadAllBytes("achievements_trophy.png", bufferSize);
+    auto buffer = ReadAllBytes("trophy.dds", bufferSize);
 
     if (!bufferSize)
         return;
