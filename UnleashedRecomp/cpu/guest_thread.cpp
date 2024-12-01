@@ -11,24 +11,15 @@ constexpr size_t PCR_SIZE = 0xAB0;
 constexpr size_t TLS_SIZE = 0x100;
 constexpr size_t TEB_SIZE = 0x2E0;
 constexpr size_t STACK_SIZE = 0x40000;
-constexpr size_t CALL_STACK_SIZE = 0x8000;
-constexpr size_t TOTAL_SIZE = PCR_SIZE + TLS_SIZE + TEB_SIZE + STACK_SIZE + CALL_STACK_SIZE;
+constexpr size_t TOTAL_SIZE = PCR_SIZE + TLS_SIZE + TEB_SIZE + STACK_SIZE;
 
 constexpr size_t TEB_OFFSET = PCR_SIZE + TLS_SIZE;
 
-DWORD GuestThread::Start(uint32_t function)
+GuestThreadContext::GuestThreadContext(uint32_t cpuNumber)
 {
-    const GuestThreadParameter parameter{ function };
-    return Start(parameter);
-}
+    assert(thread == nullptr);
 
-DWORD GuestThread::Start(const GuestThreadParameter& parameter)
-{
-    auto* thread = (uint8_t*)g_userHeap.Alloc(TOTAL_SIZE);
-
-    const auto procMask = (uint8_t)(parameter.flags >> 24);
-    const auto cpuNumber = procMask == 0 ? 0 : 7 - std::countl_zero(procMask);
-
+    thread = (uint8_t*)g_userHeap.Alloc(TOTAL_SIZE);
     memset(thread, 0, TOTAL_SIZE);
 
     *(uint32_t*)thread = std::byteswap(g_memory.MapVirtual(thread + PCR_SIZE)); // tls pointer
@@ -38,18 +29,36 @@ DWORD GuestThread::Start(const GuestThreadParameter& parameter)
     *(uint32_t*)(thread + PCR_SIZE + 0x10) = 0xFFFFFFFF; // that one TLS entry that felt quirky
     *(uint32_t*)(thread + PCR_SIZE + TLS_SIZE + 0x14C) = std::byteswap(GetCurrentThreadId()); // thread id
 
-    PPCContext ppcContext{};
     ppcContext.fn = (uint8_t*)g_codeCache.bucket;
     ppcContext.r1.u64 = g_memory.MapVirtual(thread + PCR_SIZE + TLS_SIZE + TEB_SIZE + STACK_SIZE); // stack pointer
-    ppcContext.r3.u64 = parameter.value;
     ppcContext.r13.u64 = g_memory.MapVirtual(thread);
 
+    assert(GetPPCContext() == nullptr);
     SetPPCContext(ppcContext);
+}
 
-    GuestCode::Run(g_codeCache.Find(parameter.function), &ppcContext, g_memory.Translate(0), g_memory.Translate(ppcContext.r1.u32));
+GuestThreadContext::~GuestThreadContext()
+{
     g_userHeap.Free(thread);
+}
 
-    return (DWORD)ppcContext.r3.u64;
+DWORD GuestThread::Start(uint32_t function)
+{
+    const GuestThreadParameter parameter{ function };
+    return Start(parameter);
+}
+
+DWORD GuestThread::Start(const GuestThreadParameter& parameter)
+{
+    const auto procMask = (uint8_t)(parameter.flags >> 24);
+    const auto cpuNumber = procMask == 0 ? 0 : 7 - std::countl_zero(procMask);
+
+    GuestThreadContext ctx(cpuNumber);
+    ctx.ppcContext.r3.u64 = parameter.value;
+
+    GuestCode::Run(g_codeCache.Find(parameter.function), &ctx.ppcContext, g_memory.Translate(0));
+
+    return (DWORD)ctx.ppcContext.r3.u64;
 }
 
 DWORD HostThreadStart(void* pParameter)

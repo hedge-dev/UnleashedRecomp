@@ -64,7 +64,7 @@ set(SWA_APU_CXX_SOURCES
 if(SWA_XAUDIO2)
     list(APPEND SWA_APU_CXX_SOURCES "apu/driver/xaudio_driver.cpp")
 else()
-    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/sdl2_driver.cpp")
+    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/miniaudio_driver.cpp")
 endif()
 
 set(SWA_HID_CXX_SOURCES
@@ -160,7 +160,7 @@ find_package(unofficial-concurrentqueue REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(unofficial-tiny-aes-c CONFIG REQUIRED)
-find_path(READERWRITERQUEUE_INCLUDE_DIRS "readerwriterqueue/atomicops.h")
+find_path(MINIAUDIO_INCLUDE_DIRS "miniaudio.h")
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
 add_custom_command(TARGET UnleashedRecomp POST_BUILD
@@ -208,7 +208,7 @@ target_include_directories(UnleashedRecomp PRIVATE
     ${LIBMSPACK_PATH}
     ${Stb_INCLUDE_DIR}
     ${SMOLV_SOURCE_DIR}
-    ${READERWRITERQUEUE_INCLUDE_DIRS}
+    ${MINIAUDIO_INCLUDE_DIRS}
 )
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${SWA_PRECOMPILED_HEADERS})
