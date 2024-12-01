@@ -355,7 +355,9 @@ static void DrawContentContainer()
     auto drawList = ImGui::GetForegroundDrawList();
 
     // Expand/retract animation.
-    auto motion = ComputeMotion(g_appearTime, CONTENT_CONTAINER_COMMON_MOTION_START, CONTENT_CONTAINER_COMMON_MOTION_END);
+    auto motion = g_isClosing
+        ? ComputeMotion(g_appearTime, 0, CONTENT_CONTAINER_COMMON_MOTION_START)
+        : ComputeMotion(g_appearTime, CONTENT_CONTAINER_COMMON_MOTION_START, CONTENT_CONTAINER_COMMON_MOTION_END);
 
     auto minX = g_isClosing
         ? Hermite(256, 306, motion)

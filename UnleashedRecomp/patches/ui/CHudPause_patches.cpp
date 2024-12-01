@@ -8,7 +8,7 @@
 float g_achievementMenuIntroTime = 0.0f;
 constexpr float g_achievementMenuIntroThreshold = 3.0f;
 float g_achievementMenuOutroTime = 0.0f;
-constexpr float g_achievementMenuOutroThreshold = 0.42f;
+constexpr float g_achievementMenuOutroThreshold = 0.32f;
 bool g_isAchievementMenuOutro = false;
 
 void CHudPauseAddOptionsItemMidAsmHook(PPCRegister& pThis)
@@ -136,7 +136,7 @@ PPC_FUNC(sub_824B0930)
         if (g_achievementMenuIntroThreshold >= g_achievementMenuIntroTime)
             __imp__sub_824B0930(ctx, base);
 
-        if (pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
+        if (pInputState->GetPadState().IsTapped(SWA::eKeyState_B) && !g_isAchievementMenuOutro)
         {
             AchievementMenu::Close();
 
