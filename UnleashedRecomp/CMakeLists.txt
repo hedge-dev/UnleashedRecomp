@@ -1,6 +1,8 @@
 project("UnleashedRecomp")
 set(TARGET_NAME "SWA")
 
+option(SWA_XAUDIO2 "Use XAudio2 for audio playback" OFF)
+
 add_compile_options(
     /fp:strict
     -march=sandybridge
@@ -22,8 +24,8 @@ add_compile_definitions(
     _CRT_SECURE_NO_WARNINGS)
 
 # Generate icon bitmap header for SDL surface.
-BIN2H(SOURCE_FILE "res/icon.bmp" HEADER_FILE "res/icon.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_icon")
-BIN2H(SOURCE_FILE "res/icon_night.bmp" HEADER_FILE "res/icon_night.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_iconNight")
+BIN2H(SOURCE_FILE "../UnleashedRecompResources/images/game_icon.bmp" HEADER_FILE "res/icon.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_icon")
+BIN2H(SOURCE_FILE "../UnleashedRecompResources/images/game_icon_night.bmp" HEADER_FILE "res/icon_night.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_iconNight")
 
 set(SWA_PRECOMPILED_HEADERS
     "stdafx.h"
@@ -53,8 +55,13 @@ set(SWA_GPU_CXX_SOURCES
 
 set(SWA_APU_CXX_SOURCES
     "apu/audio.cpp"
-    "apu/driver/xaudio_driver.cpp"
 )
+
+if(SWA_XAUDIO2)
+    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/xaudio_driver.cpp")
+else()
+    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/sdl2_driver.cpp")
+endif()
 
 set(SWA_HID_CXX_SOURCES
     "hid/hid.cpp"
@@ -137,7 +144,7 @@ set(SWA_CXX_SOURCES
 
 if (WIN32)
     # Set up Win32 resources for application icon.
-    set(ICON_PATH "${PROJECT_SOURCE_DIR}/res/win32/icon.ico")
+    set(ICON_PATH "${PROJECT_SOURCE_DIR}/../UnleashedRecompResources/images/game_icon.ico")
     configure_file("res/win32/res.rc" "${CMAKE_BINARY_DIR}/res.rc" @ONLY)
     add_executable(UnleashedRecomp ${SWA_CXX_SOURCES} "${CMAKE_BINARY_DIR}/res.rc")
 else()
@@ -164,6 +171,7 @@ find_package(unofficial-concurrentqueue REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(unofficial-tiny-aes-c CONFIG REQUIRED)
+find_path(READERWRITERQUEUE_INCLUDE_DIRS "readerwriterqueue/atomicops.h")
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
 add_custom_command(TARGET UnleashedRecomp POST_BUILD
@@ -211,6 +219,7 @@ target_include_directories(UnleashedRecomp PRIVATE
     ${LIBMSPACK_PATH}
     ${Stb_INCLUDE_DIR}
     ${SMOLV_SOURCE_DIR}
+    ${READERWRITERQUEUE_INCLUDE_DIRS}
 )
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${SWA_PRECOMPILED_HEADERS})

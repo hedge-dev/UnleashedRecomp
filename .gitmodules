@@ -10,3 +10,6 @@
 [submodule "thirdparty/libmspack"]
 	path = thirdparty/libmspack
 	url = https://github.com/kyz/libmspack
+[submodule "UnleashedRecompResources"]
+	path = UnleashedRecompResources
+	url = https://github.com/hedge-dev/UnleashedRecompResources.git

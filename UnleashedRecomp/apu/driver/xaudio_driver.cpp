@@ -9,7 +9,7 @@
 
 #define XAUDIO_DRIVER_KEY (uint32_t)('XAUD')
 
-PPCFunc* g_clientCallback{};
+PPCFunc* volatile g_clientCallback{};
 DWORD g_clientCallbackParam{}; // pointer in guest memory
 DWORD g_driverThread{};
 
@@ -49,8 +49,6 @@ PPC_FUNC(DriverLoop)
     {
         if (!g_clientCallback)
         {
-            // NOTE: This if statement doesn't get compiled in without this barrier. What?
-            _ReadBarrier();
             continue;
         }
 
@@ -77,9 +75,9 @@ void XAudioInitializeSystem()
     WAVEFORMATIEEEFLOATEX format{};
     format.Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
     format.Format.cbSize = sizeof(format) - sizeof(format.Format);
-    format.Format.nChannels = 6;
-    format.Format.nSamplesPerSec = 48000;
-    format.Format.wBitsPerSample = 32;
+    format.Format.nChannels = XAUDIO_NUM_CHANNELS;
+    format.Format.nSamplesPerSec = XAUDIO_SAMPLES_HZ;
+    format.Format.wBitsPerSample = XAUDIO_SAMPLE_BITS;
     format.Format.nBlockAlign = (format.Format.nChannels * format.Format.wBitsPerSample) / 8;
     format.Format.nAvgBytesPerSec = format.Format.nSamplesPerSec * format.Format.nBlockAlign;
 
@@ -110,16 +108,16 @@ void XAudioSubmitFrame(void* samples)
     uint32_t* audioFrame = &g_audioFrames[g_audioFrameSize * g_audioFrameIndex];
     g_audioFrameIndex = (g_audioFrameIndex + 1) % g_semaphoreCount;
 
-    for (size_t i = 0; i < 256; i++)
+    for (size_t i = 0; i < XAUDIO_NUM_SAMPLES; i++)
     {
         for (size_t j = 0; j < 6; j++)
-            audioFrame[i * 6 + j] = std::byteswap(((uint32_t*)samples)[j * 256 + i]);
+            audioFrame[i * XAUDIO_NUM_CHANNELS + j] = std::byteswap(((uint32_t*)samples)[j * XAUDIO_NUM_SAMPLES + i]);
     }
 
     XAUDIO2_BUFFER buffer{};
     buffer.pAudioData = (BYTE*)audioFrame;
-    buffer.AudioBytes = 256 * 6 * sizeof(float);
-    buffer.PlayLength = 256;
+    buffer.AudioBytes = XAUDIO_NUM_SAMPLES * XAUDIO_NUM_CHANNELS * sizeof(float);
+    buffer.PlayLength = XAUDIO_NUM_SAMPLES;
 
     g_sourceVoice->SubmitSourceBuffer(&buffer);
 }

@@ -21,6 +21,7 @@
             "name": "imgui",
             "features": [ "sdl2-binding" ]
         },
-        "magic-enum"
+        "magic-enum",
+        "readerwriterqueue"
     ]
 }
