@@ -1,5 +1,4 @@
 #include "achievement_data.h"
-#include <fstream>
 #include <ui/achievement_overlay.h>
 #include <user/config.h>
 
@@ -17,6 +16,21 @@ time_t AchievementData::GetTimestamp(uint16_t id)
     }
 
     return 0;
+}
+
+int AchievementData::GetTotalRecords()
+{
+    auto result = 0;
+
+    for (int i = 0; i < NUM_RECORDS; i++)
+    {
+        if (!Data.Records[i].ID)
+            break;
+
+        result++;
+    }
+
+    return result;
 }
 
 bool AchievementData::IsUnlocked(uint16_t id)

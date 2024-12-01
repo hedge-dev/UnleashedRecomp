@@ -4,6 +4,7 @@
 
 #define ACH_SIGNATURE { 'A', 'C', 'H', ' ' }
 #define ACH_VERSION   { 1, 0, 0 }
+#define ACH_RECORDS   50
 
 class AchievementData
 {
@@ -39,7 +40,7 @@ public:
         Version Version{};
         uint32_t Checksum;
         uint32_t Reserved;
-        Record Records[50];
+        Record Records[ACH_RECORDS];
     };
 
     inline static Data Data{ ACH_SIGNATURE, ACH_VERSION };
@@ -50,6 +51,7 @@ public:
     }
 
     static time_t GetTimestamp(uint16_t id);
+    static int GetTotalRecords();
     static bool IsUnlocked(uint16_t id);
     static void Unlock(uint16_t id);
     static uint32_t CalculateChecksum();

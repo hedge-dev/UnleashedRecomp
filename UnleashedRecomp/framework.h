@@ -74,3 +74,23 @@ constexpr size_t FirstBitLow(TValue value)
 
     return 0;
 }
+
+static std::unique_ptr<uint8_t[]> ReadAllBytes(const char* filePath, size_t& fileSize)
+{
+    FILE* file = fopen(filePath, "rb");
+
+    if (!file)
+        return std::make_unique<uint8_t[]>(0);
+
+    fseek(file, 0, SEEK_END);
+
+    fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    auto data = std::make_unique<uint8_t[]>(fileSize);
+    fread(data.get(), 1, fileSize, file);
+
+    fclose(file);
+
+    return data;
+}

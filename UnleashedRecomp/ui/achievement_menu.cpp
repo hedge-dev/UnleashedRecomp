@@ -21,6 +21,11 @@ constexpr double HEADER_CONTAINER_OUTRO_FADE_END = 7;
 constexpr double CONTENT_CONTAINER_COMMON_MOTION_START = 11;
 constexpr double CONTENT_CONTAINER_COMMON_MOTION_END = 12;
 
+constexpr double COUNTER_INTRO_FADE_START = 15;
+constexpr double COUNTER_INTRO_FADE_END = 16;
+constexpr double COUNTER_SPRITE_FRAME_START = 0;
+constexpr double COUNTER_SPRITE_FRAME_END = 30;
+
 constexpr double SELECTION_CONTAINER_BREATHE = 30;
 
 static bool g_isClosing = false;
@@ -32,6 +37,8 @@ static std::vector<std::tuple<Achievement, time_t>> g_achievements;
 static ImFont* g_fntSeurat;
 static ImFont* g_fntNewRodinDB;
 static ImFont* g_fntNewRodinUB;
+
+static std::unique_ptr<GuestTexture> g_upTrophyIcon;
 
 static int g_firstVisibleRowIndex;
 static int g_selectedRowIndex;
@@ -350,6 +357,43 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
     drawList->PopClipRect();
 }
 
+static void DrawAchievementTotal(ImVec2 min, ImVec2 max)
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+
+    // Transparency fade animation.
+    auto alpha = Cubic(0, 1, ComputeMotion(g_appearTime, COUNTER_INTRO_FADE_START, COUNTER_INTRO_FADE_END));
+
+    auto imageMarginX = Scale(5);
+    auto imageMarginY = Scale(5);
+    auto imageSize = Scale(45);
+
+    ImVec2 imageMin = { max.x - imageSize - imageMarginX, min.y - imageSize - imageMarginY };
+    ImVec2 imageMax = { imageMin.x + imageSize, imageMin.y + imageSize };
+
+    auto frm = int32_t(floor(ImGui::GetTime() * 30.0f)) % 30;
+    auto w = 256.0f / 7680.0f;
+    auto uv0 = ImVec2(frm * w, 0);
+    auto uv1 = ImVec2((frm + 1) * w, 1);
+
+    drawList->AddImage(g_upTrophyIcon.get(), imageMin, imageMax, uv0, uv1, IM_COL32(255, 255, 255, 255 * alpha));
+
+    auto str = std::format("{} / {}", AchievementData::GetTotalRecords(), ACH_RECORDS);
+    auto fontSize = Scale(20);
+    auto textSize = g_fntNewRodinDB->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str());
+
+    DrawTextWithOutline<int>
+    (
+        g_fntNewRodinDB,
+        fontSize,
+        { /* X */ imageMin.x - textSize.x - Scale(6), /* Y */ imageMin.y + ((imageMax.y - imageMin.y) - textSize.y) / 2 },
+        IM_COL32(255, 255, 255, 255 * alpha),
+        str.c_str(),
+        2,
+        IM_COL32(0, 0, 0, 255 * alpha)
+    );
+}
+
 static void DrawContentContainer()
 {
     auto drawList = ImGui::GetForegroundDrawList();
@@ -519,6 +563,8 @@ static void DrawContentContainer()
     // Pop clip rect from DrawContentContainer
     drawList->PopClipRect();
 
+    DrawAchievementTotal(min, max);
+
     // Draw scroll bar
     if (rowCount > visibleRowCount)
     {
@@ -582,6 +628,14 @@ void AchievementMenu::Init()
     g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
     g_fntNewRodinDB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
     g_fntNewRodinUB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
+
+    size_t bufferSize = 0;
+    auto buffer = ReadAllBytes("achievements_trophy.png", bufferSize);
+
+    if (!bufferSize)
+        return;
+
+    g_upTrophyIcon = LoadTexture(buffer.get(), bufferSize);
 }
 
 void AchievementMenu::Draw()
