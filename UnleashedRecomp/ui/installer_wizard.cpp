@@ -16,6 +16,7 @@
 #include <res/install_007_dds.h>
 #include <res/install_008_dds.h>
 #include <res/miles_electric_icon_dds.h>
+#include <res/arrow_circle_dds.h>
 
 #define SKIP_SOURCE_CHECKS 0
 
@@ -72,7 +73,8 @@ static std::filesystem::path g_gameSourcePath;
 static std::filesystem::path g_updateSourcePath;
 static std::array<std::filesystem::path, int(DLC::Count)> g_dlcSourcePaths;
 static std::array<std::unique_ptr<GuestTexture>, 8> g_installTextures;
-static std::unique_ptr<GuestTexture> g_installHeaderIcon;
+static std::unique_ptr<GuestTexture> g_milesElectricIcon;
+static std::unique_ptr<GuestTexture> g_arrowCircle;
 static Journal g_installerJournal;
 static Installer::Sources g_installerSources;
 static uint64_t g_installerAvailableSize = 0;
@@ -233,14 +235,6 @@ static void DrawScanlineBars()
     int textAlpha = std::lround(255.0f * ComputeMotionInstaller(g_appearTime, g_disappearTime, TITLE_ANIMATION_TIME, TITLE_ANIMATION_DURATION));
     DrawTextWithOutline<int>(g_dfsogeistdFont, Scale(42.0f), { Scale(285.0f), Scale(57.0f) }, IM_COL32(255, 195, 0, textAlpha), headerText, 4, IM_COL32(0, 0, 0, textAlpha));
 
-    // Icon
-    float iconPosX = 225.0f;
-    float iconPosY = 50.0f;
-    GuestTexture* guestTexture = g_installHeaderIcon.get();
-    ImVec2 min = { Scale(iconPosX), Scale(iconPosY) };
-    ImVec2 max = { Scale(iconPosX + 58), Scale(iconPosY + 58) };
-    drawList->AddImage(guestTexture, min, max, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
-
     // Top bar line
     drawList->AddLine
     (
@@ -258,6 +252,24 @@ static void DrawScanlineBars()
         OUTLINE_COLOR,
         Scale(1)
     );
+
+    // Icons
+    float iconsPosX = 225.0f;
+    float iconsPosY = 50.0f;
+
+    // Miles Electric Icon
+    float milesIconScale = 59;
+    GuestTexture* milesElectricIconTexture = g_milesElectricIcon.get();
+    ImVec2 milesElectricMin = { Scale(iconsPosX), Scale(iconsPosY) };
+    ImVec2 milesElectricMax = { Scale(iconsPosX + milesIconScale), Scale(iconsPosY + milesIconScale) };
+    drawList->AddImage(milesElectricIconTexture, milesElectricMin, milesElectricMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
+
+    // Arrow Circle Icon
+    float arrowCircleScale = 58;
+    GuestTexture* arrowCircleTexture = g_arrowCircle.get();
+    ImVec2 arrowCircleMin = { Scale(iconsPosX), Scale(iconsPosY) };
+    ImVec2 arrowCircleMax = { Scale(iconsPosX + arrowCircleScale), Scale(iconsPosY + arrowCircleScale) };
+    drawList->AddImage(arrowCircleTexture, arrowCircleMin, arrowCircleMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
 }
 
 static float AlignToNextGrid(float value)
@@ -852,7 +864,8 @@ void InstallerWizard::Init()
     g_installTextures[5] = LoadTexture(g_install006DDS, g_install006DDS_size);
     g_installTextures[6] = LoadTexture(g_install007DDS, g_install007DDS_size);
     g_installTextures[7] = LoadTexture(g_install008DDS, g_install008DDS_size);
-    g_installHeaderIcon = LoadTexture(g_milesElectricIconDDS, g_milesElectricIconDDS_size);
+    g_milesElectricIcon = LoadTexture(g_milesElectricIconDDS, g_milesElectricIconDDS_size);
+    g_arrowCircle = LoadTexture(g_arrowCircleDDS, g_arrowCircleDDS_size);
 }
 
 void InstallerWizard::Draw()

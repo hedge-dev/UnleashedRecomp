@@ -117,6 +117,7 @@ BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_006.dds" HEADER_FILE "res/ins
 BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_007.dds" HEADER_FILE "res/install_007_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install007DDS")
 BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_008.dds" HEADER_FILE "res/install_008_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install008DDS")
 BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/miles_electric_icon.dds" HEADER_FILE "res/miles_electric_icon_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_milesElectricIconDDS")
+BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/arrow_circle.dds" HEADER_FILE "res/arrow_circle_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_arrowCircleDDS")
 
 set(LIBMSPACK_PATH ${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack)
 
