@@ -15,6 +15,7 @@
 #include <res/install_006_dds.h>
 #include <res/install_007_dds.h>
 #include <res/install_008_dds.h>
+#include <res/miles_electric_icon_dds.h>
 
 #define SKIP_SOURCE_CHECKS 0
 
@@ -36,7 +37,7 @@ static constexpr double CONTAINER_BACKGROUND_DURATION = 16.0;
 
 static constexpr double ALL_ANIMATIONS_FULL_DURATION = CONTAINER_BACKGROUND_TIME + CONTAINER_BACKGROUND_DURATION;
 
-constexpr float IMAGE_X = 140.0f;
+constexpr float IMAGE_X = 165.0f;
 constexpr float IMAGE_Y = 106.0f;
 constexpr float IMAGE_WIDTH = 512.0f;
 constexpr float IMAGE_HEIGHT = 512.0f;
@@ -71,6 +72,7 @@ static std::filesystem::path g_gameSourcePath;
 static std::filesystem::path g_updateSourcePath;
 static std::array<std::filesystem::path, int(DLC::Count)> g_dlcSourcePaths;
 static std::array<std::unique_ptr<GuestTexture>, 8> g_installTextures;
+static std::unique_ptr<GuestTexture> g_installHeaderIcon;
 static Journal g_installerJournal;
 static Installer::Sources g_installerSources;
 static uint64_t g_installerAvailableSize = 0;
@@ -229,7 +231,15 @@ static void DrawScanlineBars()
     // TODO: localise this.
     const char *headerText = g_currentPage == WizardPage::Installing ? INSTALLING_TEXT : INSTALLER_TEXT;
     int textAlpha = std::lround(255.0f * ComputeMotionInstaller(g_appearTime, g_disappearTime, TITLE_ANIMATION_TIME, TITLE_ANIMATION_DURATION));
-    DrawTextWithOutline<int>(g_dfsogeistdFont, Scale(48.0f), { Scale(122.0f), Scale(56.0f) }, IM_COL32(255, 195, 0, textAlpha), headerText, 4, IM_COL32(0, 0, 0, textAlpha));
+    DrawTextWithOutline<int>(g_dfsogeistdFont, Scale(42.0f), { Scale(285.0f), Scale(57.0f) }, IM_COL32(255, 195, 0, textAlpha), headerText, 4, IM_COL32(0, 0, 0, textAlpha));
+
+    // Icon
+    float iconPosX = 225.0f;
+    float iconPosY = 50.0f;
+    GuestTexture* guestTexture = g_installHeaderIcon.get();
+    ImVec2 min = { Scale(iconPosX), Scale(iconPosY) };
+    ImVec2 max = { Scale(iconPosX + 58), Scale(iconPosY + 58) };
+    drawList->AddImage(guestTexture, min, max, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
 
     // Top bar line
     drawList->AddLine
@@ -255,7 +265,7 @@ static float AlignToNextGrid(float value)
     return floor(value / GRID_SIZE) * GRID_SIZE;
 }
 
-static void DrawContainer(ImVec2 min, ImVec2 max, bool useInnerColor)
+static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
 {
     double containerHeight = ComputeMotionInstaller(g_appearTime, g_disappearTime, 0.0, CONTAINER_LINE_ANIMATION_DURATION);
 
@@ -266,19 +276,24 @@ static void DrawContainer(ImVec2 min, ImVec2 max, bool useInnerColor)
     auto &res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
 
-    double outerAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_OUTER_TIME, CONTAINER_OUTER_DURATION);
-    double innerAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
-    double backgroundAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_BACKGROUND_TIME, CONTAINER_BACKGROUND_DURATION);
+    double gridAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, 
+        isTextArea ? CONTAINER_INNER_TIME : CONTAINER_OUTER_TIME,
+        isTextArea ? CONTAINER_INNER_DURATION : CONTAINER_OUTER_DURATION
+    );
+    double gridOverlayAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_OUTER_TIME, CONTAINER_OUTER_DURATION);
 
-    const uint32_t outerColor = IM_COL32(0, 60, 0, 128 * outerAlpha);
-    const uint32_t innerColor = IM_COL32(0, 40, 0, 96 * innerAlpha);
-    const uint32_t backgroundColor = IM_COL32(0, 60, 0, 96 * backgroundAlpha);
+    const uint32_t gridColor = IM_COL32(0, 33, 0, isTextArea ? 128 : 255 * gridAlpha);
+    const uint32_t gridOverlayColor = IM_COL32(0, 32, 0, 128 * gridOverlayAlpha);
 
     float gridSize = Scale(GRID_SIZE);
-    drawList->AddRectFilled(min, max, backgroundColor);
+
     SetShaderModifier(IMGUI_SHADER_MODIFIER_CHECKERBOARD);
-    drawList->AddRectFilled(min, max, useInnerColor ? innerColor: outerColor);
+    drawList->AddRectFilled(min, max, gridColor);
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
+
+    if (isTextArea) {
+        drawList->AddRectFilled(min, max, gridOverlayColor);
+    }
 
     // The draw area
     drawList->PushClipRect({ min.x + gridSize * 2.0f, min.y + gridSize * 2.0f }, { max.x - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
@@ -291,7 +306,7 @@ static void DrawDescriptionContainer()
 
     ImVec2 descriptionMin = { Scale(AlignToNextGrid(CONTAINER_X)), Scale(AlignToNextGrid(CONTAINER_Y)) };
     ImVec2 descriptionMax = { Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH)), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT)) };
-    DrawContainer(descriptionMin, descriptionMax, false);
+    DrawContainer(descriptionMin, descriptionMax, true);
 
     char descriptionText[512];
     strncpy(descriptionText, WIZARD_TEXT[int(g_currentPage)], sizeof(descriptionText) - 1);
@@ -331,7 +346,7 @@ static void DrawDescriptionContainer()
 
     ImVec2 sideMin = { descriptionMax.x, descriptionMin.y };
     ImVec2 sideMax = { Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH + SIDE_CONTAINER_WIDTH)), descriptionMax.y };
-    DrawContainer(sideMin, sideMax, true);
+    DrawContainer(sideMin, sideMax, false);
     drawList->PopClipRect();
 }
 
@@ -837,6 +852,7 @@ void InstallerWizard::Init()
     g_installTextures[5] = LoadTexture(g_install006DDS, g_install006DDS_size);
     g_installTextures[6] = LoadTexture(g_install007DDS, g_install007DDS_size);
     g_installTextures[7] = LoadTexture(g_install008DDS, g_install008DDS_size);
+    g_installHeaderIcon = LoadTexture(g_milesElectricIconDDS, g_milesElectricIconDDS_size);
 }
 
 void InstallerWizard::Draw()
