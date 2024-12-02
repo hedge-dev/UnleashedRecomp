@@ -20,23 +20,28 @@
 
 #define SKIP_SOURCE_CHECKS 0
 
-static constexpr double SCANLINES_ANIMATION_DURATION = 8.0;
+static constexpr double SCANLINES_ANIMATION_TIME = 0.0;
+static constexpr double SCANLINES_ANIMATION_DURATION = 15.0;
 
-static constexpr double TITLE_ANIMATION_TIME = SCANLINES_ANIMATION_DURATION + 8.0; // 8 frame delay
-static constexpr double TITLE_ANIMATION_DURATION = 8.0;
+static constexpr double MILES_ICON_ANIMATION_TIME = SCANLINES_ANIMATION_TIME + 10.0;
+static constexpr double MILES_ICON_ANIMATION_DURATION = 15.0;
 
-static constexpr double CONTAINER_LINE_ANIMATION_DURATION = 8.0;
+static constexpr double IMAGE_ANIMATION_TIME = MILES_ICON_ANIMATION_TIME + MILES_ICON_ANIMATION_DURATION;
+static constexpr double IMAGE_ANIMATION_DURATION = 15.0;
 
-static constexpr double CONTAINER_OUTER_TIME = CONTAINER_LINE_ANIMATION_DURATION + 8.0; // 8 frame delay
-static constexpr double CONTAINER_OUTER_DURATION = 8.0;
+static constexpr double TITLE_ANIMATION_TIME = SCANLINES_ANIMATION_DURATION;
+static constexpr double TITLE_ANIMATION_DURATION = 30.0;
 
-static constexpr double CONTAINER_INNER_TIME = CONTAINER_OUTER_TIME + CONTAINER_OUTER_DURATION + 8.0; // 8 frame delay
-static constexpr double CONTAINER_INNER_DURATION = 8.0;
+static constexpr double CONTAINER_LINE_ANIMATION_TIME = SCANLINES_ANIMATION_DURATION;
+static constexpr double CONTAINER_LINE_ANIMATION_DURATION = 23.0;
 
-static constexpr double CONTAINER_BACKGROUND_TIME = CONTAINER_INNER_TIME + CONTAINER_INNER_DURATION + 8.0; // 8 frame delay
-static constexpr double CONTAINER_BACKGROUND_DURATION = 16.0;
+static constexpr double CONTAINER_OUTER_TIME = SCANLINES_ANIMATION_DURATION + CONTAINER_LINE_ANIMATION_DURATION;
+static constexpr double CONTAINER_OUTER_DURATION = 23.0;
 
-static constexpr double ALL_ANIMATIONS_FULL_DURATION = CONTAINER_BACKGROUND_TIME + CONTAINER_BACKGROUND_DURATION;
+static constexpr double CONTAINER_INNER_TIME = SCANLINES_ANIMATION_DURATION + CONTAINER_LINE_ANIMATION_DURATION + 8.0;
+static constexpr double CONTAINER_INNER_DURATION = 15.0;
+
+static constexpr double ALL_ANIMATIONS_FULL_DURATION = CONTAINER_INNER_TIME + CONTAINER_INNER_DURATION;
 
 constexpr float IMAGE_X = 165.0f;
 constexpr float IMAGE_Y = 106.0f;
@@ -173,7 +178,7 @@ static void DrawLeftImage()
         installTextureIndex += int(installationTime);
     }
 
-    double imageAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_BACKGROUND_TIME, CONTAINER_BACKGROUND_DURATION);
+    double imageAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, IMAGE_ANIMATION_TIME, IMAGE_ANIMATION_DURATION);
     int a = std::lround(255.0 * imageAlpha);
     GuestTexture *guestTexture = g_installTextures[installTextureIndex % g_installTextures.size()].get();
     auto &res = ImGui::GetIO().DisplaySize;
@@ -186,13 +191,42 @@ static void DrawLeftImage()
     drawList->AddRectFilledMultiColor(min, max, IM_COL32_BLACK_TRANS, IM_COL32_BLACK_TRANS, IM_COL32(0, 0, 0, 255), IM_COL32(0, 0, 0, 255));
 }
 
+static void DrawHeaderIcons()
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+
+    float iconsPosX = 255.0f;
+    float iconsPosY = 79.0f;
+    float iconsScale = 58;
+
+    // Miles Electric Icon
+    float milesIconMotion = ComputeMotionInstaller(g_appearTime, g_disappearTime, MILES_ICON_ANIMATION_TIME, MILES_ICON_ANIMATION_DURATION);
+    float milesIconScale = iconsScale * (2 - milesIconMotion);
+
+    GuestTexture* milesElectricIconTexture = g_milesElectricIcon.get();
+    ImVec2 milesElectricMin = { Scale(iconsPosX - milesIconScale / 2), Scale(iconsPosY - milesIconScale / 2) };
+    ImVec2 milesElectricMax = { Scale(iconsPosX + milesIconScale / 2), Scale(iconsPosY + milesIconScale / 2) };
+    drawList->AddImage(milesElectricIconTexture, milesElectricMin, milesElectricMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255 * milesIconMotion));
+
+    // Arrow Circle Icon
+    if (g_currentPage == WizardPage::Installing)
+    {
+        GuestTexture* arrowCircleTexture = g_arrowCircle.get();
+        ImVec2 arrowCircleMin = { Scale(iconsPosX - iconsScale / 2), Scale(iconsPosY - iconsScale / 2) };
+        ImVec2 arrowCircleMax = { Scale(iconsPosX + iconsScale / 2), Scale(iconsPosY + iconsScale / 2) };
+        drawList->AddImage(arrowCircleTexture, arrowCircleMin, arrowCircleMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
+    }
+}
+
 static void DrawScanlineBars()
 {
-    constexpr uint32_t COLOR0 = IM_COL32(203, 255, 0, 0);
-    constexpr uint32_t COLOR1 = IM_COL32(203, 255, 0, 55);
-    constexpr uint32_t FADE_COLOR0 = IM_COL32(0, 0, 0, 255);
-    constexpr uint32_t FADE_COLOR1 = IM_COL32(0, 0, 0, 0);
-    constexpr uint32_t OUTLINE_COLOR = IM_COL32(115, 178, 104, 255);
+    double scanlinesAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, 0.0, SCANLINES_ANIMATION_DURATION);
+
+    const uint32_t COLOR0 = IM_COL32(203, 255, 0, 0);
+    const uint32_t COLOR1 = IM_COL32(203, 255, 0, 55 * scanlinesAlpha);
+    const uint32_t FADE_COLOR0 = IM_COL32(0, 0, 0, 255 * scanlinesAlpha);
+    const uint32_t FADE_COLOR1 = IM_COL32(0, 0, 0, 0);
+    const uint32_t OUTLINE_COLOR = IM_COL32(115, 178, 104, 255 * scanlinesAlpha);
 
     float height = Scale(105.0f) * ComputeMotionInstaller(g_appearTime, g_disappearTime, 0.0, SCANLINES_ANIMATION_DURATION);
     if (height < 1e-6f)
@@ -253,23 +287,7 @@ static void DrawScanlineBars()
         Scale(1)
     );
 
-    // Icons
-    float iconsPosX = 225.0f;
-    float iconsPosY = 50.0f;
-
-    // Miles Electric Icon
-    float milesIconScale = 59;
-    GuestTexture* milesElectricIconTexture = g_milesElectricIcon.get();
-    ImVec2 milesElectricMin = { Scale(iconsPosX), Scale(iconsPosY) };
-    ImVec2 milesElectricMax = { Scale(iconsPosX + milesIconScale), Scale(iconsPosY + milesIconScale) };
-    drawList->AddImage(milesElectricIconTexture, milesElectricMin, milesElectricMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
-
-    // Arrow Circle Icon
-    float arrowCircleScale = 58;
-    GuestTexture* arrowCircleTexture = g_arrowCircle.get();
-    ImVec2 arrowCircleMin = { Scale(iconsPosX), Scale(iconsPosY) };
-    ImVec2 arrowCircleMax = { Scale(iconsPosX + arrowCircleScale), Scale(iconsPosY + arrowCircleScale) };
-    drawList->AddImage(arrowCircleTexture, arrowCircleMin, arrowCircleMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
+    DrawHeaderIcons();
 }
 
 static float AlignToNextGrid(float value)
@@ -278,13 +296,7 @@ static float AlignToNextGrid(float value)
 }
 
 static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
-{
-    double containerHeight = ComputeMotionInstaller(g_appearTime, g_disappearTime, 0.0, CONTAINER_LINE_ANIMATION_DURATION);
-
-    float center = (min.y + max.y) / 2.0f;
-    min.y = Lerp(center, min.y, containerHeight);
-    max.y = Lerp(center, max.y, containerHeight);
-
+{   
     auto &res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
 
@@ -292,9 +304,9 @@ static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
         isTextArea ? CONTAINER_INNER_TIME : CONTAINER_OUTER_TIME,
         isTextArea ? CONTAINER_INNER_DURATION : CONTAINER_OUTER_DURATION
     );
-    double gridOverlayAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_OUTER_TIME, CONTAINER_OUTER_DURATION);
+    double gridOverlayAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
 
-    const uint32_t gridColor = IM_COL32(0, 33, 0, isTextArea ? 128 : 255 * gridAlpha);
+    const uint32_t gridColor = IM_COL32(0, 33, 0, (isTextArea ? 128 : 255) * gridAlpha);
     const uint32_t gridOverlayColor = IM_COL32(0, 32, 0, 128 * gridOverlayAlpha);
 
     float gridSize = Scale(GRID_SIZE);
@@ -303,7 +315,8 @@ static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
     drawList->AddRectFilled(min, max, gridColor);
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
-    if (isTextArea) {
+    if (isTextArea) 
+    {
         drawList->AddRectFilled(min, max, gridOverlayColor);
     }
 
@@ -339,7 +352,7 @@ static void DrawDescriptionContainer()
         strncat(descriptionText, g_installerErrorMessage.c_str(), sizeof(descriptionText) - 1);
     }
 
-    double textAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_BACKGROUND_TIME, CONTAINER_BACKGROUND_DURATION);
+    double textAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
     auto size = Scale(26.0f);
@@ -379,7 +392,7 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
 
     auto &res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
-    float alpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_BACKGROUND_TIME, CONTAINER_BACKGROUND_DURATION);
+    float alpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
     if (!buttonEnabled)
     {
         alpha *= 0.5f;
@@ -782,7 +795,7 @@ static void DrawHorizontalBorder(bool bottomBorder)
     const uint32_t SOLID_COLOR = IM_COL32(155, 200, 155, 255);
     const uint32_t FADE_COLOR_RIGHT = IM_COL32(155, 225, 155, 0);
     auto drawList = ImGui::GetForegroundDrawList();
-    double borderScale = 1.0 - ComputeMotionInstaller(g_appearTime, g_disappearTime, 0.0, CONTAINER_LINE_ANIMATION_DURATION);
+    double borderScale = 1.0 - ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_LINE_ANIMATION_TIME, CONTAINER_LINE_ANIMATION_DURATION);
     float midX = Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH / 5));
     float minX = std::lerp(Scale(AlignToNextGrid(CONTAINER_X) - BORDER_SIZE - BORDER_OVERSHOOT), midX, borderScale);
     float maxX = std::lerp(Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH + SIDE_CONTAINER_WIDTH) + BORDER_OVERSHOOT), midX, borderScale);
@@ -814,7 +827,7 @@ static void DrawVerticalBorder(bool rightBorder)
     const uint32_t SOLID_COLOR = IM_COL32(155, rightBorder ? 225 : 155, 155, 255);
     const uint32_t FADE_COLOR = IM_COL32(155, rightBorder ? 225 : 155, 155, 0);
     auto drawList = ImGui::GetForegroundDrawList();
-    double borderScale = 1.0 - ComputeMotionInstaller(g_appearTime, g_disappearTime, 0.0, CONTAINER_LINE_ANIMATION_DURATION);
+    double borderScale = 1.0 - ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_LINE_ANIMATION_TIME, CONTAINER_LINE_ANIMATION_DURATION);
     float minX = rightBorder ? Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH)) : Scale(AlignToNextGrid(CONTAINER_X) - BORDER_SIZE);
     float maxX = minX + Scale(BORDER_SIZE);
     float midY = Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT / 2));
