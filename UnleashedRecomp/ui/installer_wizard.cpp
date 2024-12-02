@@ -191,6 +191,10 @@ static void DrawScanlineBars()
     constexpr uint32_t OUTLINE_COLOR = IM_COL32(115, 178, 104, 255);
 
     float height = Scale(105.0f) * ComputeMotionInstaller(g_appearTime, g_disappearTime, 0.0, SCANLINES_ANIMATION_DURATION);
+    if (height < 1e-6f)
+    {
+        return;
+    }
 
     auto &res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
