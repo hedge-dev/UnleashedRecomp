@@ -1383,7 +1383,7 @@ void Video::CreateHostDevice()
     g_commandLists[g_frame]->barriers(RenderBarrierStage::NONE, blankTextureBarriers, std::size(blankTextureBarriers));
 }
 
-static void WaitForGPU()
+void Video::WaitForGPU()
 {
     if (g_vulkan)
     {
@@ -1425,7 +1425,7 @@ static void BeginCommandList()
 
     if (!g_swapChainValid)
     {
-        WaitForGPU();
+        Video::WaitForGPU();
         g_backBuffer->framebuffers.clear();
         g_swapChainValid = g_swapChain->resize();
         g_needsResize = g_swapChainValid;
@@ -1449,7 +1449,7 @@ static void BeginCommandList()
                 if (g_intermediaryBackBufferTextureDescriptorIndex == NULL)
                     g_intermediaryBackBufferTextureDescriptorIndex = g_textureDescriptorAllocator.allocate();
 
-                WaitForGPU(); // Fine to wait for GPU, this'll only happen during resize.
+                Video::WaitForGPU(); // Fine to wait for GPU, this'll only happen during resize.
 
                 g_intermediaryBackBufferTexture = g_device->createTexture(RenderTextureDesc::Texture2D(width, height, 1, BACKBUFFER_FORMAT, RenderTextureFlag::RENDER_TARGET));
                 g_textureDescriptorSet->setTexture(g_intermediaryBackBufferTextureDescriptorIndex, g_intermediaryBackBufferTexture.get(), RenderTextureLayout::SHADER_READ);

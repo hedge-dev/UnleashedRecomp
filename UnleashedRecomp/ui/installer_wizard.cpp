@@ -4,6 +4,7 @@
 
 #include <install/installer.h>
 #include <gpu/video.h>
+#include <locale/locale.h>
 #include <ui/imgui_utils.h>
 #include <ui/window.h>
 
@@ -54,8 +55,8 @@ constexpr float SIDE_CONTAINER_WIDTH = CONTAINER_WIDTH / 2.0f;
 
 constexpr float BOTTOM_X_GAP = 4.0f;
 constexpr float BOTTOM_Y_GAP = 4.0f;
-constexpr float SOURCE_BUTTON_WIDTH = 250.0f;
-constexpr float SOURCE_BUTTON_GAP = 9.0f;
+constexpr float CONTAINER_BUTTON_WIDTH = 250.0f;
+constexpr float CONTAINER_BUTTON_GAP = 9.0f;
 constexpr float BUTTON_HEIGHT = 22.0f;
 constexpr float BUTTON_TEXT_GAP = 28.0f;
 
@@ -94,6 +95,7 @@ static std::string g_installerErrorMessage;
 
 enum class WizardPage
 {
+    SelectLanguage,
     Introduction,
     SelectGameAndUpdate,
     SelectDLC,
@@ -103,17 +105,16 @@ enum class WizardPage
     InstallFailed,
 };
 
-static WizardPage g_firstPage = WizardPage::Introduction;
+static WizardPage g_firstPage = WizardPage::SelectLanguage;
 static WizardPage g_currentPage = g_firstPage;
 static std::string g_currentMessagePrompt = "";
 static bool g_currentMessagePromptConfirmation = false;
 
-const char INSTALLER_TEXT[] = "INSTALLER";
-const char INSTALLING_TEXT[] = "INSTALLING";
 const char CREDITS_TEXT[] = "Sajid (RIP)";
 
 const char *WIZARD_TEXT[] =
 {
+    "Please select a language.\n",
     "Welcome to Unleashed Recompiled!\n\nMake sure you have a copy of Sonic Unleashed's files for Xbox 360 before proceeding with the installation.",
     "Select the files for the Game and the Update. You can use digital dumps (PIRS), a folder with the game's contents or a disc image (ISO).",
     "Select the files for the DLC Packs. These can be digital dumps (PIRS) or a folder with their contents.",
@@ -126,12 +127,34 @@ const char *WIZARD_TEXT[] =
 static const int WIZARD_INSTALL_TEXTURE_INDEX[] =
 {
     0,
+    0,
     1,
     2,
     3,
     4,
     7, // Force Werehog on InstallSucceeded.
     5  // Force Eggman on InstallFailed.
+};
+
+// These are ordered from bottom to top in a 3x2 grid.
+const char *LANGUAGE_TEXT[] =
+{
+    "FRANÇAIS", // French
+    "DEUTSCH", // German
+    "ENGLISH", // English
+    "ESPAÑOL", // Spanish
+    "ITALIANO", // Italian
+    "日本語", // Japanese
+};
+
+const ELanguage LANGUAGE_ENUM[] =
+{
+    ELanguage::French,
+    ELanguage::German,
+    ELanguage::English,
+    ELanguage::Spanish,
+    ELanguage::Italian,
+    ELanguage::Japanese,
 };
 
 const char GAME_SOURCE_TEXT[] = "FULL GAME";
@@ -148,8 +171,6 @@ const char *DLC_SOURCE_TEXT[] =
 
 const char FILES_BUTTON_TEXT[] = "ADD FILES";
 const char FOLDER_BUTTON_TEXT[] = "ADD FOLDER";
-const char NEXT_BUTTON_TEXT[] = "NEXT";
-const char SKIP_BUTTON_TEXT[] = "SKIP";
 const char REQUIRED_SPACE_TEXT[] = "Required space";
 const char AVAILABLE_SPACE_TEXT[] = "Available space";
 
@@ -268,10 +289,9 @@ static void DrawScanlineBars()
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
     // Installer text
-    // TODO: localise this.
-    const char *headerText = g_currentPage == WizardPage::Installing ? INSTALLING_TEXT : INSTALLER_TEXT;
+    const std::string &headerText = Localise(g_currentPage == WizardPage::Installing ? "Installer_Header_Installing" : "Installer_Header_Installer");
     int textAlpha = std::lround(255.0f * ComputeMotionInstaller(g_appearTime, g_disappearTime, TITLE_ANIMATION_TIME, TITLE_ANIMATION_DURATION));
-    DrawTextWithOutline<int>(g_dfsogeistdFont, Scale(42.0f), { Scale(285.0f), Scale(57.0f) }, IM_COL32(255, 195, 0, textAlpha), headerText, 4, IM_COL32(0, 0, 0, textAlpha));
+    DrawTextWithOutline<int>(g_dfsogeistdFont, Scale(42.0f), { Scale(285.0f), Scale(57.0f) }, IM_COL32(255, 195, 0, textAlpha), headerText.c_str(), 4, IM_COL32(0, 0, 0, textAlpha));
 
     // Top bar line
     drawList->AddLine
@@ -452,36 +472,41 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
     ResetGradient();
 }
 
-enum SourceColumn
+enum ButtonColumn
 {
-    SourceColumnLeft,
-    SourceColumnMiddle,
-    SourceColumnRight
+    ButtonColumnLeft,
+    ButtonColumnMiddle,
+    ButtonColumnRight
 };
 
-static void DrawSourceButton(SourceColumn sourceColumn, float yRatio, const char *sourceText, bool sourceSet)
+static void ComputeButtonColumnCoordinates(ButtonColumn buttonColumn, float &minX, float &maxX)
+{
+    switch (buttonColumn)
+    {
+    case ButtonColumnLeft:
+        minX = Scale(AlignToNextGrid(CONTAINER_X) + CONTAINER_BUTTON_GAP);
+        maxX = Scale(AlignToNextGrid(CONTAINER_X) + CONTAINER_BUTTON_GAP + CONTAINER_BUTTON_WIDTH);
+        break;
+    case ButtonColumnMiddle:
+        minX = Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH / 2.0f) - CONTAINER_BUTTON_WIDTH / 2.0f);
+        maxX = Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH / 2.0f) + CONTAINER_BUTTON_WIDTH / 2.0f);
+        break;
+    case ButtonColumnRight:
+        minX = Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH) - CONTAINER_BUTTON_GAP - CONTAINER_BUTTON_WIDTH);
+        maxX = Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH) - CONTAINER_BUTTON_GAP);
+        break;
+    }
+}
+
+static void DrawSourceButton(ButtonColumn buttonColumn, float yRatio, const char *sourceText, bool sourceSet)
 {
     bool buttonPressed;
     float minX, maxX;
-    switch (sourceColumn)
-    {
-    case SourceColumnLeft:
-        minX = Scale(AlignToNextGrid(CONTAINER_X) + SOURCE_BUTTON_GAP);
-        maxX = Scale(AlignToNextGrid(CONTAINER_X) + SOURCE_BUTTON_GAP + SOURCE_BUTTON_WIDTH);
-        break;
-    case SourceColumnMiddle:
-        minX = Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH / 2.0f) - SOURCE_BUTTON_WIDTH / 2.0f);
-        maxX = Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH / 2.0f) + SOURCE_BUTTON_WIDTH / 2.0f);
-        break;
-    case SourceColumnRight:
-        minX = Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH) - SOURCE_BUTTON_GAP - SOURCE_BUTTON_WIDTH);
-        maxX = Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH) - SOURCE_BUTTON_GAP);
-        break;
-    }
+    ComputeButtonColumnCoordinates(buttonColumn, minX, maxX);
 
-    float minusY = (SOURCE_BUTTON_GAP + BUTTON_HEIGHT) * yRatio;
-    ImVec2 min = { minX, Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) - SOURCE_BUTTON_GAP - BUTTON_HEIGHT - minusY) };
-    ImVec2 max = { maxX, Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) - SOURCE_BUTTON_GAP - minusY) };
+    float minusY = (CONTAINER_BUTTON_GAP + BUTTON_HEIGHT) * yRatio;
+    ImVec2 min = { minX, Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) - CONTAINER_BUTTON_GAP - BUTTON_HEIGHT - minusY) };
+    ImVec2 max = { maxX, Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) - CONTAINER_BUTTON_GAP - minusY) };
     DrawButton(min, max, sourceText, true, sourceSet, buttonPressed);
 }
 
@@ -634,6 +659,32 @@ static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
     }
 }
 
+static void DrawLanguagePicker()
+{
+    bool buttonPressed = false;
+    if (g_currentPage == WizardPage::SelectLanguage)
+    {
+        bool buttonPressed;
+        float minX, maxX;
+        for (int i = 0; i < 6; i++)
+        {
+            ComputeButtonColumnCoordinates((i < 3) ? ButtonColumnLeft : ButtonColumnRight, minX, maxX);
+
+            float minusY = (CONTAINER_BUTTON_GAP + BUTTON_HEIGHT) * (float(i % 3));
+            ImVec2 min = { minX, Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) - CONTAINER_BUTTON_GAP - BUTTON_HEIGHT - minusY) };
+            ImVec2 max = { maxX, Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) - CONTAINER_BUTTON_GAP - minusY) };
+
+            // TODO: The active button should change its style to show an enabled toggle if it matches the current language.
+
+            DrawButton(min, max, LANGUAGE_TEXT[i], false, true, buttonPressed);
+            if (buttonPressed)
+            {
+                Config::Language = LANGUAGE_ENUM[i];
+            }
+        }
+    }
+}
+
 static void DrawSourcePickers()
 {
     bool buttonPressed = false;
@@ -668,15 +719,15 @@ static void DrawSources()
 {
     if (g_currentPage == WizardPage::SelectGameAndUpdate)
     {
-        DrawSourceButton(SourceColumnMiddle, 1.5f, GAME_SOURCE_TEXT, !g_gameSourcePath.empty());
-        DrawSourceButton(SourceColumnMiddle, 0.5f, UPDATE_SOURCE_TEXT, !g_updateSourcePath.empty());
+        DrawSourceButton(ButtonColumnMiddle, 1.5f, GAME_SOURCE_TEXT, !g_gameSourcePath.empty());
+        DrawSourceButton(ButtonColumnMiddle, 0.5f, UPDATE_SOURCE_TEXT, !g_updateSourcePath.empty());
     }
 
     if (g_currentPage == WizardPage::SelectDLC)
     {
         for (int i = 0; i < 6; i++)
         {
-            DrawSourceButton((i < 3) ? SourceColumnLeft : SourceColumnRight, float(i % 3), DLC_SOURCE_TEXT[i], !g_dlcSourcePaths[i].empty() || g_dlcInstalled[i]);
+            DrawSourceButton((i < 3) ? ButtonColumnLeft : ButtonColumnRight, float(i % 3), DLC_SOURCE_TEXT[i], !g_dlcSourcePaths[i].empty() || g_dlcInstalled[i]);
         }
     }
 }
@@ -759,15 +810,15 @@ static void DrawNextButton()
             skipButton = std::all_of(g_dlcSourcePaths.begin(), g_dlcSourcePaths.end(), [](const std::filesystem::path &path) { return path.empty(); });
         }
 
-        const char *buttonText = skipButton ? SKIP_BUTTON_TEXT : NEXT_BUTTON_TEXT;
-        ImVec2 textSize = g_newRodinFont->CalcTextSizeA(20.0f, FLT_MAX, 0.0f, buttonText);
+        const std::string &buttonText = Localise(skipButton ? "Installer_Button_Skip" : "Installer_Button_Next");
+        ImVec2 textSize = g_newRodinFont->CalcTextSizeA(20.0f, FLT_MAX, 0.0f, buttonText.c_str());
         textSize.x += BUTTON_TEXT_GAP;
 
         ImVec2 min = { Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH) - textSize.x - BOTTOM_X_GAP), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP) };
         ImVec2 max = { Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH) - BOTTOM_X_GAP), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
 
         bool buttonPressed = false;
-        DrawButton(min, max, buttonText, false, nextButtonEnabled, buttonPressed);
+        DrawButton(min, max, buttonText.c_str(), false, nextButtonEnabled, buttonPressed);
 
         if (buttonPressed)
         {
@@ -951,6 +1002,7 @@ void InstallerWizard::Draw()
     DrawLeftImage();
     DrawScanlineBars();
     DrawDescriptionContainer();
+    DrawLanguagePicker();
     DrawSourcePickers();
     DrawSources();
     DrawInstallingProgress();
@@ -970,15 +1022,29 @@ void InstallerWizard::Draw()
 
 void InstallerWizard::Shutdown()
 {
+    // Wait for and erase the thread.
     if (g_installerThread != nullptr)
     {
         g_installerThread->join();
         g_installerThread.reset();
     }
 
+    // Erase the sources.
     g_installerSources.game.reset();
     g_installerSources.update.reset();
     g_installerSources.dlc.clear();
+    
+    // Make sure the GPU is not currently active before deleting these textures.
+    Video::WaitForGPU();
+
+    // Erase the textures.
+    g_milesElectricIcon.reset();
+    g_arrowCircle.reset();
+
+    for (auto &texture : g_installTextures)
+    {
+        texture.reset();
+    }
 }
 
 bool InstallerWizard::Run(bool skipGame)
@@ -1009,6 +1075,8 @@ bool InstallerWizard::Run(bool skipGame)
 
     Window::SetCursorAllowed(false);
     NFD_Quit();
+
+    InstallerWizard::Shutdown();
 
     return true;
 }

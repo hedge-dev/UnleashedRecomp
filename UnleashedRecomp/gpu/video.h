@@ -15,6 +15,7 @@ struct Video
     static void CreateHostDevice();
     static void HostPresent();
     static void StartPipelinePrecompilation();
+    static void WaitForGPU();
 };
 
 struct GuestSamplerState

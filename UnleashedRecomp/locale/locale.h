@@ -83,7 +83,35 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         {
             { ELanguage::English, "Achievement Unlocked!" }
         }
-    }
+    },
+    {
+        "Installer_Header_Installer",
+        {
+            { ELanguage::English, "INSTALLER" },
+            { ELanguage::Spanish, "INSTALADOR" },
+        },
+    },
+    {
+        "Installer_Header_Installing",
+        {
+            { ELanguage::English, "INSTALLING" },
+            { ELanguage::Spanish, "INSTALANDO" },
+        }
+    },
+    {
+        "Installer_Button_Next",
+        {
+            { ELanguage::English, "NEXT" },
+            { ELanguage::Spanish, "SIGUIENTE" },
+        }
+    },
+    {
+        "Installer_Button_Skip",
+        {
+            { ELanguage::English, "SKIP" },
+            { ELanguage::Spanish, "SALTAR" },
+        }
+    },
 };
 
 static std::string& Localise(const char* key)
