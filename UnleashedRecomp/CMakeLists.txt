@@ -23,10 +23,6 @@ add_compile_definitions(
     _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR # Microsoft wtf?
     _CRT_SECURE_NO_WARNINGS)
 
-# Generate icon bitmap header for SDL surface.
-BIN2H(SOURCE_FILE "../UnleashedRecompResources/images/game_icon.bmp" HEADER_FILE "res/icon.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_icon")
-BIN2H(SOURCE_FILE "../UnleashedRecompResources/images/game_icon_night.bmp" HEADER_FILE "res/icon_night.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_iconNight")
-
 set(SWA_PRECOMPILED_HEADERS
     "stdafx.h"
 )

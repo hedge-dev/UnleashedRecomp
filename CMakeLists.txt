@@ -19,5 +19,6 @@ project("UnleashedRecomp-ALL")
 include("thirdparty/PowerRecomp/cmake/bin2h.cmake")
 
 # Include sub-projects.
+add_subdirectory("UnleashedRecompResources")
 add_subdirectory("UnleashedRecompLib")
 add_subdirectory("UnleashedRecomp")
