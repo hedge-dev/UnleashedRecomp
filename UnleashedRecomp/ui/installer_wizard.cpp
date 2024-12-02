@@ -18,8 +18,6 @@
 #include <res/miles_electric_icon_dds.h>
 #include <res/arrow_circle_dds.h>
 
-#define SKIP_SOURCE_CHECKS 0
-
 static constexpr double SCANLINES_ANIMATION_TIME = 0.0;
 static constexpr double SCANLINES_ANIMATION_DURATION = 15.0;
 
@@ -74,9 +72,12 @@ static ImFont *g_newRodinFont;
 static double g_appearTime = 0.0;
 static double g_disappearTime = DBL_MAX;
 static bool g_isDisappearing = false;
+
+static std::filesystem::path g_installPath = ".";
 static std::filesystem::path g_gameSourcePath;
 static std::filesystem::path g_updateSourcePath;
 static std::array<std::filesystem::path, int(DLC::Count)> g_dlcSourcePaths;
+static std::array<bool, int(DLC::Count)> g_dlcInstalled = {};
 static std::array<std::unique_ptr<GuestTexture>, 8> g_installTextures;
 static std::unique_ptr<GuestTexture> g_milesElectricIcon;
 static std::unique_ptr<GuestTexture> g_arrowCircle;
@@ -102,7 +103,10 @@ enum class WizardPage
     InstallFailed,
 };
 
-static WizardPage g_currentPage = WizardPage::Introduction;
+static WizardPage g_firstPage = WizardPage::Introduction;
+static WizardPage g_currentPage = g_firstPage;
+static std::string g_currentMessagePrompt = "";
+static bool g_currentMessagePromptConfirmation = false;
 
 const char INSTALLER_TEXT[] = "INSTALLER";
 const char INSTALLING_TEXT[] = "INSTALLING";
@@ -400,7 +404,7 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
 
     int baser = 0;
     int baseg = 0;
-    if (!sourceButton && buttonEnabled && (alpha >= 1.0f) && ImGui::IsMouseHoveringRect(min, max, false))
+    if (g_currentMessagePrompt.empty() && !sourceButton && buttonEnabled && (alpha >= 1.0f) && ImGui::IsMouseHoveringRect(min, max, false))
     {
         baser = 48;
         baseg = 32;
@@ -580,6 +584,7 @@ static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
 {
     assert((g_currentPage == WizardPage::SelectGameAndUpdate) || (g_currentPage == WizardPage::SelectDLC));
 
+    constexpr size_t failedPathLimit = 5;
     std::list<std::filesystem::path> failedPaths;
     if (g_currentPage == WizardPage::SelectGameAndUpdate)
     {
@@ -593,7 +598,7 @@ static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
             {
                 g_updateSourcePath = path;
             }
-            else
+            else if (failedPaths.size() < failedPathLimit)
             {
                 failedPaths.push_back(path);
             }
@@ -608,7 +613,7 @@ static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
             {
                 g_dlcSourcePaths[DLCIndex(dlc)] = path;
             }
-            else
+            else if (failedPaths.size() < failedPathLimit)
             {
                 failedPaths.push_back(path);
             }
@@ -617,7 +622,15 @@ static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
 
     if (!failedPaths.empty())
     {
-        // TODO: Show list of content that failed to parse with a prompt.
+        std::stringstream stringStream;
+        stringStream << "Some of the files that were selected are not valid." << std::endl;
+        for (const std::filesystem::path &path : failedPaths)
+        {
+            stringStream << std::endl << path.filename().string();
+        }
+
+        g_currentMessagePrompt = stringStream.str();
+        g_currentMessagePromptConfirmation = false;
     }
 }
 
@@ -663,7 +676,7 @@ static void DrawSources()
     {
         for (int i = 0; i < 6; i++)
         {
-            DrawSourceButton((i < 3) ? SourceColumnLeft : SourceColumnRight, float(i % 3), DLC_SOURCE_TEXT[i], !g_dlcSourcePaths[i].empty());
+            DrawSourceButton((i < 3) ? SourceColumnLeft : SourceColumnRight, float(i % 3), DLC_SOURCE_TEXT[i], !g_dlcSourcePaths[i].empty() || g_dlcInstalled[i]);
         }
     }
 }
@@ -687,7 +700,7 @@ static void DrawInstallingProgress()
 
 static void InstallerThread()
 {
-    if (!Installer::install(g_installerSources, ".", false, g_installerJournal, [&]() {
+    if (!Installer::install(g_installerSources, g_installPath, false, g_installerJournal, [&]() {
         g_installerProgressRatioTarget = float(double(g_installerJournal.progressCounter) / double(g_installerJournal.progressTotal));
     }))
     {
@@ -703,6 +716,7 @@ static void InstallerThread()
 
 static void InstallerStart()
 {
+    g_currentPage = WizardPage::Installing;
     g_installerStartTime = ImGui::GetTime();
     g_installerProgressRatioCurrent = 0.0f;
     g_installerProgressRatioTarget = 0.0f;
@@ -713,7 +727,7 @@ static void InstallerStart()
 
 static bool InstallerParseSources()
 {
-    std::filesystem::space_info spaceInfo = std::filesystem::space(".");
+    std::filesystem::space_info spaceInfo = std::filesystem::space(g_installPath);
     g_installerAvailableSize = spaceInfo.available;
 
     Installer::Input installerInput;
@@ -734,12 +748,11 @@ static void DrawNextButton()
 {
     if (g_currentPage != WizardPage::Installing) {
         bool nextButtonEnabled = !g_isDisappearing;
-#if !SKIP_SOURCE_CHECKS
         if (nextButtonEnabled && g_currentPage == WizardPage::SelectGameAndUpdate)
         {
             nextButtonEnabled = !g_gameSourcePath.empty() && !g_updateSourcePath.empty();
         }
-#endif
+
         bool skipButton = false;
         if (g_currentPage == WizardPage::SelectDLC)
         {
@@ -761,11 +774,46 @@ static void DrawNextButton()
             XexPatcher::Result patcherResult;
             if (g_currentPage == WizardPage::SelectGameAndUpdate && (patcherResult = Installer::checkGameUpdateCompatibility(g_gameSourcePath, g_updateSourcePath), patcherResult != XexPatcher::Result::Success))
             {
-                // TODO: Show error prompt for compatibility failure check. Tell user to try with different files.
+                g_currentMessagePrompt = "The specified game and update file are incompatible.\n\nPlease ensure the files are for the same version and region and try again.";
+                g_currentMessagePromptConfirmation = false;
             }
-            else if (g_currentPage == WizardPage::SelectDLC && !InstallerParseSources())
+            else if (g_currentPage == WizardPage::SelectDLC)
             {
-                // TODO: Show an error that the sources were unable to be parsed. Ask to try again.
+                // Check if any of the DLC was not specified.
+                bool dlcIncomplete = false;
+                for (int i = 0; (i < int(DLC::Count)) && !dlcIncomplete; i++)
+                {
+                    if (g_dlcSourcePaths[i].empty() && !g_dlcInstalled[i])
+                    {
+                        dlcIncomplete = true;
+                    }
+                }
+
+                bool dlcInstallerMode = g_gameSourcePath.empty();
+                if (!InstallerParseSources())
+                {
+                    // Some of the sources that were provided to the installer are not valid. Restart the file selection process.
+                    g_currentMessagePrompt = "Some of the files that have been provided are not valid.\n\nPlease make sure all the specified files are correct and try again.";
+                    g_currentMessagePromptConfirmation = false;
+                    g_currentPage = dlcInstallerMode ? WizardPage::SelectDLC : WizardPage::SelectGameAndUpdate;
+                }
+                else if (dlcIncomplete && !dlcInstallerMode)
+                {
+                    // Not all the DLC was specified, we show a prompt and await a confirmation before starting the installer.
+                    g_currentMessagePrompt = "It is highly recommended that you install all of the DLC, as it includes high quality lighting textures for the stages in each pack.\n\nAre you sure you want to skip this step?";
+                    g_currentMessagePromptConfirmation = true;
+                }
+                else if (skipButton && dlcInstallerMode)
+                {
+                    // Nothing was selected and the installer was in DLC mode, just close it.
+                    g_isDisappearing = true;
+                    g_disappearTime = ImGui::GetTime();
+                }
+                else
+                {
+                    // Start the installer outright, this switches to the right page on its own.
+                    InstallerStart();
+                }
             }
             else if (g_currentPage == WizardPage::InstallSucceeded)
             {
@@ -774,16 +822,11 @@ static void DrawNextButton()
             }
             else if (g_currentPage == WizardPage::InstallFailed)
             {
-                g_currentPage = WizardPage::Introduction;
+                g_currentPage = g_firstPage;
             }
             else
             {
                 g_currentPage = WizardPage(int(g_currentPage) + 1);
-
-                if (g_currentPage == WizardPage::Installing)
-                {
-                    InstallerStart();
-                }
             }
         }
     }
@@ -862,6 +905,22 @@ static void DrawBorders()
     DrawVerticalBorder(true);
 }
 
+static void DrawMessagePrompt()
+{
+    if (g_currentMessagePrompt.empty())
+    {
+        return;
+    }
+
+    // TODO: Put message prompt here.
+
+    if (false && g_currentPage == WizardPage::SelectDLC)
+    {
+        // If user confirms the message prompt that they wish to skip installing the DLC, start the installer.
+        InstallerStart();
+    }
+}
+
 void InstallerWizard::Init()
 {
     auto &io = ImGui::GetIO();
@@ -897,6 +956,7 @@ void InstallerWizard::Draw()
     DrawInstallingProgress();
     DrawNextButton();
     DrawBorders();
+    DrawMessagePrompt();
 
     if (g_isDisappearing)
     {
@@ -927,7 +987,13 @@ bool InstallerWizard::Run(bool skipGame)
 
     if (skipGame)
     {
-        g_currentPage = WizardPage::SelectDLC;
+        for (int i = 0; i < int(DLC::Count); i++)
+        {
+            g_dlcInstalled[i] = Installer::checkDLCInstall(g_installPath, DLC(i + 1));
+        }
+
+        g_firstPage = WizardPage::SelectDLC;
+        g_currentPage = g_firstPage;
     }
 
     Window::SetCursorAllowed(true);

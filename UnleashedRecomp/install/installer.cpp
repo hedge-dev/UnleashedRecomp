@@ -201,6 +201,27 @@ bool Installer::checkGameInstall(const std::filesystem::path &baseDirectory)
     return std::filesystem::exists(baseDirectory / GameDirectory / GameExecutableFile);
 }
 
+bool Installer::checkDLCInstall(const std::filesystem::path &baseDirectory, DLC dlc)
+{
+    switch (dlc)
+    {
+    case DLC::Spagonia:
+        return std::filesystem::exists(baseDirectory / SpagoniaDirectory / DLCValidationFile);
+    case DLC::Chunnan:
+        return std::filesystem::exists(baseDirectory / ChunnanDirectory / DLCValidationFile);
+    case DLC::Mazuri:
+        return std::filesystem::exists(baseDirectory / MazuriDirectory / DLCValidationFile);
+    case DLC::Holoska:
+        return std::filesystem::exists(baseDirectory / HoloskaDirectory / DLCValidationFile);
+    case DLC::ApotosShamar:
+        return std::filesystem::exists(baseDirectory / ApotosShamarDirectory / DLCValidationFile);
+    case DLC::EmpireCityAdabat:
+        return std::filesystem::exists(baseDirectory / EmpireCityAdabatDirectory / DLCValidationFile);
+    default:
+        return false;
+    }
+}
+
 bool Installer::computeTotalSize(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, Journal &journal, uint64_t &totalSize)
 {
     for (FilePair pair : filePairs)
@@ -288,6 +309,7 @@ constexpr uint32_t PatcherContribution = 512 * 1024 * 1024;
 
 bool Installer::parseSources(const Input &input, Journal &journal, Sources &sources)
 {
+    journal = Journal();
     sources = Sources();
 
     // Parse the contents of the base game.
