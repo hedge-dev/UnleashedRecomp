@@ -2,7 +2,7 @@
 
 #include <api/SWA.h>
 
-struct OptionsMenu
+class OptionsMenu
 {
 public:
     inline static bool s_isVisible = false;

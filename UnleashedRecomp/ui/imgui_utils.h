@@ -3,6 +3,12 @@
 #include <gpu/imgui_common.h>
 #include <app.h>
 
+#define PIXELS_TO_UV_COORDS(textureWidth, textureHeight, x, y, width, height) \
+    std::make_tuple(ImVec2((float)x / (float)textureWidth, (float)y / (float)textureHeight), \
+                    ImVec2(((float)x + (float)width) / (float)textureWidth, ((float)y + (float)height) / (float)textureHeight))
+
+#define GET_UV_COORDS(tuple) std::get<0>(tuple), std::get<1>(tuple)
+
 static std::vector<std::unique_ptr<ImGuiCallbackData>> g_callbackData;
 static uint32_t g_callbackDataIndex = 0;
 
@@ -150,7 +156,80 @@ static void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2&
 
     DrawTextWithOutline<float>(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text, radius, shadowColour);
 
-    drawList->AddText(font, fontSize, pos, colour, text);
+    drawList->AddText(font, fontSize, pos, colour, text, nullptr);
+}
+
+static float CalcWidestTextSize(const ImFont* font, float fontSize, std::span<std::string> strs)
+{
+    auto result = 0.0f;
+
+    for (auto& str : strs)
+        result = std::max(result, font->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str()).x);
+
+    return result;
+}
+
+static std::vector<std::string> Split(const char* str, char delimiter)
+{
+    std::vector<std::string> result;
+
+    if (!str)
+        return result;
+
+    const char* start = str;
+    const char* current = str;
+
+    while (*current)
+    {
+        if (*current == delimiter)
+        {
+            result.emplace_back(start, current - start);
+            start = current + 1;
+        }
+
+        current++;
+    }
+
+    result.emplace_back(start);
+
+    return result;
+}
+
+static ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMargin, std::vector<std::string> lines)
+{
+    auto x = 0.0f;
+    auto y = 0.0f;
+
+    for (auto& str : lines)
+    {
+        auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str());
+
+        x = std::max(x, textSize.x);
+        y += textSize.y + Scale(lineMargin);
+    }
+
+    return { x, y };
+}
+
+static ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMargin, const char* text)
+{
+    return MeasureCentredParagraph(font, fontSize, lineMargin, Split(text, '\n'));
+}
+
+static void DrawCentredParagraph(const ImFont* font, float fontSize, const ImVec2& centre, float lineMargin, const char* text, std::function<void(const char*, ImVec2)> drawMethod)
+{
+    auto lines = Split(text, '\n');
+    auto paragraphSize = MeasureCentredParagraph(font, fontSize, lineMargin, lines);
+    auto offsetY = 0.0f;
+
+    for (auto& str : lines)
+    {
+        auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str());
+
+        drawMethod(str.c_str(), ImVec2(/* X */ centre.x - textSize.x / 2, /* Y */ centre.y - paragraphSize.y / 2 + offsetY));
+
+        offsetY += textSize.y + Scale(lineMargin);
+    }
 }
 
 static void DrawTextWithMarqueeShadow(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 colour, const char* text, double time, double delay, double speed, float offset = 2.0f, float radius = 0.4f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))

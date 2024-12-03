@@ -11,6 +11,7 @@
 #include <shader/shader_cache.h>
 #include <ui/achievement_menu.h>
 #include <ui/achievement_overlay.h>
+#include <ui/message_window.h>
 #include <ui/options_menu.h>
 
 #include "imgui_snapshot.h"
@@ -1065,6 +1066,7 @@ static void CreateImGuiBackend()
 
     AchievementMenu::Init();
     AchievementOverlay::Init();
+    MessageWindow::Init();
     OptionsMenu::Init();
 
     ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
@@ -1739,6 +1741,7 @@ static void DrawImGui()
     AchievementMenu::Draw();
     OptionsMenu::Draw();
     AchievementOverlay::Draw();
+    MessageWindow::Draw();
 
     ImGui::Render();
 

@@ -81,6 +81,7 @@ set(SWA_PATCHES_CXX_SOURCES
 set(SWA_UI_CXX_SOURCES
     "ui/achievement_menu.cpp"
     "ui/achievement_overlay.cpp"
+    "ui/message_window.cpp"
     "ui/options_menu.cpp"
     "ui/sdl_listener.cpp"
     "ui/window.cpp"
