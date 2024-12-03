@@ -112,6 +112,22 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
             { ELanguage::Spanish, "SALTAR" },
         }
     },
+    {
+        "Installer_Button_AddFiles",
+        {
+            { ELanguage::English, "ADD FILES" },
+            { ELanguage::Spanish, "AÑADIR ARCHIVOS" },
+            { ELanguage::German, "DATEIEN HINZUFÜGEN" },
+        }
+    },
+    {
+        "Installer_Button_AddFolder",
+        {
+            { ELanguage::English, "ADD FOLDER" },
+            { ELanguage::Spanish, "AÑADIR CARPETA" },
+            { ELanguage::German, "ORDNER HINZUFÜGEN" },
+        }
+    },
 };
 
 static std::string& Localise(const char* key)

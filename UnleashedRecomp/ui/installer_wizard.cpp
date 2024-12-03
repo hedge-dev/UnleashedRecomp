@@ -169,8 +169,6 @@ const char *DLC_SOURCE_TEXT[] =
     "EMPIRE CITY & ADABAT",
 };
 
-const char FILES_BUTTON_TEXT[] = "ADD FILES";
-const char FOLDER_BUTTON_TEXT[] = "ADD FOLDER";
 const char REQUIRED_SPACE_TEXT[] = "Required space";
 const char AVAILABLE_SPACE_TEXT[] = "Available space";
 
@@ -410,7 +408,26 @@ static void DrawButtonContainer(ImVec2 min, ImVec2 max, int baser, int baseg, fl
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 }
 
-static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sourceButton, bool buttonEnabled, bool &buttonPressed)
+static ImVec2 ComputeTextSizeAndRatio(ImFont *font, const char *text, float &size, float maxTextWidth = FLT_MAX)
+{
+    ImVec2 textSize = font->CalcTextSizeA(size, FLT_MAX, 0.0f, text);
+    if (textSize.x > maxTextWidth)
+    {
+        float shrinkRatio = maxTextWidth / textSize.x;
+        size *= shrinkRatio;
+        textSize.x *= shrinkRatio;
+        textSize.y *= shrinkRatio;
+    }
+
+    return textSize;
+}
+
+static ImVec2 ComputeTextSize(ImFont *font, const char *text, float size, float maxTextWidth = FLT_MAX)
+{
+    return ComputeTextSizeAndRatio(font, text, size, maxTextWidth);
+}
+
+static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sourceButton, bool buttonEnabled, bool &buttonPressed, float maxTextWidth = FLT_MAX)
 {
     buttonPressed = false;
 
@@ -437,10 +454,9 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
 
     DrawButtonContainer(min, max, baser, baseg, alpha);
 
-    float size = Scale(sourceButton ? 15.0f : 20.0f);
     ImFont *font = sourceButton ? g_newRodinFont : g_dfsogeistdFont;
-    ImVec2 textSize = font->CalcTextSizeA(size, FLT_MAX, 0.0f, buttonText);
-
+    float size = Scale(sourceButton ? 15.0f : 20.0f);
+    ImVec2 textSize = ComputeTextSizeAndRatio(font, buttonText, size, Scale(maxTextWidth));
     min.x += ((max.x - min.x) - textSize.x) / 2.0f;
     min.y += ((max.y - min.y) - textSize.y) / 2.0f;
 
@@ -691,23 +707,27 @@ static void DrawSourcePickers()
     std::list<std::filesystem::path> paths;
     if (g_currentPage == WizardPage::SelectGameAndUpdate || g_currentPage == WizardPage::SelectDLC)
     {
-        ImVec2 textSize = g_dfsogeistdFont->CalcTextSizeA(20.0f, FLT_MAX, 0.0f, FILES_BUTTON_TEXT);
+        constexpr float ADD_BUTTON_MAX_TEXT_WIDTH = 160.0f;
+        const std::string &addFilesText = Localise("Installer_Button_AddFiles");
+        ImVec2 textSize = ComputeTextSize(g_dfsogeistdFont, addFilesText.c_str(), 20.0f, ADD_BUTTON_MAX_TEXT_WIDTH);
         textSize.x += BUTTON_TEXT_GAP;
 
         ImVec2 min = { Scale(AlignToNextGrid(CONTAINER_X) + BOTTOM_X_GAP), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP) };
         ImVec2 max = { Scale(AlignToNextGrid(CONTAINER_X) + BOTTOM_X_GAP + textSize.x), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
-        DrawButton(min, max, FILES_BUTTON_TEXT, false, true, buttonPressed);
+        DrawButton(min, max, addFilesText.c_str(), false, true, buttonPressed, ADD_BUTTON_MAX_TEXT_WIDTH);
         if (buttonPressed && ShowFilesPicker(paths))
         {
             ParseSourcePaths(paths);
         }
 
         min.x += Scale(BOTTOM_X_GAP + textSize.x);
-        textSize = g_dfsogeistdFont->CalcTextSizeA(20.0f, FLT_MAX, 0.0f, FOLDER_BUTTON_TEXT);
+
+        const std::string &addFolderText = Localise("Installer_Button_AddFolder");
+        textSize = ComputeTextSize(g_dfsogeistdFont, addFolderText.c_str(), 20.0f, ADD_BUTTON_MAX_TEXT_WIDTH);
         textSize.x += BUTTON_TEXT_GAP;
 
         max.x = min.x + Scale(textSize.x);
-        DrawButton(min, max, FOLDER_BUTTON_TEXT, false, true, buttonPressed);
+        DrawButton(min, max, addFolderText.c_str(), false, true, buttonPressed, ADD_BUTTON_MAX_TEXT_WIDTH);
         if (buttonPressed && ShowFoldersPicker(paths))
         {
             ParseSourcePaths(paths);
