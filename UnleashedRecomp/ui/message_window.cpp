@@ -3,7 +3,7 @@
 #include <api/SWA.h>
 #include <gpu/video.h>
 #include <exports.h>
-#include <res/images/pause.dds.h>
+#include <res/images/common/select_fade.dds.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;
@@ -139,9 +139,9 @@ void DrawButton(int rowIndex, float yOffset, float width, float height, std::str
         auto colour = IM_COL32(255, 255, 255, 255 * alpha);
 
         auto width  = Scale(11);
-        auto left   = PIXELS_TO_UV_COORDS(128, 128, 0, 0, 11, 50);
-        auto centre = PIXELS_TO_UV_COORDS(128, 128, 11, 0, 8, 50);
-        auto right  = PIXELS_TO_UV_COORDS(128, 128, 19, 0, 11, 50);
+        auto left   = PIXELS_TO_UV_COORDS(64, 64, 0, 0, 11, 50);
+        auto centre = PIXELS_TO_UV_COORDS(64, 64, 11, 0, 8, 50);
+        auto right  = PIXELS_TO_UV_COORDS(64, 64, 19, 0, 11, 50);
 
         drawList->AddImage(g_upSelectionCursor.get(), min, { min.x + width, max.y }, GET_UV_COORDS(left), colour);
         drawList->AddImage(g_upSelectionCursor.get(), { min.x + width, min.y }, { max.x - width, max.y }, GET_UV_COORDS(centre), colour);
@@ -176,7 +176,7 @@ void MessageWindow::Init()
 
     g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 28.0f * FONT_SCALE);
 
-    g_upSelectionCursor = LoadTexture(g_pause, sizeof(g_pause));
+    g_upSelectionCursor = LoadTexture(g_select_fade, sizeof(g_select_fade));
 }
 
 void MessageWindow::Draw()

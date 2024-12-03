@@ -179,6 +179,10 @@ void Window::Init()
     SDL_GetWindowWMInfo(s_pWindow, &info);
 
     s_handle = info.info.win.window;
+
+    SetDarkTitleBar(true);
+
+    SDL_ShowWindow(s_pWindow);
 }
 
 void Window::Update()

@@ -33,7 +33,6 @@
 #include <wrl/client.h>
 #include <smolv.h>
 #include <print>
-#include <readerwriterqueue/readerwritercircularbuffer.h>
 
 using Microsoft::WRL::ComPtr;
 

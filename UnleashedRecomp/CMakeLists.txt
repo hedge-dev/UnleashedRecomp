@@ -82,7 +82,7 @@ set(SWA_APU_CXX_SOURCES
 if(SWA_XAUDIO2)
     list(APPEND SWA_APU_CXX_SOURCES "apu/driver/xaudio_driver.cpp")
 else()
-    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/sdl2_driver.cpp")
+    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/miniaudio_driver.cpp")
 endif()
 
 set(SWA_HID_CXX_SOURCES
@@ -195,8 +195,8 @@ find_package(unofficial-concurrentqueue REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(unofficial-tiny-aes-c CONFIG REQUIRED)
-find_path(READERWRITERQUEUE_INCLUDE_DIRS "readerwriterqueue/atomicops.h")
 find_package(nfd CONFIG REQUIRED)
+find_path(MINIAUDIO_INCLUDE_DIRS "miniaudio.h")
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
 add_custom_command(TARGET UnleashedRecomp POST_BUILD
@@ -245,7 +245,7 @@ target_include_directories(UnleashedRecomp PRIVATE
     ${LIBMSPACK_PATH}
     ${Stb_INCLUDE_DIR}
     ${SMOLV_SOURCE_DIR}
-    ${READERWRITERQUEUE_INCLUDE_DIRS}
+    ${MINIAUDIO_INCLUDE_DIRS}
 )
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${SWA_PRECOMPILED_HEADERS})
@@ -315,6 +315,7 @@ generate_aggregate_header(
 
 set(RESOURCES_SOURCE_PATH "${PROJECT_SOURCE_DIR}/../UnleashedRecompResources")
 set(RESOURCES_OUTPUT_PATH "${PROJECT_SOURCE_DIR}/res")
+
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/achievements_menu/trophy.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/achievements_menu/trophy.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_trophy")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/arrow_circle.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/arrow_circle.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_arrow_circle")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_001.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_001.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_install_001")
@@ -326,6 +327,8 @@ BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/in
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_007.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_007.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_install_007")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_008.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_008.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_install_008")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/miles_electric_icon.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/miles_electric_icon.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_miles_electric_icon")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/common/general_window.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/common/general_window.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_general_window")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/common/select_fade.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/common/select_fade.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_select_fade")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/common/select_fill.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/common/select_fill.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_select_fill")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/game_icon.bmp" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/game_icon.bmp" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_game_icon")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/game_icon_night.bmp" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/game_icon_night.bmp" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_game_icon_night")
-BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/pause.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/pause.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_pause")

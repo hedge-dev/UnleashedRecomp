@@ -8,6 +8,9 @@
 #include <user/config.h>
 #include <app.h>
 #include <exports.h>
+#include <res/images/achievements_menu/trophy.dds.h>
+#include <res/images/common/general_window.dds.h>
+#include <res/images/common/select_fill.dds.h>
 
 constexpr double HEADER_CONTAINER_INTRO_MOTION_START = 0;
 constexpr double HEADER_CONTAINER_INTRO_MOTION_END = 15;
@@ -23,14 +26,12 @@ constexpr double CONTENT_CONTAINER_COMMON_MOTION_END = 12;
 
 constexpr double COUNTER_INTRO_FADE_START = 15;
 constexpr double COUNTER_INTRO_FADE_END = 16;
-constexpr double COUNTER_SPRITE_FRAME_START = 0;
-constexpr double COUNTER_SPRITE_FRAME_END = 30;
 
 constexpr double SELECTION_CONTAINER_BREATHE = 30;
 
 static bool g_isClosing = false;
 
-static double g_appearTime = 0;
+static double g_appearTime;
 
 static std::vector<std::tuple<Achievement, time_t>> g_achievements;
 
@@ -39,6 +40,8 @@ static ImFont* g_fntNewRodinDB;
 static ImFont* g_fntNewRodinUB;
 
 static std::unique_ptr<GuestTexture> g_upTrophyIcon;
+static std::unique_ptr<GuestTexture> g_upSelectionCursor;
+static std::unique_ptr<GuestTexture> g_upWindow;
 
 static int g_firstVisibleRowIndex;
 static int g_selectedRowIndex;
@@ -63,42 +66,8 @@ static void ResetSelection()
 static void DrawContainer(ImVec2 min, ImVec2 max, ImU32 gradientTop, ImU32 gradientBottom, float alpha = 1, float cornerRadius = 25)
 {
     auto drawList = ImGui::GetForegroundDrawList();
-    auto vertices = GetPauseContainerVertices(min, max, cornerRadius);
 
-    // TODO: add a drop shadow.
-
-    SetGradient(min, max, gradientTop, gradientBottom);
-    drawList->AddConvexPolyFilled(vertices.data(), vertices.size(), IM_COL32(255, 255, 255, 255 * alpha));
-    ResetGradient();
-
-    drawList->AddPolyline(vertices.data(), vertices.size(), IM_COL32(247, 247, 247, 255 * alpha), true, Scale(2.5f));
-
-    for (int i = 0; i < vertices.size(); i++)
-    {
-        vertices[i].x -= Scale(0.4f);
-        vertices[i].y -= Scale(0.2f);
-    }
-
-    auto colLineTop = IM_COL32(165, 170, 165, 230 * alpha);
-    auto colLineBottom = IM_COL32(190, 190, 190, 230 * alpha);
-    auto lineThickness = Scale(1);
-
-    // Top left corner bottom to top left corner top.
-    drawList->AddLine(vertices[0], vertices[1], colLineTop, lineThickness * Scale(0.5f));
-
-    // Top left corner bottom to bottom left.
-    drawList->AddRectFilledMultiColor
-    (
-        { /* X */ vertices[0].x - Scale(0.2f), /* Y */ vertices[0].y },
-        { /* X */ vertices[6].x + lineThickness - Scale(0.2f), /* Y */ vertices[6].y },
-        colLineTop,
-        colLineTop,
-        colLineBottom,
-        colLineBottom
-    );
-
-    // Top left corner top to top right.
-    drawList->AddLine(vertices[1], vertices[2], colLineTop, lineThickness);
+    DrawPauseContainer(g_upWindow, min, max, alpha);
 
     drawList->PushClipRect({ min.x, min.y + Scale(20) }, { max.x, max.y - Scale(5) });
 }
@@ -106,20 +75,39 @@ static void DrawContainer(ImVec2 min, ImVec2 max, ImU32 gradientTop, ImU32 gradi
 static void DrawSelectionContainer(ImVec2 min, ImVec2 max)
 {
     auto drawList = ImGui::GetForegroundDrawList();
-    auto vertices = GetPauseContainerVertices(min, max, 10);
 
     static auto breatheStart = ImGui::GetTime();
     auto alpha = Lerp(1.0f, 0.75f, (sin((ImGui::GetTime() - breatheStart) * (2.0f * M_PI / (55.0f / 60.0f))) + 1.0f) / 2.0f);
+    auto colour = IM_COL32(255, 255, 255, 255 * alpha);
 
-    SetGradient(min, max, IM_COL32(255, 246, 0, 129), IM_COL32(255, 194, 0, 118 * alpha));
-    drawList->AddConvexPolyFilled(vertices.data(), vertices.size(), IM_COL32(255, 255, 255, 255 * alpha));
-    ResetGradient();
+    auto commonWidth = Scale(11);
+    auto commonHeight = Scale(24);
+
+    auto tl = PIXELS_TO_UV_COORDS(64, 64, 0, 0, 11, 24);
+    auto tc = PIXELS_TO_UV_COORDS(64, 64, 11, 0, 8, 24);
+    auto tr = PIXELS_TO_UV_COORDS(64, 64, 19, 0, 11, 24);
+    auto cl = PIXELS_TO_UV_COORDS(64, 64, 0, 24, 11, 2);
+    auto cc = PIXELS_TO_UV_COORDS(64, 64, 11, 24, 8, 2);
+    auto cr = PIXELS_TO_UV_COORDS(64, 64, 19, 24, 11, 2);
+    auto bl = PIXELS_TO_UV_COORDS(64, 64, 0, 26, 11, 24);
+    auto bc = PIXELS_TO_UV_COORDS(64, 64, 11, 26, 8, 24);
+    auto br = PIXELS_TO_UV_COORDS(64, 64, 19, 26, 11, 24);
+
+    drawList->AddImage(g_upSelectionCursor.get(), min, { min.x + commonWidth, min.y + commonHeight }, GET_UV_COORDS(tl), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { min.x + commonWidth, min.y }, { max.x - commonWidth, min.y + commonHeight }, GET_UV_COORDS(tc), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { max.x - commonWidth, min.y }, { max.x, min.y + commonHeight }, GET_UV_COORDS(tr), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { min.x, min.y + commonHeight }, { min.x + commonWidth, max.y - commonHeight }, GET_UV_COORDS(cl), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { min.x + commonWidth, min.y + commonHeight }, { max.x - commonWidth, max.y - commonHeight }, GET_UV_COORDS(cc), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { max.x - commonWidth, min.y + commonHeight }, { max.x, max.y - commonHeight }, GET_UV_COORDS(cr), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { min.x, max.y - commonHeight }, { min.x + commonWidth, max.y }, GET_UV_COORDS(bl), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { min.x + commonWidth, max.y - commonHeight }, { max.x - commonWidth, max.y }, GET_UV_COORDS(bc), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { max.x - commonWidth, max.y - commonHeight }, { max.x, max.y }, GET_UV_COORDS(br), colour);
 }
 
 static void DrawHeaderContainer(const char* text)
 {
     auto drawList = ImGui::GetForegroundDrawList();
-    auto fontSize = Scale(26);
+    auto fontSize = Scale(24);
     auto textSize = g_fntNewRodinUB->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
     auto cornerRadius = 23;
     auto textMarginX = Scale(16) + (Scale(cornerRadius) / 2);
@@ -134,26 +122,25 @@ static void DrawHeaderContainer(const char* text)
 
     // Slide animation.
     auto containerMarginX = g_isClosing
-        ? Hermite(256, 156, containerMotion)
-        : Hermite(156, 256, containerMotion);
+        ? Hermite(251, 151, containerMotion)
+        : Hermite(151, 251, containerMotion);
 
     // Transparency fade animation.
     auto alpha = g_isClosing
         ? Lerp(1, 0, colourMotion)
         : Lerp(0, 1, colourMotion);
 
-    ImVec2 min = { Scale(containerMarginX), Scale(138) };
-    ImVec2 max = { min.x + textMarginX * 2 + textSize.x, Scale(185) };
+    ImVec2 min = { Scale(containerMarginX), Scale(136) };
+    ImVec2 max = { min.x + textMarginX * 2 + textSize.x + Scale(5), Scale(196) };
 
-    DrawContainer(min, max, IM_COL32(140, 142, 140, 201), IM_COL32(66, 65, 66, 234), alpha, cornerRadius);
-    drawList->PopClipRect();
+    DrawPauseHeaderContainer(g_upWindow, min, max, alpha);
 
     // TODO: skew this text and apply bevel.
     DrawTextWithOutline<int>
     (
         g_fntNewRodinUB,
         fontSize,
-        { /* X */ min.x + textMarginX, /* Y */ min.y + ((max.y - min.y) - textSize.y) / 2 },
+        { /* X */ min.x + textMarginX, /* Y */ min.y + ((max.y - min.y) - textSize.y) / 2 - Scale(5) },
         IM_COL32(255, 255, 255, 255 * alpha),
         text,
         3,
@@ -168,9 +155,9 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
-    auto itemWidth = Scale(708);
+    auto itemWidth = Scale(700);
     auto itemHeight = Scale(94);
-    auto itemMarginX = Scale(13);
+    auto itemMarginX = Scale(18);
     auto imageMarginX = Scale(25);
     auto imageMarginY = Scale(18);
     auto imageSize = Scale(60);
@@ -371,10 +358,16 @@ static void DrawAchievementTotal(ImVec2 min, ImVec2 max)
     ImVec2 imageMin = { max.x - imageSize - imageMarginX, min.y - imageSize - imageMarginY };
     ImVec2 imageMax = { imageMin.x + imageSize, imageMin.y + imageSize };
 
-    auto frm = int32_t(floor(ImGui::GetTime() * 30.0f)) % 30;
-    auto w = 256.0f / 7680.0f;
-    auto uv0 = ImVec2(frm * w, 0);
-    auto uv1 = ImVec2((frm + 1) * w, 1);
+    constexpr auto columns = 8;
+    constexpr auto rows = 4;
+    constexpr auto spriteSize = 256.0f;
+    constexpr auto textureWidth = 2048.0f;
+    constexpr auto textureHeight = 1024.0f;
+    auto frameIndex = int32_t(floor(ImGui::GetTime() * 30.0f)) % 30;
+    auto columnIndex = frameIndex % columns;
+    auto rowIndex = frameIndex / columns;
+    auto uv0 = ImVec2(columnIndex * spriteSize / textureWidth, rowIndex * spriteSize / textureHeight);
+    auto uv1 = ImVec2((columnIndex + 1) * spriteSize / textureWidth, (rowIndex + 1) * spriteSize / textureHeight);
 
     drawList->AddImage(g_upTrophyIcon.get(), imageMin, imageMax, uv0, uv1, IM_COL32(255, 255, 255, 255 * alpha));
 
@@ -404,20 +397,20 @@ static void DrawContentContainer()
         : ComputeMotion(g_appearTime, CONTENT_CONTAINER_COMMON_MOTION_START, CONTENT_CONTAINER_COMMON_MOTION_END);
 
     auto minX = g_isClosing
-        ? Hermite(256, 306, motion)
-        : Hermite(306, 256, motion);
+        ? Hermite(251, 301, motion)
+        : Hermite(301, 251, motion);
 
     auto minY = g_isClosing
-        ? Hermite(192, 209, motion)
-        : Hermite(209, 192, motion);
+        ? Hermite(189, 206, motion)
+        : Hermite(206, 189, motion);
 
     auto maxX = g_isClosing
-        ? Hermite(1026, 973, motion)
-        : Hermite(973, 1026, motion);
+        ? Hermite(1031, 978, motion)
+        : Hermite(978, 1031, motion);
 
     auto maxY = g_isClosing
-        ? Hermite(601, 569, motion)
-        : Hermite(569, 601, motion);
+        ? Hermite(604, 573, motion)
+        : Hermite(573, 604, motion);
 
     ImVec2 min = { Scale(minX), Scale(minY) };
     ImVec2 max = { Scale(maxX), Scale(maxY) };
@@ -449,8 +442,8 @@ static void DrawContentContainer()
     // Draw separators.
     for (int i = 1; i <= 3; i++)
     {
-        auto lineMarginLeft = Scale(31);
-        auto lineMarginRight = Scale(46);
+        auto lineMarginLeft = Scale(35);
+        auto lineMarginRight = Scale(55);
         auto lineMarginY = Scale(2);
 
         ImVec2 lineMin = { clipRectMin.x + lineMarginLeft, clipRectMin.y + itemHeight * i + lineMarginY };
@@ -568,34 +561,35 @@ static void DrawContentContainer()
     // Draw scroll bar
     if (rowCount > visibleRowCount)
     {
-        float cornerRadius = Scale(25.0f);
-        float totalHeight = (clipRectMax.y - clipRectMin.y - cornerRadius) - Scale(3.0f);
+        float cornerRadius = Scale(25);
+        float totalHeight = (clipRectMax.y - clipRectMin.y - cornerRadius) - Scale(3);
         float heightRatio = float(visibleRowCount) / float(rowCount);
         float offsetRatio = float(g_firstVisibleRowIndex) / float(rowCount);
-        float offsetX = clipRectMax.x - Scale(31.0f);
-        float offsetY = offsetRatio * totalHeight + clipRectMin.y + Scale(4.0f);
-        float lineThickness = Scale(1.0f);
-        float innerMarginX = Scale(2.0f);
-        float outerMarginX = Scale(16.0f);
+        float offsetX = clipRectMax.x - Scale(39);
+        float offsetY = offsetRatio * totalHeight + clipRectMin.y + Scale(4);
+        float maxY = max.y - cornerRadius - Scale(3);
+        float lineThickness = Scale(1);
+        float innerMarginX = Scale(2);
+        float outerMarginX = Scale(24);
 
         // Outline
         drawList->AddRect
         (
             { /* X */ offsetX - lineThickness, /* Y */ clipRectMin.y - lineThickness },
-            { /* X */ clipRectMax.x - outerMarginX + lineThickness, /* Y */ max.y - cornerRadius + lineThickness },
+            { /* X */ clipRectMax.x - outerMarginX + lineThickness, /* Y */ maxY + lineThickness },
             IM_COL32(255, 255, 255, 155),
-            Scale(0.5f)
+            Scale(1)
         );
 
         // Background
         drawList->AddRectFilledMultiColor
         (
             { /* X */ offsetX, /* Y */ clipRectMin.y },
-            { /* X */ clipRectMax.x - outerMarginX, /* Y */ max.y - cornerRadius },
-            IM_COL32(82, 85, 82, 186),
-            IM_COL32(82, 85, 82, 186),
-            IM_COL32(74, 73, 74, 185),
-            IM_COL32(74, 73, 74, 185)
+            { /* X */ clipRectMax.x - outerMarginX, /* Y */ maxY },
+            IM_COL32(123, 125, 123, 255),
+            IM_COL32(123, 125, 123, 255),
+            IM_COL32(97, 99, 97, 255),
+            IM_COL32(97, 99, 97, 255)
         );
 
         // Scroll Bar Outline
@@ -629,13 +623,9 @@ void AchievementMenu::Init()
     g_fntNewRodinDB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
     g_fntNewRodinUB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
 
-    size_t bufferSize = 0;
-    auto buffer = ReadAllBytes("achievements_trophy.png", bufferSize);
-
-    if (!bufferSize)
-        return;
-
-    g_upTrophyIcon = LoadTexture(buffer.get(), bufferSize);
+    g_upTrophyIcon = LoadTexture(g_trophy, sizeof(g_trophy));
+    g_upSelectionCursor = LoadTexture(g_select_fill, sizeof(g_select_fill));
+    g_upWindow = LoadTexture(g_general_window, sizeof(g_general_window));
 }
 
 void AchievementMenu::Draw()

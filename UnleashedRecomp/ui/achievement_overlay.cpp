@@ -8,6 +8,7 @@
 #include <user/achievement_data.h>
 #include <app.h>
 #include <exports.h>
+#include <res/images/common/general_window.dds.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;
@@ -25,6 +26,8 @@ static double g_appearTime = 0;
 static Achievement g_achievement;
 
 static ImFont* g_fntSeurat;
+
+static std::unique_ptr<GuestTexture> g_upWindow;
 
 static bool DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25)
 {
@@ -51,8 +54,6 @@ static bool DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25)
         max.y = Hermite(centreY, max.y, containerMotion);
     }
 
-    auto vertices = GetPauseContainerVertices(min, max, cornerRadius);
-
     // Transparency fade animation.
     auto colourMotion = g_isClosing
         ? ComputeMotion(g_appearTime, OVERLAY_CONTAINER_OUTRO_FADE_START, OVERLAY_CONTAINER_OUTRO_FADE_END)
@@ -62,46 +63,7 @@ static bool DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25)
         ? Hermite(1, 0, colourMotion)
         : Hermite(0, 1, colourMotion);
 
-    auto colShadow = IM_COL32(0, 0, 0, 156 * alpha);
-    auto colGradientTop = IM_COL32(197, 194, 197, 200 * alpha);
-    auto colGradientBottom = IM_COL32(115, 113, 115, 236 * alpha);
-
-    // TODO: add a drop shadow.
-
-    // Draw vertices with gradient.
-    SetGradient(min, max, colGradientTop, colGradientBottom);
-    drawList->AddConvexPolyFilled(vertices.data(), vertices.size(), IM_COL32(255, 255, 255, 255 * alpha));
-    ResetGradient();
-
-    // Draw outline.
-    drawList->AddPolyline
-    (
-        vertices.data(),
-        vertices.size(),
-        IM_COL32(247, 247, 247, 255 * alpha),
-        true,
-        Scale(2.5f)
-    );
-
-    // Offset vertices to draw 3D effect lines.
-    for (int i = 0; i < vertices.size(); i++)
-    {
-        vertices[i].x -= Scale(0.4f);
-        vertices[i].y -= Scale(0.2f);
-    }
-
-    auto colLineTop = IM_COL32(165, 170, 165, 230 * alpha);
-    auto colLineBottom = IM_COL32(190, 190, 190, 230 * alpha);
-    auto lineThickness = Scale(1.0f);
-
-    // Top left corner bottom to top left corner top.
-    drawList->AddLine(vertices[0], vertices[1], colLineTop, lineThickness * 0.5f);
-
-    // Top left corner bottom to bottom left.
-    drawList->AddRectFilledMultiColor({ vertices[0].x - 0.2f, vertices[0].y }, { vertices[6].x + lineThickness - 0.2f, vertices[6].y }, colLineTop, colLineTop, colLineBottom, colLineBottom);
-
-    // Top left corner top to top right.
-    drawList->AddLine(vertices[1], vertices[2], colLineTop, lineThickness);
+    DrawPauseContainer(g_upWindow, min, max, alpha);
 
     drawList->PushClipRect(min, max);
 
@@ -115,6 +77,8 @@ void AchievementOverlay::Init()
     constexpr float FONT_SCALE = 2.0f;
 
     g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
+
+    g_upWindow = LoadTexture(g_general_window, sizeof(g_general_window));
 }
 
 void AchievementOverlay::Draw()
@@ -138,18 +102,18 @@ void AchievementOverlay::Draw()
     auto maxSize = std::max(headerSize.x, bodySize.x);
 
     // Calculate image margins.
-    auto imageMarginX = Scale(20);
-    auto imageMarginY = Scale(20);
+    auto imageMarginX = Scale(25);
+    auto imageMarginY = Scale(22.5f);
     auto imageSize = Scale(60);
 
     // Calculate text margins.
-    auto textMarginX = imageMarginX * 2 + imageSize;
+    auto textMarginX = imageMarginX * 2 + imageSize - Scale(5);
     auto textMarginY = imageMarginY + Scale(2);
 
     auto containerWidth = imageMarginX + textMarginX + maxSize;
 
-    ImVec2 min = { (res.x / 2) - (containerWidth / 2), Scale(50) };
-    ImVec2 max = { min.x + containerWidth, min.y + Scale(100) };
+    ImVec2 min = { (res.x / 2) - (containerWidth / 2), Scale(55) };
+    ImVec2 max = { min.x + containerWidth, min.y + Scale(105) };
 
     if (DrawContainer(min, max))
     {

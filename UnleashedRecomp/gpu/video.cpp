@@ -4638,7 +4638,7 @@ static void EnqueueGraphicsPipelineCompilation(const PipelineState& pipelineStat
     if (shouldCompile)
     {
         if (databaseDataHolderPair.counter == nullptr && databaseDataHolderPair.holder.databaseData.get() != nullptr)
-            databaseDataHolderPair.counter = std::make_unique<DatabaseDataHolder>(std::move(databaseDataHolderPair.holder));
+            databaseDataHolderPair.counter = std::make_shared<DatabaseDataHolder>(std::move(databaseDataHolderPair.holder));
 
         PipelineStateQueueItem queueItem;
         queueItem.pipelineHash = hash;
