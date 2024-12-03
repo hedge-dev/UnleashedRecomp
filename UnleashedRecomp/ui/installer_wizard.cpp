@@ -40,6 +40,8 @@ static constexpr double CONTAINER_OUTER_DURATION = 23.0;
 static constexpr double CONTAINER_INNER_TIME = SCANLINES_ANIMATION_DURATION + CONTAINER_LINE_ANIMATION_DURATION + 8.0;
 static constexpr double CONTAINER_INNER_DURATION = 15.0;
 
+static constexpr double ARROW_CIRCLE_SPIN_FACTOR = 2;
+
 static constexpr double ALL_ANIMATIONS_FULL_DURATION = CONTAINER_INNER_TIME + CONTAINER_INNER_DURATION;
 
 constexpr float IMAGE_X = 165.0f;
@@ -69,6 +71,8 @@ static constexpr size_t GRID_SIZE = 9;
 static ImFont *g_seuratFont;
 static ImFont *g_dfsogeistdFont;
 static ImFont *g_newRodinFont;
+
+static double g_arrowCircleCurrentRotation = 0.0;
 
 static double g_appearTime = 0.0;
 static double g_disappearTime = DBL_MAX;
@@ -237,7 +241,29 @@ static void DrawHeaderIcons()
         GuestTexture* arrowCircleTexture = g_arrowCircle.get();
         ImVec2 arrowCircleMin = { Scale(iconsPosX - iconsScale / 2), Scale(iconsPosY - iconsScale / 2) };
         ImVec2 arrowCircleMax = { Scale(iconsPosX + iconsScale / 2), Scale(iconsPosY + iconsScale / 2) };
-        drawList->AddImage(arrowCircleTexture, arrowCircleMin, arrowCircleMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 96));
+
+        ImVec2 center = { Scale(iconsPosX), Scale(iconsPosY) };
+        float currentAngle = g_arrowCircleCurrentRotation * (3.14159f / 180.0f); // Rotation angle in radians
+        float cos_a = cosf(currentAngle);
+        float sin_a = sinf(currentAngle);
+
+        // Calculate rotated corners
+        ImVec2 corners[4] = {
+            ImRotate(ImVec2(arrowCircleMin.x - center.x, arrowCircleMin.y - center.y), cos_a, sin_a),
+            ImRotate(ImVec2(arrowCircleMax.x - center.x, arrowCircleMin.y - center.y), cos_a, sin_a),
+            ImRotate(ImVec2(arrowCircleMax.x - center.x, arrowCircleMax.y - center.y), cos_a, sin_a),
+            ImRotate(ImVec2(arrowCircleMin.x - center.x, arrowCircleMax.y - center.y), cos_a, sin_a),
+        };
+
+        for (int i = 0; i < 4; ++i) {
+            corners[i].x += center.x; // Add center.x to corner.x
+            corners[i].y += center.y; // Add center.y to corner.y
+        }
+
+        drawList->AddImageQuad(arrowCircleTexture, corners[0], corners[1], corners[2], corners[3], ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1), IM_COL32(255, 255, 255, 96));
+
+        // Update rotation for next frame
+        g_arrowCircleCurrentRotation = fmodf(g_arrowCircleCurrentRotation - ARROW_CIRCLE_SPIN_FACTOR, 360.0f);
     }
 }
 
