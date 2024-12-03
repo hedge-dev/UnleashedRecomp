@@ -62,7 +62,7 @@ bool AudioPatches::CanAttenuate()
 
     auto version = GetPlatformVersion();
 
-    m_isAttenuationSupported = version.Major == 10 && version.Build >= 17763;
+    m_isAttenuationSupported = version.Major >= 10 && version.Build >= 17763;
 
     return m_isAttenuationSupported;
 #else
