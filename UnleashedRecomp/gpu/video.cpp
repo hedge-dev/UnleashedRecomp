@@ -11,6 +11,7 @@
 #include <shader/shader_cache.h>
 #include <ui/achievement_menu.h>
 #include <ui/achievement_overlay.h>
+#include <ui/message_window.h>
 #include <ui/options_menu.h>
 #include <ui/installer_wizard.h>
 
@@ -1066,6 +1067,7 @@ static void CreateImGuiBackend()
 
     AchievementMenu::Init();
     AchievementOverlay::Init();
+    MessageWindow::Init();
     OptionsMenu::Init();
     InstallerWizard::Init();
 
@@ -1741,6 +1743,7 @@ static void DrawImGui()
     OptionsMenu::Draw();
     AchievementOverlay::Draw();
     InstallerWizard::Draw();
+    MessageWindow::Draw();
 
     ImGui::Render();
 
