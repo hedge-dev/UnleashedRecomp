@@ -99,7 +99,7 @@ void AchievementOverlay::Draw()
     auto fontSize = Scale(24);
     auto headerSize = g_fntSeurat->CalcTextSizeA(fontSize, FLT_MAX, 0, strAchievementUnlocked);
     auto bodySize = g_fntSeurat->CalcTextSizeA(fontSize, FLT_MAX, 0, strAchievementName);
-    auto maxSize = std::max(headerSize.x, bodySize.x);
+    auto maxSize = std::max(headerSize.x, bodySize.x) + Scale(5);
 
     // Calculate image margins.
     auto imageMarginX = Scale(25);
