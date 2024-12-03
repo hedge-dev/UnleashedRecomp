@@ -20,6 +20,5 @@ add_subdirectory(${SWA_TOOLS_ROOT})
 project("UnleashedRecomp-ALL")
 
 # Include sub-projects.
-add_subdirectory("UnleashedRecompResources")
 add_subdirectory("UnleashedRecompLib")
 add_subdirectory("UnleashedRecomp")

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../UnleashedRecompResources/images/game_icon.h"
-#include "../UnleashedRecompResources/images/game_icon_night.h"
+#include <res/images/game_icon.bmp.h>
+#include <res/images/game_icon_night.bmp.h>
 #include <ui/window_events.h>
 #include <user/config.h>
 
@@ -46,11 +46,11 @@ public:
     {
         if (isNight)
         {
-            SetIcon((void*)g_res_game_icon_night, g_res_game_icon_night_size);
+            SetIcon(g_game_icon_night, sizeof(g_game_icon_night));
         }
         else
         {
-            SetIcon((void*)g_res_game_icon, g_res_game_icon_size);
+            SetIcon(g_game_icon, sizeof(g_game_icon));
         }
     }
 
