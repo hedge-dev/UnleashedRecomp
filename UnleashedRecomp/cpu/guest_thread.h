@@ -8,6 +8,15 @@ struct GuestThreadParameter
     uint32_t flags;
 };
 
+struct GuestThreadContext
+{
+    PPCContext ppcContext{};
+    uint8_t* thread = nullptr;
+
+    GuestThreadContext(uint32_t cpuNumber);
+    ~GuestThreadContext();
+};
+
 struct GuestThread
 {
     static DWORD Start(uint32_t function);

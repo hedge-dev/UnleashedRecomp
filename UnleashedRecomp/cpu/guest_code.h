@@ -4,7 +4,7 @@
 
 struct GuestCode 
 {
-    inline static void Run(void* hostAddress, PPCContext* ctx, void* baseAddress, void* callStack)
+    inline static void Run(void* hostAddress, PPCContext* ctx, void* baseAddress)
     {
         ctx->fpscr.loadFromHost();
         reinterpret_cast<PPCFunc*>(hostAddress)(*ctx, reinterpret_cast<uint8_t*>(baseAddress));

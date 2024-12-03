@@ -42,6 +42,7 @@ GUEST_FUNCTION_HOOK(sub_82BD4CA8, OutputDebugStringA);
 
 GUEST_FUNCTION_HOOK(sub_82BD4AC8, QueryPerformanceCounterImpl);
 GUEST_FUNCTION_HOOK(sub_831CD040, QueryPerformanceFrequencyImpl);
+GUEST_FUNCTION_HOOK(sub_831CDAD0, GetTickCount);
 
 GUEST_FUNCTION_HOOK(sub_82BD4BC0, GlobalMemoryStatusImpl);
 
