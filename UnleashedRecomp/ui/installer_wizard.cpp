@@ -474,16 +474,16 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
         IM_COL32(baser + 128, baseg + 170, 0, 255)
     );
 
-    DrawTextWithOutline<float>
-        (
-            font,
-            size,
-            min,
-            IM_COL32(255, 255, 255, 255 * alpha),
-            buttonText,
-            sourceButton ? 1.0f : 1.5f,
-            IM_COL32(baser, baseg, 0, 255 * alpha)
-        );
+    DrawTextWithOutline<int>
+    (
+        font,
+        size,
+        min,
+        IM_COL32(255, 255, 255, 255 * alpha),
+        buttonText,
+        2,
+        IM_COL32(baser, baseg, 0, 255 * alpha)
+    );
 
     ResetGradient();
 }
