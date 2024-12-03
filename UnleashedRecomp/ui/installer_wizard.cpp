@@ -242,7 +242,7 @@ static void DrawHeaderIcons()
         ImVec2 arrowCircleMin = { Scale(iconsPosX - iconsScale / 2), Scale(iconsPosY - iconsScale / 2) };
         ImVec2 arrowCircleMax = { Scale(iconsPosX + iconsScale / 2), Scale(iconsPosY + iconsScale / 2) };
 
-        ImVec2 center = { Scale(iconsPosX), Scale(iconsPosY) };
+        ImVec2 center = { Scale(iconsPosX) + 0.5f, Scale(iconsPosY) };
         float currentAngle = g_arrowCircleCurrentRotation * (3.14159f / 180.0f); // Rotation angle in radians
         float cos_a = cosf(currentAngle);
         float sin_a = sinf(currentAngle);
