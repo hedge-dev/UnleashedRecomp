@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gpu/imgui_common.h>
+#include <gpu/video.h>
 #include <app.h>
 
 #define PIXELS_TO_UV_COORDS(textureWidth, textureHeight, x, y, width, height) \
@@ -84,15 +85,63 @@ static std::vector<ImVec2> GetPauseContainerVertices(ImVec2 min, ImVec2 max, flo
 
     return
     {
-        { min.x, min.y + cornerRadius },
-        { min.x + cornerRadius, min.y },
-        { max.x, min.y },
-        { max.x, min.y + cornerRadius },
-        { max.x, max.y - cornerRadius },
-        { max.x - cornerRadius, max.y },
-        { min.x, max.y },
-        { min.x, max.y - cornerRadius }
+        { min.x, min.y + cornerRadius }, // 0 - TL Corner Bottom
+        { min.x + cornerRadius, min.y }, // 1 - TL Corner Top
+        { max.x, min.y },                // 2 - TR Corner Top
+        { max.x, min.y + cornerRadius }, // 3 - TR Corner Bottom
+        { max.x, max.y - cornerRadius }, // 4 - BR Corner Top
+        { max.x - cornerRadius, max.y }, // 5 - BR Corner Bottom
+        { min.x, max.y },                // 6 - BL Corner Bottom
+        { min.x, max.y - cornerRadius }  // 7 - BL Corner Top
     };
+}
+
+static void DrawPauseContainer(std::unique_ptr<GuestTexture>& texture, ImVec2 min, ImVec2 max, float alpha = 1)
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+
+    auto commonWidth = Scale(35);
+    auto commonHeight = Scale(35);
+    auto bottomHeight = Scale(5);
+
+    auto tl = PIXELS_TO_UV_COORDS(512, 512, 0, 0, 35, 35);
+    auto tc = PIXELS_TO_UV_COORDS(512, 512, 51, 0, 5, 35);
+    auto tr = PIXELS_TO_UV_COORDS(512, 512, 70, 0, 35, 35);
+    auto cl = PIXELS_TO_UV_COORDS(512, 512, 0, 35, 35, 235);
+    auto cc = PIXELS_TO_UV_COORDS(512, 512, 51, 35, 5, 235);
+    auto cr = PIXELS_TO_UV_COORDS(512, 512, 70, 35, 35, 235);
+    auto bl = PIXELS_TO_UV_COORDS(512, 512, 0, 270, 35, 40);
+    auto bc = PIXELS_TO_UV_COORDS(512, 512, 51, 270, 5, 40);
+    auto br = PIXELS_TO_UV_COORDS(512, 512, 70, 270, 35, 40);
+
+    auto colour = IM_COL32(255, 255, 255, 255 * alpha);
+
+    drawList->AddImage(texture.get(), min, { min.x + commonWidth, min.y + commonHeight }, GET_UV_COORDS(tl), colour);
+    drawList->AddImage(texture.get(), { min.x + commonWidth, min.y }, { max.x - commonWidth, min.y + commonHeight }, GET_UV_COORDS(tc), colour);
+    drawList->AddImage(texture.get(), { max.x - commonWidth, min.y }, { max.x, min.y + commonHeight }, GET_UV_COORDS(tr), colour);
+    drawList->AddImage(texture.get(), { min.x, min.y + commonHeight }, { min.x + commonWidth, max.y - commonHeight }, GET_UV_COORDS(cl), colour);
+    drawList->AddImage(texture.get(), { min.x + commonWidth, min.y + commonHeight }, { max.x - commonWidth, max.y - commonHeight }, GET_UV_COORDS(cc), colour);
+    drawList->AddImage(texture.get(), { max.x - commonWidth, min.y + commonHeight }, { max.x, max.y - commonHeight }, GET_UV_COORDS(cr), colour);
+    drawList->AddImage(texture.get(), { min.x, max.y - commonHeight }, { min.x + commonWidth, max.y + bottomHeight }, GET_UV_COORDS(bl), colour);
+    drawList->AddImage(texture.get(), { min.x + commonWidth, max.y - commonHeight }, { max.x - commonWidth, max.y + bottomHeight }, GET_UV_COORDS(bc), colour);
+    drawList->AddImage(texture.get(), { max.x - commonWidth, max.y - commonHeight }, { max.x, max.y + bottomHeight }, GET_UV_COORDS(br), colour);
+}
+
+static void DrawPauseHeaderContainer(std::unique_ptr<GuestTexture>& texture, ImVec2 min, ImVec2 max, float alpha = 1)
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+
+    auto commonWidth = Scale(35);
+
+    auto left = PIXELS_TO_UV_COORDS(512, 512, 0, 314, 35, 60);
+    auto centre = PIXELS_TO_UV_COORDS(512, 512, 51, 314, 5, 60);
+    auto right = PIXELS_TO_UV_COORDS(512, 512, 70, 314, 35, 60);
+
+    auto colour = IM_COL32(255, 255, 255, 255 * alpha);
+
+    drawList->AddImage(texture.get(), min, { min.x + commonWidth, max.y }, GET_UV_COORDS(left), colour);
+    drawList->AddImage(texture.get(), { min.x + commonWidth, min.y }, { max.x - commonWidth, max.y }, GET_UV_COORDS(centre), colour);
+    drawList->AddImage(texture.get(), { max.x - commonWidth, min.y }, max, GET_UV_COORDS(right), colour);
 }
 
 static void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 color, const char* text, double time, double delay, double speed)
