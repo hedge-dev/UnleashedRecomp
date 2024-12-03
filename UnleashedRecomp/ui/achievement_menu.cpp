@@ -9,7 +9,7 @@
 #include <app.h>
 #include <exports.h>
 #include <res/images/achievements_menu/trophy.dds.h>
-#include <res/images/pause.dds.h>
+#include <res/images/common/select_fill.dds.h>
 
 constexpr double HEADER_CONTAINER_INTRO_MOTION_START = 0;
 constexpr double HEADER_CONTAINER_INTRO_MOTION_END = 15;
@@ -115,15 +115,15 @@ static void DrawSelectionContainer(ImVec2 min, ImVec2 max)
     auto commonWidth = Scale(11);
     auto commonHeight = Scale(24);
 
-    auto tl = PIXELS_TO_UV_COORDS(128, 128, 41, 0, 11, 24);
-    auto tc = PIXELS_TO_UV_COORDS(128, 128, 52, 0, 8, 24);
-    auto tr = PIXELS_TO_UV_COORDS(128, 128, 60, 0, 11, 24);
-    auto cl = PIXELS_TO_UV_COORDS(128, 128, 41, 24, 11, 2);
-    auto cc = PIXELS_TO_UV_COORDS(128, 128, 52, 24, 8, 2);
-    auto cr = PIXELS_TO_UV_COORDS(128, 128, 60, 24, 11, 2);
-    auto bl = PIXELS_TO_UV_COORDS(128, 128, 41, 26, 11, 24);
-    auto bc = PIXELS_TO_UV_COORDS(128, 128, 52, 26, 8, 24);
-    auto br = PIXELS_TO_UV_COORDS(128, 128, 60, 26, 11, 24);
+    auto tl = PIXELS_TO_UV_COORDS(64, 64, 0, 0, 11, 24);
+    auto tc = PIXELS_TO_UV_COORDS(64, 64, 11, 0, 8, 24);
+    auto tr = PIXELS_TO_UV_COORDS(64, 64, 19, 0, 11, 24);
+    auto cl = PIXELS_TO_UV_COORDS(64, 64, 0, 24, 11, 2);
+    auto cc = PIXELS_TO_UV_COORDS(64, 64, 11, 24, 8, 2);
+    auto cr = PIXELS_TO_UV_COORDS(64, 64, 19, 24, 11, 2);
+    auto bl = PIXELS_TO_UV_COORDS(64, 64, 0, 26, 11, 24);
+    auto bc = PIXELS_TO_UV_COORDS(64, 64, 11, 26, 8, 24);
+    auto br = PIXELS_TO_UV_COORDS(64, 64, 19, 26, 11, 24);
 
     drawList->AddImage(g_upSelectionCursor.get(), min, { min.x + commonWidth, min.y + commonHeight }, GET_UV_COORDS(tl), colour);
     drawList->AddImage(g_upSelectionCursor.get(), { min.x + commonWidth, min.y }, { max.x - commonWidth, min.y + commonHeight }, GET_UV_COORDS(tc), colour);
@@ -656,7 +656,7 @@ void AchievementMenu::Init()
     g_fntNewRodinUB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
 
     g_upTrophyIcon = LoadTexture(g_trophy, sizeof(g_trophy));
-    g_upSelectionCursor = LoadTexture(g_pause, sizeof(g_pause));
+    g_upSelectionCursor = LoadTexture(g_select_fill, sizeof(g_select_fill));
 }
 
 void AchievementMenu::Draw()
