@@ -8,6 +8,7 @@
 #include <user/config.h>
 #include <app.h>
 #include <exports.h>
+#include "../UnleashedRecompResources/images/pause.h"
 
 constexpr double HEADER_CONTAINER_INTRO_MOTION_START = 0;
 constexpr double HEADER_CONTAINER_INTRO_MOTION_END = 15;
@@ -28,7 +29,7 @@ constexpr double SELECTION_CONTAINER_BREATHE = 30;
 
 static bool g_isClosing = false;
 
-static double g_appearTime = 0;
+static double g_appearTime;
 
 static std::vector<std::tuple<Achievement, time_t>> g_achievements;
 
@@ -37,6 +38,7 @@ static ImFont* g_fntNewRodinDB;
 static ImFont* g_fntNewRodinUB;
 
 static std::unique_ptr<GuestTexture> g_upTrophyIcon;
+static std::unique_ptr<GuestTexture> g_upSelectionCursor;
 
 static int g_firstVisibleRowIndex;
 static int g_selectedRowIndex;
@@ -104,14 +106,33 @@ static void DrawContainer(ImVec2 min, ImVec2 max, ImU32 gradientTop, ImU32 gradi
 static void DrawSelectionContainer(ImVec2 min, ImVec2 max)
 {
     auto drawList = ImGui::GetForegroundDrawList();
-    auto vertices = GetPauseContainerVertices(min, max, 10);
 
     static auto breatheStart = ImGui::GetTime();
     auto alpha = Lerp(1.0f, 0.75f, (sin((ImGui::GetTime() - breatheStart) * (2.0f * M_PI / (55.0f / 60.0f))) + 1.0f) / 2.0f);
+    auto colour = IM_COL32(255, 255, 255, 255 * alpha);
 
-    SetGradient(min, max, IM_COL32(255, 246, 0, 129), IM_COL32(255, 194, 0, 118 * alpha));
-    drawList->AddConvexPolyFilled(vertices.data(), vertices.size(), IM_COL32(255, 255, 255, 255 * alpha));
-    ResetGradient();
+    auto commonWidth = Scale(11);
+    auto commonHeight = Scale(24);
+
+    auto tl = PIXELS_TO_UV_COORDS(128, 128, 41, 0, 11, 24);
+    auto tc = PIXELS_TO_UV_COORDS(128, 128, 52, 0, 8, 24);
+    auto tr = PIXELS_TO_UV_COORDS(128, 128, 60, 0, 11, 24);
+    auto cl = PIXELS_TO_UV_COORDS(128, 128, 41, 24, 11, 2);
+    auto cc = PIXELS_TO_UV_COORDS(128, 128, 52, 24, 8, 2);
+    auto cr = PIXELS_TO_UV_COORDS(128, 128, 60, 24, 11, 2);
+    auto bl = PIXELS_TO_UV_COORDS(128, 128, 41, 26, 11, 24);
+    auto bc = PIXELS_TO_UV_COORDS(128, 128, 52, 26, 8, 24);
+    auto br = PIXELS_TO_UV_COORDS(128, 128, 60, 26, 11, 24);
+
+    drawList->AddImage(g_upSelectionCursor.get(), min, { min.x + commonWidth, min.y + commonHeight }, GET_UV_COORDS(tl), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { min.x + commonWidth, min.y }, { max.x - commonWidth, min.y + commonHeight }, GET_UV_COORDS(tc), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { max.x - commonWidth, min.y }, { max.x, min.y + commonHeight }, GET_UV_COORDS(tr), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { min.x, min.y + commonHeight }, { min.x + commonWidth, max.y - commonHeight }, GET_UV_COORDS(cl), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { min.x + commonWidth, min.y + commonHeight }, { max.x - commonWidth, max.y - commonHeight }, GET_UV_COORDS(cc), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { max.x - commonWidth, min.y + commonHeight }, { max.x, max.y - commonHeight }, GET_UV_COORDS(cr), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { min.x, max.y - commonHeight }, { min.x + commonWidth, max.y }, GET_UV_COORDS(bl), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { min.x + commonWidth, max.y - commonHeight }, { max.x - commonWidth, max.y }, GET_UV_COORDS(bc), colour);
+    drawList->AddImage(g_upSelectionCursor.get(), { max.x - commonWidth, max.y - commonHeight }, { max.x, max.y }, GET_UV_COORDS(br), colour);
 }
 
 static void DrawHeaderContainer(const char* text)
@@ -633,6 +654,9 @@ void AchievementMenu::Init()
     g_fntNewRodinDB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
     g_fntNewRodinUB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
 
+    g_upSelectionCursor = LoadTexture((uint8_t*)g_res_pause, g_res_pause_size);
+
+    // TODO: embed this texture.
     size_t bufferSize = 0;
     auto buffer = ReadAllBytes("trophy.dds", bufferSize);
 
