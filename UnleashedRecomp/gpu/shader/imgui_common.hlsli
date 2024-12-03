@@ -9,6 +9,8 @@ struct PushConstants
     uint ShaderModifier;
     uint Texture2DDescriptorIndex;
     float2 InverseDisplaySize;
+    float2 Origin;
+    float2 Scale;
 };
 
 Texture2D<float4> g_Texture2DDescriptorHeap[] : register(t0, space0);

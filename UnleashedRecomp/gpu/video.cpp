@@ -1057,6 +1057,8 @@ struct ImGuiPushConstants
     uint32_t shaderModifier{};
     uint32_t texture2DDescriptorIndex{};
     ImVec2 inverseDisplaySize{};
+    ImVec2 origin{ 0.0f, 0.0f };
+    ImVec2 scale{ 1.0f, 1.0f };
 };
 
 static void CreateImGuiBackend()
@@ -1811,6 +1813,12 @@ static void ProcDrawImGui(const RenderCommand& cmd)
                     break;       
                 case ImGuiCallback::SetShaderModifier:
                     commandList->setGraphicsPushConstants(0, &callbackData->setShaderModifier, offsetof(ImGuiPushConstants, shaderModifier), sizeof(callbackData->setShaderModifier));
+                    break;
+                case ImGuiCallback::SetOrigin:
+                    commandList->setGraphicsPushConstants(0, &callbackData->setOrigin, offsetof(ImGuiPushConstants, origin), sizeof(callbackData->setOrigin));
+                    break;
+                case ImGuiCallback::SetScale:
+                    commandList->setGraphicsPushConstants(0, &callbackData->setScale, offsetof(ImGuiPushConstants, scale), sizeof(callbackData->setScale));
                     break;
                 }
             }

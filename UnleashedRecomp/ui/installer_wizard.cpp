@@ -434,23 +434,19 @@ static void DrawButtonContainer(ImVec2 min, ImVec2 max, int baser, int baseg, fl
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 }
 
-static ImVec2 ComputeTextSizeAndRatio(ImFont *font, const char *text, float &size, float maxTextWidth = FLT_MAX)
+static ImVec2 ComputeTextSize(ImFont *font, const char *text, float size, float &squashRatio, float maxTextWidth = FLT_MAX)
 {
     ImVec2 textSize = font->CalcTextSizeA(size, FLT_MAX, 0.0f, text);
     if (textSize.x > maxTextWidth)
     {
-        float shrinkRatio = maxTextWidth / textSize.x;
-        size *= shrinkRatio;
-        textSize.x *= shrinkRatio;
-        textSize.y *= shrinkRatio;
+        squashRatio = maxTextWidth / textSize.x;
+    }
+    else
+    {
+        squashRatio = 1.0f;
     }
 
     return textSize;
-}
-
-static ImVec2 ComputeTextSize(ImFont *font, const char *text, float size, float maxTextWidth = FLT_MAX)
-{
-    return ComputeTextSizeAndRatio(font, text, size, maxTextWidth);
 }
 
 static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sourceButton, bool buttonEnabled, bool &buttonPressed, float maxTextWidth = FLT_MAX)
@@ -482,7 +478,8 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
 
     ImFont *font = sourceButton ? g_newRodinFont : g_dfsogeistdFont;
     float size = Scale(sourceButton ? 15.0f : 20.0f);
-    ImVec2 textSize = ComputeTextSizeAndRatio(font, buttonText, size, Scale(maxTextWidth));
+    float squashRatio;
+    ImVec2 textSize = ComputeTextSize(font, buttonText, size, squashRatio, Scale(maxTextWidth));
     min.x += ((max.x - min.x) - textSize.x) / 2.0f;
     min.y += ((max.y - min.y) - textSize.y) / 2.0f;
 
@@ -491,11 +488,13 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
         // Fixes slight misalignment caused by this particular font.
         min.y -= Scale(1.0f);
     }
-    
+
+    SetOrigin({ min.x + textSize.x / 2.0f, min.y });
+    SetScale({ squashRatio, 1.0f });
     SetGradient
     (
         min,
-        { min.x + textSize.x, min.y + textSize.y },
+        { min.x + textSize.x, textSize.y },
         IM_COL32(baser + 192, 255, 0, 255),
         IM_COL32(baser + 128, baseg + 170, 0, 255)
     );
@@ -512,6 +511,8 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
     );
 
     ResetGradient();
+    SetScale({ 1.0f, 1.0f });
+    SetOrigin({ 0.0f, 0.0f });
 }
 
 enum ButtonColumn
@@ -735,24 +736,25 @@ static void DrawSourcePickers()
     {
         constexpr float ADD_BUTTON_MAX_TEXT_WIDTH = 160.0f;
         const std::string &addFilesText = Localise("Installer_Button_AddFiles");
-        ImVec2 textSize = ComputeTextSize(g_dfsogeistdFont, addFilesText.c_str(), 20.0f, ADD_BUTTON_MAX_TEXT_WIDTH);
+        float squashRatio;
+        ImVec2 textSize = ComputeTextSize(g_dfsogeistdFont, addFilesText.c_str(), 20.0f, squashRatio, ADD_BUTTON_MAX_TEXT_WIDTH);
         textSize.x += BUTTON_TEXT_GAP;
 
         ImVec2 min = { Scale(AlignToNextGrid(CONTAINER_X) + BOTTOM_X_GAP), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP) };
-        ImVec2 max = { Scale(AlignToNextGrid(CONTAINER_X) + BOTTOM_X_GAP + textSize.x), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
+        ImVec2 max = { Scale(AlignToNextGrid(CONTAINER_X) + BOTTOM_X_GAP + textSize.x * squashRatio), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
         DrawButton(min, max, addFilesText.c_str(), false, true, buttonPressed, ADD_BUTTON_MAX_TEXT_WIDTH);
         if (buttonPressed && ShowFilesPicker(paths))
         {
             ParseSourcePaths(paths);
         }
 
-        min.x += Scale(BOTTOM_X_GAP + textSize.x);
+        min.x += Scale(BOTTOM_X_GAP + textSize.x * squashRatio);
 
         const std::string &addFolderText = Localise("Installer_Button_AddFolder");
-        textSize = ComputeTextSize(g_dfsogeistdFont, addFolderText.c_str(), 20.0f, ADD_BUTTON_MAX_TEXT_WIDTH);
+        textSize = ComputeTextSize(g_dfsogeistdFont, addFolderText.c_str(), 20.0f, squashRatio, ADD_BUTTON_MAX_TEXT_WIDTH);
         textSize.x += BUTTON_TEXT_GAP;
 
-        max.x = min.x + Scale(textSize.x);
+        max.x = min.x + Scale(textSize.x * squashRatio);
         DrawButton(min, max, addFolderText.c_str(), false, true, buttonPressed, ADD_BUTTON_MAX_TEXT_WIDTH);
         if (buttonPressed && ShowFoldersPicker(paths))
         {
@@ -856,15 +858,17 @@ static void DrawNextButton()
             skipButton = std::all_of(g_dlcSourcePaths.begin(), g_dlcSourcePaths.end(), [](const std::filesystem::path &path) { return path.empty(); });
         }
 
+        float squashRatio;
+        constexpr float NEXT_BUTTON_MAX_TEXT_WIDTH = 100.0f;
         const std::string &buttonText = Localise(skipButton ? "Installer_Button_Skip" : "Installer_Button_Next");
-        ImVec2 textSize = g_newRodinFont->CalcTextSizeA(20.0f, FLT_MAX, 0.0f, buttonText.c_str());
+        ImVec2 textSize = ComputeTextSize(g_newRodinFont, buttonText.c_str(), 20.0f, squashRatio, NEXT_BUTTON_MAX_TEXT_WIDTH);
         textSize.x += BUTTON_TEXT_GAP;
 
-        ImVec2 min = { Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH) - textSize.x - BOTTOM_X_GAP), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP) };
+        ImVec2 min = { Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH) - textSize.x * squashRatio - BOTTOM_X_GAP), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP) };
         ImVec2 max = { Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH) - BOTTOM_X_GAP), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
 
         bool buttonPressed = false;
-        DrawButton(min, max, buttonText.c_str(), false, nextButtonEnabled, buttonPressed);
+        DrawButton(min, max, buttonText.c_str(), false, nextButtonEnabled, buttonPressed, NEXT_BUTTON_MAX_TEXT_WIDTH);
 
         if (buttonPressed)
         {

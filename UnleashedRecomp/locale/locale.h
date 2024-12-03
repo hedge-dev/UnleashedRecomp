@@ -103,6 +103,7 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         {
             { ELanguage::English, "NEXT" },
             { ELanguage::Spanish, "SIGUIENTE" },
+            { ELanguage::German, "WEITER" },
         }
     },
     {
@@ -110,6 +111,7 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         {
             { ELanguage::English, "SKIP" },
             { ELanguage::Spanish, "SALTAR" },
+            { ELanguage::German, "ÜBERSPRINGEN" },
         }
     },
     {

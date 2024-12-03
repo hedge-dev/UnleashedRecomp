@@ -10,7 +10,9 @@
 enum class ImGuiCallback : int32_t
 {
     SetGradient = -1,
-    SetShaderModifier = -2
+    SetShaderModifier = -2,
+    SetOrigin = -3,
+    SetScale = -4,
 };
 
 union ImGuiCallbackData
@@ -27,6 +29,16 @@ union ImGuiCallbackData
     {
         uint32_t shaderModifier;
     } setShaderModifier;
+
+    struct
+    {
+        float origin[2];
+    } setOrigin;
+
+    struct
+    {
+        float scale[2];
+    } setScale;
 };
 
 #endif

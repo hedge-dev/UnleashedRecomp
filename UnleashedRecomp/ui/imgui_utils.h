@@ -49,6 +49,20 @@ static void SetShaderModifier(uint32_t shaderModifier)
     callbackData->setShaderModifier.shaderModifier = shaderModifier;
 }
 
+static void SetOrigin(ImVec2 origin)
+{
+    auto callbackData = AddCallback(ImGuiCallback::SetOrigin);
+    callbackData->setOrigin.origin[0] = origin.x;
+    callbackData->setOrigin.origin[1] = origin.y;
+}
+
+static void SetScale(ImVec2 scale)
+{
+    auto callbackData = AddCallback(ImGuiCallback::SetScale);
+    callbackData->setScale.scale[0] = scale.x;
+    callbackData->setScale.scale[1] = scale.y;
+}
+
 // Aspect ratio aware.
 static float Scale(float size)
 {
