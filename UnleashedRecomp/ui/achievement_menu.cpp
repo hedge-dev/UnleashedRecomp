@@ -8,7 +8,8 @@
 #include <user/config.h>
 #include <app.h>
 #include <exports.h>
-#include "../UnleashedRecompResources/images/pause.h"
+#include <res/images/achievements_menu/trophy.dds.h>
+#include <res/images/pause.dds.h>
 
 constexpr double HEADER_CONTAINER_INTRO_MOTION_START = 0;
 constexpr double HEADER_CONTAINER_INTRO_MOTION_END = 15;
@@ -654,16 +655,8 @@ void AchievementMenu::Init()
     g_fntNewRodinDB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
     g_fntNewRodinUB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
 
-    g_upSelectionCursor = LoadTexture((uint8_t*)g_res_pause, g_res_pause_size);
-
-    // TODO: embed this texture.
-    size_t bufferSize = 0;
-    auto buffer = ReadAllBytes("trophy.dds", bufferSize);
-
-    if (!bufferSize)
-        return;
-
-    g_upTrophyIcon = LoadTexture(buffer.get(), bufferSize);
+    g_upTrophyIcon = LoadTexture(g_trophy, sizeof(g_trophy));
+    g_upSelectionCursor = LoadTexture(g_pause, sizeof(g_pause));
 }
 
 void AchievementMenu::Draw()
