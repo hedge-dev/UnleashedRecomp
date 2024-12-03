@@ -10,6 +10,9 @@
 
 #define GET_UV_COORDS(tuple) std::get<0>(tuple), std::get<1>(tuple)
 
+#define CENTRE_TEXT_HORZ(min, max, textSize) min.x + ((max.x - min.x) - textSize.x) / 2
+#define CENTRE_TEXT_VERT(min, max, textSize) min.y + ((max.y - min.y) - textSize.y) / 2
+
 static std::vector<std::unique_ptr<ImGuiCallbackData>> g_callbackData;
 static uint32_t g_callbackDataIndex = 0;
 

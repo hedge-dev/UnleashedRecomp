@@ -140,7 +140,7 @@ static void DrawHeaderContainer(const char* text)
     (
         g_fntNewRodinUB,
         fontSize,
-        { /* X */ min.x + textMarginX, /* Y */ min.y + ((max.y - min.y) - textSize.y) / 2 - Scale(5) },
+        { /* X */ min.x + textMarginX, /* Y */ CENTRE_TEXT_VERT(min, max, textSize) - Scale(5) },
         IM_COL32(255, 255, 255, 255 * alpha),
         text,
         3,
@@ -265,11 +265,11 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
     localtime_s(&time, &timestamp);
     strftime(buffer, sizeof(buffer), "%Y/%m/%d %H:%M", &time);
 
-    fontSize = Scale(14);
+    fontSize = Scale(12);
     textSize = g_fntNewRodinDB->CalcTextSizeA(fontSize, FLT_MAX, 0, buffer);
 
     auto containerMarginX = Scale(10);
-    auto textMarginX = Scale(3);
+    auto textMarginX = Scale(8);
 
     ImVec2 timestampMin = { max.x - containerMarginX - textSize.x - (textMarginX * 2), min.y + titleTextY };
     ImVec2 timestampMax = { max.x - containerMarginX, min.y + Scale(46) };
@@ -330,11 +330,12 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
         IM_COL32(16, 16, 16, 192)
     );
 
+    // Draw timestamp text.
     DrawTextWithOutline<int>
     (
         g_fntNewRodinDB,
         fontSize,
-        { /* X */ timestampMin.x + textMarginX, /* Y */ timestampMin.y + ((timestampMax.y - timestampMin.y) - textSize.y) / 2 },
+        { /* X */ CENTRE_TEXT_HORZ(timestampMin, timestampMax, textSize), /* Y */ CENTRE_TEXT_VERT(timestampMin, timestampMax, textSize) },
         IM_COL32(255, 255, 255, 255),
         buffer,
         2,
@@ -379,7 +380,7 @@ static void DrawAchievementTotal(ImVec2 min, ImVec2 max)
     (
         g_fntNewRodinDB,
         fontSize,
-        { /* X */ imageMin.x - textSize.x - Scale(6), /* Y */ imageMin.y + ((imageMax.y - imageMin.y) - textSize.y) / 2 },
+        { /* X */ imageMin.x - textSize.x - Scale(6), /* Y */ CENTRE_TEXT_VERT(imageMin, imageMax, textSize) },
         IM_COL32(255, 255, 255, 255 * alpha),
         str.c_str(),
         2,
@@ -562,7 +563,7 @@ static void DrawContentContainer()
     if (rowCount > visibleRowCount)
     {
         float cornerRadius = Scale(25);
-        float totalHeight = (clipRectMax.y - clipRectMin.y - cornerRadius) - Scale(3);
+        float totalHeight = (clipRectMax.y - clipRectMin.y - cornerRadius) - Scale(5);
         float heightRatio = float(visibleRowCount) / float(rowCount);
         float offsetRatio = float(g_firstVisibleRowIndex) / float(rowCount);
         float offsetX = clipRectMax.x - Scale(39);
