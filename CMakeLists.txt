@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 3.20)
 
 include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 set(SWA_THIRDPARTY_ROOT ${CMAKE_SOURCE_DIR}/thirdparty)
+set(SWA_TOOLS_ROOT ${CMAKE_SOURCE_DIR}/tools)
 set(CMAKE_CXX_STANDARD 23)
 set(BUILD_SHARED_LIBS OFF)
 
@@ -14,9 +15,9 @@ endif()
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_subdirectory(${SWA_THIRDPARTY_ROOT})
-project("UnleashedRecomp-ALL")
+add_subdirectory(${SWA_TOOLS_ROOT})
 
-include("thirdparty/PowerRecomp/cmake/bin2h.cmake")
+project("UnleashedRecomp-ALL")
 
 # Include sub-projects.
 add_subdirectory("UnleashedRecompLib")
