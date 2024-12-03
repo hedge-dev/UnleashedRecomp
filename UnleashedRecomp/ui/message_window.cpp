@@ -3,7 +3,7 @@
 #include <api/SWA.h>
 #include <gpu/video.h>
 #include <exports.h>
-#include "../UnleashedRecompResources/images/pause.h"
+#include <res/images/pause.dds.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;
@@ -176,7 +176,7 @@ void MessageWindow::Init()
 
     g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 28.0f * FONT_SCALE);
 
-    g_upSelectionCursor = LoadTexture((uint8_t*)g_res_pause, g_res_pause_size);
+    g_upSelectionCursor = LoadTexture(g_pause, sizeof(g_pause));
 }
 
 void MessageWindow::Draw()

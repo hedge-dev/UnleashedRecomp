@@ -8,16 +8,16 @@
 #include <ui/imgui_utils.h>
 #include <ui/window.h>
 
-#include <res/install_001_dds.h>
-#include <res/install_002_dds.h>
-#include <res/install_003_dds.h>
-#include <res/install_004_dds.h>
-#include <res/install_005_dds.h>
-#include <res/install_006_dds.h>
-#include <res/install_007_dds.h>
-#include <res/install_008_dds.h>
-#include <res/miles_electric_icon_dds.h>
-#include <res/arrow_circle_dds.h>
+#include <res/images/installer/install_001.dds.h>
+#include <res/images/installer/install_002.dds.h>
+#include <res/images/installer/install_003.dds.h>
+#include <res/images/installer/install_004.dds.h>
+#include <res/images/installer/install_005.dds.h>
+#include <res/images/installer/install_006.dds.h>
+#include <res/images/installer/install_007.dds.h>
+#include <res/images/installer/install_008.dds.h>
+#include <res/images/installer/miles_electric_icon.dds.h>
+#include <res/images/installer/arrow_circle.dds.h>
 
 static constexpr double SCANLINES_ANIMATION_TIME = 0.0;
 static constexpr double SCANLINES_ANIMATION_DURATION = 15.0;
@@ -979,16 +979,16 @@ void InstallerWizard::Init()
     g_seuratFont = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 26.0f * FONT_SCALE);
     g_dfsogeistdFont = io.Fonts->AddFontFromFileTTF("DFSoGeiStd-W7.otf", 48.0f * FONT_SCALE);
     g_newRodinFont = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
-    g_installTextures[0] = LoadTexture(g_install001DDS, g_install001DDS_size);
-    g_installTextures[1] = LoadTexture(g_install002DDS, g_install002DDS_size);
-    g_installTextures[2] = LoadTexture(g_install003DDS, g_install003DDS_size);
-    g_installTextures[3] = LoadTexture(g_install004DDS, g_install004DDS_size);
-    g_installTextures[4] = LoadTexture(g_install005DDS, g_install005DDS_size);
-    g_installTextures[5] = LoadTexture(g_install006DDS, g_install006DDS_size);
-    g_installTextures[6] = LoadTexture(g_install007DDS, g_install007DDS_size);
-    g_installTextures[7] = LoadTexture(g_install008DDS, g_install008DDS_size);
-    g_milesElectricIcon = LoadTexture(g_milesElectricIconDDS, g_milesElectricIconDDS_size);
-    g_arrowCircle = LoadTexture(g_arrowCircleDDS, g_arrowCircleDDS_size);
+    g_installTextures[0] = LoadTexture(g_install_001, sizeof(g_install_001));
+    g_installTextures[1] = LoadTexture(g_install_002, sizeof(g_install_002));
+    g_installTextures[2] = LoadTexture(g_install_003, sizeof(g_install_003));
+    g_installTextures[3] = LoadTexture(g_install_004, sizeof(g_install_004));
+    g_installTextures[4] = LoadTexture(g_install_005, sizeof(g_install_005));
+    g_installTextures[5] = LoadTexture(g_install_006, sizeof(g_install_006));
+    g_installTextures[6] = LoadTexture(g_install_007, sizeof(g_install_007));
+    g_installTextures[7] = LoadTexture(g_install_008, sizeof(g_install_008));
+    g_milesElectricIcon = LoadTexture(g_miles_electric_icon, sizeof(g_miles_electric_icon));
+    g_arrowCircle = LoadTexture(g_arrow_circle, sizeof(g_arrow_circle));
 }
 
 void InstallerWizard::Draw()

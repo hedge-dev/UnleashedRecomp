@@ -49,10 +49,6 @@ add_compile_definitions(
     _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR # Microsoft wtf?
     _CRT_SECURE_NO_WARNINGS)
 
-# Generate icon bitmap header for SDL surface.
-BIN2H(SOURCE_FILE "../UnleashedRecompResources/images/game_icon.bmp" HEADER_FILE "res/icon.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_icon")
-BIN2H(SOURCE_FILE "../UnleashedRecompResources/images/game_icon_night.bmp" HEADER_FILE "res/icon_night.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_iconNight")
-
 set(SWA_PRECOMPILED_HEADERS
     "stdafx.h"
 )
@@ -133,18 +129,6 @@ set(SWA_INSTALL_CXX_SOURCES
     "install/hashes/spagonia.cpp"
     "install/hashes/update.cpp"
 )
-
-set(INSTALLER_IMAGES_DIR "../UnleashedRecompResources/images/installer")
-BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_001.dds" HEADER_FILE "res/install_001_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install001DDS")
-BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_002.dds" HEADER_FILE "res/install_002_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install002DDS")
-BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_003.dds" HEADER_FILE "res/install_003_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install003DDS")
-BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_004.dds" HEADER_FILE "res/install_004_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install004DDS")
-BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_005.dds" HEADER_FILE "res/install_005_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install005DDS")
-BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_006.dds" HEADER_FILE "res/install_006_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install006DDS")
-BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_007.dds" HEADER_FILE "res/install_007_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install007DDS")
-BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/install_008.dds" HEADER_FILE "res/install_008_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_install008DDS")
-BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/miles_electric_icon.dds" HEADER_FILE "res/miles_electric_icon_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_milesElectricIconDDS")
-BIN2H(SOURCE_FILE "${INSTALLER_IMAGES_DIR}/arrow_circle.dds" HEADER_FILE "res/arrow_circle_dds.h" ARRAY_TYPE "unsigned char" VARIABLE_NAME "g_arrowCircleDDS")
 
 set(LIBMSPACK_PATH ${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack)
 
@@ -332,6 +316,16 @@ generate_aggregate_header(
 set(RESOURCES_SOURCE_PATH "${PROJECT_SOURCE_DIR}/../UnleashedRecompResources")
 set(RESOURCES_OUTPUT_PATH "${PROJECT_SOURCE_DIR}/res")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/achievements_menu/trophy.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/achievements_menu/trophy.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_trophy")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/arrow_circle.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/arrow_circle.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_arrow_circle")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_001.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_001.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_install_001")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_002.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_002.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_install_002")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_003.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_003.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_install_003")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_004.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_004.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_install_004")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_005.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_005.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_install_005")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_006.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_006.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_install_006")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_007.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_007.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_install_007")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_008.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_008.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_install_008")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/miles_electric_icon.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/miles_electric_icon.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_miles_electric_icon")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/game_icon.bmp" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/game_icon.bmp" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_game_icon")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/game_icon_night.bmp" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/game_icon_night.bmp" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_game_icon_night")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/pause.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/pause.dds" ARRAY_TYPE "unsigned char" ARRAY_NAME "g_pause")
