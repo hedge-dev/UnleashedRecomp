@@ -6,6 +6,7 @@
 #include <gpu/video.h>
 #include <locale/locale.h>
 #include <ui/imgui_utils.h>
+#include <ui/message_window.h>
 #include <ui/window.h>
 
 #include <res/images/installer/install_001.dds.h>
@@ -230,15 +231,13 @@ static void DrawHeaderIcons()
     float milesIconMotion = ComputeMotionInstaller(g_appearTime, g_disappearTime, MILES_ICON_ANIMATION_TIME, MILES_ICON_ANIMATION_DURATION);
     float milesIconScale = iconsScale * (2 - milesIconMotion);
 
-    GuestTexture* milesElectricIconTexture = g_milesElectricIcon.get();
     ImVec2 milesElectricMin = { Scale(iconsPosX - milesIconScale / 2), Scale(iconsPosY - milesIconScale / 2) };
     ImVec2 milesElectricMax = { Scale(iconsPosX + milesIconScale / 2), Scale(iconsPosY + milesIconScale / 2) };
-    drawList->AddImage(milesElectricIconTexture, milesElectricMin, milesElectricMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255 * milesIconMotion));
+    drawList->AddImage(g_milesElectricIcon.get(), milesElectricMin, milesElectricMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255 * milesIconMotion));
 
     // Arrow Circle Icon
     if (g_currentPage == WizardPage::Installing)
     {
-        GuestTexture* arrowCircleTexture = g_arrowCircle.get();
         ImVec2 arrowCircleMin = { Scale(iconsPosX - iconsScale / 2), Scale(iconsPosY - iconsScale / 2) };
         ImVec2 arrowCircleMax = { Scale(iconsPosX + iconsScale / 2), Scale(iconsPosY + iconsScale / 2) };
 
@@ -248,19 +247,21 @@ static void DrawHeaderIcons()
         float sin_a = sinf(currentAngle);
 
         // Calculate rotated corners
-        ImVec2 corners[4] = {
+        ImVec2 corners[4] =
+        {
             ImRotate(ImVec2(arrowCircleMin.x - center.x, arrowCircleMin.y - center.y), cos_a, sin_a),
             ImRotate(ImVec2(arrowCircleMax.x - center.x, arrowCircleMin.y - center.y), cos_a, sin_a),
             ImRotate(ImVec2(arrowCircleMax.x - center.x, arrowCircleMax.y - center.y), cos_a, sin_a),
             ImRotate(ImVec2(arrowCircleMin.x - center.x, arrowCircleMax.y - center.y), cos_a, sin_a),
         };
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < IM_ARRAYSIZE(corners); ++i)
+        {
             corners[i].x += center.x; // Add center.x to corner.x
             corners[i].y += center.y; // Add center.y to corner.y
         }
 
-        drawList->AddImageQuad(arrowCircleTexture, corners[0], corners[1], corners[2], corners[3], ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1), IM_COL32(255, 255, 255, 96));
+        drawList->AddImageQuad(g_arrowCircle.get(), corners[0], corners[1], corners[2], corners[3], ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1), IM_COL32(255, 255, 255, 96));
 
         // Update rotation for next frame
         g_arrowCircleCurrentRotation = fmodf(g_arrowCircleCurrentRotation - ARROW_CIRCLE_SPIN_FACTOR, 360.0f);
@@ -494,7 +495,7 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
     SetGradient
     (
         min,
-        { min.x + textSize.x, textSize.y },
+        { min.x + textSize.x, min.y + textSize.y },
         IM_COL32(baser + 192, 255, 0, 255),
         IM_COL32(baser + 128, baseg + 170, 0, 255)
     );
@@ -845,7 +846,8 @@ static bool InstallerParseSources()
 
 static void DrawNextButton()
 {
-    if (g_currentPage != WizardPage::Installing) {
+    if (g_currentPage != WizardPage::Installing)
+    {
         bool nextButtonEnabled = !g_isDisappearing;
         if (nextButtonEnabled && g_currentPage == WizardPage::SelectGameAndUpdate)
         {
@@ -875,8 +877,15 @@ static void DrawNextButton()
             XexPatcher::Result patcherResult;
             if (g_currentPage == WizardPage::SelectGameAndUpdate && (patcherResult = Installer::checkGameUpdateCompatibility(g_gameSourcePath, g_updateSourcePath), patcherResult != XexPatcher::Result::Success))
             {
-                g_currentMessagePrompt = "The specified game and update file are incompatible.\n\nPlease ensure the files are for the same version and region and try again.";
+                // TODO: localise this.
+                g_currentMessagePrompt = "The specified game and\nupdate file are incompatible.\n\nPlease ensure the files are\nfor the same version and\nregion and try again.";
                 g_currentMessagePromptConfirmation = false;
+
+                static int result = -1;
+                MessageWindow::Open(g_currentMessagePrompt, &result);
+
+                if (result == 0)
+                    g_currentMessagePrompt.clear();
             }
             else if (g_currentPage == WizardPage::SelectDLC)
             {
@@ -893,16 +902,39 @@ static void DrawNextButton()
                 bool dlcInstallerMode = g_gameSourcePath.empty();
                 if (!InstallerParseSources())
                 {
+                    // TODO: localise this.
                     // Some of the sources that were provided to the installer are not valid. Restart the file selection process.
-                    g_currentMessagePrompt = "Some of the files that have been provided are not valid.\n\nPlease make sure all the specified files are correct and try again.";
+                    g_currentMessagePrompt = "Some of the files that have\nbeen provided are not valid.\n\nPlease make sure all the\nspecified files are correct\nand try again.";
                     g_currentMessagePromptConfirmation = false;
+            
+                    static int result = -1;
+                    MessageWindow::Open(g_currentMessagePrompt, &result);
+            
+                    if (result == 0)
+                        g_currentMessagePrompt.clear();
+            
                     g_currentPage = dlcInstallerMode ? WizardPage::SelectDLC : WizardPage::SelectGameAndUpdate;
                 }
                 else if (dlcIncomplete && !dlcInstallerMode)
                 {
+                    // TODO: localise this.
                     // Not all the DLC was specified, we show a prompt and await a confirmation before starting the installer.
-                    g_currentMessagePrompt = "It is highly recommended that you install all of the DLC, as it includes high quality lighting textures for the stages in each pack.\n\nAre you sure you want to skip this step?";
+                    g_currentMessagePrompt = "It is highly recommended\nthat you install all of the DLC,\nas it includes high quality\nlighting textures for the\nstages in each pack.\n\nAre you sure you want to\nskip this step?";
                     g_currentMessagePromptConfirmation = true;
+                
+                    static int result = -1;
+                    std::array<std::string, 2> buttons = { "Yes", "No" };
+                    MessageWindow::Open(g_currentMessagePrompt, &result, buttons, 1);
+            
+                    if (result == 0)
+                    {
+                        g_currentMessagePrompt.clear();
+                    }
+                    else
+                    {
+                        // Reset message window.
+                        result = -1;
+                    }
                 }
                 else if (skipButton && dlcInstallerMode)
                 {
