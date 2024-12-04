@@ -114,6 +114,7 @@ static WizardPage g_firstPage = WizardPage::SelectLanguage;
 static WizardPage g_currentPage = g_firstPage;
 static std::string g_currentMessagePrompt = "";
 static bool g_currentMessagePromptConfirmation = false;
+static int g_currentMessageResult = -1;
 
 const char CREDITS_TEXT[] = "Sajid (RIP)";
 
@@ -880,12 +881,6 @@ static void DrawNextButton()
                 // TODO: localise this.
                 g_currentMessagePrompt = "The specified game and\nupdate file are incompatible.\n\nPlease ensure the files are\nfor the same version and\nregion and try again.";
                 g_currentMessagePromptConfirmation = false;
-
-                static int result = -1;
-                MessageWindow::Open(g_currentMessagePrompt, &result);
-
-                if (result == 0)
-                    g_currentMessagePrompt.clear();
             }
             else if (g_currentPage == WizardPage::SelectDLC)
             {
@@ -906,13 +901,6 @@ static void DrawNextButton()
                     // Some of the sources that were provided to the installer are not valid. Restart the file selection process.
                     g_currentMessagePrompt = "Some of the files that have\nbeen provided are not valid.\n\nPlease make sure all the\nspecified files are correct\nand try again.";
                     g_currentMessagePromptConfirmation = false;
-            
-                    static int result = -1;
-                    MessageWindow::Open(g_currentMessagePrompt, &result);
-            
-                    if (result == 0)
-                        g_currentMessagePrompt.clear();
-            
                     g_currentPage = dlcInstallerMode ? WizardPage::SelectDLC : WizardPage::SelectGameAndUpdate;
                 }
                 else if (dlcIncomplete && !dlcInstallerMode)
@@ -921,20 +909,6 @@ static void DrawNextButton()
                     // Not all the DLC was specified, we show a prompt and await a confirmation before starting the installer.
                     g_currentMessagePrompt = "It is highly recommended\nthat you install all of the DLC,\nas it includes high quality\nlighting textures for the\nstages in each pack.\n\nAre you sure you want to\nskip this step?";
                     g_currentMessagePromptConfirmation = true;
-                
-                    static int result = -1;
-                    std::array<std::string, 2> buttons = { "Yes", "No" };
-                    MessageWindow::Open(g_currentMessagePrompt, &result, buttons, 1);
-            
-                    if (result == 0)
-                    {
-                        g_currentMessagePrompt.clear();
-                    }
-                    else
-                    {
-                        // Reset message window.
-                        result = -1;
-                    }
                 }
                 else if (skipButton && dlcInstallerMode)
                 {
@@ -1045,12 +1019,27 @@ static void DrawMessagePrompt()
         return;
     }
 
-    // TODO: Put message prompt here.
-
-    if (false && g_currentPage == WizardPage::SelectDLC)
+    bool messageWindowReturned = false;
+    if (g_currentMessagePromptConfirmation)
     {
-        // If user confirms the message prompt that they wish to skip installing the DLC, start the installer.
-        InstallerStart();
+        std::array<std::string, 2> YesNoButtons = { "Yes", "No" };
+        messageWindowReturned = MessageWindow::Open(g_currentMessagePrompt, &g_currentMessageResult, YesNoButtons, 1);
+    }
+    else
+    {
+        messageWindowReturned = MessageWindow::Open(g_currentMessagePrompt, &g_currentMessageResult);
+    }
+
+    if (messageWindowReturned)
+    {
+        if (g_currentMessagePromptConfirmation && (g_currentMessageResult == 0))
+        {
+            // If user confirms the message prompt that they wish to skip installing the DLC, start the installer.
+            InstallerStart();
+        }
+
+        g_currentMessagePrompt.clear();
+        g_currentMessageResult = -1;
     }
 }
 
