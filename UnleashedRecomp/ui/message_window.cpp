@@ -2,7 +2,7 @@
 #include "imgui_utils.h"
 #include <api/SWA.h>
 #include <gpu/video.h>
-#include <ui/installer_wizard.h>
+#include <app.h>
 #include <exports.h>
 #include <res/images/common/general_window.dds.h>
 #include <res/images/common/select_fade.dds.h>
@@ -149,7 +149,7 @@ void MessageWindow::Draw()
     if (!s_isVisible)
         return;
 
-    auto pInputState = InstallerWizard::s_isVisible ? nullptr : SWA::CInputState::GetInstance();
+    auto pInputState = g_isGameLoaded ? SWA::CInputState::GetInstance() : nullptr;
     auto drawList = ImGui::GetForegroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
 
@@ -299,7 +299,7 @@ bool MessageWindow::Open(std::string text, int* result, std::span<std::string> b
 
         g_text = text;
         g_buttons = std::vector(buttons.begin(), buttons.end());
-        g_defaultButtonIndex = defaultButtonIndex;
+        g_defaultButtonIndex = g_isGameLoaded ? defaultButtonIndex : -1;
 
         ResetSelection();
 
