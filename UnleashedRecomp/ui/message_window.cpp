@@ -284,6 +284,10 @@ void MessageWindow::Draw()
             }
         }
     }
+    else if (g_isClosing)
+    {
+        s_isVisible = false;
+    }
 }
 
 bool MessageWindow::Open(std::string text, int* result, std::span<std::string> buttons, int defaultButtonIndex)
