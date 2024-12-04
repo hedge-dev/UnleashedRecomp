@@ -115,6 +115,7 @@ static WizardPage g_currentPage = g_firstPage;
 static std::string g_currentMessagePrompt = "";
 static bool g_currentMessagePromptConfirmation = false;
 static int g_currentMessageResult = -1;
+static bool g_currentMessageUpdateRemaining = false;
 
 const char CREDITS_TEXT[] = "Sajid (RIP)";
 
@@ -620,6 +621,8 @@ static bool ShowFilesPicker(std::list<std::filesystem::path> &filePaths)
 
     const nfdpathset_t *pathSet;
     nfdresult_t result = NFD_OpenDialogMultipleU8(&pathSet, nullptr, 0, nullptr);
+    g_currentMessageUpdateRemaining = true;
+
     if (result == NFD_OKAY)
     {
         bool pathsConverted = ConvertPathSet(pathSet, filePaths);
@@ -638,6 +641,8 @@ static bool ShowFoldersPicker(std::list<std::filesystem::path> &folderPaths)
 
     const nfdpathset_t *pathSet;
     nfdresult_t result = NFD_PickFolderMultipleU8(&pathSet, nullptr);
+    g_currentMessageUpdateRemaining = true;
+
     if (result == NFD_OKAY)
     {
         bool pathsConverted = ConvertPathSet(pathSet, folderPaths);
@@ -1016,6 +1021,15 @@ static void DrawMessagePrompt()
 {
     if (g_currentMessagePrompt.empty())
     {
+        return;
+    }
+
+    if (g_currentMessageUpdateRemaining)
+    {
+        // If a blocking function like the files picker is called, we must wait one update before actually showing
+        // the message box, as a lot of time has passed since the last real update. Otherwise, animations will play
+        // too quickly and input glitches might happen.
+        g_currentMessageUpdateRemaining = false;
         return;
     }
 
