@@ -979,9 +979,12 @@ static void DrawNextButton()
                 }
                 else
                 {
-                    // Start the installer outright, this switches to the right page on its own.
-                    InstallerStart();
+                    g_currentPage = WizardPage::CheckSpace;
                 }
+            }
+            else if (g_currentPage == WizardPage::CheckSpace)
+            {
+                InstallerStart();
             }
             else if (g_currentPage == WizardPage::InstallSucceeded)
             {
@@ -1104,8 +1107,8 @@ static void DrawMessagePrompt()
     {
         if (g_currentMessagePromptConfirmation && (g_currentMessageResult == 0) && (g_currentPage == WizardPage::SelectDLC))
         {
-            // If user confirms the message prompt that they wish to skip installing the DLC, start the installer.
-            InstallerStart();
+            // If user confirms the message prompt that they wish to skip installing the DLC, proceed to the next step.
+            g_currentPage = WizardPage::CheckSpace;
         }
 
         g_currentMessagePrompt.clear();
