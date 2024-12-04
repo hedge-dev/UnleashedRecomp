@@ -45,6 +45,9 @@ static constexpr double CONTAINER_INNER_DURATION = 15.0;
 
 static constexpr double ALL_ANIMATIONS_FULL_DURATION = CONTAINER_INNER_TIME + CONTAINER_INNER_DURATION;
 
+static constexpr double INSTALL_ICONS_FADE_IN_ANIMATION_TIME = 0.0;
+static constexpr double INSTALL_ICONS_FADE_IN_ANIMATION_DURATION = 15.0;
+
 // Loop Animations Constants - their time range is [0.0, 1.0 + DELAY]
 static constexpr double ARROW_CIRCLE_LOOP_SPEED = 1;
 
@@ -100,6 +103,7 @@ static Installer::Sources g_installerSources;
 static uint64_t g_installerAvailableSize = 0;
 static std::unique_ptr<std::thread> g_installerThread;
 static double g_installerStartTime = 0.0;
+static double g_installerEndTime = DBL_MAX;
 static float g_installerProgressRatioCurrent = 0.0f;
 static std::atomic<float> g_installerProgressRatioTarget = 0.0f;
 static std::atomic<bool> g_installerFinished = false;
@@ -198,11 +202,13 @@ static double ComputeMotionInstaller(double timeAppear, double timeDisappear, do
     return ComputeMotion(timeAppear, offset, total) * (1.0 - ComputeMotion(timeDisappear, ALL_ANIMATIONS_FULL_DURATION - offset - total, total));
 }
 
-static double ComputeMotionInstallerLoop(double timeAppear, double speed, double offset) {
+static double ComputeMotionInstallerLoop(double timeAppear, double speed, double offset) 
+{
     return std::clamp(fmodf((ImGui::GetTime() - timeAppear) * speed, 1.0f + offset) - offset, 0.0, 1.0) / 1.0;
 }
 
-static double ComputeHermiteMotionInstallerLoop(double timeAppear, double speed, double offset) {
+static double ComputeHermiteMotionInstallerLoop(double timeAppear, double speed, double offset) 
+{
     return (cosf(M_PI * ComputeMotionInstallerLoop(timeAppear, speed, offset) + M_PI) + 1) / 2;
 }
 
@@ -246,6 +252,7 @@ static void DrawHeaderIconsForInstallPhase(double iconsPosX, double iconsPosY, d
     ImVec2 arrowCircleMax = { Scale(iconsPosX + iconsScale / 2), Scale(iconsPosY + iconsScale / 2) };
     ImVec2 center = { Scale(iconsPosX) + 0.5f, Scale(iconsPosY) - 0.5f };
 
+    float arrowCircleFadeMotion = ComputeMotionInstaller(g_installerStartTime, g_installerEndTime, INSTALL_ICONS_FADE_IN_ANIMATION_TIME, INSTALL_ICONS_FADE_IN_ANIMATION_DURATION);
     float rotationMotion = ComputeMotionInstallerLoop(g_installerStartTime, ARROW_CIRCLE_LOOP_SPEED, 0);
     float rotation = -2 * M_PI * rotationMotion;
 
@@ -266,14 +273,16 @@ static void DrawHeaderIconsForInstallPhase(double iconsPosX, double iconsPosY, d
         corners[i].y += center.y;
     }
 
-    drawList->AddImageQuad(g_arrowCircle.get(), corners[0], corners[1], corners[2], corners[3], ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1), IM_COL32(255, 255, 255, 96));
+    drawList->AddImageQuad(g_arrowCircle.get(), corners[0], corners[1], corners[2], corners[3], ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1), IM_COL32(255, 255, 255, 96 * arrowCircleFadeMotion));
 
 
     // Pulse
+    float pulseFadeMotion = ComputeMotionInstaller(g_installerStartTime, g_installerEndTime, INSTALL_ICONS_FADE_IN_ANIMATION_TIME, INSTALL_ICONS_FADE_IN_ANIMATION_DURATION);
     float pulseMotion = ComputeMotionInstallerLoop(g_installerStartTime, PULSE_ANIMATION_LOOP_SPEED, PULSE_ANIMATION_LOOP_DELAY);
     float pulseHermiteMotion = ComputeHermiteMotionInstallerLoop(g_installerStartTime, PULSE_ANIMATION_LOOP_SPEED, PULSE_ANIMATION_LOOP_DELAY);
 
     float pulseFade = pulseMotion / PULSE_ANIMATION_LOOP_FADE_HIGH_POINT;
+
     if (pulseMotion >= PULSE_ANIMATION_LOOP_FADE_HIGH_POINT) {
         // Calculate linear fade-out from high point time - ({PULSE_ANIMATION_LOOP_FADE_HIGH_POINT}, 1) - to loop end - (1, 0) -.
         float m = -1 / (1 - PULSE_ANIMATION_LOOP_FADE_HIGH_POINT);
@@ -286,7 +295,7 @@ static void DrawHeaderIconsForInstallPhase(double iconsPosX, double iconsPosY, d
 
     ImVec2 pulseMin = { Scale(iconsPosX - pulseScale / 2), Scale(iconsPosY - pulseScale / 2) };
     ImVec2 pulseMax = { Scale(iconsPosX + pulseScale / 2), Scale(iconsPosY + pulseScale / 2) };
-    drawList->AddImage(g_pulseInstall.get(), pulseMin, pulseMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255 * pulseFade));
+    drawList->AddImage(g_pulseInstall.get(), pulseMin, pulseMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255 * pulseFade * pulseFadeMotion));
 }
 
 static void DrawHeaderIcons()
@@ -305,7 +314,7 @@ static void DrawHeaderIcons()
     ImVec2 milesElectricMax = { Scale(iconsPosX + milesIconScale / 2), Scale(iconsPosY + milesIconScale / 2) };
     drawList->AddImage(g_milesElectricIcon.get(), milesElectricMin, milesElectricMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255 * milesIconMotion));
 
-    if (g_currentPage == WizardPage::Installing)
+    if (int(g_currentPage) >= int(WizardPage::Installing))
     {
         DrawHeaderIconsForInstallPhase(iconsPosX, iconsPosY, iconsScale);
     }
@@ -858,6 +867,7 @@ static void DrawInstallingProgress()
         {
             g_installerThread->join();
             g_installerThread.reset();
+            g_installerEndTime = ImGui::GetTime();
             g_currentPage = g_installerFailed ? WizardPage::InstallFailed : WizardPage::InstallSucceeded;
         }
     }
@@ -876,6 +886,8 @@ static void InstallerThread()
         Installer::rollback(g_installerJournal);
     }
 
+    // Rest for a bit after finishing the installation, the device is tired
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     g_installerFinished = true;
 }
 
