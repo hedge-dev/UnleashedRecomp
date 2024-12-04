@@ -4,6 +4,7 @@
 #include <gpu/video.h>
 #include <ui/installer_wizard.h>
 #include <exports.h>
+#include <res/images/common/general_window.dds.h>
 #include <res/images/common/select_fade.dds.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
@@ -29,6 +30,7 @@ static double g_controlsAppearTime;
 static ImFont* g_fntSeurat;
 
 static std::unique_ptr<GuestTexture> g_upSelectionCursor;
+static std::unique_ptr<GuestTexture> g_upWindow;
 
 std::string g_text;
 int g_result;
@@ -60,8 +62,6 @@ bool DrawContainer(float appearTime, ImVec2 centre, ImVec2 max, bool isForegroun
         _max.y = Hermite(centre.y, _max.y, containerMotion);
     }
 
-    auto vertices = GetPauseContainerVertices(_min, _max);
-
     // Transparency fade animation.
     auto colourMotion = g_isClosing
         ? ComputeMotion(appearTime, OVERLAY_CONTAINER_OUTRO_FADE_START, OVERLAY_CONTAINER_OUTRO_FADE_END)
@@ -77,44 +77,7 @@ bool DrawContainer(float appearTime, ImVec2 centre, ImVec2 max, bool isForegroun
     if (isForeground)
         drawList->AddRectFilled({ 0.0f, 0.0f }, ImGui::GetIO().DisplaySize, IM_COL32(0, 0, 0, 223 * (g_foregroundCount ? 1 : alpha)));
 
-    auto colShadow = IM_COL32(0, 0, 0, 156 * alpha);
-    auto colGradientTop = IM_COL32(197, 194, 197, 200 * alpha);
-    auto colGradientBottom = IM_COL32(115, 113, 115, 236 * alpha);
-
-    // Draw vertices with gradient.
-    SetGradient(_min, _max, colGradientTop, colGradientBottom);
-    drawList->AddConvexPolyFilled(vertices.data(), vertices.size(), IM_COL32(255, 255, 255, 255 * alpha));
-    ResetGradient();
-
-    // Draw outline.
-    drawList->AddPolyline
-    (
-        vertices.data(),
-        vertices.size(),
-        IM_COL32(247, 247, 247, 255 * alpha),
-        true,
-        Scale(2.5f)
-    );
-
-    // Offset vertices to draw 3D effect lines.
-    for (int i = 0; i < vertices.size(); i++)
-    {
-        vertices[i].x -= Scale(0.4f);
-        vertices[i].y -= Scale(0.2f);
-    }
-
-    auto colLineTop = IM_COL32(165, 170, 165, 230 * alpha);
-    auto colLineBottom = IM_COL32(190, 190, 190, 230 * alpha);
-    auto lineThickness = Scale(1.0f);
-
-    // Top left corner bottom to top left corner top.
-    drawList->AddLine(vertices[0], vertices[1], colLineTop, lineThickness * 0.5f);
-
-    // Top left corner bottom to bottom left.
-    drawList->AddRectFilledMultiColor({ vertices[0].x - 0.2f, vertices[0].y }, { vertices[6].x + lineThickness - 0.2f, vertices[6].y }, colLineTop, colLineTop, colLineBottom, colLineBottom);
-
-    // Top left corner top to top right.
-    drawList->AddLine(vertices[1], vertices[2], colLineTop, lineThickness);
+    DrawPauseContainer(g_upWindow, _min, _max, alpha);
 
     drawList->PushClipRect(_min, _max);
 
@@ -178,6 +141,7 @@ void MessageWindow::Init()
     g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 28.0f * FONT_SCALE);
 
     g_upSelectionCursor = LoadTexture(g_select_fade, sizeof(g_select_fade));
+    g_upWindow = LoadTexture(g_general_window, sizeof(g_general_window));
 }
 
 void MessageWindow::Draw()
@@ -193,8 +157,8 @@ void MessageWindow::Draw()
 
     auto fontSize = Scale(28);
     auto textSize = MeasureCentredParagraph(g_fntSeurat, fontSize, 5, g_text.c_str());
-    auto textMarginX = Scale(32);
-    auto textMarginY = Scale(40);
+    auto textMarginX = Scale(37);
+    auto textMarginY = Scale(45);
 
     if (DrawContainer(g_appearTime, centre, { textSize.x / 2 + textMarginX, textSize.y / 2 + textMarginY }, !g_isControlsVisible))
     {
@@ -222,8 +186,8 @@ void MessageWindow::Draw()
         {
             auto itemWidth = std::max(Scale(162), Scale(CalcWidestTextSize(g_fntSeurat, fontSize, g_buttons)));
             auto itemHeight = Scale(57);
-            auto windowMarginX = Scale(18);
-            auto windowMarginY = Scale(25);
+            auto windowMarginX = Scale(23);
+            auto windowMarginY = Scale(30);
 
             ImVec2 controlsMax = { /* X */ itemWidth / 2 + windowMarginX, /* Y */ itemHeight / 2 * g_buttons.size() + windowMarginY };
 
