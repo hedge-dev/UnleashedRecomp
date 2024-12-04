@@ -241,6 +241,8 @@ void MessageWindow::Draw()
                     auto clipRectMin = drawList->GetClipRectMin();
                     auto clipRectMax = drawList->GetClipRectMax();
 
+                    g_selectedRowIndex = -1;
+
                     for (int i = 0; i < rowCount; i++)
                     {
                         ImVec2 itemMin = { clipRectMin.x + windowMarginX, clipRectMin.y + windowMarginY + itemHeight * i };
@@ -251,7 +253,7 @@ void MessageWindow::Draw()
                     }
                 }
 
-                if (isAccepted)
+                if (g_selectedRowIndex != -1 && isAccepted)
                 {
                     g_result = g_selectedRowIndex;
 
