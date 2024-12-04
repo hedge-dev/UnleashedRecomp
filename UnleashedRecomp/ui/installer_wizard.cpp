@@ -1032,7 +1032,7 @@ static void DrawMessagePrompt()
 
     if (messageWindowReturned)
     {
-        if (g_currentMessagePromptConfirmation && (g_currentMessageResult == 0))
+        if (g_currentMessagePromptConfirmation && (g_currentMessageResult == 0) && (g_currentPage == WizardPage::SelectDLC))
         {
             // If user confirms the message prompt that they wish to skip installing the DLC, start the installer.
             InstallerStart();
