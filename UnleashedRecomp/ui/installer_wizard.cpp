@@ -19,7 +19,9 @@
 #include <res/images/installer/install_008.dds.h>
 #include <res/images/installer/miles_electric_icon.dds.h>
 #include <res/images/installer/arrow_circle.dds.h>
+#include <res/images/installer/pulse_install.dds.h>
 
+// One Shot Animations Constants
 static constexpr double SCANLINES_ANIMATION_TIME = 0.0;
 static constexpr double SCANLINES_ANIMATION_DURATION = 15.0;
 
@@ -41,9 +43,14 @@ static constexpr double CONTAINER_OUTER_DURATION = 23.0;
 static constexpr double CONTAINER_INNER_TIME = SCANLINES_ANIMATION_DURATION + CONTAINER_LINE_ANIMATION_DURATION + 8.0;
 static constexpr double CONTAINER_INNER_DURATION = 15.0;
 
-static constexpr double ARROW_CIRCLE_SPIN_FACTOR = 2;
-
 static constexpr double ALL_ANIMATIONS_FULL_DURATION = CONTAINER_INNER_TIME + CONTAINER_INNER_DURATION;
+
+// Loop Animations Constants - their time range is [0.0, 1.0 + DELAY]
+static constexpr double ARROW_CIRCLE_LOOP_SPEED = 1;
+
+static constexpr double PULSE_ANIMATION_LOOP_SPEED = 1.5;
+static constexpr double PULSE_ANIMATION_LOOP_DELAY = 0.5;
+static constexpr double PULSE_ANIMATION_LOOP_FADE_HIGH_POINT = 0.5;
 
 constexpr float IMAGE_X = 165.0f;
 constexpr float IMAGE_Y = 106.0f;
@@ -87,6 +94,7 @@ static std::array<bool, int(DLC::Count)> g_dlcInstalled = {};
 static std::array<std::unique_ptr<GuestTexture>, 8> g_installTextures;
 static std::unique_ptr<GuestTexture> g_milesElectricIcon;
 static std::unique_ptr<GuestTexture> g_arrowCircle;
+static std::unique_ptr<GuestTexture> g_pulseInstall;
 static Journal g_installerJournal;
 static Installer::Sources g_installerSources;
 static uint64_t g_installerAvailableSize = 0;
@@ -190,6 +198,14 @@ static double ComputeMotionInstaller(double timeAppear, double timeDisappear, do
     return ComputeMotion(timeAppear, offset, total) * (1.0 - ComputeMotion(timeDisappear, ALL_ANIMATIONS_FULL_DURATION - offset - total, total));
 }
 
+static double ComputeMotionInstallerLoop(double timeAppear, double speed, double offset) {
+    return std::clamp(fmodf((ImGui::GetTime() - timeAppear) * speed, 1.0f + offset) - offset, 0.0, 1.0) / 1.0;
+}
+
+static double ComputeHermiteMotionInstallerLoop(double timeAppear, double speed, double offset) {
+    return (cosf(M_PI * ComputeMotionInstallerLoop(timeAppear, speed, offset) + M_PI) + 1) / 2;
+}
+
 static void DrawBackground()
 {
     auto &res = ImGui::GetIO().DisplaySize;
@@ -221,11 +237,63 @@ static void DrawLeftImage()
     drawList->AddRectFilledMultiColor(min, max, IM_COL32_BLACK_TRANS, IM_COL32_BLACK_TRANS, IM_COL32(0, 0, 0, 255), IM_COL32(0, 0, 0, 255));
 }
 
+static void DrawHeaderIconsForInstallPhase(double iconsPosX, double iconsPosY, double iconsScale)
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+
+    // Arrow Circle Icon
+    ImVec2 arrowCircleMin = { Scale(iconsPosX - iconsScale / 2), Scale(iconsPosY - iconsScale / 2) };
+    ImVec2 arrowCircleMax = { Scale(iconsPosX + iconsScale / 2), Scale(iconsPosY + iconsScale / 2) };
+    ImVec2 center = { Scale(iconsPosX) + 0.5f, Scale(iconsPosY) - 0.5f };
+
+    float rotationMotion = ComputeMotionInstallerLoop(g_installerStartTime, ARROW_CIRCLE_LOOP_SPEED, 0);
+    float rotation = -2 * M_PI * rotationMotion;
+
+    // Calculate rotated corners
+    float cosCurrentAngle = cosf(rotation);
+    float sinCurrentAngle = sinf(rotation);
+    ImVec2 corners[4] = 
+    {
+        ImRotate(ImVec2(arrowCircleMin.x - center.x, arrowCircleMin.y - center.y), cosCurrentAngle, sinCurrentAngle),
+        ImRotate(ImVec2(arrowCircleMax.x - center.x, arrowCircleMin.y - center.y), cosCurrentAngle, sinCurrentAngle),
+        ImRotate(ImVec2(arrowCircleMax.x - center.x, arrowCircleMax.y - center.y), cosCurrentAngle, sinCurrentAngle),
+        ImRotate(ImVec2(arrowCircleMin.x - center.x, arrowCircleMax.y - center.y), cosCurrentAngle, sinCurrentAngle),
+    };
+
+    for (int i = 0; i < IM_ARRAYSIZE(corners); ++i)
+    {
+        corners[i].x += center.x;
+        corners[i].y += center.y;
+    }
+
+    drawList->AddImageQuad(g_arrowCircle.get(), corners[0], corners[1], corners[2], corners[3], ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1), IM_COL32(255, 255, 255, 96));
+
+
+    // Pulse
+    float pulseMotion = ComputeMotionInstallerLoop(g_installerStartTime, PULSE_ANIMATION_LOOP_SPEED, PULSE_ANIMATION_LOOP_DELAY);
+    float pulseHermiteMotion = ComputeHermiteMotionInstallerLoop(g_installerStartTime, PULSE_ANIMATION_LOOP_SPEED, PULSE_ANIMATION_LOOP_DELAY);
+
+    float pulseFade = pulseMotion / PULSE_ANIMATION_LOOP_FADE_HIGH_POINT;
+    if (pulseMotion >= PULSE_ANIMATION_LOOP_FADE_HIGH_POINT) {
+        // Calculate linear fade-out from high point time - ({PULSE_ANIMATION_LOOP_FADE_HIGH_POINT}, 1) - to loop end - (1, 0) -.
+        float m = -1 / (1 - PULSE_ANIMATION_LOOP_FADE_HIGH_POINT);
+        float b = m * (-PULSE_ANIMATION_LOOP_FADE_HIGH_POINT) + 1;
+        
+        pulseFade = m * pulseMotion + b;
+    }
+
+    float pulseScale = iconsScale * pulseHermiteMotion * 1.5;
+
+    ImVec2 pulseMin = { Scale(iconsPosX - pulseScale / 2), Scale(iconsPosY - pulseScale / 2) };
+    ImVec2 pulseMax = { Scale(iconsPosX + pulseScale / 2), Scale(iconsPosY + pulseScale / 2) };
+    drawList->AddImage(g_pulseInstall.get(), pulseMin, pulseMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255 * pulseFade));
+}
+
 static void DrawHeaderIcons()
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    float iconsPosX = 255.0f;
+    float iconsPosX = 253.0f;
     float iconsPosY = 79.0f;
     float iconsScale = 58;
 
@@ -237,36 +305,9 @@ static void DrawHeaderIcons()
     ImVec2 milesElectricMax = { Scale(iconsPosX + milesIconScale / 2), Scale(iconsPosY + milesIconScale / 2) };
     drawList->AddImage(g_milesElectricIcon.get(), milesElectricMin, milesElectricMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255 * milesIconMotion));
 
-    // Arrow Circle Icon
     if (g_currentPage == WizardPage::Installing)
     {
-        ImVec2 arrowCircleMin = { Scale(iconsPosX - iconsScale / 2), Scale(iconsPosY - iconsScale / 2) };
-        ImVec2 arrowCircleMax = { Scale(iconsPosX + iconsScale / 2), Scale(iconsPosY + iconsScale / 2) };
-
-        ImVec2 center = { Scale(iconsPosX) + 0.5f, Scale(iconsPosY) - 0.5f };
-        float currentAngle = g_arrowCircleCurrentRotation * (3.14159f / 180.0f); // Rotation angle in radians
-        float cos_a = cosf(currentAngle);
-        float sin_a = sinf(currentAngle);
-
-        // Calculate rotated corners
-        ImVec2 corners[4] =
-        {
-            ImRotate(ImVec2(arrowCircleMin.x - center.x, arrowCircleMin.y - center.y), cos_a, sin_a),
-            ImRotate(ImVec2(arrowCircleMax.x - center.x, arrowCircleMin.y - center.y), cos_a, sin_a),
-            ImRotate(ImVec2(arrowCircleMax.x - center.x, arrowCircleMax.y - center.y), cos_a, sin_a),
-            ImRotate(ImVec2(arrowCircleMin.x - center.x, arrowCircleMax.y - center.y), cos_a, sin_a),
-        };
-
-        for (int i = 0; i < IM_ARRAYSIZE(corners); ++i)
-        {
-            corners[i].x += center.x; // Add center.x to corner.x
-            corners[i].y += center.y; // Add center.y to corner.y
-        }
-
-        drawList->AddImageQuad(g_arrowCircle.get(), corners[0], corners[1], corners[2], corners[3], ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1), IM_COL32(255, 255, 255, 96));
-
-        // Update rotation for next frame
-        g_arrowCircleCurrentRotation = fmodf(g_arrowCircleCurrentRotation - ARROW_CIRCLE_SPIN_FACTOR, 360.0f);
+        DrawHeaderIconsForInstallPhase(iconsPosX, iconsPosY, iconsScale);
     }
 }
 
@@ -1089,6 +1130,7 @@ void InstallerWizard::Init()
     g_installTextures[7] = LoadTexture(g_install_008, sizeof(g_install_008));
     g_milesElectricIcon = LoadTexture(g_miles_electric_icon, sizeof(g_miles_electric_icon));
     g_arrowCircle = LoadTexture(g_arrow_circle, sizeof(g_arrow_circle));
+    g_pulseInstall = LoadTexture(g_pulse_install, sizeof(g_pulse_install));
 }
 
 void InstallerWizard::Draw()
@@ -1140,6 +1182,7 @@ void InstallerWizard::Shutdown()
     // Erase the textures.
     g_milesElectricIcon.reset();
     g_arrowCircle.reset();
+    g_pulseInstall.reset();
 
     for (auto &texture : g_installTextures)
     {
