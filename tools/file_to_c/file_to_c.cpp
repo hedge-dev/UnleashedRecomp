@@ -26,6 +26,7 @@
 #include <fstream>
 #include <cstdio>
 #include <vector>
+#include <zstd.h>
 
 std::vector<char> read_file(const char* path) {
     std::ifstream input_file{path, std::ios::binary};
@@ -55,13 +56,13 @@ void create_parent_if_needed(const char* path) {
 
 int main(int argc, const char** argv) {
     if (argc != 6) {
-        printf("Usage: %s [input file] [array name] [array type] [output C file] [output C header]\n", argv[0]);
+        printf("Usage: %s [input file] [array name] [compression type] [output C file] [output C header]\n", argv[0]);
         return EXIT_SUCCESS;
     }
 
     const char* input_path = argv[1];
     const char* array_name = argv[2];
-    const char* array_type = argv[3];
+    std::string compression_type = argv[3];
     const char* output_c_path = argv[4];
     const char* output_h_path = argv[5];
 
@@ -73,21 +74,44 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
+    // Compress if requested.
+    std::vector<char> compressed_contents;
+    std::transform(compression_type.begin(), compression_type.end(), compression_type.begin(), tolower);
+
+    if (compression_type == "zstd") {
+        size_t bound_size = ZSTD_compressBound(contents.size());
+        compressed_contents.resize(bound_size);
+
+        size_t compressed_size = ZSTD_compress(compressed_contents.data(), bound_size, contents.data(), contents.size(), ZSTD_maxCLevel());
+        compressed_contents.resize(compressed_size);
+    }
+    else if (compression_type != "none") {
+        fprintf(stderr, "Unknown compression type %s!", compression_type.c_str());
+        return EXIT_FAILURE;
+    }
+
     // Create the output directories if they don't exist
     create_parent_if_needed(output_c_path);
     create_parent_if_needed(output_h_path);
 
     // Write the C file with the array
+    std::vector<char>& contents_to_write = !compressed_contents.empty() ? compressed_contents : contents;
     {
         std::ofstream output_c_file{output_c_path};
-        output_c_file << "extern " << array_type << " " << array_name << "[" << contents.size() << "];\n";
-        output_c_file << array_type << " " << array_name << "[" << contents.size() << "] = {";
+        output_c_file << "extern unsigned char " << array_name << "[" << contents_to_write.size() << "];\n";
+        output_c_file << "unsigned char " << array_name << "[" << contents_to_write.size() << "] = {";
 
-        for (char x : contents) {
-            output_c_file << (int)x << ", ";
+        for (char x : contents_to_write) {
+            output_c_file << (int)(unsigned char)x << ", ";
         }
 
         output_c_file << "};\n";
+
+        // Write decompressed size.
+        if (!compressed_contents.empty()) {
+            output_c_file << "extern size_t " << array_name << "_uncompressed_size;\n";
+            output_c_file << "size_t " << array_name << "_uncompressed_size = " << contents.size() << ";\n";
+        }
     }
 
     // Write the header file with the extern array
@@ -97,7 +121,14 @@ int main(int argc, const char** argv) {
             "#ifdef __cplusplus\n"
             "  extern \"C\" {\n"
             "#endif\n"
-            "extern " << array_type << " " << array_name << "[" << contents.size() << "];\n"
+            "extern unsigned char " << array_name << "[" << contents_to_write.size() << "];\n";
+
+        // Write decompressed size.
+        if (!compressed_contents.empty()) {
+            output_h_file << "extern size_t " << array_name << "_uncompressed_size;\n";
+        }
+
+        output_h_file <<
             "#ifdef __cplusplus\n"
             "  }\n"
             "#endif\n";

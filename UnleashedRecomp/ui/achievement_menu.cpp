@@ -8,6 +8,7 @@
 #include <user/config.h>
 #include <app.h>
 #include <exports.h>
+#include <decompressor.h>
 #include <res/images/achievements_menu/trophy.dds.h>
 #include <res/images/common/general_window.dds.h>
 #include <res/images/common/select_fill.dds.h>
@@ -624,9 +625,9 @@ void AchievementMenu::Init()
     g_fntNewRodinDB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
     g_fntNewRodinUB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
 
-    g_upTrophyIcon = LoadTexture(g_trophy, sizeof(g_trophy));
-    g_upSelectionCursor = LoadTexture(g_select_fill, sizeof(g_select_fill));
-    g_upWindow = LoadTexture(g_general_window, sizeof(g_general_window));
+    g_upTrophyIcon = LoadTexture(decompressZstd(g_trophy, g_trophy_uncompressed_size).get(), g_trophy_uncompressed_size);
+    g_upSelectionCursor = LoadTexture(decompressZstd(g_select_fill, g_select_fill_uncompressed_size).get(), g_select_fill_uncompressed_size);
+    g_upWindow = LoadTexture(decompressZstd(g_general_window, g_general_window_uncompressed_size).get(), g_general_window_uncompressed_size);
 }
 
 void AchievementMenu::Draw()

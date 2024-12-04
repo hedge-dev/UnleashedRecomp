@@ -8,6 +8,7 @@
 #include <user/achievement_data.h>
 #include <app.h>
 #include <exports.h>
+#include <decompressor.h>
 #include <res/images/common/general_window.dds.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
@@ -78,7 +79,7 @@ void AchievementOverlay::Init()
 
     g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
 
-    g_upWindow = LoadTexture(g_general_window, sizeof(g_general_window));
+    g_upWindow = LoadTexture(decompressZstd(g_general_window, g_general_window_uncompressed_size).get(), g_general_window_uncompressed_size);
 }
 
 void AchievementOverlay::Draw()

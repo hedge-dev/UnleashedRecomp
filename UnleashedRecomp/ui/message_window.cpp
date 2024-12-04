@@ -3,6 +3,7 @@
 #include <api/SWA.h>
 #include <gpu/video.h>
 #include <exports.h>
+#include <decompressor.h>
 #include <res/images/common/select_fade.dds.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
@@ -176,7 +177,7 @@ void MessageWindow::Init()
 
     g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 28.0f * FONT_SCALE);
 
-    g_upSelectionCursor = LoadTexture(g_select_fade, sizeof(g_select_fade));
+    g_upSelectionCursor = LoadTexture(decompressZstd(g_select_fade, g_select_fade_uncompressed_size).get(), g_select_fade_uncompressed_size);
 }
 
 void MessageWindow::Draw()
