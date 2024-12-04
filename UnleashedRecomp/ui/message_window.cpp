@@ -2,6 +2,7 @@
 #include "imgui_utils.h"
 #include <api/SWA.h>
 #include <gpu/video.h>
+#include <ui/installer_wizard.h>
 #include <exports.h>
 #include <res/images/common/select_fade.dds.h>
 
@@ -184,7 +185,7 @@ void MessageWindow::Draw()
     if (!s_isVisible)
         return;
 
-    auto pInputState = SWA::CInputState::GetInstance();
+    auto pInputState = InstallerWizard::s_isVisible ? nullptr : SWA::CInputState::GetInstance();
     auto drawList = ImGui::GetForegroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
 
@@ -213,6 +214,10 @@ void MessageWindow::Draw()
 
         drawList->PopClipRect();
 
+        bool isAccepted = pInputState
+            ? pInputState->GetPadState().IsTapped(SWA::eKeyState_A)
+            : ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+
         if (g_buttons.size())
         {
             auto itemWidth = std::max(Scale(162), Scale(CalcWidestTextSize(g_fntSeurat, fontSize, g_buttons)));
@@ -229,54 +234,72 @@ void MessageWindow::Draw()
                 for (auto& button : g_buttons)
                     DrawButton(rowCount++, windowMarginY, itemWidth, itemHeight, button);
 
-                drawList->PopClipRect();
-
-                bool upIsHeld = pInputState->GetPadState().IsDown(SWA::eKeyState_DpadUp) ||
-                    pInputState->GetPadState().LeftStickVertical > 0.5f;
-
-                bool downIsHeld = pInputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
-                    pInputState->GetPadState().LeftStickVertical < -0.5f;
-
-                bool scrollUp = !g_upWasHeld && upIsHeld;
-                bool scrollDown = !g_downWasHeld && downIsHeld;
-
-                if (scrollUp)
+                if (pInputState)
                 {
-                    --g_selectedRowIndex;
-                    if (g_selectedRowIndex < 0)
-                        g_selectedRowIndex = rowCount - 1;
+                    bool upIsHeld = pInputState->GetPadState().IsDown(SWA::eKeyState_DpadUp) ||
+                        pInputState->GetPadState().LeftStickVertical > 0.5f;
+
+                    bool downIsHeld = pInputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
+                        pInputState->GetPadState().LeftStickVertical < -0.5f;
+
+                    bool scrollUp = !g_upWasHeld && upIsHeld;
+                    bool scrollDown = !g_downWasHeld && downIsHeld;
+
+                    if (scrollUp)
+                    {
+                        --g_selectedRowIndex;
+                        if (g_selectedRowIndex < 0)
+                            g_selectedRowIndex = rowCount - 1;
+                    }
+                    else if (scrollDown)
+                    {
+                        ++g_selectedRowIndex;
+                        if (g_selectedRowIndex >= rowCount)
+                            g_selectedRowIndex = 0;
+                    }
+
+                    if (scrollUp || scrollDown)
+                        Game_PlaySound("sys_actstg_pausecursor");
+
+                    g_upWasHeld = upIsHeld;
+                    g_downWasHeld = downIsHeld;
+
+                    if (pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
+                    {
+                        g_result = -1;
+
+                        Game_PlaySound("sys_actstg_pausecansel");
+                        MessageWindow::Close();
+                    }
                 }
-                else if (scrollDown)
+                else
                 {
-                    ++g_selectedRowIndex;
-                    if (g_selectedRowIndex >= rowCount)
-                        g_selectedRowIndex = 0;
+                    auto clipRectMin = drawList->GetClipRectMin();
+                    auto clipRectMax = drawList->GetClipRectMax();
+
+                    for (int i = 0; i < rowCount; i++)
+                    {
+                        ImVec2 itemMin = { clipRectMin.x + windowMarginX, clipRectMin.y + windowMarginY + itemHeight * i };
+                        ImVec2 itemMax = { clipRectMax.x - windowMarginX, clipRectMin.y + windowMarginY + itemHeight * i + itemHeight };
+
+                        if (ImGui::IsMouseHoveringRect(itemMin, itemMax, false))
+                            g_selectedRowIndex = i;
+                    }
                 }
 
-                if (scrollUp || scrollDown)
-                    Game_PlaySound("sys_actstg_pausecursor");
-
-                g_upWasHeld = upIsHeld;
-                g_downWasHeld = downIsHeld;
-
-                if (pInputState->GetPadState().IsTapped(SWA::eKeyState_A))
+                if (isAccepted)
                 {
                     g_result = g_selectedRowIndex;
 
                     Game_PlaySound("sys_actstg_pausedecide");
                     MessageWindow::Close();
                 }
-                else if (pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
-                {
-                    g_result = -1;
 
-                    Game_PlaySound("sys_actstg_pausecansel");
-                    MessageWindow::Close();
-                }
+                drawList->PopClipRect();
             }
             else
             {
-                if (!g_isControlsVisible && pInputState->GetPadState().IsTapped(SWA::eKeyState_A))
+                if (!g_isControlsVisible && isAccepted)
                 {
                     g_controlsAppearTime = ImGui::GetTime();
                     g_isControlsVisible = true;
@@ -287,8 +310,12 @@ void MessageWindow::Draw()
         }
         else
         {
-            if (pInputState->GetPadState().IsTapped(SWA::eKeyState_A))
+            if (isAccepted)
+            {
+                g_result = 0;
+
                 MessageWindow::Close();
+            }
         }
     }
 }
@@ -328,6 +355,7 @@ void MessageWindow::Close()
         g_controlsAppearTime = ImGui::GetTime();
         g_isClosing = true;
         g_isControlsVisible = false;
+        g_foregroundCount = 0;
         g_isAwaitingResult = false;
     }
 
