@@ -83,6 +83,36 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         {
             { ELanguage::English, "Achievement Unlocked!" }
         }
+    },
+    {
+        "Common_Next",
+        {
+            { ELanguage::English, "Next" }
+        }
+    },
+    {
+        "Common_Select",
+        {
+            { ELanguage::English, "Select" }
+        }
+    },
+    {
+        "Common_Back",
+        {
+            { ELanguage::English, "Back" }
+        }
+    },
+    {
+        "Common_Reset",
+        {
+            { ELanguage::English, "Reset" }
+        }
+    },
+    {
+        "Common_Switch",
+        {
+            { ELanguage::English, "Switch" }
+        }
     }
 };
 

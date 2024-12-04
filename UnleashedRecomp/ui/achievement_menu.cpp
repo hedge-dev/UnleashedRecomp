@@ -4,6 +4,7 @@
 #include <gpu/video.h>
 #include <kernel/xdbf.h>
 #include <locale/locale.h>
+#include <ui/button_guide.h>
 #include <user/achievement_data.h>
 #include <user/config.h>
 #include <app.h>
@@ -656,6 +657,8 @@ void AchievementMenu::Open()
         return std::get<1>(a) > std::get<1>(b);
     });
 
+    ButtonGuide::Open({ Button(Localise("Common_Back"), EButtonIcon::B) });
+
     ResetSelection();
     Game_PlaySound("sys_actstg_pausewinopen");
 }
@@ -667,6 +670,8 @@ void AchievementMenu::Close()
         g_appearTime = ImGui::GetTime();
         g_isClosing = true;
     }
+
+    ButtonGuide::Close();
 
     Game_PlaySound("sys_actstg_pausewinclose");
     Game_PlaySound("sys_actstg_pausecansel");

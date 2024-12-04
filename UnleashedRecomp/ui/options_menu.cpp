@@ -10,6 +10,7 @@
 #include <kernel/heap.h>
 #include <kernel/memory.h>
 #include <locale/locale.h>
+#include <ui/button_guide.h>
 
 #include <patches/audio_patches.h>
 
@@ -64,6 +65,7 @@ static const IConfigDef* g_selectedItem;
 static std::string* g_inaccessibleReason;
 
 static bool g_isEnterKeyBuffered = false;
+static bool g_canReset = false;
 
 static double g_appearTime = 0.0;
 
@@ -497,6 +499,12 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
                     lockedOnOption = g_lockedOnOption;
                 }
+
+                if (g_canReset && padState.IsTapped(SWA::eKeyState_X))
+                {
+                    config->MakeDefault();
+                    Game_PlaySound("sys_worldmap_decide");
+                }
             }
             else
             {
@@ -522,6 +530,9 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         drawList->AddRectFilledMultiColor({ min.x, min.y + prevItemOffset }, { max.x, max.y + prevItemOffset }, c0, c0, c1, c1);
 
         DrawTextWithMarquee(g_seuratFont, size, textPos, min, max, textColour, configName.c_str(), g_rowSelectionTime, 0.9, 250.0);
+
+        // Show reset button if this option is accessible or not a language option.
+        g_canReset = g_selectedItem->GetName().find("Language") == std::string::npos && isAccessible;
     }
     else
     {
@@ -773,16 +784,11 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::Hints, !isStage, cmnReason);
         DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, !isStage, cmnReason);
         DrawConfigOption(rowCount++, yOffset, &Config::AchievementNotifications, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::SaveScoreAtCheckpoints, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::UnleashGaugeBehaviour, true);
         DrawConfigOption(rowCount++, yOffset, &Config::TimeOfDayTransition, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::SkipIntroLogos, true);
         break;
     case 1: // INPUT
         DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraX, true);
         DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraY, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::XButtonHoming, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason);
-        DrawConfigOption(rowCount++, yOffset, &Config::AllowCancellingUnleash, true);
         DrawConfigOption(rowCount++, yOffset, &Config::AllowBackgroundInput, true);
         break;
     case 2: // AUDIO
@@ -1027,6 +1033,18 @@ void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
 
     *(bool*)g_memory.Translate(0x8328BB26) = false;
 
+    ButtonGuide::Open
+    (
+        {
+            Button(Localise("Common_Switch"), EButtonIcon::LBRB, EButtonAlignment::Left),
+            Button(Localise("Common_Reset"), EButtonIcon::X, &g_canReset),
+            Button(Localise("Common_Select"), EButtonIcon::A),
+            Button(Localise("Common_Back"), EButtonIcon::B)
+        }
+    );
+    
+    ButtonGuide::SetSideMargins(150);
+
     // TODO: animate Miles Electric in if we're in a stage.
 }
 
@@ -1036,6 +1054,7 @@ void OptionsMenu::Close()
 
     *(bool*)g_memory.Translate(0x8328BB26) = true;
 
+    ButtonGuide::Close();
     Config::Save();
 
     // TODO: animate Miles Electric out if we're in a stage.

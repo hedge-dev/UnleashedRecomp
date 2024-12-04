@@ -219,6 +219,7 @@ public:
     virtual std::string_view GetName() const = 0;
     virtual std::string GetNameLocalised() const = 0;
     virtual std::string GetDescription() const = 0;
+    virtual bool IsDefaultValue() const = 0;
     virtual const void* GetValue() const = 0;
     virtual std::string GetValueLocalised() const = 0;
     virtual std::string GetValueDescription() const = 0;
@@ -300,6 +301,11 @@ public:
     std::string GetNameLocalised() const override;
 
     std::string GetDescription() const override;
+
+    bool IsDefaultValue() const override
+    {
+        return Value == DefaultValue;
+    }
 
     const void* GetValue() const override
     {
