@@ -33,6 +33,7 @@
 #include <wrl/client.h>
 #include <smolv.h>
 #include <print>
+#include <set>
 
 using Microsoft::WRL::ComPtr;
 

@@ -10,6 +10,7 @@
 #include <exports.h>
 #include <decompressor.h>
 #include <res/images/common/general_window.dds.h>
+#include <gpu/imgui_snapshot.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;
@@ -77,7 +78,7 @@ void AchievementOverlay::Init()
 
     constexpr float FONT_SCALE = 2.0f;
 
-    g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
+    g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
 
     g_upWindow = LoadTexture(decompressZstd(g_general_window, g_general_window_uncompressed_size).get(), g_general_window_uncompressed_size);
 }

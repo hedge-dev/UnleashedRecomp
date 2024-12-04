@@ -163,3 +163,28 @@ std::string ConfigDef<T>::GetValueDescription() const
 
     return std::get<1>(strings.at(Value));
 }
+
+template<typename T>
+inline void ConfigDef<T>::GetLocaleStrings(std::vector<std::string_view>& localeStrings) const
+{
+    if (Locale != nullptr)
+    {
+        for (auto& [language, nameAndDesc] : *Locale)
+        {
+            localeStrings.push_back(std::get<0>(nameAndDesc));
+            localeStrings.push_back(std::get<1>(nameAndDesc));
+        }
+    }
+
+    if (EnumLocale != nullptr)
+    {
+        for (auto& [language, locale] : *EnumLocale)
+        {
+            for (auto& [value, nameAndDesc] : locale)
+            {
+                localeStrings.push_back(std::get<0>(nameAndDesc));
+                localeStrings.push_back(std::get<1>(nameAndDesc));
+            }
+        }
+    }
+}

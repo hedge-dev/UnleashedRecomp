@@ -21,6 +21,9 @@
 #include <ui/window.h>
 #include <user/config.h>
 
+#include <res/font/im_font_atlas.dds.h>
+#include <decompressor.h>
+
 #include <SWA.h>
 
 #include "../../thirdparty/ShaderRecomp/ShaderRecomp/shader_common.h"
@@ -1064,6 +1067,15 @@ static void CreateImGuiBackend()
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 
+#ifdef ENABLE_IM_FONT_ATLAS_SNAPSHOT
+    delete io.Fonts;
+    io.Fonts = ImFontAtlasSnapshot::Load();
+#else
+    io.Fonts->TexDesiredWidth = 4096;
+    io.Fonts->AddFontDefault();
+    ImFontAtlasSnapshot::GenerateGlyphRanges();
+#endif
+
     AchievementMenu::Init();
     AchievementOverlay::Init();
     MessageWindow::Init();
@@ -1071,6 +1083,12 @@ static void CreateImGuiBackend()
 
     ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
 
+    RenderComponentMapping componentMapping(RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::R);
+
+#ifdef ENABLE_IM_FONT_ATLAS_SNAPSHOT
+    g_imFontTexture = LoadTexture(decompressZstd(g_im_font_atlas_texture, g_im_font_atlas_texture_uncompressed_size).get(),
+        g_im_font_atlas_texture_uncompressed_size, componentMapping);
+#else
     g_imFontTexture = std::make_unique<GuestTexture>(ResourceType::Texture);
 
     uint8_t* pixels;
@@ -1125,11 +1143,12 @@ static void CreateImGuiBackend()
     textureViewDesc.format = textureDesc.format;
     textureViewDesc.dimension = RenderTextureViewDimension::TEXTURE_2D;
     textureViewDesc.mipLevels = 1;
-    textureViewDesc.componentMapping = RenderComponentMapping(RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::R);
+    textureViewDesc.componentMapping = componentMapping;
     g_imFontTexture->textureView = g_imFontTexture->texture->createTextureView(textureViewDesc);
 
     g_imFontTexture->descriptorIndex = g_textureDescriptorAllocator.allocate();
     g_textureDescriptorSet->setTexture(g_imFontTexture->descriptorIndex, g_imFontTexture->texture, RenderTextureLayout::SHADER_READ, g_imFontTexture->textureView.get());
+#endif
 
     io.Fonts->SetTexID(g_imFontTexture.get());
 
@@ -1174,6 +1193,32 @@ static void CreateImGuiBackend()
     pipelineDesc.inputSlots = &inputSlot;
     pipelineDesc.inputSlotsCount = 1;
     g_imPipeline = g_device->createGraphicsPipeline(pipelineDesc);
+
+#ifndef ENABLE_IM_FONT_ATLAS_SNAPSHOT
+    ImFontAtlasSnapshot snapshot;
+    snapshot.Snap();
+
+    FILE* file = fopen("im_font_atlas.bin", "wb");
+    if (file)
+    {
+        fwrite(snapshot.data.data(), 1, snapshot.data.size(), file);
+        fclose(file);
+    }
+
+    ddspp::Header header;
+    ddspp::HeaderDXT10 headerDX10;
+    ddspp::encode_header(ddspp::R8_UNORM, width, height, 1, ddspp::Texture2D, 1, 1, header, headerDX10);
+
+    file = fopen("im_font_atlas.dds", "wb");
+    if (file)
+    {
+        fwrite(&ddspp::DDS_MAGIC, 4, 1, file);
+        fwrite(&header, sizeof(header), 1, file);
+        fwrite(&headerDX10, sizeof(headerDX10), 1, file);
+        fwrite(pixels, 1, width * height, file);
+        fclose(file);
+    }
+#endif
 }
 
 static void CreateHostDevice()
@@ -4123,7 +4168,7 @@ static RenderFormat ConvertDXGIFormat(ddspp::DXGIFormat format)
     }
 }
 
-static bool LoadTexture(GuestTexture& texture, uint8_t* data, size_t dataSize)
+static bool LoadTexture(GuestTexture& texture, uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping)
 {
     ddspp::Descriptor ddsDesc;
     if (ddspp::decode_header(data, ddsDesc) != ddspp::Error)
@@ -4146,6 +4191,7 @@ static bool LoadTexture(GuestTexture& texture, uint8_t* data, size_t dataSize)
         viewDesc.format = desc.format;
         viewDesc.dimension = ConvertTextureViewDimension(ddsDesc.type);
         viewDesc.mipLevels = ddsDesc.numMips;
+        viewDesc.componentMapping = componentMapping;
         texture.textureView = texture.texture->createTextureView(viewDesc);
         texture.descriptorIndex = g_textureDescriptorAllocator.allocate();
         g_textureDescriptorSet->setTexture(texture.descriptorIndex, texture.texture, RenderTextureLayout::SHADER_READ, texture.textureView.get());
@@ -4287,11 +4333,11 @@ static bool LoadTexture(GuestTexture& texture, uint8_t* data, size_t dataSize)
     return false;
 }
 
-std::unique_ptr<GuestTexture> LoadTexture(uint8_t* data, size_t dataSize)
+std::unique_ptr<GuestTexture> LoadTexture(uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping)
 {
     GuestTexture texture(ResourceType::Texture);
 
-    if (LoadTexture(texture, data, dataSize))
+    if (LoadTexture(texture, data, dataSize, componentMapping))
         return std::make_unique<GuestTexture>(std::move(texture));
 
     return nullptr;
@@ -4303,7 +4349,7 @@ static void MakePictureData(GuestPictureData* pictureData, uint8_t* data, uint32
     {
         GuestTexture texture(ResourceType::Texture);
 
-        if (LoadTexture(texture, data, dataSize))
+        if (LoadTexture(texture, data, dataSize, {}))
         {
 #ifdef _DEBUG
             texture.texture->setName(reinterpret_cast<char*>(g_memory.Translate(pictureData->name + 2)));

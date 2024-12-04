@@ -12,6 +12,7 @@
 #include <res/images/achievements_menu/trophy.dds.h>
 #include <res/images/common/general_window.dds.h>
 #include <res/images/common/select_fill.dds.h>
+#include <gpu/imgui_snapshot.h>
 
 constexpr double HEADER_CONTAINER_INTRO_MOTION_START = 0;
 constexpr double HEADER_CONTAINER_INTRO_MOTION_END = 15;
@@ -621,9 +622,9 @@ void AchievementMenu::Init()
 
     constexpr float FONT_SCALE = 2.0f;
 
-    g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
-    g_fntNewRodinDB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
-    g_fntNewRodinUB = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
+    g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
+    g_fntNewRodinDB = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
+    g_fntNewRodinUB = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
 
     g_upTrophyIcon = LoadTexture(decompressZstd(g_trophy, g_trophy_uncompressed_size).get(), g_trophy_uncompressed_size);
     g_upSelectionCursor = LoadTexture(decompressZstd(g_select_fill, g_select_fill_uncompressed_size).get(), g_select_fill_uncompressed_size);

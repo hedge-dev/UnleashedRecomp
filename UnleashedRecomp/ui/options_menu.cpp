@@ -6,6 +6,7 @@
 #include <api/SWA/System/InputState.h>
 #include <gpu/imgui_common.h>
 #include <gpu/video.h>
+#include <gpu/imgui_snapshot.h>
 #include <kernel/heap.h>
 #include <kernel/memory.h>
 #include <locale/locale.h>
@@ -975,9 +976,9 @@ void OptionsMenu::Init()
 
     constexpr float FONT_SCALE = 2.0f;
 
-    g_seuratFont = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 26.0f * FONT_SCALE);
-    g_dfsogeistdFont = io.Fonts->AddFontFromFileTTF("DFSoGeiStd-W7.otf", 48.0f * FONT_SCALE);
-    g_newRodinFont = io.Fonts->AddFontFromFileTTF("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
+    g_seuratFont = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
+    g_dfsogeistdFont = ImFontAtlasSnapshot::GetFont("DFSoGeiStd-W7.otf", 48.0f * FONT_SCALE);
+    g_newRodinFont = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
 }
 
 void OptionsMenu::Draw()

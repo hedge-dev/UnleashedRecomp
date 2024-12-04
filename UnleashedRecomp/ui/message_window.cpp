@@ -5,6 +5,7 @@
 #include <exports.h>
 #include <decompressor.h>
 #include <res/images/common/select_fade.dds.h>
+#include <gpu/imgui_snapshot.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;
@@ -175,7 +176,7 @@ void MessageWindow::Init()
 
     constexpr float FONT_SCALE = 2.0f;
 
-    g_fntSeurat = io.Fonts->AddFontFromFileTTF("FOT-SeuratPro-M.otf", 28.0f * FONT_SCALE);
+    g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
 
     g_upSelectionCursor = LoadTexture(decompressZstd(g_select_fade, g_select_fade_uncompressed_size).get(), g_select_fade_uncompressed_size);
 }

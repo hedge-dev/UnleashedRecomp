@@ -224,6 +224,7 @@ public:
     virtual std::string GetValueDescription() const = 0;
     virtual std::string GetDefinition(bool withSection = false) const = 0;
     virtual std::string ToString(bool strWithQuotes = true) const = 0;
+    virtual void GetLocaleStrings(std::vector<std::string_view>& localeStrings) const = 0;
 };
 
 template<typename T>
@@ -232,12 +233,12 @@ class ConfigDef : public IConfigDef
 public:
     std::string Section{};
     std::string Name{};
-    CONFIG_LOCALE* Locale;
+    CONFIG_LOCALE* Locale{};
     T DefaultValue{};
     T Value{ DefaultValue };
     std::unordered_map<std::string, T>* EnumTemplate;
     std::map<T, std::string> EnumTemplateReverse{};
-    CONFIG_ENUM_LOCALE(T)* EnumLocale;
+    CONFIG_ENUM_LOCALE(T)* EnumLocale{};
     std::function<void(ConfigDef<T>*)> Callback;
 
     // CONFIG_DEFINE
@@ -349,6 +350,8 @@ public:
 
         return result;
     }
+
+    void GetLocaleStrings(std::vector<std::string_view>& localeStrings) const override;
 
     ConfigDef& operator=(const ConfigDef& other)
     {

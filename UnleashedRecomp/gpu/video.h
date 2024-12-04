@@ -379,6 +379,6 @@ enum GuestTextureAddress
     D3DTADDRESS_BORDER = 6
 };
 
-extern std::unique_ptr<GuestTexture> LoadTexture(uint8_t* data, size_t dataSize);
+extern std::unique_ptr<GuestTexture> LoadTexture(uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping = RenderComponentMapping());
 
 extern void VideoConfigValueChangedCallback(class IConfigDef* config);
