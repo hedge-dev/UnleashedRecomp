@@ -232,6 +232,32 @@ static float CalcWidestTextSize(const ImFont* font, float fontSize, std::span<st
     return result;
 }
 
+static std::string Truncate(const std::string& input, size_t maxLength, bool useEllipsis = true, bool usePrefixEllipsis = false)
+{
+    const std::string ellipsis = "...";
+
+    if (input.length() > maxLength)
+    {
+        if (useEllipsis && maxLength > ellipsis.length())
+        {
+            if (usePrefixEllipsis)
+            {
+                return ellipsis + input.substr(0, maxLength - ellipsis.length());
+            }
+            else
+            {
+                return input.substr(0, maxLength - ellipsis.length()) + ellipsis;
+            }
+        }
+        else
+        {
+            return input.substr(0, maxLength);
+        }
+    }
+
+    return input;
+}
+
 static std::vector<std::string> Split(const char* str, char delimiter)
 {
     std::vector<std::string> result;
@@ -285,11 +311,29 @@ static void DrawCentredParagraph(const ImFont* font, float fontSize, const ImVec
     auto paragraphSize = MeasureCentredParagraph(font, fontSize, lineMargin, lines);
     auto offsetY = 0.0f;
 
-    for (auto& str : lines)
+    auto hasList = std::strstr(text, "- ");
+    auto isList = false;
+    auto listOffsetX = 0.0f;
+
+    for (int i = 0; i < lines.size(); i++)
     {
+        auto& str = lines[i];
         auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str());
 
-        drawMethod(str.c_str(), ImVec2(/* X */ centre.x - textSize.x / 2, /* Y */ centre.y - paragraphSize.y / 2 + offsetY));
+        if (hasList)
+        {
+            if (!isList && str.starts_with("- ") && lines.size() > i + 1 && lines[i + 1].starts_with("- "))
+            {
+                isList = true;
+                listOffsetX = centre.x - textSize.x / 2;
+            }
+            else if (isList && !str.starts_with("- "))
+            {
+                isList = false;
+            }
+        }
+
+        drawMethod(str.c_str(), ImVec2(/* X */ isList ? listOffsetX : centre.x - textSize.x / 2, /* Y */ centre.y - paragraphSize.y / 2 + offsetY));
 
         offsetY += textSize.y + Scale(lineMargin);
     }

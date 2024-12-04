@@ -117,19 +117,24 @@ static bool g_currentMessagePromptConfirmation = false;
 static int g_currentMessageResult = -1;
 static bool g_currentMessageUpdateRemaining = false;
 
-const char CREDITS_TEXT[] = "Sajid (RIP)";
+const char CREDITS_TEXT[] = "- Sajid (RIP)\n- imgui sega balls!";
 
-const char *WIZARD_TEXT[] =
+static std::string& GetWizardText(int index)
 {
-    "Please select a language.\n",
-    "Welcome to Unleashed Recompiled!\n\nMake sure you have a copy of Sonic Unleashed's files for Xbox 360 before proceeding with the installation.",
-    "Select the files for the Game and the Update. You can use digital dumps (PIRS), a folder with the game's contents or a disc image (ISO).",
-    "Select the files for the DLC Packs. These can be digital dumps (PIRS) or a folder with their contents.",
-    "The content will be installed to the program's folder. Please confirm you have enough space available.\n\n",
-    "Please wait while the content is being installed...",
-    "Installation is complete.\n\nThis project's been brought to you by:\n\n",
-    "Installation has failed.\n\nError:\n\n"
-};
+    switch (index)
+    {
+        case 0: return Localise("Installer_Page_Language");
+        case 1: return Localise("Installer_Page_Welcome");
+        case 2: return Localise("Installer_Page_AddGame");
+        case 3: return Localise("Installer_Page_AddDLC");
+        case 4: return Localise("Installer_Page_FreeSpace");
+        case 5: return Localise("Installer_Page_Installing");
+        case 6: return Localise("Installer_Page_InstallComplete");
+        case 7: return Localise("Installer_Page_InstallFailed");
+    }
+
+    return g_localeMissing;
+}
 
 static const int WIZARD_INSTALL_TEXTURE_INDEX[] =
 {
@@ -164,8 +169,6 @@ const ELanguage LANGUAGE_ENUM[] =
     ELanguage::Japanese,
 };
 
-const char GAME_SOURCE_TEXT[] = "FULL GAME";
-const char UPDATE_SOURCE_TEXT[] = "UPDATE";
 const char *DLC_SOURCE_TEXT[] =
 {
     "SPAGONIA",
@@ -175,9 +178,6 @@ const char *DLC_SOURCE_TEXT[] =
     "APOTOS & SHAMAR",
     "EMPIRE CITY & ADABAT",
 };
-
-const char REQUIRED_SPACE_TEXT[] = "Required space";
-const char AVAILABLE_SPACE_TEXT[] = "Available space";
 
 static int DLCIndex(DLC dlc)
 {
@@ -243,7 +243,7 @@ static void DrawHeaderIcons()
         ImVec2 arrowCircleMin = { Scale(iconsPosX - iconsScale / 2), Scale(iconsPosY - iconsScale / 2) };
         ImVec2 arrowCircleMax = { Scale(iconsPosX + iconsScale / 2), Scale(iconsPosY + iconsScale / 2) };
 
-        ImVec2 center = { Scale(iconsPosX) + 0.5f, Scale(iconsPosY) };
+        ImVec2 center = { Scale(iconsPosX) + 0.5f, Scale(iconsPosY) - 0.5f };
         float currentAngle = g_arrowCircleCurrentRotation * (3.14159f / 180.0f); // Rotation angle in radians
         float cos_a = cosf(currentAngle);
         float sin_a = sinf(currentAngle);
@@ -385,14 +385,24 @@ static void DrawDescriptionContainer()
     DrawContainer(descriptionMin, descriptionMax, true);
 
     char descriptionText[512];
-    strncpy(descriptionText, WIZARD_TEXT[int(g_currentPage)], sizeof(descriptionText) - 1);
+    strncpy(descriptionText, GetWizardText(int(g_currentPage)).c_str(), sizeof(descriptionText) - 1);
 
     if (g_currentPage == WizardPage::CheckSpace)
     {
         constexpr double DivisorGiB = (1024.0 * 1024.0 * 1024.0);
         double requiredGiB = double(g_installerSources.totalSize) / DivisorGiB;
         double availableGiB = double(g_installerAvailableSize) / DivisorGiB;
-        snprintf(descriptionText, sizeof(descriptionText), "%s%s: %2.2f GiB\n\n%s: %2.2f GiB", WIZARD_TEXT[int(g_currentPage)], REQUIRED_SPACE_TEXT, requiredGiB, AVAILABLE_SPACE_TEXT, availableGiB);
+
+        // TODO: the format for where the numbers are (%2.2f GiB) should be moved to the localised string.
+        snprintf
+        (
+            descriptionText,
+            sizeof(descriptionText),
+            "%s%s %2.2f GiB\n%s %2.2f GiB",
+            GetWizardText(int(g_currentPage)).c_str(),
+            Localise("Installer_Step_RequiredSpace").c_str(), requiredGiB,
+            Localise("Installer_Step_AvailableSpace").c_str(), availableGiB
+        );
     }
     else if (g_currentPage == WizardPage::InstallSucceeded)
     {
@@ -660,6 +670,7 @@ static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
     assert((g_currentPage == WizardPage::SelectGameAndUpdate) || (g_currentPage == WizardPage::SelectDLC));
 
     constexpr size_t failedPathLimit = 5;
+    bool isFailedPathsOverLimit = false;
     std::list<std::filesystem::path> failedPaths;
     if (g_currentPage == WizardPage::SelectGameAndUpdate)
     {
@@ -676,6 +687,10 @@ static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
             else if (failedPaths.size() < failedPathLimit)
             {
                 failedPaths.push_back(path);
+            }
+            else
+            {
+                isFailedPathsOverLimit = true;
             }
         }
     }
@@ -698,11 +713,14 @@ static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
     if (!failedPaths.empty())
     {
         std::stringstream stringStream;
-        stringStream << "Some of the files that were selected are not valid." << std::endl;
+        stringStream << Localise("Installer_Message_InvalidFilesList") << std::endl;
         for (const std::filesystem::path &path : failedPaths)
         {
-            stringStream << std::endl << path.filename().string();
+            stringStream << std::endl << "- " << Truncate(path.filename().string(), 32, true, true);
         }
+
+        if (isFailedPathsOverLimit)
+            stringStream << std::endl << "- [...]";
 
         g_currentMessagePrompt = stringStream.str();
         g_currentMessagePromptConfirmation = false;
@@ -774,8 +792,8 @@ static void DrawSources()
 {
     if (g_currentPage == WizardPage::SelectGameAndUpdate)
     {
-        DrawSourceButton(ButtonColumnMiddle, 1.5f, GAME_SOURCE_TEXT, !g_gameSourcePath.empty());
-        DrawSourceButton(ButtonColumnMiddle, 0.5f, UPDATE_SOURCE_TEXT, !g_updateSourcePath.empty());
+        DrawSourceButton(ButtonColumnMiddle, 1.5f, Localise("Installer_Step_Game").c_str(), !g_gameSourcePath.empty());
+        DrawSourceButton(ButtonColumnMiddle, 0.5f, Localise("Installer_Step_Update").c_str(), !g_updateSourcePath.empty());
     }
 
     if (g_currentPage == WizardPage::SelectDLC)
@@ -883,8 +901,7 @@ static void DrawNextButton()
             XexPatcher::Result patcherResult;
             if (g_currentPage == WizardPage::SelectGameAndUpdate && (patcherResult = Installer::checkGameUpdateCompatibility(g_gameSourcePath, g_updateSourcePath), patcherResult != XexPatcher::Result::Success))
             {
-                // TODO: localise this.
-                g_currentMessagePrompt = "The specified game and\nupdate file are incompatible.\n\nPlease ensure the files are\nfor the same version and\nregion and try again.";
+                g_currentMessagePrompt = Localise("Installer_Message_IncompatibleGameData");
                 g_currentMessagePromptConfirmation = false;
             }
             else if (g_currentPage == WizardPage::SelectDLC)
@@ -902,17 +919,15 @@ static void DrawNextButton()
                 bool dlcInstallerMode = g_gameSourcePath.empty();
                 if (!InstallerParseSources())
                 {
-                    // TODO: localise this.
                     // Some of the sources that were provided to the installer are not valid. Restart the file selection process.
-                    g_currentMessagePrompt = "Some of the files that have\nbeen provided are not valid.\n\nPlease make sure all the\nspecified files are correct\nand try again.";
+                    g_currentMessagePrompt = Localise("Installer_Message_InvalidFiles");
                     g_currentMessagePromptConfirmation = false;
                     g_currentPage = dlcInstallerMode ? WizardPage::SelectDLC : WizardPage::SelectGameAndUpdate;
                 }
                 else if (dlcIncomplete && !dlcInstallerMode)
                 {
-                    // TODO: localise this.
                     // Not all the DLC was specified, we show a prompt and await a confirmation before starting the installer.
-                    g_currentMessagePrompt = "It is highly recommended\nthat you install all of the DLC,\nas it includes high quality\nlighting textures for the\nstages in each pack.\n\nAre you sure you want to\nskip this step?";
+                    g_currentMessagePrompt = Localise("Installer_Message_DLCWarning");
                     g_currentMessagePromptConfirmation = true;
                 }
                 else if (skipButton && dlcInstallerMode)

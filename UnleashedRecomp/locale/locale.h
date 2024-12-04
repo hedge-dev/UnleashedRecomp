@@ -99,6 +99,78 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         }
     },
     {
+        "Installer_Page_Language",
+        {
+            { ELanguage::English, "Please select a language." }
+        }
+    },
+    {
+        "Installer_Page_Welcome",
+        {
+            { ELanguage::English, "Welcome to Unleashed Recompiled!\n\nYou'll need an Xbox 360 copy\nof Sonic Unleashed in order to proceed with the installation." }
+        }
+    },
+    {
+        "Installer_Page_AddGame",
+        {
+            { ELanguage::English, "Add the files for the game and its title update. You can use digital dumps or pre-extracted folders containing the necessary files." }
+        }
+    },
+    {
+        "Installer_Page_AddDLC",
+        {
+            { ELanguage::English, "Add the files for the DLC. You can use digital dumps or pre-extracted folders containing the necessary files." }
+        }
+    },
+    {
+        "Installer_Page_FreeSpace",
+        {
+            { ELanguage::English, "The content will be installed to the program's folder. Please confirm you have enough free space.\n\n" }
+        }
+    },
+    {
+        "Installer_Page_Installing",
+        {
+            { ELanguage::English, "Please wait while the content is being installed..." }
+        }
+    },
+    {
+        "Installer_Page_InstallComplete",
+        {
+            { ELanguage::English, "Installation complete.\n\nThis project is brought to you by:\n\n" }
+        }
+    },
+    {
+        "Installer_Page_InstallFailed",
+        {
+            { ELanguage::English, "Installation failed.\n\nError:\n\n" }
+        }
+    },
+    {
+        "Installer_Step_Game",
+        {
+            { ELanguage::English, "GAME" }
+        }
+    },
+    {
+        "Installer_Step_Update",
+        {
+            { ELanguage::English, "UPDATE" }
+        }
+    },
+    {
+        "Installer_Step_RequiredSpace",
+        {
+            { ELanguage::English, "Required space:" }
+        }
+    },
+    {
+        "Installer_Step_AvailableSpace",
+        {
+            { ELanguage::English, "Available space:" }
+        }
+    },
+    {
         "Installer_Button_Next",
         {
             { ELanguage::English, "NEXT" },
@@ -130,6 +202,30 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
             { ELanguage::German, "ORDNER HINZUFÜGEN" },
         }
     },
+    {
+        "Installer_Message_InvalidFilesList",
+        {
+            { ELanguage::English, "The following selected files are invalid:" }
+        }
+    },
+    {
+        "Installer_Message_InvalidFiles",
+        {
+            { ELanguage::English, "Some of the files that have\nbeen provided are not valid.\n\nPlease make sure all the\nspecified files are correct\nand try again." }
+        }
+    },
+    {
+        "Installer_Message_IncompatibleGameData",
+        {
+            { ELanguage::English, "The specified game and\nupdate file are incompatible.\n\nPlease ensure the files are\nfor the same version and\nregion and try again." }
+        }
+    },
+    {
+        "Installer_Message_DLCWarning",
+        {
+            { ELanguage::English, "It is highly recommended\nthat you install all of the\nDLC, as it includes high\nquality lighting textures\nfor the base game.\n\nAre you sure you want to\nskip this step?" }
+        }
+    }
 };
 
 static std::string& Localise(const char* key)
