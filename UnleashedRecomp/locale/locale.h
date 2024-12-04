@@ -99,31 +99,31 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         }
     },
     {
-        "Installer_Page_Language",
+        "Installer_Page_SelectLanguage",
         {
             { ELanguage::English, "Please select a language." }
         }
     },
     {
-        "Installer_Page_Welcome",
+        "Installer_Page_Introduction",
         {
             { ELanguage::English, "Welcome to Unleashed Recompiled!\n\nYou'll need an Xbox 360 copy\nof Sonic Unleashed in order to proceed with the installation." }
         }
     },
     {
-        "Installer_Page_AddGame",
+        "Installer_Page_SelectGameAndUpdate",
         {
             { ELanguage::English, "Add the files for the game and its title update. You can use digital dumps or pre-extracted folders containing the necessary files." }
         }
     },
     {
-        "Installer_Page_AddDLC",
+        "Installer_Page_SelectDLC",
         {
             { ELanguage::English, "Add the files for the DLC. You can use digital dumps or pre-extracted folders containing the necessary files." }
         }
     },
     {
-        "Installer_Page_FreeSpace",
+        "Installer_Page_CheckSpace",
         {
             { ELanguage::English, "The content will be installed to the program's folder. Please confirm you have enough free space.\n\n" }
         }
@@ -135,7 +135,7 @@ inline static std::unordered_map<std::string, std::unordered_map<ELanguage, std:
         }
     },
     {
-        "Installer_Page_InstallComplete",
+        "Installer_Page_InstallSucceeded",
         {
             { ELanguage::English, "Installation complete.\n\nThis project is brought to you by:\n\n" }
         }

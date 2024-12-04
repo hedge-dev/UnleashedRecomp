@@ -119,18 +119,18 @@ static bool g_currentMessageUpdateRemaining = false;
 
 const char CREDITS_TEXT[] = "- Sajid (RIP)\n- imgui sega balls!";
 
-static std::string& GetWizardText(int index)
+static std::string& GetWizardText(WizardPage page)
 {
-    switch (index)
+    switch (page)
     {
-        case 0: return Localise("Installer_Page_Language");
-        case 1: return Localise("Installer_Page_Welcome");
-        case 2: return Localise("Installer_Page_AddGame");
-        case 3: return Localise("Installer_Page_AddDLC");
-        case 4: return Localise("Installer_Page_FreeSpace");
-        case 5: return Localise("Installer_Page_Installing");
-        case 6: return Localise("Installer_Page_InstallComplete");
-        case 7: return Localise("Installer_Page_InstallFailed");
+        case WizardPage::SelectLanguage: return Localise("Installer_Page_SelectLanguage");
+        case WizardPage::Introduction: return Localise("Installer_Page_Introduction");
+        case WizardPage::SelectGameAndUpdate: return Localise("Installer_Page_SelectGameAndUpdate");
+        case WizardPage::SelectDLC: return Localise("Installer_Page_SelectDLC");
+        case WizardPage::CheckSpace: return Localise("Installer_Page_CheckSpace");
+        case WizardPage::Installing: return Localise("Installer_Page_Installing");
+        case WizardPage::InstallSucceeded: return Localise("Installer_Page_InstallSucceeded");
+        case WizardPage::InstallFailed: return Localise("Installer_Page_InstallFailed");
     }
 
     return g_localeMissing;
@@ -385,7 +385,7 @@ static void DrawDescriptionContainer()
     DrawContainer(descriptionMin, descriptionMax, true);
 
     char descriptionText[512];
-    strncpy(descriptionText, GetWizardText(int(g_currentPage)).c_str(), sizeof(descriptionText) - 1);
+    strncpy(descriptionText, GetWizardText(g_currentPage).c_str(), sizeof(descriptionText) - 1);
 
     if (g_currentPage == WizardPage::CheckSpace)
     {
@@ -399,7 +399,7 @@ static void DrawDescriptionContainer()
             descriptionText,
             sizeof(descriptionText),
             "%s%s %2.2f GiB\n%s %2.2f GiB",
-            GetWizardText(int(g_currentPage)).c_str(),
+            GetWizardText(g_currentPage).c_str(),
             Localise("Installer_Step_RequiredSpace").c_str(), requiredGiB,
             Localise("Installer_Step_AvailableSpace").c_str(), availableGiB
         );
