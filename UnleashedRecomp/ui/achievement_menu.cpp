@@ -214,7 +214,7 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
         colTextShadow
     );
 
-    if (isSelected && textX + textSize.x >= max.x)
+    if (isSelected && textX + textSize.x >= max.x - Scale(10))
     {
         // Draw achievement description with marquee.
         DrawTextWithMarqueeShadow
