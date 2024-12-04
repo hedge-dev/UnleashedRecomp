@@ -9,11 +9,12 @@ PPC_FUNC(sub_825882B8)
 {
     auto pTitleState = (SWA::CTitleStateBase*)g_memory.Translate(ctx.r3.u32);
     auto pInputState = SWA::CInputState::GetInstance();
+    auto& pPadState = pInputState->GetPadState();
     auto isOptionsIndex = pTitleState->m_pMember->m_pTitleMenu->m_CursorIndex == 2;
 
     if (!OptionsMenu::s_isVisible && pInputState && isOptionsIndex)
     {
-        if (pInputState->GetPadState().IsTapped(SWA::eKeyState_A))
+        if (pPadState.IsTapped(SWA::eKeyState_A) || pPadState.IsTapped(SWA::eKeyState_Start))
         {
             Game_PlaySound("sys_worldmap_window");
             Game_PlaySound("sys_worldmap_decide");
@@ -27,7 +28,7 @@ PPC_FUNC(sub_825882B8)
 
     if (pInputState && isOptionsIndex)
     {
-        if (OptionsMenu::CanClose() && pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
+        if (OptionsMenu::CanClose() && pPadState.IsTapped(SWA::eKeyState_B))
         {
             Game_PlaySound("sys_worldmap_cansel");
 
