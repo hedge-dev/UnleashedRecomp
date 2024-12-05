@@ -14,6 +14,7 @@
 #include <ui/button_guide.h>
 #include <ui/message_window.h>
 #include <ui/options_menu.h>
+#include <ui/installer_wizard.h>
 
 #include "imgui_snapshot.h"
 #include "imgui_common.h"
@@ -1060,6 +1061,8 @@ struct ImGuiPushConstants
     uint32_t shaderModifier{};
     uint32_t texture2DDescriptorIndex{};
     ImVec2 inverseDisplaySize{};
+    ImVec2 origin{ 0.0f, 0.0f };
+    ImVec2 scale{ 1.0f, 1.0f };
 };
 
 static void CreateImGuiBackend()
@@ -1082,6 +1085,7 @@ static void CreateImGuiBackend()
     ButtonGuide::Init();
     MessageWindow::Init();
     OptionsMenu::Init();
+    InstallerWizard::Init();
 
     ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
 
@@ -1223,7 +1227,9 @@ static void CreateImGuiBackend()
 #endif
 }
 
-static void CreateHostDevice()
+static void BeginCommandList();
+
+void Video::CreateHostDevice()
 {
     for (uint32_t i = 0; i < 16; i++)
         g_inputSlots[i].index = i;
@@ -1413,20 +1419,22 @@ static void CreateHostDevice()
     desc.renderTargetCount = 1;
     g_gammaCorrectionPipeline = g_device->createGraphicsPipeline(desc);
 
-    g_xdbfTextureCache = std::unordered_map<uint16_t, GuestTexture*>();
+    g_backBuffer = g_userHeap.AllocPhysical<GuestSurface>(ResourceType::RenderTarget);
+    g_backBuffer->width = 1280;
+    g_backBuffer->height = 720;
+    g_backBuffer->format = BACKBUFFER_FORMAT;
+    g_backBuffer->textureHolder = g_device->createTexture(RenderTextureDesc::Texture2D(1, 1, 1, BACKBUFFER_FORMAT, RenderTextureFlag::RENDER_TARGET));
 
-    for (auto& achievement : g_xdbfWrapper.GetAchievements(XDBF_LANGUAGE_ENGLISH))
-    {
-        // huh?
-        if (!achievement.pImageBuffer || !achievement.ImageBufferSize)
-            continue;
+    BeginCommandList();
 
-        g_xdbfTextureCache[achievement.ID] =
-            LoadTexture((uint8_t*)achievement.pImageBuffer, achievement.ImageBufferSize).release();
-    }
+    RenderTextureBarrier blankTextureBarriers[TEXTURE_DESCRIPTOR_NULL_COUNT];
+    for (size_t i = 0; i < TEXTURE_DESCRIPTOR_NULL_COUNT; i++)
+        blankTextureBarriers[i] = RenderTextureBarrier(g_blankTextures[i].get(), RenderTextureLayout::SHADER_READ);
+
+    g_commandLists[g_frame]->barriers(RenderBarrierStage::NONE, blankTextureBarriers, std::size(blankTextureBarriers));
 }
 
-static void WaitForGPU()
+void Video::WaitForGPU()
 {
     if (g_vulkan)
     {
@@ -1447,12 +1455,11 @@ static void WaitForGPU()
     }
 }
 
-static bool g_pendingRenderThread;
+static std::atomic<bool> g_pendingRenderThread;
 
 static void WaitForRenderThread()
 {
-    while (g_pendingRenderThread)
-        Sleep(0);
+    g_pendingRenderThread.wait(true);
 }
 
 static void BeginCommandList()
@@ -1469,7 +1476,7 @@ static void BeginCommandList()
 
     if (!g_swapChainValid)
     {
-        WaitForGPU();
+        Video::WaitForGPU();
         g_backBuffer->framebuffers.clear();
         g_swapChainValid = g_swapChain->resize();
         g_needsResize = g_swapChainValid;
@@ -1493,7 +1500,7 @@ static void BeginCommandList()
                 if (g_intermediaryBackBufferTextureDescriptorIndex == NULL)
                     g_intermediaryBackBufferTextureDescriptorIndex = g_textureDescriptorAllocator.allocate();
 
-                WaitForGPU(); // Fine to wait for GPU, this'll only happen during resize.
+                Video::WaitForGPU(); // Fine to wait for GPU, this'll only happen during resize.
 
                 g_intermediaryBackBufferTexture = g_device->createTexture(RenderTextureDesc::Texture2D(width, height, 1, BACKBUFFER_FORMAT, RenderTextureFlag::RENDER_TARGET));
                 g_textureDescriptorSet->setTexture(g_intermediaryBackBufferTextureDescriptorIndex, g_intermediaryBackBufferTexture.get(), RenderTextureLayout::SHADER_READ);
@@ -1540,21 +1547,17 @@ static void BeginCommandList()
 
 static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, be<uint32_t>* a6)
 {
-    CreateHostDevice();
+    g_xdbfTextureCache = std::unordered_map<uint16_t, GuestTexture *>();
 
-    g_backBuffer = g_userHeap.AllocPhysical<GuestSurface>(ResourceType::RenderTarget);
-    g_backBuffer->width = 1280;
-    g_backBuffer->height = 720;
-    g_backBuffer->format = BACKBUFFER_FORMAT;
-    g_backBuffer->textureHolder = g_device->createTexture(RenderTextureDesc::Texture2D(1, 1, 1, BACKBUFFER_FORMAT, RenderTextureFlag::RENDER_TARGET));
+    for (auto &achievement : g_xdbfWrapper.GetAchievements(XDBF_LANGUAGE_ENGLISH))
+    {
+        // huh?
+        if (!achievement.pImageBuffer || !achievement.ImageBufferSize)
+            continue;
 
-    BeginCommandList();
-
-    RenderTextureBarrier blankTextureBarriers[TEXTURE_DESCRIPTOR_NULL_COUNT];
-    for (size_t i = 0; i < TEXTURE_DESCRIPTOR_NULL_COUNT; i++)
-        blankTextureBarriers[i] = RenderTextureBarrier(g_blankTextures[i].get(), RenderTextureLayout::SHADER_READ);
-
-    g_commandLists[g_frame]->barriers(RenderBarrierStage::NONE, blankTextureBarriers, std::size(blankTextureBarriers));
+        g_xdbfTextureCache[achievement.ID] =
+            LoadTexture((uint8_t *)achievement.pImageBuffer, achievement.ImageBufferSize).release();
+    }
 
     auto device = g_userHeap.AllocPhysical<GuestDevice>();
     memset(device, 0, sizeof(*device));
@@ -1788,6 +1791,7 @@ static void DrawImGui()
     AchievementMenu::Draw();
     OptionsMenu::Draw();
     AchievementOverlay::Draw();
+    InstallerWizard::Draw();
     MessageWindow::Draw();
     ButtonGuide::Draw();
 
@@ -1804,8 +1808,17 @@ static void DrawImGui()
     }
 }
 
+static void SetFramebuffer(GuestSurface *renderTarget, GuestSurface *depthStencil, bool settingForClear);
+static void FlushViewport();
+
 static void ProcDrawImGui(const RenderCommand& cmd)
 {
+    // Make sure the backbuffer is the current target.
+    AddBarrier(g_backBuffer, RenderTextureLayout::COLOR_WRITE);
+    FlushBarriers();
+    SetFramebuffer(g_backBuffer, nullptr, false);
+    FlushViewport();
+
     auto& commandList = g_commandLists[g_frame];
 
     commandList->setGraphicsPipelineLayout(g_imPipelineLayout.get());
@@ -1849,6 +1862,12 @@ static void ProcDrawImGui(const RenderCommand& cmd)
                 case ImGuiCallback::SetShaderModifier:
                     commandList->setGraphicsPushConstants(0, &callbackData->setShaderModifier, offsetof(ImGuiPushConstants, shaderModifier), sizeof(callbackData->setShaderModifier));
                     break;
+                case ImGuiCallback::SetOrigin:
+                    commandList->setGraphicsPushConstants(0, &callbackData->setOrigin, offsetof(ImGuiPushConstants, origin), sizeof(callbackData->setOrigin));
+                    break;
+                case ImGuiCallback::SetScale:
+                    commandList->setGraphicsPushConstants(0, &callbackData->setScale, offsetof(ImGuiPushConstants, scale), sizeof(callbackData->setScale));
+                    break;
                 }
             }
             else
@@ -1879,21 +1898,21 @@ static void ProcDrawImGui(const RenderCommand& cmd)
     }
 }
 
-static bool g_precompiledPipelineStateCache = false;
+static bool g_shouldPrecompilePipelines = false;
 
-static void Present() 
+void Video::HostPresent() 
 {
-    DrawImGui();
     WaitForRenderThread();
+    DrawImGui();
 
-    g_pendingRenderThread = true;
+    g_pendingRenderThread.store(true);
 
     RenderCommand cmd;
     cmd.type = RenderCommandType::Present;
     g_renderQueue.enqueue(cmd);
 
     // All the shaders are available at this point. We can precompile embedded PSOs then.
-    if (!g_precompiledPipelineStateCache)
+    if (g_shouldPrecompilePipelines)
     {
         // This is all the model consumer thread needs to see.
         ++g_compilingDataCount;
@@ -1901,8 +1920,18 @@ static void Present()
         if ((++g_pendingDataCount) == 1)
             g_pendingDataCount.notify_all();
 
-        g_precompiledPipelineStateCache = true;
+        g_shouldPrecompilePipelines = false;
     }
+}
+
+void Video::StartPipelinePrecompilation()
+{
+    g_shouldPrecompilePipelines = true;
+}
+
+static void GuestPresent() 
+{
+    Video::HostPresent();
 }
 
 static void SetRootDescriptor(const UploadAllocation& allocation, size_t index)
@@ -1950,11 +1979,11 @@ static void ProcPresent(const RenderCommand& cmd)
             constants.gammaB = 1.0f / std::clamp(constants.gammaB + offset, 0.1f, 4.0f);
             constants.textureDescriptorIndex = g_intermediaryBackBufferTextureDescriptorIndex;
 
-            auto& framebuffer = g_backBuffer->framebuffers[swapChainTexture];
+            auto &framebuffer = g_backBuffer->framebuffers[swapChainTexture];
             if (!framebuffer)
             {
                 RenderFramebufferDesc desc;
-                desc.colorAttachments = const_cast<const RenderTexture**>(&swapChainTexture);
+                desc.colorAttachments = const_cast<const RenderTexture **>(&swapChainTexture);
                 desc.colorAttachmentsCount = 1;
                 framebuffer = g_device->createFramebuffer(desc);
             }
@@ -1965,7 +1994,7 @@ static void ProcPresent(const RenderCommand& cmd)
                 RenderTextureBarrier(swapChainTexture, RenderTextureLayout::COLOR_WRITE)
             };
 
-            auto& commandList = g_commandLists[g_frame];
+            auto &commandList = g_commandLists[g_frame];
             commandList->barriers(RenderBarrierStage::GRAPHICS, srcBarriers, std::size(srcBarriers));
             commandList->setGraphicsPipelineLayout(g_pipelineLayout.get());
             commandList->setPipeline(g_gammaCorrectionPipeline.get());
@@ -1984,14 +2013,14 @@ static void ProcPresent(const RenderCommand& cmd)
         }
     }
 
-    auto& commandList = g_commandLists[g_frame];
+    auto &commandList = g_commandLists[g_frame];
     commandList->end();
 
     if (g_swapChainValid)
     {
-        const RenderCommandList* commandLists[] = { commandList.get() };
-        RenderCommandSemaphore* waitSemaphores[] = { g_acquireSemaphores[g_frame].get() };
-        RenderCommandSemaphore* signalSemaphores[] = { g_renderSemaphores[g_frame].get() };
+        const RenderCommandList *commandLists[] = { commandList.get() };
+        RenderCommandSemaphore *waitSemaphores[] = { g_acquireSemaphores[g_frame].get() };
+        RenderCommandSemaphore *signalSemaphores[] = { g_renderSemaphores[g_frame].get() };
 
         g_queue->executeCommandLists(
             commandLists, std::size(commandLists),
@@ -2025,7 +2054,8 @@ static void ProcPresent(const RenderCommand& cmd)
 
     BeginCommandList();
 
-    g_pendingRenderThread = false;
+    g_pendingRenderThread.store(false);
+    g_pendingRenderThread.notify_all();
 }
 
 static GuestSurface* GetBackBuffer() 
@@ -4171,10 +4201,10 @@ static RenderFormat ConvertDXGIFormat(ddspp::DXGIFormat format)
     }
 }
 
-static bool LoadTexture(GuestTexture& texture, uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping)
+static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping)
 {
     ddspp::Descriptor ddsDesc;
-    if (ddspp::decode_header(data, ddsDesc) != ddspp::Error)
+    if (ddspp::decode_header((unsigned char *)(data), ddsDesc) != ddspp::Error)
     {
         RenderTextureDesc desc;
         desc.dimension = ConvertTextureDimension(ddsDesc.type);
@@ -4243,7 +4273,7 @@ static bool LoadTexture(GuestTexture& texture, uint8_t* data, size_t dataSize, R
 
         for (auto& slice : slices)
         {
-            uint8_t* srcData = data + ddsDesc.headerSize + slice.srcOffset;
+            const uint8_t* srcData = data + ddsDesc.headerSize + slice.srcOffset;
             uint8_t* dstData = mappedMemory + slice.dstOffset;
 
             if (slice.srcRowPitch == slice.dstRowPitch)
@@ -4336,7 +4366,7 @@ static bool LoadTexture(GuestTexture& texture, uint8_t* data, size_t dataSize, R
     return false;
 }
 
-std::unique_ptr<GuestTexture> LoadTexture(uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping)
+std::unique_ptr<GuestTexture> LoadTexture(const uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping)
 {
     GuestTexture texture(ResourceType::Texture);
 
@@ -5583,7 +5613,7 @@ GUEST_FUNCTION_HOOK(sub_82BE96F0, GetSurfaceDesc);
 GUEST_FUNCTION_HOOK(sub_82BE04B0, GetVertexDeclaration);
 GUEST_FUNCTION_HOOK(sub_82BE0530, HashVertexDeclaration);
 
-GUEST_FUNCTION_HOOK(sub_82BDA8C0, Present);
+GUEST_FUNCTION_HOOK(sub_82BDA8C0, GuestPresent);
 GUEST_FUNCTION_HOOK(sub_82BDD330, GetBackBuffer);
 
 GUEST_FUNCTION_HOOK(sub_82BE9498, CreateTexture);

@@ -989,12 +989,11 @@ void OptionsMenu::Init()
 
 void OptionsMenu::Draw()
 {
-    auto pInputState = SWA::CInputState::GetInstance();
-
     if (!s_isVisible)
         return;
 
     // We've entered the menu now, no need to check this.
+    auto pInputState = SWA::CInputState::GetInstance();
     if (pInputState->GetPadState().IsReleased(SWA::eKeyState_A))
         g_isEnterKeyBuffered = false;
 

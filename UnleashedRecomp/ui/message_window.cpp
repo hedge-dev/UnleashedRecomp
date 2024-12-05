@@ -2,7 +2,9 @@
 #include "imgui_utils.h"
 #include <api/SWA.h>
 #include <gpu/video.h>
+#include <app.h>
 #include <exports.h>
+#include <res/images/common/general_window.dds.h>
 #include <decompressor.h>
 #include <res/images/common/select_fade.dds.h>
 #include <gpu/imgui_snapshot.h>
@@ -30,6 +32,7 @@ static double g_controlsAppearTime;
 static ImFont* g_fntSeurat;
 
 static std::unique_ptr<GuestTexture> g_upSelectionCursor;
+static std::unique_ptr<GuestTexture> g_upWindow;
 
 std::string g_text;
 int g_result;
@@ -61,8 +64,6 @@ bool DrawContainer(float appearTime, ImVec2 centre, ImVec2 max, bool isForegroun
         _max.y = Hermite(centre.y, _max.y, containerMotion);
     }
 
-    auto vertices = GetPauseContainerVertices(_min, _max);
-
     // Transparency fade animation.
     auto colourMotion = g_isClosing
         ? ComputeMotion(appearTime, OVERLAY_CONTAINER_OUTRO_FADE_START, OVERLAY_CONTAINER_OUTRO_FADE_END)
@@ -78,44 +79,7 @@ bool DrawContainer(float appearTime, ImVec2 centre, ImVec2 max, bool isForegroun
     if (isForeground)
         drawList->AddRectFilled({ 0.0f, 0.0f }, ImGui::GetIO().DisplaySize, IM_COL32(0, 0, 0, 223 * (g_foregroundCount ? 1 : alpha)));
 
-    auto colShadow = IM_COL32(0, 0, 0, 156 * alpha);
-    auto colGradientTop = IM_COL32(197, 194, 197, 200 * alpha);
-    auto colGradientBottom = IM_COL32(115, 113, 115, 236 * alpha);
-
-    // Draw vertices with gradient.
-    SetGradient(_min, _max, colGradientTop, colGradientBottom);
-    drawList->AddConvexPolyFilled(vertices.data(), vertices.size(), IM_COL32(255, 255, 255, 255 * alpha));
-    ResetGradient();
-
-    // Draw outline.
-    drawList->AddPolyline
-    (
-        vertices.data(),
-        vertices.size(),
-        IM_COL32(247, 247, 247, 255 * alpha),
-        true,
-        Scale(2.5f)
-    );
-
-    // Offset vertices to draw 3D effect lines.
-    for (int i = 0; i < vertices.size(); i++)
-    {
-        vertices[i].x -= Scale(0.4f);
-        vertices[i].y -= Scale(0.2f);
-    }
-
-    auto colLineTop = IM_COL32(165, 170, 165, 230 * alpha);
-    auto colLineBottom = IM_COL32(190, 190, 190, 230 * alpha);
-    auto lineThickness = Scale(1.0f);
-
-    // Top left corner bottom to top left corner top.
-    drawList->AddLine(vertices[0], vertices[1], colLineTop, lineThickness * 0.5f);
-
-    // Top left corner bottom to bottom left.
-    drawList->AddRectFilledMultiColor({ vertices[0].x - 0.2f, vertices[0].y }, { vertices[6].x + lineThickness - 0.2f, vertices[6].y }, colLineTop, colLineTop, colLineBottom, colLineBottom);
-
-    // Top left corner top to top right.
-    drawList->AddLine(vertices[1], vertices[2], colLineTop, lineThickness);
+    DrawPauseContainer(g_upWindow, _min, _max, alpha);
 
     drawList->PushClipRect(_min, _max);
 
@@ -179,6 +143,7 @@ void MessageWindow::Init()
     g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
 
     g_upSelectionCursor = LoadTexture(decompressZstd(g_select_fade, g_select_fade_uncompressed_size).get(), g_select_fade_uncompressed_size);
+    g_upWindow = LoadTexture(decompressZstd(g_general_window, g_general_window_uncompressed_size).get(), g_general_window_uncompressed_size);
 }
 
 void MessageWindow::Draw()
@@ -186,7 +151,7 @@ void MessageWindow::Draw()
     if (!s_isVisible)
         return;
 
-    auto pInputState = SWA::CInputState::GetInstance();
+    auto pInputState = g_isGameLoaded ? SWA::CInputState::GetInstance() : nullptr;
     auto drawList = ImGui::GetForegroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
 
@@ -194,8 +159,8 @@ void MessageWindow::Draw()
 
     auto fontSize = Scale(28);
     auto textSize = MeasureCentredParagraph(g_fntSeurat, fontSize, 5, g_text.c_str());
-    auto textMarginX = Scale(32);
-    auto textMarginY = Scale(40);
+    auto textMarginX = Scale(37);
+    auto textMarginY = Scale(45);
 
     if (DrawContainer(g_appearTime, centre, { textSize.x / 2 + textMarginX, textSize.y / 2 + textMarginY }, !g_isControlsVisible))
     {
@@ -215,12 +180,16 @@ void MessageWindow::Draw()
 
         drawList->PopClipRect();
 
+        bool isAccepted = pInputState
+            ? pInputState->GetPadState().IsTapped(SWA::eKeyState_A)
+            : ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+
         if (g_buttons.size())
         {
             auto itemWidth = std::max(Scale(162), Scale(CalcWidestTextSize(g_fntSeurat, fontSize, g_buttons)));
             auto itemHeight = Scale(57);
-            auto windowMarginX = Scale(18);
-            auto windowMarginY = Scale(25);
+            auto windowMarginX = Scale(23);
+            auto windowMarginY = Scale(30);
 
             ImVec2 controlsMax = { /* X */ itemWidth / 2 + windowMarginX, /* Y */ itemHeight / 2 * g_buttons.size() + windowMarginY };
 
@@ -231,54 +200,74 @@ void MessageWindow::Draw()
                 for (auto& button : g_buttons)
                     DrawButton(rowCount++, windowMarginY, itemWidth, itemHeight, button);
 
-                drawList->PopClipRect();
-
-                bool upIsHeld = pInputState->GetPadState().IsDown(SWA::eKeyState_DpadUp) ||
-                    pInputState->GetPadState().LeftStickVertical > 0.5f;
-
-                bool downIsHeld = pInputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
-                    pInputState->GetPadState().LeftStickVertical < -0.5f;
-
-                bool scrollUp = !g_upWasHeld && upIsHeld;
-                bool scrollDown = !g_downWasHeld && downIsHeld;
-
-                if (scrollUp)
+                if (pInputState)
                 {
-                    --g_selectedRowIndex;
-                    if (g_selectedRowIndex < 0)
-                        g_selectedRowIndex = rowCount - 1;
+                    bool upIsHeld = pInputState->GetPadState().IsDown(SWA::eKeyState_DpadUp) ||
+                        pInputState->GetPadState().LeftStickVertical > 0.5f;
+
+                    bool downIsHeld = pInputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
+                        pInputState->GetPadState().LeftStickVertical < -0.5f;
+
+                    bool scrollUp = !g_upWasHeld && upIsHeld;
+                    bool scrollDown = !g_downWasHeld && downIsHeld;
+
+                    if (scrollUp)
+                    {
+                        --g_selectedRowIndex;
+                        if (g_selectedRowIndex < 0)
+                            g_selectedRowIndex = rowCount - 1;
+                    }
+                    else if (scrollDown)
+                    {
+                        ++g_selectedRowIndex;
+                        if (g_selectedRowIndex >= rowCount)
+                            g_selectedRowIndex = 0;
+                    }
+
+                    if (scrollUp || scrollDown)
+                        Game_PlaySound("sys_actstg_pausecursor");
+
+                    g_upWasHeld = upIsHeld;
+                    g_downWasHeld = downIsHeld;
+
+                    if (pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
+                    {
+                        g_result = -1;
+
+                        Game_PlaySound("sys_actstg_pausecansel");
+                        MessageWindow::Close();
+                    }
                 }
-                else if (scrollDown)
+                else
                 {
-                    ++g_selectedRowIndex;
-                    if (g_selectedRowIndex >= rowCount)
-                        g_selectedRowIndex = 0;
+                    auto clipRectMin = drawList->GetClipRectMin();
+                    auto clipRectMax = drawList->GetClipRectMax();
+
+                    g_selectedRowIndex = -1;
+
+                    for (int i = 0; i < rowCount; i++)
+                    {
+                        ImVec2 itemMin = { clipRectMin.x + windowMarginX, clipRectMin.y + windowMarginY + itemHeight * i };
+                        ImVec2 itemMax = { clipRectMax.x - windowMarginX, clipRectMin.y + windowMarginY + itemHeight * i + itemHeight };
+
+                        if (ImGui::IsMouseHoveringRect(itemMin, itemMax, false))
+                            g_selectedRowIndex = i;
+                    }
                 }
 
-                if (scrollUp || scrollDown)
-                    Game_PlaySound("sys_actstg_pausecursor");
-
-                g_upWasHeld = upIsHeld;
-                g_downWasHeld = downIsHeld;
-
-                if (pInputState->GetPadState().IsTapped(SWA::eKeyState_A))
+                if (g_selectedRowIndex != -1 && isAccepted)
                 {
                     g_result = g_selectedRowIndex;
 
                     Game_PlaySound("sys_actstg_pausedecide");
                     MessageWindow::Close();
                 }
-                else if (pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
-                {
-                    g_result = -1;
 
-                    Game_PlaySound("sys_actstg_pausecansel");
-                    MessageWindow::Close();
-                }
+                drawList->PopClipRect();
             }
             else
             {
-                if (!g_isControlsVisible && pInputState->GetPadState().IsTapped(SWA::eKeyState_A))
+                if (!g_isControlsVisible && isAccepted)
                 {
                     g_controlsAppearTime = ImGui::GetTime();
                     g_isControlsVisible = true;
@@ -289,9 +278,17 @@ void MessageWindow::Draw()
         }
         else
         {
-            if (pInputState->GetPadState().IsTapped(SWA::eKeyState_A))
+            if (isAccepted)
+            {
+                g_result = 0;
+
                 MessageWindow::Close();
+            }
         }
+    }
+    else if (g_isClosing)
+    {
+        s_isVisible = false;
     }
 }
 
@@ -308,7 +305,7 @@ bool MessageWindow::Open(std::string text, int* result, std::span<std::string> b
 
         g_text = text;
         g_buttons = std::vector(buttons.begin(), buttons.end());
-        g_defaultButtonIndex = defaultButtonIndex;
+        g_defaultButtonIndex = g_isGameLoaded ? defaultButtonIndex : -1;
 
         ResetSelection();
 
@@ -330,6 +327,7 @@ void MessageWindow::Close()
         g_controlsAppearTime = ImGui::GetTime();
         g_isClosing = true;
         g_isControlsVisible = false;
+        g_foregroundCount = 0;
         g_isAwaitingResult = false;
     }
 

@@ -13,7 +13,8 @@ enum class DLC {
     Mazuri,
     Holoska,
     ApotosShamar,
-    EmpireCityAdabat
+    EmpireCityAdabat,
+    Count = EmpireCityAdabat
 };
 
 struct Journal
@@ -35,8 +36,8 @@ struct Journal
         UnknownDLCType
     };
 
-    uint32_t progressCounter = 0;
-    uint32_t progressTotal = 0;
+    uint64_t progressCounter = 0;
+    uint64_t progressTotal = 0;
     std::list<std::filesystem::path> createdFiles;
     std::set<std::filesystem::path> createdDirectories;
     Result lastResult = Result::Success;
@@ -53,13 +54,30 @@ struct Installer
         std::filesystem::path gameSource;
         std::filesystem::path updateSource;
         std::list<std::filesystem::path> dlcSources;
-        bool skipHashChecks = false;
+    };
+
+    struct DLCSource {
+        std::unique_ptr<VirtualFileSystem> sourceVfs;
+        std::span<const FilePair> filePairs;
+        const uint64_t *fileHashes = nullptr;
+        std::string targetSubDirectory;
+    };
+
+    struct Sources 
+    {
+        std::unique_ptr<VirtualFileSystem> game;
+        std::unique_ptr<VirtualFileSystem> update;
+        std::vector<DLCSource> dlc;
+        uint64_t totalSize = 0;
     };
 
     static bool checkGameInstall(const std::filesystem::path &baseDirectory);
-    static bool copyFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, const std::string &validationFile, bool skipHashChecks, Journal &journal, const std::function<void(uint32_t)> &progressCallback);
+    static bool checkDLCInstall(const std::filesystem::path &baseDirectory, DLC dlc);
+    static bool computeTotalSize(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, Journal &journal, uint64_t &totalSize);
+    static bool copyFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, const std::string &validationFile, bool skipHashChecks, Journal &journal, const std::function<void()> &progressCallback);
     static bool parseContent(const std::filesystem::path &sourcePath, std::unique_ptr<VirtualFileSystem> &targetVfs, Journal &journal);
-    static bool install(const Input &input, const std::filesystem::path &targetDirectory, Journal &journal, const std::function<void(uint32_t)> &progressCallback);
+    static bool parseSources(const Input &input, Journal &journal, Sources &sources);
+    static bool install(const Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, const std::function<void()> &progressCallback);
     static void rollback(Journal &journal);
 
     // Convenience method for checking if the specified file contains the game. This should be used when the user selects the file.

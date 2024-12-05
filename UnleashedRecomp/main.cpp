@@ -15,6 +15,8 @@
 #include <user/config.h>
 #include <user/paths.h>
 #include <kernel/xdbf.h>
+#include <install/installer.h>
+#include <ui/installer_wizard.h>
 
 #define GAME_XEX_PATH "game:\\default.xex"
 
@@ -27,8 +29,7 @@ CodeCache g_codeCache;
 XDBFWrapper g_xdbfWrapper;
 std::unordered_map<uint16_t, GuestTexture*> g_xdbfTextureCache;
 
-// Name inspired from nt's entry point
-void KiSystemStartup()
+void HostStartup()
 {
 #ifdef _WIN32
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -39,7 +40,11 @@ void KiSystemStartup()
     g_codeCache.Init();
 
     g_memory.Alloc(XMAIOBegin, 0xFFFF, MEM_COMMIT);
+}
 
+// Name inspired from nt's entry point
+void KiSystemStartup()
+{
     const auto gameContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Game");
     const auto updateContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Update");
     XamRegisterContent(gameContent, DirectoryExists(".\\game") ? ".\\game" : ".");
@@ -136,14 +141,38 @@ uint32_t LdrLoadModule(const char* path)
     return entry;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+    bool forceInstaller = false;
+    bool forceDLCInstaller = false;
+    for (uint32_t i = 1; i < argc; i++)
+    {
+        forceInstaller = forceInstaller || (strcmp(argv[i], "--install") == 0);
+        forceDLCInstaller = forceDLCInstaller || (strcmp(argv[i], "--install-dlc") == 0);
+    }
+
     Config::Load();
+
+    HostStartup();
+
+    Video::CreateHostDevice();
+
+    bool isGameInstalled = Installer::checkGameInstall(".");
+    if (forceInstaller || forceDLCInstaller || !isGameInstalled)
+    {
+        if (!InstallerWizard::Run(isGameInstalled && forceDLCInstaller))
+        {
+            return 1;
+        }
+    }
+
     AchievementData::Load();
 
     KiSystemStartup();
 
     uint32_t entry = LdrLoadModule(FileSystem::TransformPath(GAME_XEX_PATH));
+
+    Video::StartPipelinePrecompilation();
 
     GuestThread::Start(entry);
 

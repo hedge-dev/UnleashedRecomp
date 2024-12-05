@@ -66,7 +66,7 @@ static std::unique_ptr<VirtualFileSystem> createFileSystemFromPath(const std::fi
     }
 }
 
-static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, bool skipHashChecks, std::vector<uint8_t> &fileData, Journal &journal, const std::function<void(uint32_t)> &progressCallback) {
+static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, bool skipHashChecks, std::vector<uint8_t> &fileData, Journal &journal, const std::function<void()> &progressCallback) {
     const std::string filename(pair.first);
     const uint32_t hashCount = pair.second;
     if (!sourceVfs.exists(filename))
@@ -136,7 +136,8 @@ static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFi
         return false;
     }
 
-    progressCallback(++journal.progressCounter);
+    journal.progressCounter += fileData.size();
+    progressCallback();
 
     return true;
 }
@@ -200,7 +201,46 @@ bool Installer::checkGameInstall(const std::filesystem::path &baseDirectory)
     return std::filesystem::exists(baseDirectory / GameDirectory / GameExecutableFile);
 }
 
-bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, const std::string &validationFile, bool skipHashChecks, Journal &journal, const std::function<void(uint32_t)> &progressCallback)
+bool Installer::checkDLCInstall(const std::filesystem::path &baseDirectory, DLC dlc)
+{
+    switch (dlc)
+    {
+    case DLC::Spagonia:
+        return std::filesystem::exists(baseDirectory / SpagoniaDirectory / DLCValidationFile);
+    case DLC::Chunnan:
+        return std::filesystem::exists(baseDirectory / ChunnanDirectory / DLCValidationFile);
+    case DLC::Mazuri:
+        return std::filesystem::exists(baseDirectory / MazuriDirectory / DLCValidationFile);
+    case DLC::Holoska:
+        return std::filesystem::exists(baseDirectory / HoloskaDirectory / DLCValidationFile);
+    case DLC::ApotosShamar:
+        return std::filesystem::exists(baseDirectory / ApotosShamarDirectory / DLCValidationFile);
+    case DLC::EmpireCityAdabat:
+        return std::filesystem::exists(baseDirectory / EmpireCityAdabatDirectory / DLCValidationFile);
+    default:
+        return false;
+    }
+}
+
+bool Installer::computeTotalSize(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, Journal &journal, uint64_t &totalSize)
+{
+    for (FilePair pair : filePairs)
+    {
+        const std::string filename(pair.first);
+        if (!sourceVfs.exists(filename))
+        {
+            journal.lastResult = Journal::Result::FileMissing;
+            journal.lastErrorMessage = std::format("File {} does not exist in the file system.", filename);
+            return false;
+        }
+
+        totalSize += sourceVfs.getSize(filename);
+    }
+
+    return true;
+}
+
+bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, const std::string &validationFile, bool skipHashChecks, Journal &journal, const std::function<void()> &progressCallback)
 {
     if (!std::filesystem::exists(targetDirectory) && !std::filesystem::create_directories(targetDirectory))
     {
@@ -265,45 +305,49 @@ bool Installer::parseContent(const std::filesystem::path &sourcePath, std::uniqu
     }
 }
 
-bool Installer::install(const Input &input, const std::filesystem::path &targetDirectory, Journal &journal, const std::function<void(uint32_t)> &progressCallback)
+constexpr uint32_t PatcherContribution = 512 * 1024 * 1024;
+
+bool Installer::parseSources(const Input &input, Journal &journal, Sources &sources)
 {
+    journal = Journal();
+    sources = Sources();
+
     // Parse the contents of the base game.
-    std::unique_ptr<VirtualFileSystem> gameSource;
     if (!input.gameSource.empty())
     {
-        if (!parseContent(input.gameSource, gameSource, journal))
+        if (!parseContent(input.gameSource, sources.game, journal))
         {
             return false;
         }
 
-        journal.progressTotal += GameFilesSize;
+        if (!computeTotalSize({ GameFiles, GameFilesSize }, GameHashes, *sources.game, journal, sources.totalSize))
+        {
+            return false;
+        }
     }
 
     // Parse the contents of Update.
-    std::unique_ptr<VirtualFileSystem> updateSource;
     if (!input.updateSource.empty())
     {
-        if (!parseContent(input.updateSource, updateSource, journal))
+        // Add an arbitrary progress size for the patching process.
+        journal.progressTotal += PatcherContribution;
+
+        if (!parseContent(input.updateSource, sources.update, journal))
         {
             return false;
         }
 
-        journal.progressTotal += UpdateFilesSize;
+        if (!computeTotalSize({ UpdateFiles, UpdateFilesSize }, UpdateHashes, *sources.update, journal, sources.totalSize))
+        {
+            return false;
+        }
     }
 
     // Parse the contents of the DLC Packs.
-    struct DLCSource {
-        std::unique_ptr<VirtualFileSystem> sourceVfs;
-        std::span<const FilePair> filePairs;
-        const uint64_t *fileHashes = nullptr;
-        std::string targetSubDirectory;
-    };
-
-    std::vector<DLCSource> dlcSources;
     for (const auto &path : input.dlcSources)
     {
-        dlcSources.emplace_back();
-        DLCSource &dlcSource = dlcSources.back();
+        sources.dlc.emplace_back();
+        DLCSource &dlcSource = sources.dlc.back();
         if (!parseContent(path, dlcSource.sourceVfs, journal))
         {
             return false;
@@ -346,17 +390,51 @@ bool Installer::install(const Input &input, const std::filesystem::path &targetD
             return false;
         }
 
-        journal.progressTotal += dlcSource.filePairs.size();
+        if (!computeTotalSize(dlcSource.filePairs, dlcSource.fileHashes, *dlcSource.sourceVfs, journal, sources.totalSize))
+        {
+            return false;
+        }
     }
 
-    // Install the base game.
-    if (!copyFiles({ GameFiles, GameFilesSize }, GameHashes, *gameSource, targetDirectory / GameDirectory, GameExecutableFile, input.skipHashChecks, journal, progressCallback))
+    // Add the total size in bytes as the journal progress.
+    journal.progressTotal += sources.totalSize;
+
+    return true;
+}
+
+bool Installer::install(const Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, const std::function<void()> &progressCallback)
+{
+    // Install files in reverse order of importance. In case of a process crash or power outage, this will increase the likelihood of the installation
+    // missing critical files required for the game to run. These files are used as the way to detect if the game is installed.
+
+    // Install the DLC.
+    if (!sources.dlc.empty())
+    {
+        journal.createdDirectories.insert(targetDirectory / DLCDirectory);
+    }
+
+    for (const DLCSource &dlcSource : sources.dlc)
+    {
+        if (!copyFiles(dlcSource.filePairs, dlcSource.fileHashes, *dlcSource.sourceVfs, targetDirectory / dlcSource.targetSubDirectory, DLCValidationFile, skipHashChecks, journal, progressCallback))
+        {
+            return false;
+        }
+    }
+
+    // If no game or update was specified, we're finished. This means the user was only installing the DLC.
+    if ((sources.game == nullptr) && (sources.update == nullptr))
+    {
+        return true;
+    }
+
+    // Install the update.
+    if (!copyFiles({ UpdateFiles, UpdateFilesSize }, UpdateHashes, *sources.update, targetDirectory / UpdateDirectory, UpdateExecutablePatchFile, skipHashChecks, journal, progressCallback))
     {
         return false;
     }
 
-    // Install the update.
-    if (!copyFiles({ UpdateFiles, UpdateFilesSize }, UpdateHashes, *updateSource, targetDirectory / UpdateDirectory, UpdateExecutablePatchFile, input.skipHashChecks, journal, progressCallback))
+    // Install the base game.
+    if (!copyFiles({ GameFiles, GameFilesSize }, GameHashes, *sources.game, targetDirectory / GameDirectory, GameExecutableFile, skipHashChecks, journal, progressCallback))
     {
         return false;
     }
@@ -373,6 +451,10 @@ bool Installer::install(const Input &input, const std::filesystem::path &targetD
         journal.lastErrorMessage = "Patch process failed.";
         return false;
     }
+
+    // Update the progress with the artificial amount attributed to the patching.
+    journal.progressCounter += PatcherContribution;
+    progressCallback();
 
     // Replace the executable by renaming and deleting in a safe way.
     std::error_code ec;
@@ -395,20 +477,6 @@ bool Installer::install(const Input &input, const std::filesystem::path &targetD
     }
 
     std::filesystem::remove(oldXexPath);
-
-    // Install the DLC.
-    if (!dlcSources.empty())
-    {
-        journal.createdDirectories.insert(targetDirectory / DLCDirectory);
-    }
-
-    for (const DLCSource &dlcSource : dlcSources)
-    {
-        if (!copyFiles(dlcSource.filePairs, dlcSource.fileHashes, *dlcSource.sourceVfs, targetDirectory / dlcSource.targetSubDirectory, DLCValidationFile, input.skipHashChecks, journal, progressCallback))
-        {
-            return false;
-        }
-    }
 
     return true;
 }

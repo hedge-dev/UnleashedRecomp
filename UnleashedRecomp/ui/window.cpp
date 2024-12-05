@@ -85,7 +85,7 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
 
                 case SDL_WINDOWEVENT_FOCUS_GAINED:
                     Window::s_isFocused = true;
-                    SDL_ShowCursor(Window::IsFullscreen() ? SDL_DISABLE : SDL_ENABLE);
+                    SDL_ShowCursor(Window::IsFullscreen() && !Window::s_cursorAllowed ? SDL_DISABLE : SDL_ENABLE);
                     break;
 
                 case SDL_WINDOWEVENT_RESTORED:

@@ -27,6 +27,7 @@ public:
 
     inline static bool s_isFocused;
     inline static bool s_isIconNight;
+    inline static bool s_cursorAllowed = false;
 
     static SDL_Surface* GetIconSurface(void* pIconBmp, size_t iconSize)
     {
@@ -99,7 +100,7 @@ public:
         if (isEnabled)
         {
             SDL_SetWindowFullscreen(s_pWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
-            SDL_ShowCursor(SDL_DISABLE);
+            SDL_ShowCursor(s_cursorAllowed ? SDL_ENABLE : SDL_DISABLE);
         }
         else
         {
@@ -109,6 +110,14 @@ public:
         }
 
         return isEnabled;
+    }
+    
+    static void SetCursorAllowed(bool isCursorAllowed)
+    {
+        s_cursorAllowed = isCursorAllowed;
+
+        // Refresh fullscreen state to enable the right cursor behavior.
+        SetFullscreen(IsFullscreen());
     }
 
     static bool IsMaximised()

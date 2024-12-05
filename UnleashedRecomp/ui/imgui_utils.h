@@ -52,6 +52,20 @@ static void SetShaderModifier(uint32_t shaderModifier)
     callbackData->setShaderModifier.shaderModifier = shaderModifier;
 }
 
+static void SetOrigin(ImVec2 origin)
+{
+    auto callbackData = AddCallback(ImGuiCallback::SetOrigin);
+    callbackData->setOrigin.origin[0] = origin.x;
+    callbackData->setOrigin.origin[1] = origin.y;
+}
+
+static void SetScale(ImVec2 scale)
+{
+    auto callbackData = AddCallback(ImGuiCallback::SetScale);
+    callbackData->setScale.scale[0] = scale.x;
+    callbackData->setScale.scale[1] = scale.y;
+}
+
 // Aspect ratio aware.
 static float Scale(float size)
 {
@@ -221,6 +235,32 @@ static float CalcWidestTextSize(const ImFont* font, float fontSize, std::span<st
     return result;
 }
 
+static std::string Truncate(const std::string& input, size_t maxLength, bool useEllipsis = true, bool usePrefixEllipsis = false)
+{
+    const std::string ellipsis = "...";
+
+    if (input.length() > maxLength)
+    {
+        if (useEllipsis && maxLength > ellipsis.length())
+        {
+            if (usePrefixEllipsis)
+            {
+                return ellipsis + input.substr(0, maxLength - ellipsis.length());
+            }
+            else
+            {
+                return input.substr(0, maxLength - ellipsis.length()) + ellipsis;
+            }
+        }
+        else
+        {
+            return input.substr(0, maxLength);
+        }
+    }
+
+    return input;
+}
+
 static std::vector<std::string> Split(const char* str, char delimiter)
 {
     std::vector<std::string> result;
@@ -274,11 +314,29 @@ static void DrawCentredParagraph(const ImFont* font, float fontSize, const ImVec
     auto paragraphSize = MeasureCentredParagraph(font, fontSize, lineMargin, lines);
     auto offsetY = 0.0f;
 
-    for (auto& str : lines)
+    auto hasList = std::strstr(text, "- ");
+    auto isList = false;
+    auto listOffsetX = 0.0f;
+
+    for (int i = 0; i < lines.size(); i++)
     {
+        auto& str = lines[i];
         auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str());
 
-        drawMethod(str.c_str(), ImVec2(/* X */ centre.x - textSize.x / 2, /* Y */ centre.y - paragraphSize.y / 2 + offsetY));
+        if (hasList)
+        {
+            if (!isList && str.starts_with("- ") && lines.size() > i + 1 && lines[i + 1].starts_with("- "))
+            {
+                isList = true;
+                listOffsetX = centre.x - textSize.x / 2;
+            }
+            else if (isList && !str.starts_with("- "))
+            {
+                isList = false;
+            }
+        }
+
+        drawMethod(str.c_str(), ImVec2(/* X */ isList ? listOffsetX : centre.x - textSize.x / 2, /* Y */ centre.y - paragraphSize.y / 2 + offsetY));
 
         offsetY += textSize.y + Scale(lineMargin);
     }

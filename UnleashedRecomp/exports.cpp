@@ -2,11 +2,16 @@
 #include <kernel/heap.h>
 #include <kernel/memory.h>
 #include <cpu/guest_stack_var.h>
+#include <ui/installer_wizard.h>
 #include <ui/window.h>
 #include <api/boost/smart_ptr/shared_ptr.h>
 
 SWA_API void Game_PlaySound(const char* pName)
 {
+    // TODO: use own sound player.
+    if (InstallerWizard::s_isVisible)
+        return;
+
     guest_stack_var<boost::anonymous_shared_ptr> soundPlayer;
     GuestToHostFunction<void>(sub_82B4DF50, soundPlayer.get(), ((be<uint32_t>*)g_memory.Translate(0x83367900))->get(), 7, 0, 0);
 
