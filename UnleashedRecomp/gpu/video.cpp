@@ -1810,7 +1810,6 @@ static void DrawImGui()
 }
 
 static void SetFramebuffer(GuestSurface *renderTarget, GuestSurface *depthStencil, bool settingForClear);
-static void FlushViewport();
 
 static void ProcDrawImGui(const RenderCommand& cmd)
 {
@@ -1818,7 +1817,6 @@ static void ProcDrawImGui(const RenderCommand& cmd)
     AddBarrier(g_backBuffer, RenderTextureLayout::COLOR_WRITE);
     FlushBarriers();
     SetFramebuffer(g_backBuffer, nullptr, false);
-    FlushViewport();
 
     auto& commandList = g_commandLists[g_frame];
 
