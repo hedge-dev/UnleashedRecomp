@@ -1073,7 +1073,7 @@ static void CreateImGuiBackend()
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 
 #ifdef ENABLE_IM_FONT_ATLAS_SNAPSHOT
-    delete io.Fonts;
+    IM_DELETE(io.Fonts);
     io.Fonts = ImFontAtlasSnapshot::Load();
 #else
     io.Fonts->TexDesiredWidth = 4096;
