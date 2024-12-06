@@ -40,6 +40,8 @@ void HostStartup()
     g_codeCache.Init();
 
     g_memory.Alloc(XMAIOBegin, 0xFFFF, MEM_COMMIT);
+
+    hid::Init();
 }
 
 // Name inspired from nt's entry point
@@ -86,7 +88,6 @@ void KiSystemStartup()
     }
 
     XAudioInitializeSystem();
-    hid::Init();
 }
 
 uint32_t LdrLoadModule(const char* path)

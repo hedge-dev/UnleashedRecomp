@@ -5,9 +5,11 @@
 #include <install/installer.h>
 #include <gpu/video.h>
 #include <gpu/imgui_snapshot.h>
+#include <hid/hid.h>
 #include <locale/locale.h>
 #include <ui/imgui_utils.h>
 #include <ui/message_window.h>
+#include <ui/sdl_listener.h>
 #include <ui/window.h>
 #include <decompressor.h>
 
@@ -46,6 +48,9 @@ static constexpr double CONTAINER_INNER_TIME = SCANLINES_ANIMATION_DURATION + CO
 static constexpr double CONTAINER_INNER_DURATION = 15.0;
 
 static constexpr double ALL_ANIMATIONS_FULL_DURATION = CONTAINER_INNER_TIME + CONTAINER_INNER_DURATION;
+
+static constexpr double INSTALL_ICONS_FADE_IN_ANIMATION_TIME = 0.0;
+static constexpr double INSTALL_ICONS_FADE_IN_ANIMATION_DURATION = 15.0;
 
 // Loop Animations Constants - their time range is [0.0, 1.0 + DELAY]
 static constexpr double ARROW_CIRCLE_LOOP_SPEED = 1;
@@ -102,6 +107,7 @@ static Installer::Sources g_installerSources;
 static uint64_t g_installerAvailableSize = 0;
 static std::unique_ptr<std::thread> g_installerThread;
 static double g_installerStartTime = 0.0;
+static double g_installerEndTime = DBL_MAX;
 static float g_installerProgressRatioCurrent = 0.0f;
 static std::atomic<float> g_installerProgressRatioTarget = 0.0f;
 static std::atomic<bool> g_installerFinished = false;
@@ -126,6 +132,162 @@ static std::string g_currentMessagePrompt = "";
 static bool g_currentMessagePromptConfirmation = false;
 static int g_currentMessageResult = -1;
 static bool g_currentMessageUpdateRemaining = false;
+static ImVec2 g_joypadAxis = {};
+static int g_currentCursorIndex = -1;
+static int g_currentCursorDefault = 0;
+static bool g_currentCursorAccepted = false;
+static std::vector<std::pair<ImVec2, ImVec2>> g_currentCursorRects;
+
+class SDLEventListenerForInstaller : public SDLEventListener
+{
+public:
+    void OnSDLEvent(SDL_Event *event) override
+    {
+        constexpr float AxisValueRange = 32767.0f;
+        constexpr float AxisTapRange = 0.5f;
+        if (!InstallerWizard::s_isVisible || !g_currentMessagePrompt.empty())
+        {
+            return;
+        }
+
+        ImVec2 tapDirection = {};
+        switch (event->type)
+        {
+        case SDL_KEYDOWN:
+            switch (event->key.keysym.scancode)
+            {
+            case SDL_SCANCODE_LEFT:
+            case SDL_SCANCODE_RIGHT:
+                tapDirection.x = (event->key.keysym.scancode == SDL_SCANCODE_RIGHT) ? 1.0f : -1.0f;
+                break;
+            case SDL_SCANCODE_UP:
+            case SDL_SCANCODE_DOWN:
+                tapDirection.y = (event->key.keysym.scancode == SDL_SCANCODE_DOWN) ? 1.0f : -1.0f;
+                break;
+            case SDL_SCANCODE_RETURN:
+            case SDL_SCANCODE_KP_ENTER:
+                g_currentCursorAccepted = true;
+                break;
+            }
+
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+            switch (event->cbutton.button)
+            {
+            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                tapDirection = { -1.0f, 0.0f };
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                tapDirection = { 1.0f, 0.0f };
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                tapDirection = { 0.0f, -1.0f };
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                tapDirection = { 0.0f, 1.0f };
+                break;
+            case SDL_CONTROLLER_BUTTON_A:
+                g_currentCursorAccepted = true;
+                break;
+            }
+
+            break;
+        case SDL_CONTROLLERAXISMOTION:
+        {
+            if (event->caxis.axis < 2)
+            {
+                float newAxisValue = event->caxis.value / AxisValueRange;
+                bool sameDirection = (newAxisValue * g_joypadAxis[event->caxis.axis]) > 0.0f;
+                bool wasInRange = abs(g_joypadAxis[event->caxis.axis]) > AxisTapRange;
+                bool isInRange = abs(newAxisValue) > AxisTapRange;
+                if (sameDirection && !wasInRange && isInRange)
+                {
+                    tapDirection[event->caxis.axis] = newAxisValue;
+                }
+
+                g_joypadAxis[event->caxis.axis] = newAxisValue;
+            }
+
+            break;
+        }
+        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEMOTION:
+        {
+            g_currentCursorIndex = -1;
+
+            for (size_t i = 0; i < g_currentCursorRects.size(); i++)
+            {
+                auto &currentRect = g_currentCursorRects[i];
+                if (ImGui::IsMouseHoveringRect(currentRect.first, currentRect.second, false))
+                {
+                    g_currentCursorIndex = int(i);
+
+                    if (event->type == SDL_MOUSEBUTTONDOWN && event->button.button == SDL_BUTTON_LEFT)
+                    {
+                        g_currentCursorAccepted = true;
+                    }
+
+                    break;
+                }
+            }
+
+            break;
+        }
+        }
+
+        if (tapDirection.x != 0.0f || tapDirection.y != 0.0f)
+        {
+            int newCursorIndex = -1;
+            if (g_currentCursorIndex >= g_currentCursorRects.size() || g_currentCursorIndex < 0)
+            {
+                newCursorIndex = g_currentCursorDefault;
+            }
+            else
+            {
+                auto &currentRect = g_currentCursorRects[g_currentCursorIndex];
+                ImVec2 currentPoint = ImVec2
+                (
+                    (currentRect.first.x + currentRect.second.x) / 2.0f + tapDirection.x * (currentRect.second.x - currentRect.first.x) / 2.0f,
+                    (currentRect.first.y + currentRect.second.y) / 2.0f + tapDirection.y * (currentRect.second.y - currentRect.first.y) / 2.0f
+                );
+
+                float closestDistance = FLT_MAX;
+                for (size_t i = 0; i < g_currentCursorRects.size(); i++)
+                {
+                    if (g_currentCursorIndex == i)
+                    {
+                        continue;
+                    }
+
+                    auto &targetRect = g_currentCursorRects[i];
+                    ImVec2 targetPoint = ImVec2
+                    (
+                        (targetRect.first.x + targetRect.second.x) / 2.0f + tapDirection.x * (targetRect.first.x - targetRect.second.x) / 2.0f,
+                        (targetRect.first.y + targetRect.second.y) / 2.0f + tapDirection.y * (targetRect.first.y - targetRect.second.y) / 2.0f
+                    );
+
+                    ImVec2 delta = ImVec2(targetPoint.x - currentPoint.x, targetPoint.y - currentPoint.y);
+                    float projectedDistance = delta.x * tapDirection.x + delta.y * tapDirection.y;
+                    float manhattanDistance = abs(delta.x) + abs(delta.y);
+                    if (projectedDistance > 0.0f && manhattanDistance < closestDistance)
+                    {
+                        newCursorIndex = int(i);
+                        closestDistance = manhattanDistance;
+                    }
+                }
+            }
+
+            if (newCursorIndex >= 0)
+            {
+                // TODO: Play sound.
+
+                g_currentCursorIndex = newCursorIndex;
+            }
+        }
+    }
+};
+
+static SDLEventListenerForInstaller g_eventListener;
 
 const char CREDITS_TEXT[] = "- Sajid (RIP)\n- imgui sega balls!";
 
@@ -200,12 +362,46 @@ static double ComputeMotionInstaller(double timeAppear, double timeDisappear, do
     return ComputeMotion(timeAppear, offset, total) * (1.0 - ComputeMotion(timeDisappear, ALL_ANIMATIONS_FULL_DURATION - offset - total, total));
 }
 
-static double ComputeMotionInstallerLoop(double timeAppear, double speed, double offset) {
+static double ComputeMotionInstallerLoop(double timeAppear, double speed, double offset) 
+{
     return std::clamp(fmodf((ImGui::GetTime() - timeAppear) * speed, 1.0f + offset) - offset, 0.0, 1.0) / 1.0;
 }
 
-static double ComputeHermiteMotionInstallerLoop(double timeAppear, double speed, double offset) {
+static double ComputeHermiteMotionInstallerLoop(double timeAppear, double speed, double offset) 
+{
     return (cosf(M_PI * ComputeMotionInstallerLoop(timeAppear, speed, offset) + M_PI) + 1) / 2;
+}
+
+static bool PushCursorRect(ImVec2 min, ImVec2 max, bool &cursorPressed, bool makeDefault = false)
+{
+    int currentIndex = int(g_currentCursorRects.size());
+    g_currentCursorRects.emplace_back(min, max);
+
+    if (makeDefault)
+    {
+        g_currentCursorDefault = currentIndex;
+    }
+
+    if (g_currentCursorIndex == currentIndex)
+    {
+        if (g_currentCursorAccepted)
+        {
+            cursorPressed = true;
+            g_currentCursorAccepted = false;
+        }
+
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+static void ResetCursorRects()
+{
+    g_currentCursorDefault = 0;
+    g_currentCursorRects.clear();
 }
 
 static void DrawBackground()
@@ -248,6 +444,7 @@ static void DrawHeaderIconsForInstallPhase(double iconsPosX, double iconsPosY, d
     ImVec2 arrowCircleMax = { Scale(iconsPosX + iconsScale / 2), Scale(iconsPosY + iconsScale / 2) };
     ImVec2 center = { Scale(iconsPosX) + 0.5f, Scale(iconsPosY) - 0.5f };
 
+    float arrowCircleFadeMotion = ComputeMotionInstaller(g_installerStartTime, g_installerEndTime, INSTALL_ICONS_FADE_IN_ANIMATION_TIME, INSTALL_ICONS_FADE_IN_ANIMATION_DURATION);
     float rotationMotion = ComputeMotionInstallerLoop(g_installerStartTime, ARROW_CIRCLE_LOOP_SPEED, 0);
     float rotation = -2 * M_PI * rotationMotion;
 
@@ -268,14 +465,16 @@ static void DrawHeaderIconsForInstallPhase(double iconsPosX, double iconsPosY, d
         corners[i].y += center.y;
     }
 
-    drawList->AddImageQuad(g_arrowCircle.get(), corners[0], corners[1], corners[2], corners[3], ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1), IM_COL32(255, 255, 255, 96));
+    drawList->AddImageQuad(g_arrowCircle.get(), corners[0], corners[1], corners[2], corners[3], ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1), IM_COL32(255, 255, 255, 96 * arrowCircleFadeMotion));
 
 
     // Pulse
+    float pulseFadeMotion = ComputeMotionInstaller(g_installerStartTime, g_installerEndTime, INSTALL_ICONS_FADE_IN_ANIMATION_TIME, INSTALL_ICONS_FADE_IN_ANIMATION_DURATION);
     float pulseMotion = ComputeMotionInstallerLoop(g_installerStartTime, PULSE_ANIMATION_LOOP_SPEED, PULSE_ANIMATION_LOOP_DELAY);
     float pulseHermiteMotion = ComputeHermiteMotionInstallerLoop(g_installerStartTime, PULSE_ANIMATION_LOOP_SPEED, PULSE_ANIMATION_LOOP_DELAY);
 
     float pulseFade = pulseMotion / PULSE_ANIMATION_LOOP_FADE_HIGH_POINT;
+
     if (pulseMotion >= PULSE_ANIMATION_LOOP_FADE_HIGH_POINT) {
         // Calculate linear fade-out from high point time - ({PULSE_ANIMATION_LOOP_FADE_HIGH_POINT}, 1) - to loop end - (1, 0) -.
         float m = -1 / (1 - PULSE_ANIMATION_LOOP_FADE_HIGH_POINT);
@@ -288,7 +487,7 @@ static void DrawHeaderIconsForInstallPhase(double iconsPosX, double iconsPosY, d
 
     ImVec2 pulseMin = { Scale(iconsPosX - pulseScale / 2), Scale(iconsPosY - pulseScale / 2) };
     ImVec2 pulseMax = { Scale(iconsPosX + pulseScale / 2), Scale(iconsPosY + pulseScale / 2) };
-    drawList->AddImage(g_pulseInstall.get(), pulseMin, pulseMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255 * pulseFade));
+    drawList->AddImage(g_pulseInstall.get(), pulseMin, pulseMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255 * pulseFade * pulseFadeMotion));
 }
 
 static void DrawHeaderIcons()
@@ -307,7 +506,7 @@ static void DrawHeaderIcons()
     ImVec2 milesElectricMax = { Scale(iconsPosX + milesIconScale / 2), Scale(iconsPosY + milesIconScale / 2) };
     drawList->AddImage(g_milesElectricIcon.get(), milesElectricMin, milesElectricMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255 * milesIconMotion));
 
-    if (g_currentPage == WizardPage::Installing)
+    if (int(g_currentPage) >= int(WizardPage::Installing))
     {
         DrawHeaderIconsForInstallPhase(iconsPosX, iconsPosY, iconsScale);
     }
@@ -505,7 +704,7 @@ static ImVec2 ComputeTextSize(ImFont *font, const char *text, float size, float 
     return textSize;
 }
 
-static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sourceButton, bool buttonEnabled, bool &buttonPressed, float maxTextWidth = FLT_MAX)
+static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sourceButton, bool buttonEnabled, bool &buttonPressed, float maxTextWidth = FLT_MAX, bool makeDefault = false)
 {
     buttonPressed = false;
 
@@ -519,14 +718,13 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
 
     int baser = 0;
     int baseg = 0;
-    if (g_currentMessagePrompt.empty() && !sourceButton && buttonEnabled && (alpha >= 1.0f) && ImGui::IsMouseHoveringRect(min, max, false))
+    if (g_currentMessagePrompt.empty() && !sourceButton && buttonEnabled && (alpha >= 1.0f))
     {
-        baser = 48;
-        baseg = 32;
-
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        bool cursorOnButton = PushCursorRect(min, max, buttonPressed, makeDefault);
+        if (cursorOnButton)
         {
-            buttonPressed = true;
+            baser = 48;
+            baseg = 32;
         }
     }
 
@@ -787,7 +985,7 @@ static void DrawLanguagePicker()
 
             // TODO: The active button should change its style to show an enabled toggle if it matches the current language.
 
-            DrawButton(min, max, LANGUAGE_TEXT[i], false, true, buttonPressed);
+            DrawButton(min, max, LANGUAGE_TEXT[i], false, true, buttonPressed, FLT_MAX, LANGUAGE_ENUM[i] == ELanguage::English);
             if (buttonPressed)
             {
                 Config::Language = LANGUAGE_ENUM[i];
@@ -860,6 +1058,7 @@ static void DrawInstallingProgress()
         {
             g_installerThread->join();
             g_installerThread.reset();
+            g_installerEndTime = ImGui::GetTime();
             g_currentPage = g_installerFailed ? WizardPage::InstallFailed : WizardPage::InstallSucceeded;
         }
     }
@@ -878,6 +1077,8 @@ static void InstallerThread()
         Installer::rollback(g_installerJournal);
     }
 
+    // Rest for a bit after finishing the installation, the device is tired
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     g_installerFinished = true;
 }
 
@@ -1145,6 +1346,7 @@ void InstallerWizard::Draw()
         return;
     }
 
+    ResetCursorRects();
     DrawBackground();
     DrawLeftImage();
     DrawScanlineBars();
@@ -1198,6 +1400,10 @@ void InstallerWizard::Shutdown()
 bool InstallerWizard::Run(bool skipGame)
 {
     NFD_Init();
+
+    // Guarantee one controller is initialized. We'll rely on SDL's event loop to get the controller events.
+    XAMINPUT_STATE inputState;
+    hid::GetState(0, &inputState);
 
     if (skipGame)
     {
