@@ -81,7 +81,7 @@ bool DrawContainer(float appearTime, ImVec2 centre, ImVec2 max, bool isForegroun
     if (isForeground)
         drawList->AddRectFilled({ 0.0f, 0.0f }, ImGui::GetIO().DisplaySize, IM_COL32(0, 0, 0, 223 * (g_foregroundCount ? 1 : alpha)));
 
-    DrawPauseContainer(g_upWindow, _min, _max, alpha);
+    DrawPauseContainer(g_upWindow.get(), _min, _max, alpha);
 
     drawList->PushClipRect(_min, _max);
 

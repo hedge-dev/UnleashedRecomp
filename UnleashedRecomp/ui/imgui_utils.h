@@ -80,24 +80,7 @@ static double ComputeMotion(double duration, double offset, double total)
     return sqrt(std::clamp((ImGui::GetTime() - duration - offset / 60.0) / total * 60.0, 0.0, 1.0));
 }
 
-static std::vector<ImVec2> GetPauseContainerVertices(ImVec2 min, ImVec2 max, float cornerRadius = 25)
-{
-    cornerRadius = Scale(cornerRadius);
-
-    return
-    {
-        { min.x, min.y + cornerRadius }, // 0 - TL Corner Bottom
-        { min.x + cornerRadius, min.y }, // 1 - TL Corner Top
-        { max.x, min.y },                // 2 - TR Corner Top
-        { max.x, min.y + cornerRadius }, // 3 - TR Corner Bottom
-        { max.x, max.y - cornerRadius }, // 4 - BR Corner Top
-        { max.x - cornerRadius, max.y }, // 5 - BR Corner Bottom
-        { min.x, max.y },                // 6 - BL Corner Bottom
-        { min.x, max.y - cornerRadius }  // 7 - BL Corner Top
-    };
-}
-
-static void DrawPauseContainer(std::unique_ptr<GuestTexture>& texture, ImVec2 min, ImVec2 max, float alpha = 1)
+static void DrawPauseContainer(GuestTexture* texture, ImVec2 min, ImVec2 max, float alpha = 1)
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
@@ -117,18 +100,18 @@ static void DrawPauseContainer(std::unique_ptr<GuestTexture>& texture, ImVec2 mi
 
     auto colour = IM_COL32(255, 255, 255, 255 * alpha);
 
-    drawList->AddImage(texture.get(), min, { min.x + commonWidth, min.y + commonHeight }, GET_UV_COORDS(tl), colour);
-    drawList->AddImage(texture.get(), { min.x + commonWidth, min.y }, { max.x - commonWidth, min.y + commonHeight }, GET_UV_COORDS(tc), colour);
-    drawList->AddImage(texture.get(), { max.x - commonWidth, min.y }, { max.x, min.y + commonHeight }, GET_UV_COORDS(tr), colour);
-    drawList->AddImage(texture.get(), { min.x, min.y + commonHeight }, { min.x + commonWidth, max.y - commonHeight }, GET_UV_COORDS(cl), colour);
-    drawList->AddImage(texture.get(), { min.x + commonWidth, min.y + commonHeight }, { max.x - commonWidth, max.y - commonHeight }, GET_UV_COORDS(cc), colour);
-    drawList->AddImage(texture.get(), { max.x - commonWidth, min.y + commonHeight }, { max.x, max.y - commonHeight }, GET_UV_COORDS(cr), colour);
-    drawList->AddImage(texture.get(), { min.x, max.y - commonHeight }, { min.x + commonWidth, max.y + bottomHeight }, GET_UV_COORDS(bl), colour);
-    drawList->AddImage(texture.get(), { min.x + commonWidth, max.y - commonHeight }, { max.x - commonWidth, max.y + bottomHeight }, GET_UV_COORDS(bc), colour);
-    drawList->AddImage(texture.get(), { max.x - commonWidth, max.y - commonHeight }, { max.x, max.y + bottomHeight }, GET_UV_COORDS(br), colour);
+    drawList->AddImage(texture, min, { min.x + commonWidth, min.y + commonHeight }, GET_UV_COORDS(tl), colour);
+    drawList->AddImage(texture, { min.x + commonWidth, min.y }, { max.x - commonWidth, min.y + commonHeight }, GET_UV_COORDS(tc), colour);
+    drawList->AddImage(texture, { max.x - commonWidth, min.y }, { max.x, min.y + commonHeight }, GET_UV_COORDS(tr), colour);
+    drawList->AddImage(texture, { min.x, min.y + commonHeight }, { min.x + commonWidth, max.y - commonHeight }, GET_UV_COORDS(cl), colour);
+    drawList->AddImage(texture, { min.x + commonWidth, min.y + commonHeight }, { max.x - commonWidth, max.y - commonHeight }, GET_UV_COORDS(cc), colour);
+    drawList->AddImage(texture, { max.x - commonWidth, min.y + commonHeight }, { max.x, max.y - commonHeight }, GET_UV_COORDS(cr), colour);
+    drawList->AddImage(texture, { min.x, max.y - commonHeight }, { min.x + commonWidth, max.y + bottomHeight }, GET_UV_COORDS(bl), colour);
+    drawList->AddImage(texture, { min.x + commonWidth, max.y - commonHeight }, { max.x - commonWidth, max.y + bottomHeight }, GET_UV_COORDS(bc), colour);
+    drawList->AddImage(texture, { max.x - commonWidth, max.y - commonHeight }, { max.x, max.y + bottomHeight }, GET_UV_COORDS(br), colour);
 }
 
-static void DrawPauseHeaderContainer(std::unique_ptr<GuestTexture>& texture, ImVec2 min, ImVec2 max, float alpha = 1)
+static void DrawPauseHeaderContainer(GuestTexture* texture, ImVec2 min, ImVec2 max, float alpha = 1)
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
@@ -140,9 +123,9 @@ static void DrawPauseHeaderContainer(std::unique_ptr<GuestTexture>& texture, ImV
 
     auto colour = IM_COL32(255, 255, 255, 255 * alpha);
 
-    drawList->AddImage(texture.get(), min, { min.x + commonWidth, max.y }, GET_UV_COORDS(left), colour);
-    drawList->AddImage(texture.get(), { min.x + commonWidth, min.y }, { max.x - commonWidth, max.y }, GET_UV_COORDS(centre), colour);
-    drawList->AddImage(texture.get(), { max.x - commonWidth, min.y }, max, GET_UV_COORDS(right), colour);
+    drawList->AddImage(texture, min, { min.x + commonWidth, max.y }, GET_UV_COORDS(left), colour);
+    drawList->AddImage(texture, { min.x + commonWidth, min.y }, { max.x - commonWidth, max.y }, GET_UV_COORDS(centre), colour);
+    drawList->AddImage(texture, { max.x - commonWidth, min.y }, max, GET_UV_COORDS(right), colour);
 }
 
 static void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 color, const char* text, double time, double delay, double speed)

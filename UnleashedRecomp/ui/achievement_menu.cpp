@@ -70,7 +70,7 @@ static void DrawContainer(ImVec2 min, ImVec2 max, ImU32 gradientTop, ImU32 gradi
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    DrawPauseContainer(g_upWindow, min, max, alpha);
+    DrawPauseContainer(g_upWindow.get(), min, max, alpha);
 
     drawList->PushClipRect({ min.x, min.y + Scale(20) }, { max.x, max.y - Scale(5) });
 }
@@ -136,7 +136,7 @@ static void DrawHeaderContainer(const char* text)
     ImVec2 min = { Scale(containerMarginX), Scale(136) };
     ImVec2 max = { min.x + textMarginX * 2 + textSize.x + Scale(5), Scale(196) };
 
-    DrawPauseHeaderContainer(g_upWindow, min, max, alpha);
+    DrawPauseHeaderContainer(g_upWindow.get(), min, max, alpha);
 
     // TODO: skew this text and apply bevel.
     DrawTextWithOutline<int>

@@ -65,7 +65,7 @@ static bool DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25)
         ? Hermite(1, 0, colourMotion)
         : Hermite(0, 1, colourMotion);
 
-    DrawPauseContainer(g_upWindow, min, max, alpha);
+    DrawPauseContainer(g_upWindow.get(), min, max, alpha);
 
     drawList->PushClipRect(min, max);
 
