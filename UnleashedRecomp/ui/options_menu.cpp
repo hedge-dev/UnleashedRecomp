@@ -1042,7 +1042,7 @@ void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
         }
     );
     
-    ButtonGuide::SetSideMargins(150);
+    ButtonGuide::SetSideMargins(250);
 
     // TODO: animate Miles Electric in if we're in a stage.
 }
