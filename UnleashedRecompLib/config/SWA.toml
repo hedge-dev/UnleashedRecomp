@@ -449,6 +449,12 @@ name = "GetDatabaseDataMidAsmHook"
 address = 0x827D6018 # Particle Material XML
 registers = ["r1", "r30"]
 
+# Removes the storage device prompt on new game
+[[midasm_hook]]
+name = "StorageDevicePromptMidAsmHook"
+address = 0x822C53CC
+jump_address = 0x822C53F8
+
 # World Map Pause Menu
 [[midasm_hook]]
 name = "CHudPauseAddOptionsItemMidAsmHook"
