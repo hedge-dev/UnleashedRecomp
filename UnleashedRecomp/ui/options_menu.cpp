@@ -943,7 +943,7 @@ static void DrawInfoPanel()
         else
         {
             // Specialised description for resolution scale
-            if (g_selectedItem->GetName() == "ResolutionScale")
+            if (g_selectedItem == &Config::ResolutionScale)
             {
                 char buf[100];
                 auto resScale = round(*(float*)g_selectedItem->GetValue() * 1000) / 1000;
