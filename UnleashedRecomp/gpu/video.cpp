@@ -1068,6 +1068,7 @@ struct ImGuiPushConstants
 static void CreateImGuiBackend()
 {
     ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 
