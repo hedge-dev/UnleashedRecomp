@@ -5,6 +5,7 @@
 #include <user/config.h>
 #include <decompressor.h>
 #include <kernel/xdbf.h>
+#include <app.h>
 
 void ImDrawDataSnapshot::Clear()
 {
@@ -221,14 +222,17 @@ void ImFontAtlasSnapshot::GenerateGlyphRanges()
         }
     }
 
-    for (size_t i = XDBF_LANGUAGE_ENGLISH; i <= XDBF_LANGUAGE_ITALIAN; i++)
+    if (g_isGameLoaded)
     {
-        auto achievements = g_xdbfWrapper.GetAchievements(static_cast<EXDBFLanguage>(i));
-        for (auto& achievement : achievements)
+        for (size_t i = XDBF_LANGUAGE_ENGLISH; i <= XDBF_LANGUAGE_ITALIAN; i++)
         {
-            GetGlyphs(glyphs, achievement.Name);
-            GetGlyphs(glyphs, achievement.UnlockedDesc);
-            GetGlyphs(glyphs, achievement.LockedDesc);
+            auto achievements = g_xdbfWrapper.GetAchievements(static_cast<EXDBFLanguage>(i));
+            for (auto& achievement : achievements)
+            {
+                GetGlyphs(glyphs, achievement.Name);
+                GetGlyphs(glyphs, achievement.UnlockedDesc);
+                GetGlyphs(glyphs, achievement.LockedDesc);
+            }
         }
     }
 
