@@ -2,6 +2,8 @@
 #include "imgui_utils.h"
 #include <api/SWA.h>
 #include <gpu/video.h>
+#include <locale/locale.h>
+#include <ui/button_guide.h>
 #include <app.h>
 #include <exports.h>
 #include <res/images/common/general_window.dds.h>
@@ -237,6 +239,14 @@ void MessageWindow::Draw()
                         Game_PlaySound("sys_actstg_pausecansel");
                         MessageWindow::Close();
                     }
+
+                    ButtonGuide::Open
+                    (
+                        {
+                            Button(Localise("Common_Select"), EButtonIcon::A),
+                            Button(Localise("Common_Back"),EButtonIcon::B),
+                        }
+                    );
                 }
                 else
                 {
@@ -253,6 +263,8 @@ void MessageWindow::Draw()
                         if (ImGui::IsMouseHoveringRect(itemMin, itemMax, false))
                             g_selectedRowIndex = i;
                     }
+
+                    ButtonGuide::Open({ Button(Localise("Common_Select"), EButtonIcon::LMB) });
                 }
 
                 if (g_selectedRowIndex != -1 && isAccepted)
@@ -309,6 +321,8 @@ bool MessageWindow::Open(std::string text, int* result, std::span<std::string> b
 
         ResetSelection();
 
+        ButtonGuide::Open({ Button(Localise("Common_Next"), g_isGameLoaded ? EButtonIcon::A : EButtonIcon::LMB) });
+
         Game_PlaySound("sys_actstg_pausewinopen");
 
         g_isAwaitingResult = true;
@@ -329,6 +343,8 @@ void MessageWindow::Close()
         g_isControlsVisible = false;
         g_foregroundCount = 0;
         g_isAwaitingResult = false;
+
+        ButtonGuide::Close();
     }
 
     Game_PlaySound("sys_actstg_pausewinclose");
