@@ -13,25 +13,9 @@
 #define CENTRE_TEXT_HORZ(min, max, textSize) min.x + ((max.x - min.x) - textSize.x) / 2
 #define CENTRE_TEXT_VERT(min, max, textSize) min.y + ((max.y - min.y) - textSize.y) / 2
 
-static std::vector<std::unique_ptr<ImGuiCallbackData>> g_callbackData;
-static uint32_t g_callbackDataIndex = 0;
-
-static ImGuiCallbackData* AddCallback(ImGuiCallback callback)
-{
-    if (g_callbackDataIndex >= g_callbackData.size())
-        g_callbackData.emplace_back(std::make_unique<ImGuiCallbackData>());
-
-    auto& callbackData = g_callbackData[g_callbackDataIndex];
-    ++g_callbackDataIndex;
-
-    ImGui::GetForegroundDrawList()->AddCallback(reinterpret_cast<ImDrawCallback>(callback), callbackData.get());
-
-    return callbackData.get();
-}
-
 static void SetGradient(const ImVec2& min, const ImVec2& max, ImU32 top, ImU32 bottom)
 {
-    auto callbackData = AddCallback(ImGuiCallback::SetGradient);
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetGradient);
     callbackData->setGradient.gradientMin[0] = min.x;
     callbackData->setGradient.gradientMin[1] = min.y;
     callbackData->setGradient.gradientMax[0] = max.x;
@@ -42,26 +26,26 @@ static void SetGradient(const ImVec2& min, const ImVec2& max, ImU32 top, ImU32 b
 
 static void ResetGradient()
 {
-    auto callbackData = AddCallback(ImGuiCallback::SetGradient);
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetGradient);
     memset(&callbackData->setGradient, 0, sizeof(callbackData->setGradient));
 }
 
 static void SetShaderModifier(uint32_t shaderModifier)
 {
-    auto callbackData = AddCallback(ImGuiCallback::SetShaderModifier);
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetShaderModifier);
     callbackData->setShaderModifier.shaderModifier = shaderModifier;
 }
 
 static void SetOrigin(ImVec2 origin)
 {
-    auto callbackData = AddCallback(ImGuiCallback::SetOrigin);
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetOrigin);
     callbackData->setOrigin.origin[0] = origin.x;
     callbackData->setOrigin.origin[1] = origin.y;
 }
 
 static void SetScale(ImVec2 scale)
 {
-    auto callbackData = AddCallback(ImGuiCallback::SetScale);
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetScale);
     callbackData->setScale.scale[0] = scale.x;
     callbackData->setScale.scale[1] = scale.y;
 }

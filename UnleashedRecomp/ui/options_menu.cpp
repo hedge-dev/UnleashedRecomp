@@ -996,8 +996,6 @@ void OptionsMenu::Draw()
     auto pInputState = SWA::CInputState::GetInstance();
     if (pInputState->GetPadState().IsReleased(SWA::eKeyState_A))
         g_isEnterKeyBuffered = false;
-
-    g_callbackDataIndex = 0;
     
     auto& res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();

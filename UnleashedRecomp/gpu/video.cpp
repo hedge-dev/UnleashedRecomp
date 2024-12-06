@@ -1774,6 +1774,8 @@ static void DrawImGui()
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
+    ResetImGuiCallbacks();
+
 #ifdef ASYNC_PSO_DEBUG
     if (ImGui::Begin("Async PSO Stats"))
     {
@@ -1789,6 +1791,7 @@ static void DrawImGui()
     }
     ImGui::End();
 #endif
+
     AchievementMenu::Draw();
     OptionsMenu::Draw();
     AchievementOverlay::Draw();

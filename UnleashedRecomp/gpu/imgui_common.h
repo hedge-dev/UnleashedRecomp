@@ -41,4 +41,8 @@ union ImGuiCallbackData
     } setScale;
 };
 
+extern ImGuiCallbackData* AddImGuiCallback(ImGuiCallback callback);
+
+extern void ResetImGuiCallbacks();
+
 #endif
