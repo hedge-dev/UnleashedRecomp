@@ -34,6 +34,8 @@
 #include "../../thirdparty/ShaderRecomp/ShaderRecomp/shader_common.h"
 #include "shader/copy_vs.hlsl.dxil.h"
 #include "shader/copy_vs.hlsl.spirv.h"
+#include "shader/gaussian_blur_ps.hlsl.dxil.h"
+#include "shader/gaussian_blur_ps.hlsl.spirv.h"
 #include "shader/gamma_correction_ps.hlsl.dxil.h"
 #include "shader/gamma_correction_ps.hlsl.spirv.h"
 #include "shader/imgui_ps.hlsl.dxil.h"
@@ -1024,6 +1026,7 @@ static const std::pair<GuestRenderState, void*> g_setRenderStateFunctions[] =
 };
 
 static std::unique_ptr<RenderPipeline> g_resolveMsaaDepthPipelines[3];
+static std::unique_ptr<GuestShader> g_gaussianBlurShader;
 
 #define CREATE_SHADER(NAME) \
     g_device->createShader( \
@@ -1415,6 +1418,9 @@ void Video::CreateHostDevice()
         desc.depthTargetFormat = RenderFormat::D32_FLOAT;
         g_resolveMsaaDepthPipelines[i] = g_device->createGraphicsPipeline(desc);
     }
+
+    g_gaussianBlurShader = std::make_unique<GuestShader>(ResourceType::PixelShader);
+    g_gaussianBlurShader->shader = CREATE_SHADER(gaussian_blur_ps);
 
     CreateImGuiBackend();
 
@@ -3836,6 +3842,12 @@ static GuestShader* CreatePixelShader(const be<uint32_t>* function)
 
 static void SetPixelShader(GuestDevice* device, GuestShader* shader)
 {
+    if (shader != nullptr && shader->shaderCacheEntry != nullptr && shader->shaderCacheEntry->hash == 0x4294510C775F4EE8)
+    {
+        if (!(GetAsyncKeyState(VK_F4) & 0x8000))
+            shader = g_gaussianBlurShader.get();
+    }
+
     RenderCommand cmd;
     cmd.type = RenderCommandType::SetPixelShader;
     cmd.setPixelShader.shader = shader;

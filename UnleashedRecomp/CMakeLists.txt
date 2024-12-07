@@ -284,6 +284,7 @@ function(compile_pixel_shader FILE_PATH)
 endfunction()
 
 compile_vertex_shader(copy_vs)
+compile_pixel_shader(gaussian_blur_ps)
 compile_pixel_shader(gamma_correction_ps)
 compile_pixel_shader(imgui_ps)
 compile_vertex_shader(imgui_vs)
