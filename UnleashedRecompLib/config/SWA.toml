@@ -554,3 +554,7 @@ name = "TitleMenuAddInstallOptionMidAsmHook"
 address = 0x8258547C
 registers = ["r3"]
 jump_address = 0x82585480
+
+[[midasm_hook]]
+name = "LoadingScreenControllerMidAsmHook"
+address = 0x824DC9D4

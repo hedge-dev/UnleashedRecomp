@@ -101,3 +101,20 @@ PPC_FUNC(sub_82BD06C8)
 {
     ctx.r3.u64 = 0;
 }
+
+void LoadingScreenControllerMidAsmHook()
+{
+    static constexpr size_t STR_ADDRESSES[] =
+    {
+        0x820301AC, // 360_sonic1
+        0x820301B8, // 360_sonic2
+        0x820301C4, // 360_sonic3
+        0x820301D0, // 360_evil
+        0x820301DC, // 360_robo
+        0x820301E8, // 360_super
+    };
+
+    const char* prefix = Config::ControllerButtons == EControllerButtons::PlayStation ? "ps3" : "360";
+    for (auto address : STR_ADDRESSES)
+        memcpy(g_memory.Translate(address), prefix, 3);
+}
