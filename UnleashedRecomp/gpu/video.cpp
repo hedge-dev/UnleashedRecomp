@@ -5464,8 +5464,23 @@ static void ModelConsumerThread()
                     EnqueueGraphicsPipelineCompilation(msaaPipelineState, emptyHolderPair, "Precompiled Pipeline MSAA");
                 }
 
-                SanitizePipelineState(pipelineState);
-                EnqueueGraphicsPipelineCompilation(pipelineState, emptyHolderPair, "Precompiled Pipeline");
+                // Compile the custom gaussian blur shaders that we pass to the game.
+                if (pipelineState.pixelShader != nullptr &&
+                    pipelineState.pixelShader->shaderCacheEntry != nullptr &&
+                    pipelineState.pixelShader->shaderCacheEntry->hash == 0x4294510C775F4EE8)
+                {
+                    for (auto& shader : g_gaussianBlurShaders)
+                    {
+                        pipelineState.pixelShader = shader.get();
+                        SanitizePipelineState(pipelineState);
+                        EnqueueGraphicsPipelineCompilation(pipelineState, emptyHolderPair, "Precompiled Gaussian Blur Pipeline");
+                    }
+                }
+                else
+                {
+                    SanitizePipelineState(pipelineState);
+                    EnqueueGraphicsPipelineCompilation(pipelineState, emptyHolderPair, "Precompiled Pipeline");
+                }
             }
 
             g_pendingPipelineStateCache = false;
