@@ -131,18 +131,18 @@ CONFIG_DEFINE_ENUM_LOCALE(ETimeOfDayTransition)
     }
 };
 
-CONFIG_DEFINE_LOCALE(ControllerButtons)
+CONFIG_DEFINE_LOCALE(ControllerIcons)
 {
-    { ELanguage::English, { "Controller Buttons", "[PLACEHOLDER]" } }
+    { ELanguage::English, { "Controller Icons", "[PLACEHOLDER]" } }
 };
 
-CONFIG_DEFINE_ENUM_LOCALE(EControllerButtons)
+CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
 {
     {
         ELanguage::English,
         {
-            { EControllerButtons::Xbox,        { "XBOX", "[PLACEHOLDER]" } },
-            { EControllerButtons::PlayStation, { "PLAYSTATION", "[PLACEHOLDER]" } }
+            { EControllerIcons::Xbox,        { "XBOX", "[PLACEHOLDER]" } },
+            { EControllerIcons::PlayStation, { "PLAYSTATION", "[PLACEHOLDER]" } }
         }
     }
 };

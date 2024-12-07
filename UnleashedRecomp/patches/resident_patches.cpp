@@ -114,7 +114,7 @@ void LoadingScreenControllerMidAsmHook()
         0x820301E8, // 360_super
     };
 
-    const char* prefix = Config::ControllerButtons == EControllerButtons::PlayStation ? "ps3" : "360";
+    const char* prefix = Config::ControllerIcons == EControllerIcons::PlayStation ? "ps3" : "360";
     for (auto address : STR_ADDRESSES)
         memcpy(g_memory.Translate(address), prefix, 3);
 }

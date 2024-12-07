@@ -24,7 +24,7 @@ public:
     CONFIG_DEFINE_LOCALISED("Input", bool, XButtonHoming, true);
     CONFIG_DEFINE_LOCALISED("Input", bool, AllowCancellingUnleash, false);
     CONFIG_DEFINE_LOCALISED("Input", bool, AllowBackgroundInput, false);
-    CONFIG_DEFINE_ENUM_LOCALISED("Input", EControllerButtons, ControllerButtons, EControllerButtons::Xbox);
+    CONFIG_DEFINE_ENUM_LOCALISED("Input", EControllerIcons, ControllerIcons, EControllerIcons::Xbox);
 
     CONFIG_DEFINE_LOCALISED("Audio", float, MusicVolume, 1.0f);
     CONFIG_DEFINE_LOCALISED("Audio", float, EffectsVolume, 1.0f);

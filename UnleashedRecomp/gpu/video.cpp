@@ -2614,7 +2614,7 @@ static void ProcSetViewport(const RenderCommand& cmd)
 
 static void SetTexture(GuestDevice* device, uint32_t index, GuestTexture* texture) 
 {
-    if (Config::ControllerButtons == EControllerButtons::PlayStation && texture != nullptr && texture->patchedTexture != nullptr)
+    if (Config::ControllerIcons == EControllerIcons::PlayStation && texture != nullptr && texture->patchedTexture != nullptr)
         texture = texture->patchedTexture.get();
 
     RenderCommand cmd;
