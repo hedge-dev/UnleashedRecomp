@@ -28,33 +28,44 @@ cbuffer SharedConstants : register(b2, space4)
 
 #endif
 
+#ifdef __INTELLISENSE__
+#define KERNEL_SIZE 5
+#endif
+
+#define PI 3.14159265358979323846
+
+float ComputeWeight(float x)
+{
+    float std = 0.952;
+    return exp(-(x * x) / (2.0 * std * std)) / (std * sqrt(2.0 * PI));
+}
+
 float4 main(in float4 iPosition : SV_Position, in float4 iTexCoord0 : TEXCOORD0) : SV_Target
 {
     Texture2D<float4> texture = g_Texture2DDescriptorHeap[s0_Texture2DDescriptorIndex];
     SamplerState samplerState = g_SamplerDescriptorHeap[s0_SamplerDescriptorIndex];
     
-    float scaleFactor = g_ViewportSize.y / 360.0;
+    float scale = g_ViewportSize.y / 360.0;
     
-    float2 offsets[5];
-    offsets[0] = g_offsets(0).xy * scaleFactor;
-    offsets[2] = g_offsets(0).zw * scaleFactor;
-    offsets[4] = g_offsets(1).xy * scaleFactor;
+    float2 offsets[3];
+    offsets[0] = g_offsets(0).xy * scale;
+    offsets[1] = g_offsets(0).zw * scale;
+    offsets[2] = g_offsets(1).xy * scale;
     
-    offsets[1] = lerp(offsets[2], offsets[0], 0.5);
-    offsets[3] = lerp(offsets[2], offsets[4], 0.5);
+    float4 color = 0.0;
+    float weightSum = 0.0;
     
-    float weights[5];
-    weights[0] = 0.1131226076;
-    weights[1] = 0.2360540033;
-    weights[2] = 0.3016467782;
-    weights[3] = 0.2360540033;
-    weights[4] = 0.1131226076;
-
-    float4 c0 = texture.Sample(samplerState, iTexCoord0.xy + offsets[0]) * weights[0];
-    float4 c1 = texture.Sample(samplerState, iTexCoord0.xy + offsets[1]) * weights[1];
-    float4 c2 = texture.Sample(samplerState, iTexCoord0.xy + offsets[2]) * weights[2];
-    float4 c3 = texture.Sample(samplerState, iTexCoord0.xy + offsets[3]) * weights[3];
-    float4 c4 = texture.Sample(samplerState, iTexCoord0.xy + offsets[4]) * weights[4];
+    [unroll]
+    for (int i = 0; i < KERNEL_SIZE; i++)
+    {
+        float step = i / float(KERNEL_SIZE - 1);
+        float scaled = step * 2;
+        float2 offset = lerp(offsets[int(scaled)], offsets[min(int(scaled) + 1, 2)], frac(scaled));
+        float offsetScale = 1.0 / 0.75;
+        float weight = ComputeWeight(lerp(-offsetScale, offsetScale, step));
+        color += texture.Sample(samplerState, iTexCoord0.xy + offset) * weight;
+        weightSum += weight;
+    }
     
-    return c0 + c1 + c2 + c3 + c4;
+    return color / weightSum;
 }

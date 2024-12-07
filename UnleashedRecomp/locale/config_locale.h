@@ -309,6 +309,25 @@ CONFIG_DEFINE_ENUM_LOCALE(EGITextureFiltering)
     }
 };
 
+CONFIG_DEFINE_LOCALE(DepthOfFieldQuality)
+{
+    { ELanguage::English, { "Depth of Field Quality", "[PLACEHOLDER]" } }
+};
+
+CONFIG_DEFINE_ENUM_LOCALE(EDepthOfFieldQuality)
+{
+    {
+        ELanguage::English,
+        {
+            { EDepthOfFieldQuality::Auto, { "AUTO", "" } },
+            { EDepthOfFieldQuality::Low,  { "LOW", "" } },
+            { EDepthOfFieldQuality::Medium,  { "MEDIUM", "" } },
+            { EDepthOfFieldQuality::High,  { "HIGH", "" } },
+            { EDepthOfFieldQuality::Ultra,  { "ULTRA", "" } },
+        }
+    }
+};
+
 CONFIG_DEFINE_LOCALE(MotionBlur)
 {
     { ELanguage::English, { "Motion Blur", "Use per-object motion blur and radial blur." } }

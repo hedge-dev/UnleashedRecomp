@@ -192,6 +192,24 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EGITextureFiltering)
     { "Bicubic",  EGITextureFiltering::Bicubic }
 };
 
+enum class EDepthOfFieldQuality : uint32_t
+{
+    Auto,
+    Low,
+    Medium,
+    High,
+    Ultra
+};
+
+CONFIG_DEFINE_ENUM_TEMPLATE(EDepthOfFieldQuality)
+{
+    { "Auto", EDepthOfFieldQuality::Auto },
+    { "Low",  EDepthOfFieldQuality::Low },
+    { "Medium",  EDepthOfFieldQuality::Medium },
+    { "High",  EDepthOfFieldQuality::High },
+    { "Ultra",  EDepthOfFieldQuality::Ultra }
+};
+
 enum class EMovieScaleMode : uint32_t
 {
     Stretch,
