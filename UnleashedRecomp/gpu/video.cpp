@@ -3900,11 +3900,12 @@ static void ProcSetPixelShader(const RenderCommand& cmd)
         {
             size_t height = round(g_swapChain->getHeight() * Config::ResolutionScale);
 
-            if (height >= 2160)
+            // Use the middle point between resolutions to have the transition less noticable.
+            if (height >= ((2160 + 1440) / 2))
                 shaderIndex = GAUSSIAN_BLUR_9X9;   
-            else if (height >= 1440)
+            else if (height >= ((1440 + 1080) / 2))
                 shaderIndex = GAUSSIAN_BLUR_7X7;
-            else if (height >= 1080)
+            else if (height >= ((1080 + 720) / 2))
                 shaderIndex = GAUSSIAN_BLUR_5X5;
             else
                 shaderIndex = GAUSSIAN_BLUR_3X3;
