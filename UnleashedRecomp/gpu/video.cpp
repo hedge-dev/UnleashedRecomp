@@ -25,7 +25,9 @@
 #include <user/config.h>
 
 #include <res/font/im_font_atlas.dds.h>
+#include <res/bc_diff/button_bc_diff.bin.h>
 #include <decompressor.h>
+#include <bc_diff.h>
 
 #include <SWA.h>
 
@@ -482,6 +484,9 @@ static void DestructTempResources()
 
             g_textureDescriptorAllocator.free(texture->descriptorIndex);
 
+            if (texture->patchedTexture != nullptr)
+                g_textureDescriptorAllocator.free(texture->patchedTexture->descriptorIndex);
+
             texture->~GuestTexture();
             break;
         }
@@ -559,8 +564,9 @@ static void FlushBarriers()
 }
 
 static std::unique_ptr<uint8_t[]> g_shaderCache;
+static std::unique_ptr<uint8_t[]> g_buttonBcDiff;
 
-static void LoadShaderCache()
+static void LoadEmbeddedResources()
 {
     const size_t decompressedSize = g_vulkan ? g_spirvCacheDecompressedSize : g_dxilCacheDecompressedSize;
     g_shaderCache = std::make_unique<uint8_t[]>(decompressedSize);
@@ -569,6 +575,8 @@ static void LoadShaderCache()
         decompressedSize, 
         g_vulkan ? g_compressedSpirvCache : g_compressedDxilCache, 
         g_vulkan ? g_spirvCacheCompressedSize : g_dxilCacheCompressedSize);
+
+    g_buttonBcDiff = decompressZstd(g_button_bc_diff, g_button_bc_diff_uncompressed_size);
 }
 
 enum class RenderCommandType
@@ -1243,7 +1251,7 @@ void Video::CreateHostDevice()
 
     g_vulkan = DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan;
 
-    LoadShaderCache();
+    LoadEmbeddedResources();
 
     g_interface = g_vulkan ? CreateVulkanInterface() : CreateD3D12Interface();
     g_device = g_interface->createDevice();
@@ -2606,6 +2614,9 @@ static void ProcSetViewport(const RenderCommand& cmd)
 
 static void SetTexture(GuestDevice* device, uint32_t index, GuestTexture* texture) 
 {
+    if (texture != nullptr && texture->patchedTexture != nullptr)
+        texture = texture->patchedTexture.get();
+
     RenderCommand cmd;
     cmd.type = RenderCommandType::SetTexture;
     cmd.setTexture.index = index;
@@ -4380,6 +4391,34 @@ std::unique_ptr<GuestTexture> LoadTexture(const uint8_t* data, size_t dataSize, 
     return nullptr;
 }
 
+static void DiffPatchTexture(GuestTexture& texture, uint8_t* data, uint32_t dataSize)
+{
+    auto header = reinterpret_cast<BlockCompressionDiffPatchHeader*>(g_buttonBcDiff.get());
+    auto entries = reinterpret_cast<BlockCompressionDiffPatchEntry*>(g_buttonBcDiff.get() + header->entriesOffset);
+    auto end = entries + header->entryCount;
+    
+    XXH64_hash_t hash = XXH3_64bits(data, dataSize);
+    auto findResult = std::lower_bound(entries, end, hash, [](BlockCompressionDiffPatchEntry& lhs, XXH64_hash_t rhs)
+        {
+            return lhs.hash < rhs;
+        });
+
+    if (findResult != end && findResult->hash == hash)
+    {
+        auto patch = reinterpret_cast<BlockCompressionDiffPatch*>(g_buttonBcDiff.get() + findResult->patchesOffset);
+        for (size_t i = 0; i < findResult->patchCount; i++)
+        {
+            assert(patch->destinationOffset + patch->patchBytesSize <= dataSize);
+            memcpy(data + patch->destinationOffset, g_buttonBcDiff.get() + patch->patchBytesOffset, patch->patchBytesSize);
+            ++patch;
+        }
+
+        GuestTexture patchedTexture(ResourceType::Texture);
+        if (LoadTexture(patchedTexture, data, dataSize, {}))
+            texture.patchedTexture = std::make_unique<GuestTexture>(std::move(patchedTexture));
+    }
+}
+
 static void MakePictureData(GuestPictureData* pictureData, uint8_t* data, uint32_t dataSize)
 {
     if ((pictureData->flags & 0x1) == 0 && data != nullptr)
@@ -4391,6 +4430,9 @@ static void MakePictureData(GuestPictureData* pictureData, uint8_t* data, uint32
 #ifdef _DEBUG
             texture.texture->setName(reinterpret_cast<char*>(g_memory.Translate(pictureData->name + 2)));
 #endif
+
+            DiffPatchTexture(texture, data, dataSize);
+
             pictureData->texture = g_memory.MapVirtual(g_userHeap.AllocPhysical<GuestTexture>(std::move(texture)));
             pictureData->type = 0;
         }

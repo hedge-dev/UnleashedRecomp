@@ -145,6 +145,7 @@ struct GuestTexture : GuestBaseTexture
     RenderTextureViewDimension viewDimension = RenderTextureViewDimension::UNKNOWN;
     void* mappedMemory = nullptr;
     std::unique_ptr<RenderFramebuffer> framebuffer;
+    std::unique_ptr<GuestTexture> patchedTexture;
 };
 
 struct GuestLockedRect
