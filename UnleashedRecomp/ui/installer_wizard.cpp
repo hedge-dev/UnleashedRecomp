@@ -2,6 +2,7 @@
 
 #include <nfd.h>
 
+#include <apu/embedded_player.h>
 #include <install/installer.h>
 #include <gpu/video.h>
 #include <gpu/imgui_snapshot.h>
@@ -152,6 +153,7 @@ public:
             return;
         }
 
+        int newCursorIndex = -1;
         ImVec2 tapDirection = {};
         switch (event->type)
         {
@@ -168,7 +170,7 @@ public:
                 break;
             case SDL_SCANCODE_RETURN:
             case SDL_SCANCODE_KP_ENTER:
-                g_currentCursorAccepted = true;
+                g_currentCursorAccepted = (g_currentCursorIndex >= 0);
                 break;
             }
 
@@ -189,7 +191,7 @@ public:
                 tapDirection = { 0.0f, 1.0f };
                 break;
             case SDL_CONTROLLER_BUTTON_A:
-                g_currentCursorAccepted = true;
+                g_currentCursorAccepted = (g_currentCursorIndex >= 0);
                 break;
             }
 
@@ -215,14 +217,12 @@ public:
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEMOTION:
         {
-            g_currentCursorIndex = -1;
-
             for (size_t i = 0; i < g_currentCursorRects.size(); i++)
             {
                 auto &currentRect = g_currentCursorRects[i];
                 if (ImGui::IsMouseHoveringRect(currentRect.first, currentRect.second, false))
                 {
-                    g_currentCursorIndex = int(i);
+                    newCursorIndex = int(i);
 
                     if (event->type == SDL_MOUSEBUTTONDOWN && event->button.button == SDL_BUTTON_LEFT)
                     {
@@ -233,13 +233,17 @@ public:
                 }
             }
 
+            if (newCursorIndex < 0)
+            {
+                g_currentCursorIndex = -1;
+            }
+
             break;
         }
         }
 
         if (tapDirection.x != 0.0f || tapDirection.y != 0.0f)
         {
-            int newCursorIndex = -1;
             if (g_currentCursorIndex >= g_currentCursorRects.size() || g_currentCursorIndex < 0)
             {
                 newCursorIndex = g_currentCursorDefault;
@@ -278,13 +282,16 @@ public:
                     }
                 }
             }
+        }
 
-            if (newCursorIndex >= 0)
+        if (newCursorIndex >= 0)
+        {
+            if (g_currentCursorIndex != newCursorIndex)
             {
-                // TODO: Play sound.
-
-                g_currentCursorIndex = newCursorIndex;
+                Game_PlaySound("sys_worldmap_cursor");
             }
+
+            g_currentCursorIndex = newCursorIndex;
         }
     }
 };
@@ -388,6 +395,7 @@ static bool PushCursorRect(ImVec2 min, ImVec2 max, bool &cursorPressed, bool mak
     {
         if (g_currentCursorAccepted)
         {
+            Game_PlaySound("sys_worldmap_finaldecide");
             cursorPressed = true;
             g_currentCursorAccepted = false;
         }
@@ -1411,6 +1419,7 @@ void InstallerWizard::Shutdown()
 
 bool InstallerWizard::Run(bool skipGame)
 {
+    EmbeddedPlayer::Init();
     NFD_Init();
 
     // Guarantee one controller is initialized. We'll rely on SDL's event loop to get the controller events.
@@ -1443,6 +1452,7 @@ bool InstallerWizard::Run(bool skipGame)
     NFD_Quit();
 
     InstallerWizard::Shutdown();
+    EmbeddedPlayer::Shutdown();
 
     return true;
 }
