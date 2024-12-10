@@ -163,6 +163,8 @@ set_source_files_properties(${LIBMSPACK_C_SOURCES} PROPERTIES SKIP_PRECOMPILE_HE
 set(SMOLV_SOURCE_DIR "${SWA_THIRDPARTY_ROOT}/ShaderRecomp/thirdparty/smol-v/source")
 set(BC_DIFF_SOURCE_DIR "${SWA_TOOLS_ROOT}/bc_diff")
 
+set(MINIAUDIO_INCLUDE_DIRS "${SWA_THIRDPARTY_ROOT}/miniaudio")
+
 set(SWA_USER_CXX_SOURCES
     "user/achievement_data.cpp"
     "user/config.cpp"
@@ -220,7 +222,6 @@ find_package(imgui CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(unofficial-tiny-aes-c CONFIG REQUIRED)
 find_package(nfd CONFIG REQUIRED)
-find_path(MINIAUDIO_INCLUDE_DIRS "miniaudio.h")
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
 add_custom_command(TARGET UnleashedRecomp POST_BUILD
