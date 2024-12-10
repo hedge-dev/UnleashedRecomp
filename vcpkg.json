@@ -23,6 +23,7 @@
         },
         "magic-enum",
         "nativefiledialog-extended",
-        "miniaudio"
+        "miniaudio",
+        "freetype"
     ]
 }

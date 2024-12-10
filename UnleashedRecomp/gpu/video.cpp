@@ -1,35 +1,37 @@
-#include <stdafx.h>
+#include "video.h"
 
-#include <kernel/function.h>
-#include <kernel/heap.h>
+#include "imgui_common.h"
+#include "imgui_snapshot.h"
+#include "imgui_font_builder.h"
+
+#include <bc_diff.h>
 #include <cpu/code_cache.h>
 #include <cpu/guest_code.h>
 #include <cpu/guest_thread.h>
+#include <decompressor.h>
+#include <kernel/function.h>
+#include <kernel/heap.h>
 #include <kernel/memory.h>
 #include <kernel/xdbf.h>
-#include <xxHashMap.h>
+#include <res/bc_diff/button_bc_diff.bin.h>
+#include <res/font/im_font_atlas.dds.h>
 #include <shader/shader_cache.h>
+#include <SWA.h>
 #include <ui/achievement_menu.h>
 #include <ui/achievement_overlay.h>
 #include <ui/button_guide.h>
 #include <ui/fader.h>
+#include <ui/installer_wizard.h>
 #include <ui/message_window.h>
 #include <ui/options_menu.h>
-#include <ui/installer_wizard.h>
-
-#include "imgui_snapshot.h"
-#include "imgui_common.h"
-#include "video.h"
 #include <ui/sdl_listener.h>
 #include <ui/window.h>
 #include <user/config.h>
+#include <xxHashMap.h>
 
-#include <res/font/im_font_atlas.dds.h>
-#include <res/bc_diff/button_bc_diff.bin.h>
-#include <decompressor.h>
-#include <bc_diff.h>
-
-#include <SWA.h>
+#if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)
+#include <magic_enum.hpp>
+#endif
 
 #include "../../thirdparty/ShaderRecomp/ShaderRecomp/shader_common.h"
 #include "shader/copy_vs.hlsl.dxil.h"
@@ -38,6 +40,8 @@
 #include "shader/csd_filter_ps.hlsl.spirv.h"
 #include "shader/enhanced_motion_blur_ps.hlsl.dxil.h"
 #include "shader/enhanced_motion_blur_ps.hlsl.spirv.h"
+#include "shader/gamma_correction_ps.hlsl.dxil.h"
+#include "shader/gamma_correction_ps.hlsl.spirv.h"
 #include "shader/gaussian_blur_3x3.hlsl.dxil.h"
 #include "shader/gaussian_blur_3x3.hlsl.spirv.h"
 #include "shader/gaussian_blur_5x5.hlsl.dxil.h"
@@ -46,26 +50,20 @@
 #include "shader/gaussian_blur_7x7.hlsl.spirv.h"
 #include "shader/gaussian_blur_9x9.hlsl.dxil.h"
 #include "shader/gaussian_blur_9x9.hlsl.spirv.h"
-#include "shader/gamma_correction_ps.hlsl.dxil.h"
-#include "shader/gamma_correction_ps.hlsl.spirv.h"
 #include "shader/imgui_ps.hlsl.dxil.h"
 #include "shader/imgui_ps.hlsl.spirv.h"
 #include "shader/imgui_vs.hlsl.dxil.h"
 #include "shader/imgui_vs.hlsl.spirv.h"
-#include "shader/movie_vs.hlsl.dxil.h"
-#include "shader/movie_vs.hlsl.spirv.h"
 #include "shader/movie_ps.hlsl.dxil.h"
 #include "shader/movie_ps.hlsl.spirv.h"
+#include "shader/movie_vs.hlsl.dxil.h"
+#include "shader/movie_vs.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_2x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_2x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_4x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_4x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.spirv.h"
-
-#if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)
-#include <magic_enum.hpp>
-#endif
 
 extern "C"
 {
@@ -1112,6 +1110,8 @@ struct ImGuiPushConstants
     ImVec2 scale{ 1.0f, 1.0f };
 };
 
+extern ImFontBuilderIO g_fontBuilderIO;
+
 static void CreateImGuiBackend()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -1123,8 +1123,8 @@ static void CreateImGuiBackend()
     IM_DELETE(io.Fonts);
     io.Fonts = ImFontAtlasSnapshot::Load();
 #else
-    io.Fonts->TexDesiredWidth = 4096;
     io.Fonts->AddFontDefault();
+    io.Fonts->FontBuilderIO = &g_fontBuilderIO;
     ImFontAtlasSnapshot::GenerateGlyphRanges();
 #endif
 
@@ -1137,17 +1137,16 @@ static void CreateImGuiBackend()
 
     ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
 
-    RenderComponentMapping componentMapping(RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::R);
-
 #ifdef ENABLE_IM_FONT_ATLAS_SNAPSHOT
-    g_imFontTexture = LoadTexture(decompressZstd(g_im_font_atlas_texture, g_im_font_atlas_texture_uncompressed_size).get(),
-        g_im_font_atlas_texture_uncompressed_size, componentMapping);
+    g_imFontTexture = LoadTexture(
+        decompressZstd(g_im_font_atlas_texture, g_im_font_atlas_texture_uncompressed_size).get(), g_im_font_atlas_texture_uncompressed_size);
 #else
     g_imFontTexture = std::make_unique<GuestTexture>(ResourceType::Texture);
 
+    io.Fonts->Build();
     uint8_t* pixels;
     int width, height;
-    io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
     RenderTextureDesc textureDesc;
     textureDesc.dimension = RenderTextureDimension::TEXTURE_2D;
@@ -1156,17 +1155,17 @@ static void CreateImGuiBackend()
     textureDesc.depth = 1;
     textureDesc.mipLevels = 1;
     textureDesc.arraySize = 1;
-    textureDesc.format = RenderFormat::R8_UNORM;
+    textureDesc.format = RenderFormat::R8G8B8A8_UNORM;
 
     g_imFontTexture->textureHolder = g_device->createTexture(textureDesc);
     g_imFontTexture->texture = g_imFontTexture->textureHolder.get();
 
-    uint32_t rowPitch = (width + PITCH_ALIGNMENT - 1) & ~(PITCH_ALIGNMENT - 1);
+    uint32_t rowPitch = (width * 4 + PITCH_ALIGNMENT - 1) & ~(PITCH_ALIGNMENT - 1);
     uint32_t slicePitch = (rowPitch * height + PLACEMENT_ALIGNMENT - 1) & ~(PLACEMENT_ALIGNMENT - 1);
     auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(slicePitch));
     uint8_t* mappedMemory = reinterpret_cast<uint8_t*>(uploadBuffer->map());
 
-    if (rowPitch == width)
+    if (rowPitch == (width * 4))
     {
         memcpy(mappedMemory, pixels, slicePitch);
     }
@@ -1174,8 +1173,8 @@ static void CreateImGuiBackend()
     {
         for (size_t i = 0; i < height; i++)
         {
-            memcpy(mappedMemory, pixels, width);
-            pixels += width;
+            memcpy(mappedMemory, pixels, width * 4);
+            pixels += width * 4;
             mappedMemory += rowPitch;
         }
     }
@@ -1188,7 +1187,7 @@ static void CreateImGuiBackend()
 
             g_copyCommandList->copyTextureRegion(
                 RenderTextureCopyLocation::Subresource(g_imFontTexture->texture, 0),
-                RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), RenderFormat::R8_UNORM, width, height, 1, rowPitch, 0));
+                RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), RenderFormat::R8G8B8A8_UNORM, width, height, 1, rowPitch / 4, 0));
         });
 
     g_imFontTexture->layout = RenderTextureLayout::COPY_DEST;
@@ -1197,7 +1196,6 @@ static void CreateImGuiBackend()
     textureViewDesc.format = textureDesc.format;
     textureViewDesc.dimension = RenderTextureViewDimension::TEXTURE_2D;
     textureViewDesc.mipLevels = 1;
-    textureViewDesc.componentMapping = componentMapping;
     g_imFontTexture->textureView = g_imFontTexture->texture->createTextureView(textureViewDesc);
 
     g_imFontTexture->descriptorIndex = g_textureDescriptorAllocator.allocate();
@@ -1261,7 +1259,7 @@ static void CreateImGuiBackend()
 
     ddspp::Header header;
     ddspp::HeaderDXT10 headerDX10;
-    ddspp::encode_header(ddspp::R8_UNORM, width, height, 1, ddspp::Texture2D, 1, 1, header, headerDX10);
+    ddspp::encode_header(ddspp::R8G8B8A8_UNORM, width, height, 1, ddspp::Texture2D, 1, 1, header, headerDX10);
 
     file = fopen("im_font_atlas.dds", "wb");
     if (file)
@@ -1269,7 +1267,7 @@ static void CreateImGuiBackend()
         fwrite(&ddspp::DDS_MAGIC, 4, 1, file);
         fwrite(&header, sizeof(header), 1, file);
         fwrite(&headerDX10, sizeof(headerDX10), 1, file);
-        fwrite(pixels, 1, width * height, file);
+        fwrite(pixels, 4, width * height, file);
         fclose(file);
     }
 #endif
