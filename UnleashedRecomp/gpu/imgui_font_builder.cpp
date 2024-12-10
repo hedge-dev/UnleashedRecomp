@@ -9,10 +9,10 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
     std::vector<msdf_atlas::GlyphGeometry> glyphs;
     std::vector<std::pair<size_t, size_t>> ranges;
 
-    for (auto& configData : atlas->ConfigData)
+    for (auto& config : atlas->ConfigData)
     {
         msdf_atlas::Charset charset;
-        const ImWchar* glyphRanges = configData.GlyphRanges;
+        const ImWchar* glyphRanges = config.GlyphRanges;
         while (*glyphRanges != NULL)
         {
             for (ImWchar i = glyphRanges[0]; i <= glyphRanges[1]; i++)
@@ -23,10 +23,18 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
 
         size_t index = glyphs.size();
 
-        auto font = msdfgen::loadFontData(freeType, reinterpret_cast<const msdfgen::byte*>(configData.FontData), configData.FontDataSize);
+        auto font = msdfgen::loadFontData(freeType, reinterpret_cast<const msdfgen::byte*>(config.FontData), config.FontDataSize);
 
         msdf_atlas::FontGeometry fontGeometry(&glyphs);
         fontGeometry.loadCharset(font, 1.0, charset);
+
+        auto& metrics = fontGeometry.getMetrics();
+        config.DstFont->FontSize = 1.0f;
+        config.DstFont->ConfigData = &config;
+        config.DstFont->ConfigDataCount = 1;
+        config.DstFont->ContainerAtlas = atlas;
+        config.DstFont->Ascent = metrics.ascenderY;
+        config.DstFont->Descent = metrics.descenderY;
 
         msdfgen::destroyFont(font);
 
@@ -38,6 +46,8 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
 
     msdf_atlas::TightAtlasPacker packer;
     packer.setMinimumScale(32.0);
+    packer.setMiterLimit(1.0);
+    packer.setPixelRange(2.0);
     packer.pack(glyphs.data(), glyphs.size());
 
     int width = 0, height = 0;
@@ -49,12 +59,6 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
     for (size_t i = 0; i < atlas->ConfigData.size(); i++)
     {
         auto& config = atlas->ConfigData[i];
-        config.DstFont->FontSize = config.SizePixels;
-        config.DstFont->ConfigData = &config;
-        config.DstFont->ConfigDataCount = 1;
-        config.DstFont->ContainerAtlas = atlas;
-        // TODO: ascent? descent? wat do they mean
-
         auto& [index, count] = ranges[i];
         for (size_t j = 0; j < count; j++)
         {
@@ -62,7 +66,18 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
             double x0, y0, x1, y1, u0, v0, u1, v1;
             glyph.getQuadPlaneBounds(x0, y0, x1, y1);
             glyph.getQuadAtlasBounds(u0, v0, u1, v1);
-            config.DstFont->AddGlyph(&config, glyph.getCodepoint(), x0, y0, x1, y1, u0, v0, u1, v1, glyph.getAdvance());
+            config.DstFont->AddGlyph(
+                &config,
+                glyph.getCodepoint(),
+                x0, 
+                -y1 + config.DstFont->Ascent, 
+                x1,
+                -y0 + config.DstFont->Ascent,
+                u0 / width, 
+                v1 / height, 
+                u1 / width, 
+                v0 / height, 
+                glyph.getAdvance());
         }
 
         config.DstFont->BuildLookupTable();

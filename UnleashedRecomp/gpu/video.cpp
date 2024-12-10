@@ -1123,8 +1123,6 @@ static void CreateImGuiBackend()
     IM_DELETE(io.Fonts);
     io.Fonts = ImFontAtlasSnapshot::Load();
 #else
-    io.Fonts->AddFontDefault();
-    io.Fonts->FontBuilderIO = &g_fontBuilderIO;
     ImFontAtlasSnapshot::GenerateGlyphRanges();
 #endif
 
@@ -1141,9 +1139,11 @@ static void CreateImGuiBackend()
     g_imFontTexture = LoadTexture(
         decompressZstd(g_im_font_atlas_texture, g_im_font_atlas_texture_uncompressed_size).get(), g_im_font_atlas_texture_uncompressed_size);
 #else
+    io.Fonts->FontBuilderIO = &g_fontBuilderIO;
+    io.Fonts->Build();
+
     g_imFontTexture = std::make_unique<GuestTexture>(ResourceType::Texture);
 
-    io.Fonts->Build();
     uint8_t* pixels;
     int width, height;
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
