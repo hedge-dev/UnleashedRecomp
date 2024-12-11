@@ -1953,6 +1953,9 @@ static void ProcDrawImGui(const RenderCommand& cmd)
                     }
 
                     descriptorIndex = texture->descriptorIndex;
+
+                    if (texture == g_imFontTexture.get())
+                        descriptorIndex |= 0x80000000;
                 }
 
                 commandList->setGraphicsPushConstants(0, &descriptorIndex, offsetof(ImGuiPushConstants, texture2DDescriptorIndex), sizeof(descriptorIndex));

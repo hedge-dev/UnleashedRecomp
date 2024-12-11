@@ -195,14 +195,15 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
     }
 
     for (auto& glyph : glyphs)
-        glyph.edgeColoring(&msdfgen::edgeColoringInkTrap, 3.0, 0);
+        glyph.edgeColoring(&msdfgen::edgeColoringByDistance, 3.0, 0);
 
     for (auto& customRect : atlas->CustomRects)
         customRects.emplace_back(0, 0, int(customRect.Width), int(customRect.Height));
 
     TightAtlasPacker packer;
     packer.spacing = 1;
-    packer.minScale = 16.0;
+    packer.dimensionsConstraint = msdf_atlas::DimensionsConstraint::POWER_OF_TWO_RECTANGLE;
+    packer.minScale = 24.0;
     packer.miterLimit = 1.0;
     packer.pxRange = 4.0;
     packer.pack(glyphs.data(), glyphs.size(), customRects.data(), customRects.size());
