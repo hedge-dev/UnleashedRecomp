@@ -222,17 +222,14 @@ void ImFontAtlasSnapshot::GenerateGlyphRanges()
         }
     }
 
-    if (App::s_isInit)
+    for (size_t i = XDBF_LANGUAGE_ENGLISH; i <= XDBF_LANGUAGE_ITALIAN; i++)
     {
-        for (size_t i = XDBF_LANGUAGE_ENGLISH; i <= XDBF_LANGUAGE_ITALIAN; i++)
+        auto achievements = g_xdbfWrapper.GetAchievements(static_cast<EXDBFLanguage>(i));
+        for (auto& achievement : achievements)
         {
-            auto achievements = g_xdbfWrapper.GetAchievements(static_cast<EXDBFLanguage>(i));
-            for (auto& achievement : achievements)
-            {
-                GetGlyphs(glyphs, achievement.Name);
-                GetGlyphs(glyphs, achievement.UnlockedDesc);
-                GetGlyphs(glyphs, achievement.LockedDesc);
-            }
+            GetGlyphs(glyphs, achievement.Name);
+            GetGlyphs(glyphs, achievement.UnlockedDesc);
+            GetGlyphs(glyphs, achievement.LockedDesc);
         }
     }
 
