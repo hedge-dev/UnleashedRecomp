@@ -188,7 +188,7 @@ static void DrawGuide(float* offset, ImVec2 regionMin, ImVec2 regionMax, EButton
 
     ImVec2 textPosition = { textMarginX, textMarginY };
 
-    DrawTextWithOutline<int>(font, fontSize, textPosition, IM_COL32_WHITE, text, 2, IM_COL32_BLACK);
+    DrawTextWithOutline(font, fontSize, textPosition, IM_COL32_WHITE, text, 2, IM_COL32_BLACK);
 
     // Add extra luminance to low quality text.
     if (fontQuality == EFontQuality::Low)

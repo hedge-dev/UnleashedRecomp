@@ -83,6 +83,17 @@ static void ResetMarqueeFade()
     SetScale({ 1.0f, 1.0f });
 }
 
+static void SetOutline(float outline)
+{
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetOutline);
+    callbackData->setOutline.outline = outline;
+}
+
+static void ResetOutline()
+{
+    SetOutline(0.0f);
+}
+
 // Aspect ratio aware.
 static float Scale(float size)
 {
@@ -179,41 +190,13 @@ static void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2
     drawList->PopClipRect();
 }
 
-template<typename T>
-static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, T outlineSize, ImU32 outlineColor)
+static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, float outlineSize, ImU32 outlineColor)
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    outlineSize = Scale(outlineSize);
-
-    if constexpr (std::is_same_v<float, T> || std::is_same_v<double, T>)
-    {
-        auto step = outlineSize / 2.0f;
-
-        // TODO: This is still very inefficient!
-        for (float i = -outlineSize; i <= outlineSize; i += step)
-        {
-            for (float j = -outlineSize; j <= outlineSize; j += step)
-            {
-                if (i == 0.0f && j == 0.0f)
-                    continue;
-
-                drawList->AddText(font, fontSize, { pos.x + i, pos.y + j }, outlineColor, text);
-            }
-        }
-    }
-    else if constexpr (std::is_integral_v<T>)
-    {
-        // TODO: This is very inefficient!
-        for (int32_t i = -outlineSize + 1; i < outlineSize; i++)
-        {
-            for (int32_t j = -outlineSize + 1; j < outlineSize; j++)
-            {
-                if (i != 0 || j != 0)
-                    drawList->AddText(font, fontSize, { pos.x + i, pos.y + j }, outlineColor, text);
-            }
-        }
-    }
+    SetOutline(outlineSize);
+    drawList->AddText(font, fontSize, pos, outlineColor, text);
+    ResetOutline();
 
     drawList->AddText(font, fontSize, pos, color, text);
 }
@@ -223,9 +206,8 @@ static void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2&
     auto drawList = ImGui::GetForegroundDrawList();
 
     offset = Scale(offset);
-    radius = Scale(radius);
 
-    DrawTextWithOutline<float>(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text, radius, shadowColour);
+    DrawTextWithOutline(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text, radius, shadowColour);
 
     drawList->AddText(font, fontSize, pos, colour, text, nullptr);
 }

@@ -73,21 +73,6 @@ float4 PixelAntialiasing(float2 uvTexspace)
     return SampleLinear(uvTexspace);
 }
 
-uint GetTexture2DDescriptorIndex()
-{
-    return g_PushConstants.Texture2DDescriptorIndex & 0x7FFFFFFF;
-}
-
-float ComputeScreenPixelRange(float2 texCoord)
-{
-    uint width, height;
-    g_Texture2DDescriptorHeap[GetTexture2DDescriptorIndex()].GetDimensions(width, height);
-    
-    float2 unitRange = 4.0 / float2(width, height);
-    float2 screenTextureSize = 1.0 / fwidth(texCoord);
-    return max(0.5 * dot(unitRange, screenTextureSize), 1.0);
-}
-
 float median(float r, float g, float b)
 {
     return max(min(r, g), min(max(r, g), b));
@@ -100,17 +85,28 @@ float4 main(in Interpolators interpolators) : SV_Target
     
     if (g_PushConstants.Texture2DDescriptorIndex != 0)
     {
-        float4 texture = g_Texture2DDescriptorHeap[GetTexture2DDescriptorIndex()].Sample(g_SamplerDescriptorHeap[0], interpolators.UV);
+        Texture2D<float4> texture = g_Texture2DDescriptorHeap[g_PushConstants.Texture2DDescriptorIndex & 0x7FFFFFFF];
+        float4 textureColor = texture.Sample(g_SamplerDescriptorHeap[0], interpolators.UV);
+        
         if ((g_PushConstants.Texture2DDescriptorIndex & 0x80000000) != 0)
         {
-            float sd = median(texture.r, texture.g, texture.b) - 0.5;
-            float screenPixelDistance = ComputeScreenPixelRange(interpolators.UV) * sd;
-            color.a *= saturate(screenPixelDistance + 0.5);
-            color.a *= texture.a;
+            uint width, height;
+            texture.GetDimensions(width, height);
+            
+            float pxRange = 8.0;
+            float2 unitRange = pxRange / float2(width, height);
+            float2 screenTexSize = 1.0 / fwidth(interpolators.UV);
+            float screenPxRange = max(0.5 * dot(unitRange, screenTexSize), 1.0);
+            
+            float sd = median(textureColor.r, textureColor.g, textureColor.b) - 0.5;
+            float screenPxDistance = screenPxRange * (sd + g_PushConstants.Outline / (pxRange * 2.0));
+            
+            color.a *= saturate(screenPxDistance + 0.5);
+            color.a *= textureColor.a;
         }
         else
         {
-            color *= texture;
+            color *= textureColor;
         }
     }
     

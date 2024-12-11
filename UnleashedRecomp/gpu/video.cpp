@@ -1108,6 +1108,7 @@ struct ImGuiPushConstants
     ImVec2 inverseDisplaySize{};
     ImVec2 origin{ 0.0f, 0.0f };
     ImVec2 scale{ 1.0f, 1.0f };
+    float outline{};
 };
 
 extern ImFontBuilderIO g_fontBuilderIO;
@@ -1951,6 +1952,9 @@ static void ProcDrawImGui(const RenderCommand& cmd)
                     break;       
                 case ImGuiCallback::SetMarqueeFade:
                     setPushConstants(&pushConstants.boundsMin, &callbackData->setMarqueeFade, sizeof(callbackData->setMarqueeFade));
+                    break;
+                case ImGuiCallback::SetOutline:
+                    setPushConstants(&pushConstants.outline, &callbackData->setOutline, sizeof(callbackData->setOutline));
                     break;
                 default:
                     assert(false && "Unknown ImGui callback type.");

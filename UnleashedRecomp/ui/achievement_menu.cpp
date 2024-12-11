@@ -141,14 +141,14 @@ static void DrawHeaderContainer(const char* text)
     SetTextSkew((min.y + max.y) / 2.0f, Scale(3.0f));
 
     // TODO: Apply bevel.
-    DrawTextWithOutline<float>
+    DrawTextWithOutline
     (
         g_fntNewRodinUB,
         fontSize,
         { /* X */ min.x + textMarginX, /* Y */ CENTRE_TEXT_VERT(min, max, textSize) - Scale(5) },
         IM_COL32(255, 255, 255, 255 * alpha),
         text,
-        1.65f,
+        4,
         IM_COL32(0, 0, 0, 255 * alpha)
     );
 
@@ -349,7 +349,7 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
     );
 
     // Draw timestamp text.
-    DrawTextWithOutline<int>
+    DrawTextWithOutline
     (
         g_fntNewRodinDB,
         fontSize,
@@ -523,7 +523,7 @@ static void DrawAchievementTotal(ImVec2 min, ImVec2 max)
     auto fontSize = Scale(20);
     auto textSize = g_fntNewRodinDB->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str());
 
-    DrawTextWithOutline<int>
+    DrawTextWithOutline
     (
         g_fntNewRodinDB,
         fontSize,
