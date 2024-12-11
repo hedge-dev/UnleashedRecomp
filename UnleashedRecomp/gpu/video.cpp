@@ -1895,6 +1895,25 @@ static void ProcDrawImGui(const RenderCommand& cmd)
     pushConstants.inverseDisplaySize = { 1.0f / drawData.DisplaySize.x, 1.0f / drawData.DisplaySize.y };
     commandList->setGraphicsPushConstants(0, &pushConstants);
 
+    size_t pushConstantRangeMin = ~0;
+    size_t pushConstantRangeMax = 0;
+
+    auto setPushConstants = [&](void* destination, const void* source, size_t size)
+        {
+            bool dirty = memcmp(destination, source, size) != 0;
+
+            memcpy(destination, source, size);
+
+            if (dirty)
+            {
+                size_t offset = reinterpret_cast<size_t>(destination) - reinterpret_cast<size_t>(&pushConstants);
+                pushConstantRangeMin = std::min(pushConstantRangeMin, offset);
+                pushConstantRangeMax = std::max(pushConstantRangeMax, offset + size);
+            }
+        };
+
+    ImRect clipRect{};
+
     for (int i = 0; i < drawData.CmdListsCount; i++)
     {
         auto& drawList = drawData.CmdLists[i];
@@ -1919,19 +1938,22 @@ static void ProcDrawImGui(const RenderCommand& cmd)
                 switch (static_cast<ImGuiCallback>(reinterpret_cast<size_t>(drawCmd.UserCallback)))
                 {
                 case ImGuiCallback::SetGradient:
-                    commandList->setGraphicsPushConstants(0, &callbackData->setGradient, offsetof(ImGuiPushConstants, boundsMin), sizeof(callbackData->setGradient));
+                    setPushConstants(&pushConstants.boundsMin, &callbackData->setGradient, sizeof(callbackData->setGradient));
                     break;       
                 case ImGuiCallback::SetShaderModifier:
-                    commandList->setGraphicsPushConstants(0, &callbackData->setShaderModifier, offsetof(ImGuiPushConstants, shaderModifier), sizeof(callbackData->setShaderModifier));
+                    setPushConstants(&pushConstants.shaderModifier, &callbackData->setShaderModifier, sizeof(callbackData->setShaderModifier));
                     break;
                 case ImGuiCallback::SetOrigin:
-                    commandList->setGraphicsPushConstants(0, &callbackData->setOrigin, offsetof(ImGuiPushConstants, origin), sizeof(callbackData->setOrigin));
+                    setPushConstants(&pushConstants.origin, &callbackData->setOrigin, sizeof(callbackData->setOrigin));
                     break;
                 case ImGuiCallback::SetScale:
-                    commandList->setGraphicsPushConstants(0, &callbackData->setScale, offsetof(ImGuiPushConstants, scale), sizeof(callbackData->setScale));
+                    setPushConstants(&pushConstants.scale, &callbackData->setScale, sizeof(callbackData->setScale));
                     break;       
                 case ImGuiCallback::SetMarqueeFade:
-                    commandList->setGraphicsPushConstants(0, &callbackData->setScale, offsetof(ImGuiPushConstants, boundsMin), sizeof(callbackData->setMarqueeFade));
+                    setPushConstants(&pushConstants.boundsMin, &callbackData->setMarqueeFade, sizeof(callbackData->setMarqueeFade));
+                    break;
+                default:
+                    assert(false && "Unknown ImGui callback type.");
                     break;
                 }
             }
@@ -1956,10 +1978,23 @@ static void ProcDrawImGui(const RenderCommand& cmd)
 
                     if (texture == g_imFontTexture.get())
                         descriptorIndex |= 0x80000000;
+
+                    setPushConstants(&pushConstants.texture2DDescriptorIndex, &descriptorIndex, sizeof(descriptorIndex));
                 }
 
-                commandList->setGraphicsPushConstants(0, &descriptorIndex, offsetof(ImGuiPushConstants, texture2DDescriptorIndex), sizeof(descriptorIndex));
-                commandList->setScissors(RenderRect(int32_t(drawCmd.ClipRect.x), int32_t(drawCmd.ClipRect.y), int32_t(drawCmd.ClipRect.z), int32_t(drawCmd.ClipRect.w)));
+                if (pushConstantRangeMin < pushConstantRangeMax)
+                {
+                    commandList->setGraphicsPushConstants(0, reinterpret_cast<const uint8_t*>(&pushConstants) + pushConstantRangeMin, pushConstantRangeMin, pushConstantRangeMax - pushConstantRangeMin);
+                    pushConstantRangeMin = ~0;
+                    pushConstantRangeMax = 0;
+                }
+
+                if (memcmp(&clipRect, &drawCmd.ClipRect, sizeof(clipRect)) != 0)
+                {
+                    commandList->setScissors(RenderRect(int32_t(drawCmd.ClipRect.x), int32_t(drawCmd.ClipRect.y), int32_t(drawCmd.ClipRect.z), int32_t(drawCmd.ClipRect.w)));
+                    clipRect = drawCmd.ClipRect;
+                }
+
                 commandList->drawIndexedInstanced(drawCmd.ElemCount, 1, drawCmd.IdxOffset, drawCmd.VtxOffset, 0);
             }
         }
