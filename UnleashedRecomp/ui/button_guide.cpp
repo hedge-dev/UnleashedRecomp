@@ -1,6 +1,6 @@
 #include "button_guide.h"
 #include "imgui_utils.h"
-#include <gpu/imgui_snapshot.h>
+#include <gpu/imgui/imgui_snapshot.h>
 #include <gpu/video.h>
 #include <hid/hid_detail.h>
 #include <user/config.h>

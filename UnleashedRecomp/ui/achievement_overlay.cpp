@@ -10,7 +10,7 @@
 #include <exports.h>
 #include <decompressor.h>
 #include <res/images/common/general_window.dds.h>
-#include <gpu/imgui_snapshot.h>
+#include <gpu/imgui/imgui_snapshot.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;

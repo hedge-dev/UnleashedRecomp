@@ -87,9 +87,9 @@ set(SWA_CPU_CXX_SOURCES
 
 set(SWA_GPU_CXX_SOURCES
     "gpu/video.cpp"
-    "gpu/imgui_common.cpp"
-    "gpu/imgui_font_builder.cpp"
-    "gpu/imgui_snapshot.cpp"
+    "gpu/imgui/imgui_common.cpp"
+    "gpu/imgui/imgui_font_builder.cpp"
+    "gpu/imgui/imgui_snapshot.cpp"
     "gpu/rhi/plume_d3d12.cpp"
     "gpu/rhi/plume_vulkan.cpp"
 )

@@ -1,8 +1,8 @@
 #include "video.h"
 
-#include "imgui_common.h"
-#include "imgui_snapshot.h"
-#include "imgui_font_builder.h"
+#include "imgui/imgui_common.h"
+#include "imgui/imgui_snapshot.h"
+#include "imgui/imgui_font_builder.h"
 
 #include <bc_diff.h>
 #include <cpu/code_cache.h>

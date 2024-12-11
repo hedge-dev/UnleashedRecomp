@@ -4,7 +4,7 @@
 
 #include <install/installer.h>
 #include <gpu/video.h>
-#include <gpu/imgui_snapshot.h>
+#include <gpu/imgui/imgui_snapshot.h>
 #include <hid/hid.h>
 #include <hid/hid_detail.h>
 #include <locale/locale.h>

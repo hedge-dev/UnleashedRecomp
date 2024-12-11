@@ -13,7 +13,7 @@
 #include <res/images/achievements_menu/trophy.dds.h>
 #include <res/images/common/general_window.dds.h>
 #include <res/images/common/select_fill.dds.h>
-#include <gpu/imgui_snapshot.h>
+#include <gpu/imgui/imgui_snapshot.h>
 
 constexpr double HEADER_CONTAINER_INTRO_MOTION_START = 0;
 constexpr double HEADER_CONTAINER_INTRO_MOTION_END = 15;

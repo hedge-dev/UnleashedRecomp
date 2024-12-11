@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gpu/imgui_common.h>
+#include <gpu/imgui/imgui_common.h>
 #include <gpu/video.h>
 #include <app.h>
 
