@@ -222,7 +222,7 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
         isUnlocked ? IM_COL32(252, 243, 5, 255) : colLockedText,
         achievement.Name.c_str(),
         shadowOffset,
-        0.4f,
+        1.0f,
         colTextShadow
     );
 
@@ -261,7 +261,7 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
             isUnlocked ? IM_COL32_WHITE : colLockedText,
             desc,
             shadowOffset,
-            0.4f,
+            1.0f,
             colTextShadow
         );
     }
@@ -356,7 +356,7 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
         { /* X */ CENTRE_TEXT_HORZ(timestampMin, timestampMax, textSize), /* Y */ CENTRE_TEXT_VERT(timestampMin, timestampMax, textSize) },
         IM_COL32(255, 255, 255, 255),
         buffer,
-        2,
+        4,
         IM_COL32(8, 8, 8, 255)
     );
 
@@ -530,7 +530,7 @@ static void DrawAchievementTotal(ImVec2 min, ImVec2 max)
         { /* X */ imageMin.x - textSize.x - Scale(6), /* Y */ CENTRE_TEXT_VERT(imageMin, imageMax, textSize) },
         IM_COL32(255, 255, 255, 255 * alpha),
         str.c_str(),
-        2,
+        4,
         IM_COL32(0, 0, 0, 255 * alpha)
     );
 }

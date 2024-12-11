@@ -768,7 +768,7 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
         min,
         IM_COL32(255, 255, 255, 255 * alpha),
         buttonText,
-        2,
+        4,
         IM_COL32(baser, baseg, 0, 255 * alpha)
     );
 

@@ -143,7 +143,7 @@ void AchievementOverlay::Draw()
             IM_COL32(252, 243, 5, 255),                                                                  // colour
             strAchievementUnlocked,                                                                      // text
             2,                                                                                           // offset
-            0.4f,                                                                                        // radius
+            1.0f,                                                                                        // radius
             IM_COL32(0, 0, 0, 255)                                                                       // shadowColour
         );
 
@@ -156,7 +156,7 @@ void AchievementOverlay::Draw()
             IM_COL32(255, 255, 255, 255),                                                                                      // colour
             strAchievementName,                                                                                                // text
             2,                                                                                                                 // offset
-            0.4f,                                                                                                              // radius
+            1.0f,                                                                                                              // radius
             IM_COL32(0, 0, 0, 255)                                                                                             // shadowColour
         );
 

@@ -404,7 +404,7 @@ static bool DrawCategories()
             min,
             IM_COL32_WHITE,
             GetCategory(i).c_str(),
-            3,
+            4,
             IM_COL32_BLACK,
             IMGUI_SHADER_MODIFIER_CATEGORY_BEVEL
         );
@@ -771,7 +771,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         min,
         IM_COL32(255, 255, 255, 255 * alpha),
         valueText.data(),
-        2,
+        4,
         IM_COL32(0, 0, 0, 255 * alpha)
     );
 

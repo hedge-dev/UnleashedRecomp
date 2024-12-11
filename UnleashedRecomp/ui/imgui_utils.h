@@ -207,13 +207,15 @@ static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2
         SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 }
 
-static void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text, float offset = 2.0f, float radius = 0.4f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))
+static void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text, float offset = 2.0f, float radius = 1.0f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
     offset = Scale(offset);
 
-    DrawTextWithOutline(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text, radius, shadowColour);
+    SetOutline(radius);
+    drawList->AddText(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text);
+    ResetOutline();
 
     drawList->AddText(font, fontSize, pos, colour, text, nullptr);
 }
