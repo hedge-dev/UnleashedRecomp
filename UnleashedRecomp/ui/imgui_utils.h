@@ -190,7 +190,7 @@ static void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2
     drawList->PopClipRect();
 }
 
-static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, float outlineSize, ImU32 outlineColor)
+static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, float outlineSize, ImU32 outlineColor, uint32_t shaderModifier = IMGUI_SHADER_MODIFIER_NONE)
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
@@ -198,7 +198,13 @@ static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2
     drawList->AddText(font, fontSize, pos, outlineColor, text);
     ResetOutline();
 
+    if (shaderModifier != IMGUI_SHADER_MODIFIER_NONE)
+        SetShaderModifier(shaderModifier);
+
     drawList->AddText(font, fontSize, pos, color, text);
+
+    if (shaderModifier != IMGUI_SHADER_MODIFIER_NONE)
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 }
 
 static void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text, float offset = 2.0f, float radius = 0.4f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))

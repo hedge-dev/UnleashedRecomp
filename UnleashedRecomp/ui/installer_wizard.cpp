@@ -559,7 +559,7 @@ static void DrawScanlineBars()
     // Installer text
     const std::string &headerText = Localise(g_currentPage == WizardPage::Installing ? "Installer_Header_Installing" : "Installer_Header_Installer");
     int textAlpha = std::lround(255.0f * ComputeMotionInstaller(g_appearTime, g_disappearTime, TITLE_ANIMATION_TIME, TITLE_ANIMATION_DURATION));
-    DrawTextWithOutline(g_dfsogeistdFont, Scale(42.0f), { Scale(285.0f), Scale(57.0f) }, IM_COL32(255, 195, 0, textAlpha), headerText.c_str(), 4, IM_COL32(0, 0, 0, textAlpha));
+    DrawTextWithOutline(g_dfsogeistdFont, Scale(42.0f), { Scale(285.0f), Scale(57.0f) }, IM_COL32(255, 195, 0, textAlpha), headerText.c_str(), 4, IM_COL32(0, 0, 0, textAlpha), IMGUI_SHADER_MODIFIER_TITLE_BEVEL);
 
     // Top bar line
     drawList->AddLine

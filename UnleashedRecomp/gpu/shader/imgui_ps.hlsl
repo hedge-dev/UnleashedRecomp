@@ -101,6 +101,31 @@ float4 main(in Interpolators interpolators) : SV_Target
             float sd = median(textureColor.r, textureColor.g, textureColor.b) - 0.5;
             float screenPxDistance = screenPxRange * (sd + g_PushConstants.Outline / (pxRange * 2.0));
             
+            if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_TITLE_BEVEL)
+            {
+                float2 normal = normalize(float3(ddx(sd), ddy(sd), 0.01)).xy;
+                float3 rimColor = float3(1, 0.8, 0.29);
+                float3 shadowColor = float3(0.84, 0.57, 0);
+
+                float cosTheta = dot(normal, normalize(float2(1, 1)));
+                float3 gradient = lerp(color.rgb, cosTheta >= 0.0 ? rimColor : shadowColor, abs(cosTheta));
+                color.rgb = lerp(gradient, color.rgb, pow(saturate(sd + 0.8), 32.0));
+            }
+            else if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_CATEGORY_BEVEL)
+            {
+                float2 normal = normalize(float3(ddx(sd), ddy(sd), 0.25)).xy;
+                float cosTheta = dot(normal, normalize(float2(1, 1)));
+                float gradient = 1.0 + cosTheta * 0.5;
+                color.rgb = saturate(color.rgb * gradient);
+            }
+            else if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_TEXT_SKEW)
+            {
+                float2 normal = normalize(float3(ddx(sd), ddy(sd), 0.5)).xy;
+                float cosTheta = dot(normal, normalize(float2(1, 1)));
+                float gradient = saturate(1.0 + cosTheta);
+                color.rgb = lerp(color.rgb * gradient, color.rgb, pow(saturate(sd + 0.77), 32.0));
+            }
+
             color.a *= saturate(screenPxDistance + 0.5);
             color.a *= textureColor.a;
         }

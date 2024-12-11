@@ -138,7 +138,15 @@ static void DrawScanlineBars()
 
     // Options text
     // TODO: localise this.
-    DrawTextWithOutline(g_dfsogeistdFont, Scale(48.0f), { Scale(122.0f), Scale(56.0f) }, IM_COL32(255, 195, 0, 255), "OPTIONS", 4, IM_COL32_BLACK);
+    DrawTextWithOutline(
+        g_dfsogeistdFont,
+        Scale(48.0f),
+        { Scale(122.0f), Scale(56.0f) },
+        IM_COL32(255, 190, 33, 255),
+        "OPTIONS",
+        4,
+        IM_COL32_BLACK,
+        IMGUI_SHADER_MODIFIER_TITLE_BEVEL);
 
     // Top bar line
     drawList->AddLine
@@ -397,7 +405,8 @@ static bool DrawCategories()
             IM_COL32_WHITE,
             GetCategory(i).c_str(),
             3,
-            IM_COL32_BLACK
+            IM_COL32_BLACK,
+            IMGUI_SHADER_MODIFIER_CATEGORY_BEVEL
         );
 
         ResetGradient();
