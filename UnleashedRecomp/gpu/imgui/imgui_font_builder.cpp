@@ -179,10 +179,10 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
         auto font = msdfgen::loadFontData(freeType, reinterpret_cast<const msdfgen::byte*>(config.FontData), config.FontDataSize);
 
         msdf_atlas::FontGeometry fontGeometry(&glyphs);
-        fontGeometry.loadCharset(font, 1.0, charset);
+        fontGeometry.loadCharset(font, config.SizePixels, charset);
 
         auto& metrics = fontGeometry.getMetrics();
-        config.DstFont->FontSize = 1.0f;
+        config.DstFont->FontSize = config.SizePixels;
         config.DstFont->ConfigData = &config;
         config.DstFont->ConfigDataCount = 1;
         config.DstFont->ContainerAtlas = atlas;
@@ -203,7 +203,6 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
     TightAtlasPacker packer;
     packer.spacing = 1;
     packer.dimensionsConstraint = msdf_atlas::DimensionsConstraint::POWER_OF_TWO_RECTANGLE;
-    packer.minScale = 24.0;
     packer.miterLimit = 1.0;
     packer.pxRange = 8.0;
     packer.pack(glyphs.data(), glyphs.size(), customRects.data(), customRects.size());

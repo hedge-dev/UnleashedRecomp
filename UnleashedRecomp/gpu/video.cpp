@@ -1124,6 +1124,7 @@ static void CreateImGuiBackend()
     IM_DELETE(io.Fonts);
     io.Fonts = ImFontAtlasSnapshot::Load();
 #else
+    io.Fonts->AddFontDefault();
     ImFontAtlasSnapshot::GenerateGlyphRanges();
 #endif
 
