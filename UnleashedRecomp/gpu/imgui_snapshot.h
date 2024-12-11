@@ -58,5 +58,5 @@ struct ImFontAtlasSnapshot
     static void GenerateGlyphRanges();
 
     // When ENABLE_IM_FONT_ATLAS_SNAPSHOT is undefined, this creates the font runtime instead. 
-    static ImFont* GetFont(const char* name, float size);
+    static ImFont* GetFont(const char* name);
 };

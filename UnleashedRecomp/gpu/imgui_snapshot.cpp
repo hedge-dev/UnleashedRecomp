@@ -252,12 +252,12 @@ void ImFontAtlasSnapshot::GenerateGlyphRanges()
     g_glyphRanges.push_back(0);
 }
 
-ImFont* ImFontAtlasSnapshot::GetFont(const char* name, float size)
+ImFont* ImFontAtlasSnapshot::GetFont(const char* name)
 {
     auto fontAtlas = ImGui::GetIO().Fonts;
     for (auto& configData : fontAtlas->ConfigData)
     {
-        if (strstr(configData.Name, name) != nullptr && abs(configData.SizePixels - size) < 0.001f)
+        if (strstr(configData.Name, name) != nullptr)
         {
             assert(configData.DstFont != nullptr);
             return configData.DstFont;
@@ -268,5 +268,5 @@ ImFont* ImFontAtlasSnapshot::GetFont(const char* name, float size)
     assert(false && "Unable to locate equivalent font in the atlas file.");
 #endif
 
-    return fontAtlas->AddFontFromFileTTF(name, size, nullptr, g_glyphRanges.data());
+    return fontAtlas->AddFontFromFileTTF(name, 1.0f, nullptr, g_glyphRanges.data());
 }

@@ -256,9 +256,7 @@ void MessageWindow::Init()
 {
     auto& io = ImGui::GetIO();
 
-    constexpr float FONT_SCALE = 2.0f;
-
-    g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
+    g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
 
     g_upSelectionCursor = LOAD_ZSTD_TEXTURE(g_select_fade);
     g_upWindow = LOAD_ZSTD_TEXTURE(g_general_window);

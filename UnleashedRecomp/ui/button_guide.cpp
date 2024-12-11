@@ -214,10 +214,8 @@ void ButtonGuide::Init()
 {
     auto& io = ImGui::GetIO();
 
-    constexpr float FONT_SCALE = 2.0f;
-
-    g_fntNewRodin = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-M.otf", 24.0f * FONT_SCALE);
-    g_fntNewRodinLQ = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-M.otf", 19.0f);
+    g_fntNewRodin = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-M.otf");
+    g_fntNewRodinLQ = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-M.otf");
 
     g_upControllerIcons = LOAD_ZSTD_TEXTURE(g_controller);
     g_upKBMIcons = LOAD_ZSTD_TEXTURE(g_kbm);

@@ -73,13 +73,34 @@ float4 PixelAntialiasing(float2 uvTexspace)
     return SampleLinear(uvTexspace);
 }
 
+float ComputeScreenPixelRange(float2 texCoord)
+{
+    uint width, height;
+    g_Texture2DDescriptorHeap[g_PushConstants.Texture2DDescriptorIndex].GetDimensions(width, height);
+    
+    float2 unitRange = 4.0 / float2(width, height);
+    float2 screenTextureSize = 1.0 / fwidth(texCoord);
+    return max(0.5 * dot(unitRange, screenTextureSize), 1.0);
+}
+
+float median(float r, float g, float b)
+{
+    return max(min(r, g), min(max(r, g), b));
+}
+
 float4 main(in Interpolators interpolators) : SV_Target
 {
     float4 color = interpolators.Color;
     color *= PixelAntialiasing(interpolators.Position.xy - 0.5);
     
     if (g_PushConstants.Texture2DDescriptorIndex != 0)
-        color *= g_Texture2DDescriptorHeap[g_PushConstants.Texture2DDescriptorIndex].Sample(g_SamplerDescriptorHeap[0], interpolators.UV);
+    {
+        float4 msd = g_Texture2DDescriptorHeap[g_PushConstants.Texture2DDescriptorIndex].Sample(g_SamplerDescriptorHeap[0], interpolators.UV);
+        float sd = median(msd.r, msd.g, msd.b) - 0.5;
+        float screenPixelDistance = ComputeScreenPixelRange(interpolators.UV) * sd;
+        color.a *= saturate(screenPixelDistance + 0.5);
+        color.a *= msd.a;
+    }
     
     if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_MARQUEE_FADE)
     {

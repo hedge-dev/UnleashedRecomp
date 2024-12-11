@@ -1334,10 +1334,9 @@ static void DrawMessagePrompt()
 void InstallerWizard::Init()
 {
     auto &io = ImGui::GetIO();
-    constexpr float FONT_SCALE = 2.0f;
-    g_seuratFont = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
-    g_dfsogeistdFont = ImFontAtlasSnapshot::GetFont("DFSoGeiStd-W7.otf", 48.0f * FONT_SCALE);
-    g_newRodinFont = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
+    g_seuratFont = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
+    g_dfsogeistdFont = ImFontAtlasSnapshot::GetFont("DFSoGeiStd-W7.otf");
+    g_newRodinFont = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-DB.otf");
     g_installTextures[0] = LOAD_ZSTD_TEXTURE(g_install_001);
     g_installTextures[1] = LOAD_ZSTD_TEXTURE(g_install_002);
     g_installTextures[2] = LOAD_ZSTD_TEXTURE(g_install_003);

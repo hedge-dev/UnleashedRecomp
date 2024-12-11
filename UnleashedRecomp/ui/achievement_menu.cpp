@@ -765,11 +765,9 @@ void AchievementMenu::Init()
 {
     auto& io = ImGui::GetIO();
 
-    constexpr float FONT_SCALE = 2.0f;
-
-    g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
-    g_fntNewRodinDB = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
-    g_fntNewRodinUB = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
+    g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
+    g_fntNewRodinDB = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-DB.otf");
+    g_fntNewRodinUB = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-UB.otf");
 
     g_upTrophyIcon = LOAD_ZSTD_TEXTURE(g_trophy);
     g_upSelectionCursor = LOAD_ZSTD_TEXTURE(g_select_fill);
