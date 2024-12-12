@@ -7,6 +7,7 @@
 
 #define AUDIO_DRIVER_KEY (uint32_t)('DAUD')
 
+// Use to dump raw audio captures to the game folder.
 //#define AUDIO_DUMP_SAMPLES_PATH "audio.pcm"
 
 #ifdef AUDIO_DUMP_SAMPLES_PATH

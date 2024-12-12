@@ -5,16 +5,20 @@
 
 #include <res/sounds/sys_worldmap_cursor.wav.h>
 #include <res/sounds/sys_worldmap_finaldecide.wav.h>
+#include <res/sounds/sys_actstg_pausecansel.wav.h>
 #include <res/sounds/sys_actstg_pausecursor.wav.h>
 #include <res/sounds/sys_actstg_pausedecide.wav.h>
+#include <res/sounds/sys_actstg_pausewinclose.wav.h>
 #include <res/sounds/sys_actstg_pausewinopen.wav.h>
 
 enum class EmbeddedSound
 {
     SysWorldMapCursor,
     SysWorldMapFinalDecide,
+    SysActStgPauseCansel,
     SysActStgPauseCursor,
     SysActStgPauseDecide,
+    SysActStgPauseWinClose,
     SysActStgPauseWinOpen,
     Count,
 };
@@ -34,8 +38,10 @@ static const std::unordered_map<std::string, EmbeddedSound> g_embeddedSoundMap =
 {
     { "sys_worldmap_cursor", EmbeddedSound::SysWorldMapCursor },
     { "sys_worldmap_finaldecide", EmbeddedSound::SysWorldMapFinalDecide },
+    { "sys_actstg_pausecansel", EmbeddedSound::SysActStgPauseCansel },
     { "sys_actstg_pausecursor", EmbeddedSound::SysActStgPauseCursor },
     { "sys_actstg_pausedecide", EmbeddedSound::SysActStgPauseDecide },
+    { "sys_actstg_pausewinclose", EmbeddedSound::SysActStgPauseWinClose },
     { "sys_actstg_pausewinopen", EmbeddedSound::SysActStgPauseWinOpen },
 };
 
@@ -60,6 +66,10 @@ static void PlayEmbeddedSound(EmbeddedSound s)
                 soundData = g_sys_worldmap_finaldecide;
                 soundDataSize = sizeof(g_sys_worldmap_finaldecide);
                 break;
+            case EmbeddedSound::SysActStgPauseCansel:
+                soundData = g_sys_actstg_pausecansel;
+                soundDataSize = sizeof(g_sys_actstg_pausecansel);
+                break;
             case EmbeddedSound::SysActStgPauseCursor:
                 soundData = g_sys_actstg_pausecursor;
                 soundDataSize = sizeof(g_sys_actstg_pausecursor);
@@ -67,6 +77,10 @@ static void PlayEmbeddedSound(EmbeddedSound s)
             case EmbeddedSound::SysActStgPauseDecide:
                 soundData = g_sys_actstg_pausedecide;
                 soundDataSize = sizeof(g_sys_actstg_pausedecide);
+                break;
+            case EmbeddedSound::SysActStgPauseWinClose:
+                soundData = g_sys_actstg_pausewinclose;
+                soundDataSize = sizeof(g_sys_actstg_pausewinclose);
                 break;
             case EmbeddedSound::SysActStgPauseWinOpen:
                 soundData = g_sys_actstg_pausewinopen;

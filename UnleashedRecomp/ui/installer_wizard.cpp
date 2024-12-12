@@ -134,7 +134,7 @@ static WizardPage g_currentPage = g_firstPage;
 static std::string g_currentMessagePrompt = "";
 static bool g_currentMessagePromptConfirmation = false;
 static int g_currentMessageResult = -1;
-static bool g_currentMessageUpdateRemaining = false;
+static bool g_filesPickerSkipUpdate = false;
 static ImVec2 g_joypadAxis = {};
 static int g_currentCursorIndex = -1;
 static int g_currentCursorDefault = 0;
@@ -217,7 +217,7 @@ public:
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEMOTION:
         {
-            for (size_t i = 0; i < g_currentCursorRects.size(); i++)
+            for (size_t i = 0; i < g_currentCursorRects.size() && !g_filesPickerSkipUpdate; i++)
             {
                 auto &currentRect = g_currentCursorRects[i];
                 if (ImGui::IsMouseHoveringRect(currentRect.first, currentRect.second, false))
@@ -888,7 +888,7 @@ static bool ShowFilesPicker(std::list<std::filesystem::path> &filePaths)
 
     const nfdpathset_t *pathSet;
     nfdresult_t result = NFD_OpenDialogMultipleU8(&pathSet, nullptr, 0, nullptr);
-    g_currentMessageUpdateRemaining = true;
+    g_filesPickerSkipUpdate = true;
 
     if (result == NFD_OKAY)
     {
@@ -908,7 +908,7 @@ static bool ShowFoldersPicker(std::list<std::filesystem::path> &folderPaths)
 
     const nfdpathset_t *pathSet;
     nfdresult_t result = NFD_PickFolderMultipleU8(&pathSet, nullptr);
-    g_currentMessageUpdateRemaining = true;
+    g_filesPickerSkipUpdate = true;
 
     if (result == NFD_OKAY)
     {
@@ -1012,6 +1012,8 @@ static void DrawLanguagePicker()
 
 static void DrawSourcePickers()
 {
+    g_filesPickerSkipUpdate = false;
+
     bool buttonPressed = false;
     std::list<std::filesystem::path> paths;
     if (g_currentPage == WizardPage::SelectGameAndUpdate || g_currentPage == WizardPage::SelectDLC)
@@ -1301,17 +1303,16 @@ static void DrawBorders()
 
 static void DrawMessagePrompt()
 {
-    if (g_currentMessagePrompt.empty())
-    {
-        return;
-    }
-
-    if (g_currentMessageUpdateRemaining)
+    if (g_filesPickerSkipUpdate)
     {
         // If a blocking function like the files picker is called, we must wait one update before actually showing
         // the message box, as a lot of time has passed since the last real update. Otherwise, animations will play
         // too quickly and input glitches might happen.
-        g_currentMessageUpdateRemaining = false;
+        return;
+    }
+
+    if (g_currentMessagePrompt.empty())
+    {
         return;
     }
 
