@@ -13,58 +13,87 @@ enum EmbeddedSound
     EmbeddedSoundCount,
 };
 
+struct EmbeddedSoundData
+{
+    static const int SimultaneousLimit = 4;
+    std::array<std::unique_ptr<ma_sound>, SimultaneousLimit> sounds;
+    std::array<std::unique_ptr<ma_decoder>, SimultaneousLimit> decoders;
+    int oldestIndex = 0;
+};
+
 static ma_engine g_audioEngine = {};
 static bool g_audioEngineInitialized = false;
-static std::array<ma_sound, EmbeddedSoundCount> g_embeddedSoundCache = {};
-static std::array<ma_decoder, EmbeddedSoundCount> g_embeddedDecoderCache = {};
+static std::array<EmbeddedSoundData, EmbeddedSoundCount> g_embeddedSoundData = {};
 static const std::unordered_map<std::string, EmbeddedSound> g_embeddedSoundMap =
 {
     { "sys_worldmap_cursor", EmbeddedSoundSysWorldMapCursor },
     { "sys_worldmap_finaldecide", EmbeddedSoundSysWorldMapFinalDecide },
 };
 
-void InitEmbeddedSound(EmbeddedSound s)
+static void PlayEmbeddedSound(EmbeddedSound s)
 {
-    ma_sound &sound = g_embeddedSoundCache[s];
-    ma_decoder &decoder = g_embeddedDecoderCache[s];
-    const void *soundData = nullptr;
-    size_t soundDataSize = 0;
-    float volume = Config::EffectsVolume;
-    switch (s)
+    EmbeddedSoundData &data = g_embeddedSoundData[s];
+    int pickedIndex = -1;
+    for (int i = 0; (i < EmbeddedSoundData::SimultaneousLimit) && (pickedIndex < 0); i++)
     {
-    case EmbeddedSoundSysWorldMapCursor:
-        soundData = g_sys_worldmap_cursor;
-        soundDataSize = sizeof(g_sys_worldmap_cursor);
-        volume *= 0.259f;
-        break;
-    case EmbeddedSoundSysWorldMapFinalDecide:
-        soundData = g_sys_worldmap_finaldecide;
-        soundDataSize = sizeof(g_sys_worldmap_finaldecide);
-        volume *= 0.61f;
-        break;
-    default:
-        assert(false && "Unknown embedded sound.");
-        return;
+        if (data.sounds[i] == nullptr)
+        {
+            // The sound hasn't been created yet, create it and pick it.
+            const void *soundData = nullptr;
+            size_t soundDataSize = 0;
+            switch (s)
+            {
+            case EmbeddedSoundSysWorldMapCursor:
+                soundData = g_sys_worldmap_cursor;
+                soundDataSize = sizeof(g_sys_worldmap_cursor);
+                break;
+            case EmbeddedSoundSysWorldMapFinalDecide:
+                soundData = g_sys_worldmap_finaldecide;
+                soundDataSize = sizeof(g_sys_worldmap_finaldecide);
+                break;
+            default:
+                assert(false && "Unknown embedded sound.");
+                return;
+            }
+
+            ma_result res;
+            data.decoders[i] = std::make_unique<ma_decoder>();
+            res = ma_decoder_init_memory(soundData, soundDataSize, nullptr, data.decoders[i].get());
+            if (res != MA_SUCCESS)
+            {
+                fprintf(stderr, "ma_decoder_init_memory failed with error code %d on embedded sound %d.\n", res, s);
+                return;
+            }
+
+            data.sounds[i] = std::make_unique<ma_sound>();
+            res = ma_sound_init_from_data_source(&g_audioEngine, data.decoders[i].get(), MA_SOUND_FLAG_DECODE, nullptr, data.sounds[i].get());
+            if (res != MA_SUCCESS)
+            {
+                fprintf(stderr, "ma_sound_init_from_data_source failed with error code %d on embedded sound %d.\n", res, s);
+                return;
+            }
+
+            pickedIndex = i;
+        }
+        else if (ma_sound_at_end(data.sounds[i].get()))
+        {
+            // A sound has reached the end, pick it.
+            pickedIndex = i;
+        }
     }
 
-    if (soundData != nullptr)
+    if (pickedIndex < 0)
     {
-        ma_result res;
-        res = ma_decoder_init_memory(soundData, soundDataSize, nullptr, &decoder);
-        if (res != MA_SUCCESS)
-        {
-            fprintf(stderr, "ma_decoder_init_memory failed with error code %d on embedded sound %d.\n", res, s);
-            return;
-        }
+        // No free slots are available, pick the oldest one.
+        pickedIndex = data.oldestIndex;
+        data.oldestIndex = (data.oldestIndex + 1) % EmbeddedSoundData::SimultaneousLimit;
+    }
 
-        res = ma_sound_init_from_data_source(&g_audioEngine, &decoder, MA_SOUND_FLAG_DECODE, nullptr, &sound);
-        if (res != MA_SUCCESS)
-        {
-            fprintf(stderr, "ma_sound_init_from_data_source failed with error code %d on embedded sound %d.\n", res, s);
-            return;
-        }
-
-        ma_sound_set_volume(&sound, volume);
+    if (data.sounds[pickedIndex] != nullptr)
+    {
+        ma_sound_set_volume(data.sounds[pickedIndex].get(), Config::EffectsVolume);
+        ma_sound_seek_to_pcm_frame(data.sounds[pickedIndex].get(), 0);
+        ma_sound_start(data.sounds[pickedIndex].get());
     }
 }
 
@@ -101,34 +130,37 @@ void EmbeddedPlayer::Play(const char *name)
         return;
     }
 
-    ma_sound &sound = g_embeddedSoundCache[it->second];
-    if (sound.pDataSource == nullptr)
-    {
-        InitEmbeddedSound(it->second);
-    }
-
-    if (sound.pDataSource != nullptr)
-    {
-        ma_sound_seek_to_pcm_frame(&sound, 0);
-        ma_sound_start(&sound);
-    }
+    PlayEmbeddedSound(it->second);
 }
 
 void EmbeddedPlayer::Shutdown() 
 {
-    for (ma_sound &sound : g_embeddedSoundCache)
+    for (EmbeddedSoundData &data : g_embeddedSoundData)
     {
-        if (sound.pDataSource != nullptr)
+        for (auto &sound : data.sounds)
         {
-            ma_sound_uninit(&sound);
-        }
-    }
+            if (sound != nullptr)
+            {
+                if (sound->pDataSource != nullptr)
+                {
+                    ma_sound_uninit(sound.get());
+                }
 
-    for (ma_decoder &decoder : g_embeddedDecoderCache)
-    {
-        if (decoder.pBackend != nullptr)
+                sound.reset();
+            }
+        }
+
+        for (auto &decoder : data.decoders)
         {
-            ma_decoder_uninit(&decoder);
+            if (decoder != nullptr)
+            {
+                if (decoder->pBackend != nullptr)
+                {
+                    ma_decoder_uninit(decoder.get());
+                }
+
+                decoder.reset();
+            }
         }
     }
 
