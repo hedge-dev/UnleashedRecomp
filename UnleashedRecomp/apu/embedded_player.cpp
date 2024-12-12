@@ -5,12 +5,18 @@
 
 #include <res/sounds/sys_worldmap_cursor.wav.h>
 #include <res/sounds/sys_worldmap_finaldecide.wav.h>
+#include <res/sounds/sys_actstg_pausecursor.wav.h>
+#include <res/sounds/sys_actstg_pausedecide.wav.h>
+#include <res/sounds/sys_actstg_pausewinopen.wav.h>
 
-enum EmbeddedSound
+enum class EmbeddedSound
 {
-    EmbeddedSoundSysWorldMapCursor,
-    EmbeddedSoundSysWorldMapFinalDecide,
-    EmbeddedSoundCount,
+    SysWorldMapCursor,
+    SysWorldMapFinalDecide,
+    SysActStgPauseCursor,
+    SysActStgPauseDecide,
+    SysActStgPauseWinOpen,
+    Count,
 };
 
 struct EmbeddedSoundData
@@ -23,16 +29,19 @@ struct EmbeddedSoundData
 
 static ma_engine g_audioEngine = {};
 static bool g_audioEngineInitialized = false;
-static std::array<EmbeddedSoundData, EmbeddedSoundCount> g_embeddedSoundData = {};
+static std::array<EmbeddedSoundData, size_t(EmbeddedSound::Count)> g_embeddedSoundData = {};
 static const std::unordered_map<std::string, EmbeddedSound> g_embeddedSoundMap =
 {
-    { "sys_worldmap_cursor", EmbeddedSoundSysWorldMapCursor },
-    { "sys_worldmap_finaldecide", EmbeddedSoundSysWorldMapFinalDecide },
+    { "sys_worldmap_cursor", EmbeddedSound::SysWorldMapCursor },
+    { "sys_worldmap_finaldecide", EmbeddedSound::SysWorldMapFinalDecide },
+    { "sys_actstg_pausecursor", EmbeddedSound::SysActStgPauseCursor },
+    { "sys_actstg_pausedecide", EmbeddedSound::SysActStgPauseDecide },
+    { "sys_actstg_pausewinopen", EmbeddedSound::SysActStgPauseWinOpen },
 };
 
 static void PlayEmbeddedSound(EmbeddedSound s)
 {
-    EmbeddedSoundData &data = g_embeddedSoundData[s];
+    EmbeddedSoundData &data = g_embeddedSoundData[size_t(s)];
     int pickedIndex = -1;
     for (int i = 0; (i < EmbeddedSoundData::SimultaneousLimit) && (pickedIndex < 0); i++)
     {
@@ -43,13 +52,25 @@ static void PlayEmbeddedSound(EmbeddedSound s)
             size_t soundDataSize = 0;
             switch (s)
             {
-            case EmbeddedSoundSysWorldMapCursor:
+            case EmbeddedSound::SysWorldMapCursor:
                 soundData = g_sys_worldmap_cursor;
                 soundDataSize = sizeof(g_sys_worldmap_cursor);
                 break;
-            case EmbeddedSoundSysWorldMapFinalDecide:
+            case EmbeddedSound::SysWorldMapFinalDecide:
                 soundData = g_sys_worldmap_finaldecide;
                 soundDataSize = sizeof(g_sys_worldmap_finaldecide);
+                break;
+            case EmbeddedSound::SysActStgPauseCursor:
+                soundData = g_sys_actstg_pausecursor;
+                soundDataSize = sizeof(g_sys_actstg_pausecursor);
+                break;
+            case EmbeddedSound::SysActStgPauseDecide:
+                soundData = g_sys_actstg_pausedecide;
+                soundDataSize = sizeof(g_sys_actstg_pausedecide);
+                break;
+            case EmbeddedSound::SysActStgPauseWinOpen:
+                soundData = g_sys_actstg_pausewinopen;
+                soundDataSize = sizeof(g_sys_actstg_pausewinopen);
                 break;
             default:
                 assert(false && "Unknown embedded sound.");
@@ -61,7 +82,7 @@ static void PlayEmbeddedSound(EmbeddedSound s)
             res = ma_decoder_init_memory(soundData, soundDataSize, nullptr, data.decoders[i].get());
             if (res != MA_SUCCESS)
             {
-                fprintf(stderr, "ma_decoder_init_memory failed with error code %d on embedded sound %d.\n", res, s);
+                fprintf(stderr, "ma_decoder_init_memory failed with error code %d.\n", res);
                 return;
             }
 
@@ -69,7 +90,7 @@ static void PlayEmbeddedSound(EmbeddedSound s)
             res = ma_sound_init_from_data_source(&g_audioEngine, data.decoders[i].get(), MA_SOUND_FLAG_DECODE, nullptr, data.sounds[i].get());
             if (res != MA_SUCCESS)
             {
-                fprintf(stderr, "ma_sound_init_from_data_source failed with error code %d on embedded sound %d.\n", res, s);
+                fprintf(stderr, "ma_sound_init_from_data_source failed with error code %d.\n", res);
                 return;
             }
 
