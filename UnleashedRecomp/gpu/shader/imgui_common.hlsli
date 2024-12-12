@@ -1,9 +1,11 @@
 #pragma once
 
+#include "../imgui/imgui_common.h"
+
 struct PushConstants
 {
-    float2 GradientMin;
-    float2 GradientMax;
+    float2 BoundsMin;
+    float2 BoundsMax;
     uint GradientTop;
     uint GradientBottom;
     uint ShaderModifier;
@@ -11,6 +13,7 @@ struct PushConstants
     float2 InverseDisplaySize;
     float2 Origin;
     float2 Scale;
+    float Outline;
 };
 
 Texture2D<float4> g_Texture2DDescriptorHeap[] : register(t0, space0);

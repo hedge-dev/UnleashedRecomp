@@ -91,28 +91,7 @@ CONFIG_DEFINE_LOCALE(ControlTutorial)
 
 CONFIG_DEFINE_LOCALE(AchievementNotifications)
 {
-    { ELanguage::English, { "Achievement Notifications", "Show notifications for unlocking achievements.\n\nAchievements will still be rewarded with notifications disabled." } }
-};
-
-CONFIG_DEFINE_LOCALE(SaveScoreAtCheckpoints)
-{
-    { ELanguage::English, { "Save Score at Checkpoints", "Keep your score from the last checkpoint upon respawning.\n\n[TO BE REMOVED]" } }
-};
-
-CONFIG_DEFINE_LOCALE(UnleashGaugeBehaviour)
-{
-    { ELanguage::English, { "Unleash Gauge Behavior", "Change how the Unleash gauge behaves.\n\n[TO BE REMOVED]" } }
-};
-
-CONFIG_DEFINE_ENUM_LOCALE(EUnleashGaugeBehaviour)
-{
-    {
-        ELanguage::English,
-        {
-            { EUnleashGaugeBehaviour::Original, { "ORIGINAL", "Original: the gauge will drain at all times regardless." } },
-            { EUnleashGaugeBehaviour::Revised,  { "REVISED", "Revised: the gauge will only drain when the player can move." } }
-        }
-    }
+    { ELanguage::English, { "Achievement Notifications", "Show notifications for unlocking achievements.\n\nAchievements will still\nbe rewarded with notifications disabled." } }
 };
 
 CONFIG_DEFINE_LOCALE(TimeOfDayTransition)
@@ -133,7 +112,7 @@ CONFIG_DEFINE_ENUM_LOCALE(ETimeOfDayTransition)
 
 CONFIG_DEFINE_LOCALE(ControllerIcons)
 {
-    { ELanguage::English, { "Controller Icons", "[PLACEHOLDER]" } }
+    { ELanguage::English, { "Controller Icons", "Change the icons to match your controller." } }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
@@ -141,15 +120,11 @@ CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
     {
         ELanguage::English,
         {
-            { EControllerIcons::Xbox,        { "XBOX", "[PLACEHOLDER]" } },
-            { EControllerIcons::PlayStation, { "PLAYSTATION", "[PLACEHOLDER]" } }
+            { EControllerIcons::Auto,        { "AUTO", "Auto: the game will determine which icons\nto use based on the current input device." } },
+            { EControllerIcons::Xbox,        { "XBOX", "" } },
+            { EControllerIcons::PlayStation, { "PLAYSTATION", "" } }
         }
     }
-};
-
-CONFIG_DEFINE_LOCALE(SkipIntroLogos)
-{
-    { ELanguage::English, { "Skip Intro Logos", "Skip the logos during the game's boot sequence.\n\n[TO BE REMOVED]" } }
 };
 
 CONFIG_DEFINE_LOCALE(InvertCameraX)
@@ -160,16 +135,6 @@ CONFIG_DEFINE_LOCALE(InvertCameraX)
 CONFIG_DEFINE_LOCALE(InvertCameraY)
 {
     { ELanguage::English, { "Invert Camera Y", "Toggle between inverted up and down camera movement." } }
-};
-
-CONFIG_DEFINE_LOCALE(XButtonHoming)
-{
-    { ELanguage::English, { "Homing Attack on Boost", "Toggle between using the boost button or the jump button for the homing attack.\n\n[TO BE REMOVED]" } }
-};
-
-CONFIG_DEFINE_LOCALE(AllowCancellingUnleash)
-{
-    { ELanguage::English, { "Allow Cancelling Unleash", "Allow Unleash to be cancelled at the cost of some energy by pressing the input again.\n\n[TO BE REMOVED]" } }
 };
 
 CONFIG_DEFINE_LOCALE(AllowBackgroundInput)
@@ -245,12 +210,12 @@ CONFIG_DEFINE_LOCALE(Fullscreen)
 
 CONFIG_DEFINE_LOCALE(VSync)
 {
-    { ELanguage::English, { "V-Sync", "[PLACEHOLDER]" } }
+    { ELanguage::English, { "V-Sync", "Synchronize the game\nto the refresh rate of\nthe display to prevent screen tearing." } }
 };
 
 CONFIG_DEFINE_LOCALE(FPS)
 {
-    { ELanguage::English, { "FPS", "[PLACEHOLDER]" } }
+    { ELanguage::English, { "FPS", "Set the max frame rate the game can run at.\n\nWARNING: this may introduce glitches at frame rates higher than 60 FPS." } }
 };
 
 CONFIG_DEFINE_LOCALE(Brightness)
@@ -280,7 +245,7 @@ CONFIG_DEFINE_LOCALE(TransparencyAntiAliasing)
 
 CONFIG_DEFINE_LOCALE(ShadowResolution)
 {
-    { ELanguage::English, { "Shadow Resolution", "[PLACEHOLDER]" } }
+    { ELanguage::English, { "Shadow Resolution", "Set the resolution of real-time shadows." } }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EShadowResolution)
@@ -289,13 +254,15 @@ CONFIG_DEFINE_ENUM_LOCALE(EShadowResolution)
         ELanguage::English,
         {
             { EShadowResolution::Original, { "ORIGINAL", "Original: the game will automatically determine the resolution of the shadows." } },
+            { EShadowResolution::x4096,    { "4096", "High resolutions can degrade performance significantly on lower end hardware." } },
+            { EShadowResolution::x8192,    { "8192", "High resolutions can degrade performance significantly on lower end hardware." } },
         }
     }
 };
 
 CONFIG_DEFINE_LOCALE(GITextureFiltering)
 {
-    { ELanguage::English, { "GI Texture Filtering", "[PLACEHOLDER]" } }
+    { ELanguage::English, { "GI Texture Filtering", "Change the quality of the filtering used for global illumination textures." } }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EGITextureFiltering)
@@ -309,28 +276,9 @@ CONFIG_DEFINE_ENUM_LOCALE(EGITextureFiltering)
     }
 };
 
-CONFIG_DEFINE_LOCALE(DepthOfFieldQuality)
-{
-    { ELanguage::English, { "Depth of Field Quality", "[PLACEHOLDER]" } }
-};
-
-CONFIG_DEFINE_ENUM_LOCALE(EDepthOfFieldQuality)
-{
-    {
-        ELanguage::English,
-        {
-            { EDepthOfFieldQuality::Auto,   { "AUTO", "" } },
-            { EDepthOfFieldQuality::Low,    { "LOW", "" } },
-            { EDepthOfFieldQuality::Medium, { "MEDIUM", "" } },
-            { EDepthOfFieldQuality::High,   { "HIGH", "" } },
-            { EDepthOfFieldQuality::Ultra,  { "ULTRA", "" } },
-        }
-    }
-};
-
 CONFIG_DEFINE_LOCALE(MotionBlur)
 {
-    { ELanguage::English, { "Motion Blur", "Use per-object motion blur and radial blur." } }
+    { ELanguage::English, { "Motion Blur", "Change the quality of the motion blur." } }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EMotionBlur)
@@ -340,7 +288,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EMotionBlur)
         {
             { EMotionBlur::Off,      { "OFF", "" } },
             { EMotionBlur::Original, { "ORIGINAL", "" } },
-            { EMotionBlur::Enhanced, { "ENHANCED", "" } }
+            { EMotionBlur::Enhanced, { "ENHANCED", "Enhanced: uses more samples for smoother motion blur at the cost\nof performance." } }
         }
     }
 };

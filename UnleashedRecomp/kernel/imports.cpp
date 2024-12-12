@@ -93,7 +93,7 @@ uint32_t XMsgStartIORequest(DWORD App, DWORD Message, XXOVERLAPPED* lpOverlapped
 uint32_t XamUserGetSigninState(uint32_t userIndex)
 {
     // printf("!!! STUB !!! XamUserGetSigninState\n");
-    return userIndex == 0;
+    return true;
 }
 
 uint32_t XamGetSystemVersion()
@@ -135,7 +135,7 @@ uint32_t XamContentGetDeviceState()
 
 uint32_t XamUserGetSigninInfo(uint32_t userIndex, uint32_t flags, XUSER_SIGNIN_INFO* info)
 {
-    //printf("!!! STUB !!! XamUserGetSigninInfo\n");
+    // printf("!!! STUB !!! XamUserGetSigninInfo\n");
     if (userIndex == 0)
     {
         memset(info, 0, sizeof(*info));
@@ -145,12 +145,12 @@ uint32_t XamUserGetSigninInfo(uint32_t userIndex, uint32_t flags, XUSER_SIGNIN_I
         return 0;
     }
 
-    return 0x00000525;
+    return 0x00000525; // ERROR_NO_SUCH_USER
 }
 
-void XamShowSigninUI()
+void XamShowSigninUI(uint32_t userIndex, uint32_t usersNeeded, uint32_t flags)
 {
-    printf("!!! STUB !!! XamShowSigninUI\n");
+    printf("!!! STUB !!! XamShowSigninUI %d %d 0x%X\n", userIndex, usersNeeded, flags);
 }
 
 uint32_t XamShowDeviceSelectorUI(

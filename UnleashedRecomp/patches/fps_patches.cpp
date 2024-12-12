@@ -7,6 +7,20 @@
 float m_lastLoadingFrameDelta = 0.0f;
 std::chrono::steady_clock::time_point m_lastLoadingFrameTime;
 
+void DownForceDeltaTimeFixMidAsmHook(PPCRegister& f0)
+{
+    f0.f64 = 30.0;
+}
+
+void DownForceDeltaTimeFixMidAsmHook(PPCVRegister& v127, PPCRegister& f24)
+{
+    double factor = 1.0 / (f24.f64 * 30.0);
+    v127.f32[0] *= factor;
+    v127.f32[1] *= factor;
+    v127.f32[2] *= factor;
+    v127.f32[3] *= factor;
+}
+
 void HighFrameRateDeltaTimeFixMidAsmHook(PPCRegister& f1)
 {
     // Having 60 FPS threshold ensures we still retain

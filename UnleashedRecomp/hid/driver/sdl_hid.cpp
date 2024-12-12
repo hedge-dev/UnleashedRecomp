@@ -126,6 +126,7 @@ public:
 };
 
 std::array<Controller, 4> g_controllers;
+Controller* g_activeController;
 
 inline Controller* EnsureController(DWORD dwUserIndex)
 {
@@ -157,25 +158,40 @@ inline Controller* FindController(int which)
     return nullptr;
 }
 
+static void SetControllerInputDevice(Controller* controller)
+{
+    g_activeController = controller;
+    hid::detail::g_inputDevice = controller->GetInputDevice();
+    hid::detail::g_inputDeviceController = hid::detail::g_inputDevice;
+}
+
 int HID_OnSDLEvent(void*, SDL_Event* event)
 {
-    if (event->type >= SDL_CONTROLLERAXISMOTION && event->type < SDL_FINGERDOWN)
+    switch (event->type)
     {
-        if (event->type == SDL_CONTROLLERDEVICEADDED)
+        case SDL_CONTROLLERDEVICEADDED:
         {
             const auto freeIndex = FindFreeController();
 
             if (freeIndex != -1)
                 g_controllers[freeIndex] = Controller(event->cdevice.which);
+
+            break;
         }
-        if (event->type == SDL_CONTROLLERDEVICEREMOVED)
+
+        case SDL_CONTROLLERDEVICEREMOVED:
         {
             auto* controller = FindController(event->cdevice.which);
 
             if (controller)
                 controller->Close();
+
+            break;
         }
-        else if (event->type == SDL_CONTROLLERBUTTONDOWN || event->type == SDL_CONTROLLERBUTTONUP || event->type == SDL_CONTROLLERAXISMOTION)
+
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP:
+        case SDL_CONTROLLERAXISMOTION:
         {
             auto* controller = FindController(event->cdevice.which);
 
@@ -183,24 +199,44 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
             {
                 if (event->type == SDL_CONTROLLERAXISMOTION)
                 {
+                    if (abs(event->caxis.value) > 8000)
+                        SetControllerInputDevice(controller);
+
                     controller->PollAxis();
                 }
                 else
                 {
+                    SetControllerInputDevice(controller);
+
                     controller->Poll();
                 }
-
-                hid::detail::g_inputDevice = controller->GetInputDevice();
             }
+
+            break;
         }
-    }
-    else if (event->type == SDL_KEYDOWN || event->type == SDL_KEYUP)
-    {
-        hid::detail::g_inputDevice = hid::detail::EInputDevice::Keyboard;
-    }
-    else if (event->type == SDL_MOUSEMOTION || event->type == SDL_MOUSEBUTTONDOWN || event->type == SDL_MOUSEBUTTONUP)
-    {
-        hid::detail::g_inputDevice = hid::detail::EInputDevice::Mouse;
+
+        case SDL_KEYDOWN:
+        case SDL_KEYUP:
+            hid::detail::g_inputDevice = hid::detail::EInputDevice::Keyboard;
+            break;
+
+        case SDL_MOUSEMOTION:
+        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEBUTTONUP:
+            hid::detail::g_inputDevice = hid::detail::EInputDevice::Mouse;
+            break;
+
+        case SDL_WINDOWEVENT:
+        {
+            if (event->window.event == SDL_WINDOWEVENT_FOCUS_LOST)
+            {
+                // Stop vibrating controllers on focus lost.
+                for (auto& controller : g_controllers)
+                    controller.SetVibration({ 0, 0 });
+            }
+
+            break;
+        }
     }
 
     return 0;
@@ -217,7 +253,6 @@ void hid::detail::Init()
     SDL_SetHint(SDL_HINT_XINPUT_ENABLED, "1");
 
     SDL_InitSubSystem(SDL_INIT_EVENTS);
-
     SDL_AddEventWatch(HID_OnSDLEvent, nullptr);
 
     SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
@@ -234,12 +269,10 @@ uint32_t hid::detail::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
 
     pState->dwPacketNumber = packet++;
 
-    SDL_JoystickUpdate();
-
-    if (!EnsureController(dwUserIndex))
+    if (!g_activeController)
         return ERROR_DEVICE_NOT_CONNECTED;
 
-    pState->Gamepad = g_controllers[dwUserIndex].state;
+    pState->Gamepad = g_activeController->state;
 
     return ERROR_SUCCESS;
 }
@@ -249,14 +282,10 @@ uint32_t hid::detail::SetState(uint32_t dwUserIndex, XAMINPUT_VIBRATION* pVibrat
     if (!pVibration)
         return ERROR_BAD_ARGUMENTS;
 
-    SDL_JoystickUpdate();
-
-    auto* controller = EnsureController(dwUserIndex);
-
-    if (!controller)
+    if (!g_activeController)
         return ERROR_DEVICE_NOT_CONNECTED;
 
-    controller->SetVibration(*pVibration);
+    g_activeController->SetVibration(*pVibration);
 
     return ERROR_SUCCESS;
 }
@@ -266,11 +295,7 @@ uint32_t hid::detail::GetCapabilities(uint32_t dwUserIndex, XAMINPUT_CAPABILITIE
     if (!pCaps)
         return ERROR_BAD_ARGUMENTS;
 
-    SDL_JoystickUpdate();
-
-    auto* controller = EnsureController(dwUserIndex);
-
-    if (!controller)
+    if (!g_activeController)
         return ERROR_DEVICE_NOT_CONNECTED;
 
     memset(pCaps, 0, sizeof(*pCaps));
@@ -278,8 +303,8 @@ uint32_t hid::detail::GetCapabilities(uint32_t dwUserIndex, XAMINPUT_CAPABILITIE
     pCaps->Type = XAMINPUT_DEVTYPE_GAMEPAD;
     pCaps->SubType = XAMINPUT_DEVSUBTYPE_GAMEPAD; // TODO: other types?
     pCaps->Flags = 0;
-    pCaps->Gamepad = controller->state;
-    pCaps->Vibration = controller->vibration;
+    pCaps->Gamepad = g_activeController->state;
+    pCaps->Vibration = g_activeController->vibration;
 
     return ERROR_SUCCESS;
 }

@@ -34,7 +34,6 @@ struct ImDrawDataSnapshot
 // Undefine this to generate a font atlas file in working directory.
 // You also need to do this if you are testing localization, as only
 // characters in the locale get added to the atlas.
-// Don't forget to compress the generated atlas texture to BC4 with no mips!
 #define ENABLE_IM_FONT_ATLAS_SNAPSHOT
 
 struct ImFontAtlasSnapshot
@@ -59,5 +58,5 @@ struct ImFontAtlasSnapshot
     static void GenerateGlyphRanges();
 
     // When ENABLE_IM_FONT_ATLAS_SNAPSHOT is undefined, this creates the font runtime instead. 
-    static ImFont* GetFont(const char* name, float size);
+    static ImFont* GetFont(const char* name);
 };

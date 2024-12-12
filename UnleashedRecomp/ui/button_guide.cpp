@@ -1,6 +1,6 @@
 #include "button_guide.h"
 #include "imgui_utils.h"
-#include <gpu/imgui_snapshot.h>
+#include <gpu/imgui/imgui_snapshot.h>
 #include <gpu/video.h>
 #include <hid/hid_detail.h>
 #include <user/config.h>
@@ -62,9 +62,9 @@ std::tuple<std::tuple<ImVec2, ImVec2>, GuestTexture*> GetButtonIcon(EButtonIcon 
     std::tuple<ImVec2, ImVec2> btn;
     GuestTexture* texture;
 
-    auto isPlayStation = App::s_isInit
-        ? Config::ControllerIcons == EControllerIcons::PlayStation
-        : hid::detail::g_inputDevice == hid::detail::EInputDevice::PlayStation;
+    auto isPlayStation = Config::ControllerIcons == EControllerIcons::Auto
+        ? hid::detail::g_inputDeviceController == hid::detail::EInputDevice::PlayStation
+        : Config::ControllerIcons == EControllerIcons::PlayStation;
 
     auto yOffsetCmn = isPlayStation ? 42 : 0;
     auto yOffsetStartBack = isPlayStation ? 46 : 0;
@@ -178,20 +178,21 @@ static void DrawGuide(float* offset, ImVec2 regionMin, ImVec2 regionMax, EButton
     auto btnIcon = GetButtonIcon(_icon);
     drawList->AddImage(std::get<1>(btnIcon), iconMin, iconMax, GET_UV_COORDS(std::get<0>(btnIcon)));
 
+    auto font = GetFont(fontQuality);
+
     auto textMarginX = alignment == EButtonAlignment::Left
         ? regionMin.x + *offset + dualIconMarginX
         : regionMax.x - *offset - dualIconMarginX * 2;
 
-    DrawTextWithOutline<int>
-    (
-        GetFont(fontQuality),
-        fontSize,
-        { /* X */ textMarginX, /* Y */ regionMin.y + Scale(8) },
-        IM_COL32(255, 255, 255, 255),
-        text,
-        2,
-        IM_COL32(0, 0, 0, 255)
-    );
+    auto textMarginY = regionMin.y + Scale(8);
+
+    ImVec2 textPosition = { textMarginX, textMarginY };
+
+    DrawTextWithOutline(font, fontSize, textPosition, IM_COL32_WHITE, text, 4, IM_COL32_BLACK);
+
+    // Add extra luminance to low quality text.
+    if (fontQuality == EFontQuality::Low)
+        drawList->AddText(font, fontSize, textPosition, IM_COL32(255, 255, 255, 127), text);
 
     if (icon == EButtonIcon::LBRB || icon == EButtonIcon::LTRT)
     {
@@ -213,10 +214,8 @@ void ButtonGuide::Init()
 {
     auto& io = ImGui::GetIO();
 
-    constexpr float FONT_SCALE = 2.0f;
-
-    g_fntNewRodin = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-M.otf", 24.0f * FONT_SCALE);
-    g_fntNewRodinLQ = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-M.otf", 19.0f);
+    g_fntNewRodin = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-M.otf");
+    g_fntNewRodinLQ = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-M.otf");
 
     g_upControllerIcons = LOAD_ZSTD_TEXTURE(g_controller);
     g_upKBMIcons = LOAD_ZSTD_TEXTURE(g_kbm);

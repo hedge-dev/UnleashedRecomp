@@ -10,7 +10,7 @@
 #include <exports.h>
 #include <decompressor.h>
 #include <res/images/common/general_window.dds.h>
-#include <gpu/imgui_snapshot.h>
+#include <gpu/imgui/imgui_snapshot.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;
@@ -76,9 +76,7 @@ void AchievementOverlay::Init()
 {
     auto& io = ImGui::GetIO();
 
-    constexpr float FONT_SCALE = 2.0f;
-
-    g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
+    g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
 
     g_upWindow = LOAD_ZSTD_TEXTURE(g_general_window);
 }
@@ -145,7 +143,7 @@ void AchievementOverlay::Draw()
             IM_COL32(252, 243, 5, 255),                                                                  // colour
             strAchievementUnlocked,                                                                      // text
             2,                                                                                           // offset
-            0.4f,                                                                                        // radius
+            1.0f,                                                                                        // radius
             IM_COL32(0, 0, 0, 255)                                                                       // shadowColour
         );
 
@@ -158,7 +156,7 @@ void AchievementOverlay::Draw()
             IM_COL32(255, 255, 255, 255),                                                                                      // colour
             strAchievementName,                                                                                                // text
             2,                                                                                                                 // offset
-            0.4f,                                                                                                              // radius
+            1.0f,                                                                                                              // radius
             IM_COL32(0, 0, 0, 255)                                                                                             // shadowColour
         );
 

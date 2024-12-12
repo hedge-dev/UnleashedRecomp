@@ -156,11 +156,12 @@ int main(int argc, char *argv[])
 
     HostStartup();
 
-    Video::CreateHostDevice();
-
     bool isGameInstalled = Installer::checkGameInstall(".");
-    if (forceInstaller || forceDLCInstaller || !isGameInstalled)
+    bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
+    if (runInstallerWizard)
     {
+        Video::CreateHostDevice();
+
         if (!InstallerWizard::Run(isGameInstalled && forceDLCInstaller))
         {
             return 1;
@@ -172,6 +173,9 @@ int main(int argc, char *argv[])
     KiSystemStartup();
 
     uint32_t entry = LdrLoadModule(FileSystem::TransformPath(GAME_XEX_PATH));
+
+    if (!runInstallerWizard)
+        Video::CreateHostDevice();
 
     Video::StartPipelinePrecompilation();
 

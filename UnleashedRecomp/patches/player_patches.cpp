@@ -62,7 +62,7 @@ PPC_FUNC(sub_823AF7A8)
     m_lastDarkGaiaEnergy = pEvilSonicContext->m_DarkGaiaEnergy;
 
     // Don't drain energy if out of control.
-    if (Config::UnleashGaugeBehaviour == EUnleashGaugeBehaviour::Revised && pEvilSonicContext->m_OutOfControlCount && ctx.f1.f64 < 0.0)
+    if (Config::FixUnleashOutOfControlDrain && pEvilSonicContext->m_OutOfControlCount && ctx.f1.f64 < 0.0)
         return;
 
     __imp__sub_823AF7A8(ctx, base);
@@ -96,7 +96,7 @@ void PostUnleashMidAsmHook(PPCRegister& r30)
 
 void SetXButtonHomingMidAsmHook(PPCRegister& r30)
 {
-    r30.u32 = Config::XButtonHoming;
+    r30.u32 = Config::HomingAttackOnBoost;
 }
 
 // SWA::Player::CEvilSonicContext::Ctor

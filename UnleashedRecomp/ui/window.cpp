@@ -18,7 +18,6 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
     switch (event->type)
     {
         case SDL_QUIT:
-            Config::Save();
             App::Exit();
             break;
 

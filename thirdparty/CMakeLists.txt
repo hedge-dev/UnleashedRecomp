@@ -1,4 +1,10 @@
+set(MSDF_ATLAS_BUILD_STANDALONE OFF)
+set(MSDF_ATLAS_USE_SKIA OFF)
+set(MSDF_ATLAS_NO_ARTERY_FONT ON)
+set(MSDFGEN_DISABLE_PNG ON)
+
 add_subdirectory(${SWA_THIRDPARTY_ROOT}/PowerRecomp)
 add_subdirectory(${SWA_THIRDPARTY_ROOT}/ShaderRecomp)
 add_subdirectory(${SWA_THIRDPARTY_ROOT}/o1heap)
 add_subdirectory(${SWA_THIRDPARTY_ROOT}/fshasher)
+add_subdirectory(${SWA_THIRDPARTY_ROOT}/msdf-atlas-gen)

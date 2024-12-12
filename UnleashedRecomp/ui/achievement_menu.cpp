@@ -13,7 +13,7 @@
 #include <res/images/achievements_menu/trophy.dds.h>
 #include <res/images/common/general_window.dds.h>
 #include <res/images/common/select_fill.dds.h>
-#include <gpu/imgui_snapshot.h>
+#include <gpu/imgui/imgui_snapshot.h>
 
 constexpr double HEADER_CONTAINER_INTRO_MOTION_START = 0;
 constexpr double HEADER_CONTAINER_INTRO_MOTION_END = 15;
@@ -138,17 +138,21 @@ static void DrawHeaderContainer(const char* text)
 
     DrawPauseHeaderContainer(g_upWindow.get(), min, max, alpha);
 
-    // TODO: skew this text and apply bevel.
-    DrawTextWithOutline<int>
+    SetTextSkew((min.y + max.y) / 2.0f, Scale(3.0f));
+
+    // TODO: Apply bevel.
+    DrawTextWithOutline
     (
         g_fntNewRodinUB,
         fontSize,
         { /* X */ min.x + textMarginX, /* Y */ CENTRE_TEXT_VERT(min, max, textSize) - Scale(5) },
         IM_COL32(255, 255, 255, 255 * alpha),
         text,
-        3,
+        4,
         IM_COL32(0, 0, 0, 255 * alpha)
     );
+
+    ResetTextSkew();
 }
 
 static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievement, bool isUnlocked)
@@ -182,8 +186,10 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
     auto titleTextY = Scale(20);
     auto descTextY = Scale(52);
 
+    if (!isUnlocked)
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_GRAYSCALE);
+
     // Draw achievement icon.
-    // TODO: make icon greyscale if locked?
     drawList->AddImage
     (
         icon,
@@ -194,15 +200,19 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
         IM_COL32(255, 255, 255, 255 * (isUnlocked ? 1 : 0.5f))
     );
 
+    if (!isUnlocked)
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
+
     drawList->PushClipRect(min, max, true);
 
-    auto colLockedText = IM_COL32(60, 60, 60, 29);
+    auto colLockedText = IM_COL32(80, 80, 80, 127);
 
     auto colTextShadow = isUnlocked
         ? IM_COL32(0, 0, 0, 255)
-        : IM_COL32(60, 60, 60, 28);
+        : IM_COL32(20, 20, 20, 127);
 
     auto shadowOffset = isUnlocked ? 2 : 1;
+    auto shadowRadius = isUnlocked ? 1 : 0.5f;
 
     // Draw achievement name.
     DrawTextWithShadow
@@ -213,9 +223,14 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
         isUnlocked ? IM_COL32(252, 243, 5, 255) : colLockedText,
         achievement.Name.c_str(),
         shadowOffset,
-        0.4f,
+        shadowRadius,
         colTextShadow
     );
+
+    ImVec2 marqueeMin = { textMarqueeX, min.y };
+    ImVec2 marqueeMax = { max.x - Scale(10) /* timestamp margin X */, max.y };
+
+    SetMarqueeFade(marqueeMin, marqueeMax, Scale(32));
 
     if (isSelected && textX + textSize.x >= max.x - Scale(10))
     {
@@ -225,15 +240,15 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
             g_fntSeurat,
             fontSize,
             { textX, min.y + descTextY },
-            { textMarqueeX, min.y },
-            max,
-            isUnlocked ? IM_COL32(255, 255, 255, 255) : colLockedText,
+            marqueeMin,
+            marqueeMax,
+            isUnlocked ? IM_COL32_WHITE : colLockedText,
             desc,
             g_rowSelectionTime,
             0.9,
-            250.0,
+            Scale(250),
             shadowOffset,
-            0.4f,
+            shadowRadius,
             colTextShadow
         );
     }
@@ -245,13 +260,15 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
             g_fntSeurat,
             fontSize,
             { textX, min.y + descTextY },
-            isUnlocked ? IM_COL32(255, 255, 255, 255) : colLockedText,
+            isUnlocked ? IM_COL32_WHITE : colLockedText,
             desc,
             shadowOffset,
-            0.4f,
+            shadowRadius,
             colTextShadow
         );
     }
+
+    ResetMarqueeFade();
 
     drawList->PopClipRect();
 
@@ -334,18 +351,106 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
     );
 
     // Draw timestamp text.
-    DrawTextWithOutline<int>
+    DrawTextWithOutline
     (
         g_fntNewRodinDB,
         fontSize,
         { /* X */ CENTRE_TEXT_HORZ(timestampMin, timestampMax, textSize), /* Y */ CENTRE_TEXT_VERT(timestampMin, timestampMax, textSize) },
         IM_COL32(255, 255, 255, 255),
         buffer,
-        2,
+        4,
         IM_COL32(8, 8, 8, 255)
     );
 
     drawList->PopClipRect();
+}
+
+static void DrawTrophySparkles(ImVec2 min, ImVec2 max, int recordCount, int trophyFrameIndex)
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+
+    constexpr auto recordsHalfTotal = ACH_RECORDS / 2;
+
+    // Don't sparkle the bronze trophy.
+    if (recordCount < recordsHalfTotal)
+        return;
+
+    static int trophyAnimCycles = 0;
+    static bool isIncrementedCycles = false;
+
+    bool isGoldTrophy = recordCount >= ACH_RECORDS;
+
+    if (!trophyFrameIndex && !isIncrementedCycles)
+    {
+        trophyAnimCycles++;
+        trophyAnimCycles %= isGoldTrophy ? 4 : 3;
+        isIncrementedCycles = true;
+    }
+
+    if (trophyFrameIndex >= 1)
+        isIncrementedCycles = false;
+
+    if (trophyAnimCycles >= 2)
+    {
+        auto marginX = Scale(9);
+        auto uv = PIXELS_TO_UV_COORDS(2048, 1024, 1984, 960, 64, 64);
+        auto& uv0 = std::get<0>(uv);
+        auto& uv1 = std::get<1>(uv);
+        auto colour = IM_COL32(240, 240, 200, 200);
+
+        static auto scaleStart = ImGui::GetTime();
+        auto scale = Scale(18) * Hermite(1.0f, 0.0f, (sin((ImGui::GetTime() - scaleStart) * (2.0f * M_PI / (15.0f / 60.0f))) + 1.0f) / 2.0f);
+
+        // Don't do extra sparkles for the silver trophy.
+        if (isGoldTrophy)
+        {
+            if (trophyFrameIndex >= 0 && trophyFrameIndex <= 5)
+            {
+                auto marginXAdd = Scale(1);
+
+                // Centre Left
+                drawList->AddImage
+                (
+                    g_upTrophyIcon.get(),
+                    { min.x - scale / 2 + marginX + marginXAdd, max.y - ((max.y - min.y) / 2) - scale / 2 },
+                    { min.x + scale / 2 + marginX + marginXAdd, max.y - ((max.y - min.y) / 2) + scale / 2 },
+                    uv0, uv1,
+                    colour
+                );
+            }
+
+            if (trophyFrameIndex >= 16 && trophyFrameIndex <= 21)
+            {
+                auto marginXAdd = Scale(4);
+                auto marginY = Scale(11);
+
+                // Bottom Right
+                drawList->AddImage
+                (
+                    g_upTrophyIcon.get(),
+                    { max.x - scale / 2 - (marginX + marginXAdd), max.y - scale / 2 - marginY },
+                    { max.x + scale / 2 - (marginX + marginXAdd), max.y + scale / 2 - marginY },
+                    uv0, uv1,
+                    colour
+                );
+            }
+        }
+        
+        if (trophyFrameIndex >= 24 && trophyFrameIndex <= 29)
+        {
+            auto marginY = Scale(1);
+
+            // Top Right
+            drawList->AddImage
+            (
+                g_upTrophyIcon.get(),
+                { max.x - scale / 2 - marginX, min.y - scale / 2 + marginY },
+                { max.x + scale / 2 - marginX, min.y + scale / 2 + marginY },
+                uv0, uv1,
+                colour
+            );
+        }
+    }
 }
 
 static void DrawAchievementTotal(ImVec2 min, ImVec2 max)
@@ -373,20 +478,61 @@ static void DrawAchievementTotal(ImVec2 min, ImVec2 max)
     auto uv0 = ImVec2(columnIndex * spriteSize / textureWidth, rowIndex * spriteSize / textureHeight);
     auto uv1 = ImVec2((columnIndex + 1) * spriteSize / textureWidth, (rowIndex + 1) * spriteSize / textureHeight);
 
-    drawList->AddImage(g_upTrophyIcon.get(), imageMin, imageMax, uv0, uv1, IM_COL32(255, 255, 255, 255 * alpha));
+    constexpr auto recordsHalfTotal = ACH_RECORDS / 2;
+    auto records = AchievementData::GetTotalRecords();
 
-    auto str = std::format("{} / {}", AchievementData::GetTotalRecords(), ACH_RECORDS);
+    ImVec4 colBronze = ImGui::ColorConvertU32ToFloat4(IM_COL32(198, 105, 15, 255 * alpha));
+    ImVec4 colSilver = ImGui::ColorConvertU32ToFloat4(IM_COL32(220, 220, 220, 255 * alpha));
+    ImVec4 colGold   = ImGui::ColorConvertU32ToFloat4(IM_COL32(255, 195, 56, 255 * alpha));
+    ImVec4 colResult;
+
+    if (records <= 25)
+    {
+        float t = (float)records / 25.0f;
+
+        // Fade from bronze to silver.
+        colResult.x = colBronze.x + t * (colSilver.x - colBronze.x);
+        colResult.y = colBronze.y + t * (colSilver.y - colBronze.y);
+        colResult.z = colBronze.z + t * (colSilver.z - colBronze.z);
+        colResult.w = colBronze.w + t * (colSilver.w - colBronze.w);
+    }
+    else if (records <= 50)
+    {
+        float t = ((float)records - 25.0f) / 25.0f;
+
+        // Fade from silver to gold.
+        colResult.x = colSilver.x + t * (colGold.x - colSilver.x);
+        colResult.y = colSilver.y + t * (colGold.y - colSilver.y);
+        colResult.z = colSilver.z + t * (colGold.z - colSilver.z);
+        colResult.w = colSilver.w + t * (colGold.w - colSilver.w);
+    }
+    else
+    {
+        colResult = colGold;
+    }
+
+    drawList->AddImage(g_upTrophyIcon.get(), imageMin, imageMax, uv0, uv1, ImGui::ColorConvertFloat4ToU32(colResult));
+
+    // Add extra luminance to the trophy for bronze and gold.
+    if (records < recordsHalfTotal || records >= ACH_RECORDS)
+        drawList->AddImage(g_upTrophyIcon.get(), imageMin, imageMax, uv0, uv1, IM_COL32(255, 255, 255, 12));
+
+    // Draw sparkles on the trophy for silver and gold.
+    if (records >= recordsHalfTotal || records >= ACH_RECORDS)
+        DrawTrophySparkles(imageMin, imageMax, records, frameIndex);
+
+    auto str = std::format("{} / {}", records, ACH_RECORDS);
     auto fontSize = Scale(20);
     auto textSize = g_fntNewRodinDB->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str());
 
-    DrawTextWithOutline<int>
+    DrawTextWithOutline
     (
         g_fntNewRodinDB,
         fontSize,
         { /* X */ imageMin.x - textSize.x - Scale(6), /* Y */ CENTRE_TEXT_VERT(imageMin, imageMax, textSize) },
         IM_COL32(255, 255, 255, 255 * alpha),
         str.c_str(),
-        2,
+        4,
         IM_COL32(0, 0, 0, 255 * alpha)
     );
 }
@@ -621,11 +767,9 @@ void AchievementMenu::Init()
 {
     auto& io = ImGui::GetIO();
 
-    constexpr float FONT_SCALE = 2.0f;
-
-    g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf", 24.0f * FONT_SCALE);
-    g_fntNewRodinDB = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-DB.otf", 20.0f * FONT_SCALE);
-    g_fntNewRodinUB = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-UB.otf", 20.0f * FONT_SCALE);
+    g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
+    g_fntNewRodinDB = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-DB.otf");
+    g_fntNewRodinUB = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-UB.otf");
 
     g_upTrophyIcon = LOAD_ZSTD_TEXTURE(g_trophy);
     g_upSelectionCursor = LOAD_ZSTD_TEXTURE(g_select_fill);

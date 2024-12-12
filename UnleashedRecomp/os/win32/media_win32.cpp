@@ -68,5 +68,13 @@ bool os::media::detail::IsExternalMediaPlaying()
     if (!playbackInfo)
         return false;
 
-    return playbackInfo.PlaybackStatus() == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing;
+    try
+    {
+        return playbackInfo.PlaybackStatus() == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing;
+    }
+    catch (...)
+    {
+        printf("[*] Failed to retrieve GSMTC playback status: 0x%08X\n", to_hresult().value);
+        return false;
+    }
 }

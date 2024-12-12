@@ -1,35 +1,38 @@
-#include <stdafx.h>
+#include "video.h"
 
-#include <kernel/function.h>
-#include <kernel/heap.h>
+#include "imgui/imgui_common.h"
+#include "imgui/imgui_snapshot.h"
+#include "imgui/imgui_font_builder.h"
+
+#include <bc_diff.h>
 #include <cpu/code_cache.h>
 #include <cpu/guest_code.h>
 #include <cpu/guest_thread.h>
+#include <decompressor.h>
+#include <kernel/function.h>
+#include <kernel/heap.h>
+#include <hid/hid_detail.h>
 #include <kernel/memory.h>
 #include <kernel/xdbf.h>
-#include <xxHashMap.h>
+#include <res/bc_diff/button_bc_diff.bin.h>
+#include <res/font/im_font_atlas.dds.h>
 #include <shader/shader_cache.h>
+#include <SWA.h>
 #include <ui/achievement_menu.h>
 #include <ui/achievement_overlay.h>
 #include <ui/button_guide.h>
 #include <ui/fader.h>
+#include <ui/installer_wizard.h>
 #include <ui/message_window.h>
 #include <ui/options_menu.h>
-#include <ui/installer_wizard.h>
-
-#include "imgui_snapshot.h"
-#include "imgui_common.h"
-#include "video.h"
 #include <ui/sdl_listener.h>
 #include <ui/window.h>
 #include <user/config.h>
+#include <xxHashMap.h>
 
-#include <res/font/im_font_atlas.dds.h>
-#include <res/bc_diff/button_bc_diff.bin.h>
-#include <decompressor.h>
-#include <bc_diff.h>
-
-#include <SWA.h>
+#if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)
+#include <magic_enum.hpp>
+#endif
 
 #include "../../thirdparty/ShaderRecomp/ShaderRecomp/shader_common.h"
 #include "shader/copy_vs.hlsl.dxil.h"
@@ -38,6 +41,8 @@
 #include "shader/csd_filter_ps.hlsl.spirv.h"
 #include "shader/enhanced_motion_blur_ps.hlsl.dxil.h"
 #include "shader/enhanced_motion_blur_ps.hlsl.spirv.h"
+#include "shader/gamma_correction_ps.hlsl.dxil.h"
+#include "shader/gamma_correction_ps.hlsl.spirv.h"
 #include "shader/gaussian_blur_3x3.hlsl.dxil.h"
 #include "shader/gaussian_blur_3x3.hlsl.spirv.h"
 #include "shader/gaussian_blur_5x5.hlsl.dxil.h"
@@ -46,26 +51,20 @@
 #include "shader/gaussian_blur_7x7.hlsl.spirv.h"
 #include "shader/gaussian_blur_9x9.hlsl.dxil.h"
 #include "shader/gaussian_blur_9x9.hlsl.spirv.h"
-#include "shader/gamma_correction_ps.hlsl.dxil.h"
-#include "shader/gamma_correction_ps.hlsl.spirv.h"
 #include "shader/imgui_ps.hlsl.dxil.h"
 #include "shader/imgui_ps.hlsl.spirv.h"
 #include "shader/imgui_vs.hlsl.dxil.h"
 #include "shader/imgui_vs.hlsl.spirv.h"
-#include "shader/movie_vs.hlsl.dxil.h"
-#include "shader/movie_vs.hlsl.spirv.h"
 #include "shader/movie_ps.hlsl.dxil.h"
 #include "shader/movie_ps.hlsl.spirv.h"
+#include "shader/movie_vs.hlsl.dxil.h"
+#include "shader/movie_vs.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_2x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_2x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_4x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_4x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.spirv.h"
-
-#if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)
-#include <magic_enum.hpp>
-#endif
 
 extern "C"
 {
@@ -1101,8 +1100,8 @@ static constexpr uint32_t PLACEMENT_ALIGNMENT = 0x200;
 
 struct ImGuiPushConstants
 {
-    ImVec2 gradientMin{};
-    ImVec2 gradientMax{};
+    ImVec2 boundsMin{};
+    ImVec2 boundsMax{};
     ImU32 gradientTop{};
     ImU32 gradientBottom{};
     uint32_t shaderModifier{};
@@ -1110,7 +1109,10 @@ struct ImGuiPushConstants
     ImVec2 inverseDisplaySize{};
     ImVec2 origin{ 0.0f, 0.0f };
     ImVec2 scale{ 1.0f, 1.0f };
+    float outline{};
 };
+
+extern ImFontBuilderIO g_fontBuilderIO;
 
 static void CreateImGuiBackend()
 {
@@ -1123,7 +1125,6 @@ static void CreateImGuiBackend()
     IM_DELETE(io.Fonts);
     io.Fonts = ImFontAtlasSnapshot::Load();
 #else
-    io.Fonts->TexDesiredWidth = 4096;
     io.Fonts->AddFontDefault();
     ImFontAtlasSnapshot::GenerateGlyphRanges();
 #endif
@@ -1137,17 +1138,18 @@ static void CreateImGuiBackend()
 
     ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
 
-    RenderComponentMapping componentMapping(RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::ONE, RenderSwizzle::R);
-
 #ifdef ENABLE_IM_FONT_ATLAS_SNAPSHOT
-    g_imFontTexture = LoadTexture(decompressZstd(g_im_font_atlas_texture, g_im_font_atlas_texture_uncompressed_size).get(),
-        g_im_font_atlas_texture_uncompressed_size, componentMapping);
+    g_imFontTexture = LoadTexture(
+        decompressZstd(g_im_font_atlas_texture, g_im_font_atlas_texture_uncompressed_size).get(), g_im_font_atlas_texture_uncompressed_size);
 #else
+    io.Fonts->FontBuilderIO = &g_fontBuilderIO;
+    io.Fonts->Build();
+
     g_imFontTexture = std::make_unique<GuestTexture>(ResourceType::Texture);
 
     uint8_t* pixels;
     int width, height;
-    io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
     RenderTextureDesc textureDesc;
     textureDesc.dimension = RenderTextureDimension::TEXTURE_2D;
@@ -1156,17 +1158,17 @@ static void CreateImGuiBackend()
     textureDesc.depth = 1;
     textureDesc.mipLevels = 1;
     textureDesc.arraySize = 1;
-    textureDesc.format = RenderFormat::R8_UNORM;
+    textureDesc.format = RenderFormat::R8G8B8A8_UNORM;
 
     g_imFontTexture->textureHolder = g_device->createTexture(textureDesc);
     g_imFontTexture->texture = g_imFontTexture->textureHolder.get();
 
-    uint32_t rowPitch = (width + PITCH_ALIGNMENT - 1) & ~(PITCH_ALIGNMENT - 1);
+    uint32_t rowPitch = (width * 4 + PITCH_ALIGNMENT - 1) & ~(PITCH_ALIGNMENT - 1);
     uint32_t slicePitch = (rowPitch * height + PLACEMENT_ALIGNMENT - 1) & ~(PLACEMENT_ALIGNMENT - 1);
     auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(slicePitch));
     uint8_t* mappedMemory = reinterpret_cast<uint8_t*>(uploadBuffer->map());
 
-    if (rowPitch == width)
+    if (rowPitch == (width * 4))
     {
         memcpy(mappedMemory, pixels, slicePitch);
     }
@@ -1174,8 +1176,8 @@ static void CreateImGuiBackend()
     {
         for (size_t i = 0; i < height; i++)
         {
-            memcpy(mappedMemory, pixels, width);
-            pixels += width;
+            memcpy(mappedMemory, pixels, width * 4);
+            pixels += width * 4;
             mappedMemory += rowPitch;
         }
     }
@@ -1188,7 +1190,7 @@ static void CreateImGuiBackend()
 
             g_copyCommandList->copyTextureRegion(
                 RenderTextureCopyLocation::Subresource(g_imFontTexture->texture, 0),
-                RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), RenderFormat::R8_UNORM, width, height, 1, rowPitch, 0));
+                RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), RenderFormat::R8G8B8A8_UNORM, width, height, 1, rowPitch / 4, 0));
         });
 
     g_imFontTexture->layout = RenderTextureLayout::COPY_DEST;
@@ -1197,7 +1199,6 @@ static void CreateImGuiBackend()
     textureViewDesc.format = textureDesc.format;
     textureViewDesc.dimension = RenderTextureViewDimension::TEXTURE_2D;
     textureViewDesc.mipLevels = 1;
-    textureViewDesc.componentMapping = componentMapping;
     g_imFontTexture->textureView = g_imFontTexture->texture->createTextureView(textureViewDesc);
 
     g_imFontTexture->descriptorIndex = g_textureDescriptorAllocator.allocate();
@@ -1261,7 +1262,7 @@ static void CreateImGuiBackend()
 
     ddspp::Header header;
     ddspp::HeaderDXT10 headerDX10;
-    ddspp::encode_header(ddspp::R8_UNORM, width, height, 1, ddspp::Texture2D, 1, 1, header, headerDX10);
+    ddspp::encode_header(ddspp::R8G8B8A8_UNORM, width, height, 1, ddspp::Texture2D, 1, 1, header, headerDX10);
 
     file = fopen("im_font_atlas.dds", "wb");
     if (file)
@@ -1269,7 +1270,7 @@ static void CreateImGuiBackend()
         fwrite(&ddspp::DDS_MAGIC, 4, 1, file);
         fwrite(&header, sizeof(header), 1, file);
         fwrite(&headerDX10, sizeof(headerDX10), 1, file);
-        fwrite(pixels, 1, width * height, file);
+        fwrite(pixels, 4, width * height, file);
         fclose(file);
     }
 #endif
@@ -1897,6 +1898,25 @@ static void ProcDrawImGui(const RenderCommand& cmd)
     pushConstants.inverseDisplaySize = { 1.0f / drawData.DisplaySize.x, 1.0f / drawData.DisplaySize.y };
     commandList->setGraphicsPushConstants(0, &pushConstants);
 
+    size_t pushConstantRangeMin = ~0;
+    size_t pushConstantRangeMax = 0;
+
+    auto setPushConstants = [&](void* destination, const void* source, size_t size)
+        {
+            bool dirty = memcmp(destination, source, size) != 0;
+
+            memcpy(destination, source, size);
+
+            if (dirty)
+            {
+                size_t offset = reinterpret_cast<size_t>(destination) - reinterpret_cast<size_t>(&pushConstants);
+                pushConstantRangeMin = std::min(pushConstantRangeMin, offset);
+                pushConstantRangeMax = std::max(pushConstantRangeMax, offset + size);
+            }
+        };
+
+    ImRect clipRect{};
+
     for (int i = 0; i < drawData.CmdListsCount; i++)
     {
         auto& drawList = drawData.CmdLists[i];
@@ -1921,16 +1941,25 @@ static void ProcDrawImGui(const RenderCommand& cmd)
                 switch (static_cast<ImGuiCallback>(reinterpret_cast<size_t>(drawCmd.UserCallback)))
                 {
                 case ImGuiCallback::SetGradient:
-                    commandList->setGraphicsPushConstants(0, &callbackData->setGradient, offsetof(ImGuiPushConstants, gradientMin), sizeof(callbackData->setGradient));
+                    setPushConstants(&pushConstants.boundsMin, &callbackData->setGradient, sizeof(callbackData->setGradient));
                     break;       
                 case ImGuiCallback::SetShaderModifier:
-                    commandList->setGraphicsPushConstants(0, &callbackData->setShaderModifier, offsetof(ImGuiPushConstants, shaderModifier), sizeof(callbackData->setShaderModifier));
+                    setPushConstants(&pushConstants.shaderModifier, &callbackData->setShaderModifier, sizeof(callbackData->setShaderModifier));
                     break;
                 case ImGuiCallback::SetOrigin:
-                    commandList->setGraphicsPushConstants(0, &callbackData->setOrigin, offsetof(ImGuiPushConstants, origin), sizeof(callbackData->setOrigin));
+                    setPushConstants(&pushConstants.origin, &callbackData->setOrigin, sizeof(callbackData->setOrigin));
                     break;
                 case ImGuiCallback::SetScale:
-                    commandList->setGraphicsPushConstants(0, &callbackData->setScale, offsetof(ImGuiPushConstants, scale), sizeof(callbackData->setScale));
+                    setPushConstants(&pushConstants.scale, &callbackData->setScale, sizeof(callbackData->setScale));
+                    break;       
+                case ImGuiCallback::SetMarqueeFade:
+                    setPushConstants(&pushConstants.boundsMin, &callbackData->setMarqueeFade, sizeof(callbackData->setMarqueeFade));
+                    break;
+                case ImGuiCallback::SetOutline:
+                    setPushConstants(&pushConstants.outline, &callbackData->setOutline, sizeof(callbackData->setOutline));
+                    break;
+                default:
+                    assert(false && "Unknown ImGui callback type.");
                     break;
                 }
             }
@@ -1952,10 +1981,26 @@ static void ProcDrawImGui(const RenderCommand& cmd)
                     }
 
                     descriptorIndex = texture->descriptorIndex;
+
+                    if (texture == g_imFontTexture.get())
+                        descriptorIndex |= 0x80000000;
+
+                    setPushConstants(&pushConstants.texture2DDescriptorIndex, &descriptorIndex, sizeof(descriptorIndex));
                 }
 
-                commandList->setGraphicsPushConstants(0, &descriptorIndex, offsetof(ImGuiPushConstants, texture2DDescriptorIndex), sizeof(descriptorIndex));
-                commandList->setScissors(RenderRect(int32_t(drawCmd.ClipRect.x), int32_t(drawCmd.ClipRect.y), int32_t(drawCmd.ClipRect.z), int32_t(drawCmd.ClipRect.w)));
+                if (pushConstantRangeMin < pushConstantRangeMax)
+                {
+                    commandList->setGraphicsPushConstants(0, reinterpret_cast<const uint8_t*>(&pushConstants) + pushConstantRangeMin, pushConstantRangeMin, pushConstantRangeMax - pushConstantRangeMin);
+                    pushConstantRangeMin = ~0;
+                    pushConstantRangeMax = 0;
+                }
+
+                if (memcmp(&clipRect, &drawCmd.ClipRect, sizeof(clipRect)) != 0)
+                {
+                    commandList->setScissors(RenderRect(int32_t(drawCmd.ClipRect.x), int32_t(drawCmd.ClipRect.y), int32_t(drawCmd.ClipRect.z), int32_t(drawCmd.ClipRect.w)));
+                    clipRect = drawCmd.ClipRect;
+                }
+
                 commandList->drawIndexedInstanced(drawCmd.ElemCount, 1, drawCmd.IdxOffset, drawCmd.VtxOffset, 0);
             }
         }
@@ -2666,7 +2711,12 @@ static void ProcSetViewport(const RenderCommand& cmd)
 
 static void SetTexture(GuestDevice* device, uint32_t index, GuestTexture* texture) 
 {
-    if (Config::ControllerIcons == EControllerIcons::PlayStation && texture != nullptr && texture->patchedTexture != nullptr)
+    auto isPlayStation = Config::ControllerIcons == EControllerIcons::PlayStation;
+
+    if (Config::ControllerIcons == EControllerIcons::Auto)
+        isPlayStation = hid::detail::g_inputDeviceController == hid::detail::EInputDevice::PlayStation;
+
+    if (isPlayStation && texture != nullptr && texture->patchedTexture != nullptr)
         texture = texture->patchedTexture.get();
 
     RenderCommand cmd;

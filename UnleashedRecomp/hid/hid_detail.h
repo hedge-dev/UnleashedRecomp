@@ -11,6 +11,7 @@ namespace hid::detail
     };
 
     extern EInputDevice g_inputDevice;
+    extern EInputDevice g_inputDeviceController;
 
     void Init();
 

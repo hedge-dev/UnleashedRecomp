@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gpu/imgui_common.h>
+#include <gpu/imgui/imgui_common.h>
 #include <gpu/video.h>
 #include <app.h>
 
@@ -16,10 +16,10 @@
 static void SetGradient(const ImVec2& min, const ImVec2& max, ImU32 top, ImU32 bottom)
 {
     auto callbackData = AddImGuiCallback(ImGuiCallback::SetGradient);
-    callbackData->setGradient.gradientMin[0] = min.x;
-    callbackData->setGradient.gradientMin[1] = min.y;
-    callbackData->setGradient.gradientMax[0] = max.x;
-    callbackData->setGradient.gradientMax[1] = max.y;
+    callbackData->setGradient.boundsMin[0] = min.x;
+    callbackData->setGradient.boundsMin[1] = min.y;
+    callbackData->setGradient.boundsMax[0] = max.x;
+    callbackData->setGradient.boundsMax[1] = max.y;
     callbackData->setGradient.gradientTop = top;
     callbackData->setGradient.gradientBottom = bottom;
 }
@@ -48,6 +48,50 @@ static void SetScale(ImVec2 scale)
     auto callbackData = AddImGuiCallback(ImGuiCallback::SetScale);
     callbackData->setScale.scale[0] = scale.x;
     callbackData->setScale.scale[1] = scale.y;
+}
+
+static void SetTextSkew(float yCenter, float skewScale)
+{
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_TEXT_SKEW);
+    SetOrigin({ 0.0f, yCenter });
+    SetScale({ skewScale, 1.0f });
+}
+
+static void ResetTextSkew()
+{
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
+    SetOrigin({ 0.0f, 0.0f });
+    SetScale({ 1.0f, 1.0f });
+}
+
+static void SetMarqueeFade(ImVec2 min, ImVec2 max, float fadeScale)
+{
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetMarqueeFade);
+    callbackData->setMarqueeFade.boundsMin[0] = min.x;
+    callbackData->setMarqueeFade.boundsMin[1] = min.y;
+    callbackData->setMarqueeFade.boundsMax[0] = max.x;
+    callbackData->setMarqueeFade.boundsMax[1] = max.y;
+
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_MARQUEE_FADE);
+    SetScale({ fadeScale, 1.0f });
+}
+
+static void ResetMarqueeFade()
+{
+    ResetGradient();
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
+    SetScale({ 1.0f, 1.0f });
+}
+
+static void SetOutline(float outline)
+{
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetOutline);
+    callbackData->setOutline.outline = outline;
+}
+
+static void ResetOutline()
+{
+    SetOutline(0.0f);
 }
 
 // Aspect ratio aware.
@@ -146,48 +190,32 @@ static void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2
     drawList->PopClipRect();
 }
 
-template<typename T>
-static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, T outlineSize, ImU32 outlineColor)
+static void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, float outlineSize, ImU32 outlineColor, uint32_t shaderModifier = IMGUI_SHADER_MODIFIER_NONE)
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    outlineSize = Scale(outlineSize);
+    SetOutline(outlineSize);
+    drawList->AddText(font, fontSize, pos, outlineColor, text);
+    ResetOutline();
 
-    if constexpr (std::is_same_v<float, T> || std::is_same_v<double, T>)
-    {
-        // TODO: This is still very inefficient!
-        for (float i = -outlineSize; i <= outlineSize; i += 0.5f)
-        {
-            for (float j = -outlineSize; j <= outlineSize; j += 0.5f)
-            {
-                if (i == 0.0f && j == 0.0f)
-                    continue;
-
-                drawList->AddText(font, fontSize, { pos.x + i, pos.y + j }, outlineColor, text);
-            }
-        }
-    }
-    else if constexpr (std::is_integral_v<T>)
-    {
-        // TODO: This is very inefficient!
-        for (int32_t i = -outlineSize + 1; i < outlineSize; i++)
-        {
-            for (int32_t j = -outlineSize + 1; j < outlineSize; j++)
-                drawList->AddText(font, fontSize, { pos.x + i, pos.y + j }, outlineColor, text);
-        }
-    }
+    if (shaderModifier != IMGUI_SHADER_MODIFIER_NONE)
+        SetShaderModifier(shaderModifier);
 
     drawList->AddText(font, fontSize, pos, color, text);
+
+    if (shaderModifier != IMGUI_SHADER_MODIFIER_NONE)
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 }
 
-static void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text, float offset = 2.0f, float radius = 0.4f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))
+static void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text, float offset = 2.0f, float radius = 1.0f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
     offset = Scale(offset);
-    radius = Scale(radius);
 
-    DrawTextWithOutline<float>(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text, radius, shadowColour);
+    SetOutline(radius);
+    drawList->AddText(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text);
+    ResetOutline();
 
     drawList->AddText(font, fontSize, pos, colour, text, nullptr);
 }
@@ -309,7 +337,7 @@ static void DrawCentredParagraph(const ImFont* font, float fontSize, const ImVec
     }
 }
 
-static void DrawTextWithMarqueeShadow(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 colour, const char* text, double time, double delay, double speed, float offset = 2.0f, float radius = 0.4f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))
+static void DrawTextWithMarqueeShadow(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 colour, const char* text, double time, double delay, double speed, float offset = 2.0f, float radius = 1.0f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto rectWidth = max.x - min.x;

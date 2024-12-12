@@ -387,7 +387,9 @@ SWA_API uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_S
             state->Gamepad.sThumbLX = 32767;
 
         if (GetAsyncKeyState(VK_RETURN) & 0x8000)
-            state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_START;
+            state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_START;    
+        if (GetAsyncKeyState(VK_BACK) & 0x8000)
+            state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_BACK;
 
         ByteSwap(state->Gamepad.wButtons);
         ByteSwap(state->Gamepad.sThumbLX);

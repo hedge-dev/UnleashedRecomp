@@ -36,7 +36,7 @@
 #include <res/images/options_menu/thumbnails/window_size.dds.h>
 #include <res/images/options_menu/thumbnails/xbox_color_correction.dds.h>
 
-static std::unordered_map<std::string_view, std::unique_ptr<GuestTexture>> g_thumbnails;
+inline static std::unordered_map<std::string_view, std::unique_ptr<GuestTexture>> g_thumbnails;
 
 static void LoadThumbnails()
 {

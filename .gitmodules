@@ -13,6 +13,9 @@
 [submodule "UnleashedRecompResources"]
 	path = UnleashedRecompResources
 	url = https://github.com/hedge-dev/UnleashedRecompResources.git
+[submodule "thirdparty/msdf-atlas-gen"]
+	path = thirdparty/msdf-atlas-gen
+	url = https://github.com/Chlumsky/msdf-atlas-gen.git
 [submodule "thirdparty/miniaudio"]
 	path = thirdparty/miniaudio
 	url = https://github.com/mackron/miniaudio

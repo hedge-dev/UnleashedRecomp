@@ -143,9 +143,15 @@ registers = ["r30"]
 
 # Down force HFR fix
 [[midasm_hook]]
-name = "HighFrameRateDeltaTimeFixMidAsmHook"
-address = 0x8234AB94
-registers = ["f1"]
+name = "DownForceDeltaTimeFixMidAsmHook"
+address = 0x82319D60
+registers = ["f0"]
+jump_address = 0x82319D64
+
+[[midasm_hook]]
+name = "DownForceDeltaTimeFixMidAsmHook"
+address = 0x82319DCC
+registers = ["v127", "f24"]
 
 # 2D spline HFR fix
 [[midasm_hook]]

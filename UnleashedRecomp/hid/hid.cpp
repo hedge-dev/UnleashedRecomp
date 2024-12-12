@@ -3,6 +3,7 @@
 #include "hid_detail.h"
 
 hid::detail::EInputDevice hid::detail::g_inputDevice;
+hid::detail::EInputDevice hid::detail::g_inputDeviceController;
 
 void hid::Init()
 {

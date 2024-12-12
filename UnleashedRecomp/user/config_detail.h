@@ -69,12 +69,14 @@ CONFIG_DEFINE_ENUM_TEMPLATE(ETimeOfDayTransition)
 
 enum class EControllerIcons : uint32_t
 {
+    Auto,
     Xbox,
     PlayStation
 };
 
 CONFIG_DEFINE_ENUM_TEMPLATE(EControllerIcons)
 {
+    { "Auto", EControllerIcons::Auto },
     { "Xbox", EControllerIcons::Xbox },
     { "PlayStation", EControllerIcons::PlayStation }
 };

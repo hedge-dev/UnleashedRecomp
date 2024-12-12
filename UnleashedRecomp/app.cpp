@@ -3,6 +3,7 @@
 #include <kernel/function.h>
 #include <ui/window.h>
 #include <patches/audio_patches.h>
+#include <user/config.h>
 #include <os/process.h>
 
 void App::Restart(std::vector<std::string> restartArgs)
@@ -13,6 +14,8 @@ void App::Restart(std::vector<std::string> restartArgs)
 
 void App::Exit()
 {
+    Config::Save();
+
 #if _WIN32
     ExitProcess(0);
 #endif
