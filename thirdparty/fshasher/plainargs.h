@@ -25,8 +25,10 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 
+#include <algorithm>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace plainargs {
     class Result {
