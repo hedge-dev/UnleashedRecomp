@@ -1,5 +1,6 @@
 #include <miniaudio.h>
 
+#include <apu/audio.h>
 #include <apu/embedded_player.h>
 #include <user/config.h>
 
@@ -134,6 +135,9 @@ static void PlayEmbeddedSound(EmbeddedSound s)
 void EmbeddedPlayer::Init() 
 {
     ma_engine_config engineConfig = ma_engine_config_init();
+    engineConfig.channels = XAUDIO_NUM_CHANNELS;
+    engineConfig.sampleRate = XAUDIO_SAMPLES_HZ;
+
     ma_result res = ma_engine_init(&engineConfig, &g_audioEngine);
     if (res == MA_SUCCESS)
     {
