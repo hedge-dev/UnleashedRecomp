@@ -4,9 +4,6 @@
 #include <cpu/guest_code.h>
 #include <kernel/heap.h>
 
-#define MINIAUDIO_IMPLEMENTATION
-#include <miniaudio.h>
-
 static PPCFunc* g_clientCallback{};
 static DWORD g_clientCallbackParam{}; // pointer in guest memory
 static ma_device g_audioDevice{};

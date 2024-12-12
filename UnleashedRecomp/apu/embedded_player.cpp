@@ -1,16 +1,90 @@
-#include <miniaudio.h>
-
 #include <apu/audio.h>
 #include <apu/embedded_player.h>
 #include <user/config.h>
 
-#include <res/sounds/sys_worldmap_cursor.wav.h>
-#include <res/sounds/sys_worldmap_finaldecide.wav.h>
-#include <res/sounds/sys_actstg_pausecansel.wav.h>
-#include <res/sounds/sys_actstg_pausecursor.wav.h>
-#include <res/sounds/sys_actstg_pausedecide.wav.h>
-#include <res/sounds/sys_actstg_pausewinclose.wav.h>
-#include <res/sounds/sys_actstg_pausewinopen.wav.h>
+#include <res/sounds/sys_worldmap_cursor.ogg.h>
+#include <res/sounds/sys_worldmap_finaldecide.ogg.h>
+#include <res/sounds/sys_actstg_pausecansel.ogg.h>
+#include <res/sounds/sys_actstg_pausecursor.ogg.h>
+#include <res/sounds/sys_actstg_pausedecide.ogg.h>
+#include <res/sounds/sys_actstg_pausewinclose.ogg.h>
+#include <res/sounds/sys_actstg_pausewinopen.ogg.h>
+
+#pragma region libvorbis
+static ma_result ma_decoding_backend_init__libvorbis(void* pUserData, ma_read_proc onRead, ma_seek_proc onSeek, ma_tell_proc onTell, void* pReadSeekTellUserData, const ma_decoding_backend_config* pConfig, const ma_allocation_callbacks* pAllocationCallbacks, ma_data_source** ppBackend)
+{
+    ma_result result;
+    ma_libvorbis* pVorbis;
+
+    (void)pUserData;
+
+    pVorbis = (ma_libvorbis*)ma_malloc(sizeof(*pVorbis), pAllocationCallbacks);
+    if (pVorbis == NULL) {
+        return MA_OUT_OF_MEMORY;
+    }
+
+    result = ma_libvorbis_init(onRead, onSeek, onTell, pReadSeekTellUserData, pConfig, pAllocationCallbacks, pVorbis);
+    if (result != MA_SUCCESS) {
+        ma_free(pVorbis, pAllocationCallbacks);
+        return result;
+    }
+
+    *ppBackend = pVorbis;
+
+    return MA_SUCCESS;
+}
+
+static ma_result ma_decoding_backend_init_file__libvorbis(void* pUserData, const char* pFilePath, const ma_decoding_backend_config* pConfig, const ma_allocation_callbacks* pAllocationCallbacks, ma_data_source** ppBackend)
+{
+    ma_result result;
+    ma_libvorbis* pVorbis;
+
+    (void)pUserData;
+
+    pVorbis = (ma_libvorbis*)ma_malloc(sizeof(*pVorbis), pAllocationCallbacks);
+    if (pVorbis == NULL) {
+        return MA_OUT_OF_MEMORY;
+    }
+
+    result = ma_libvorbis_init_file(pFilePath, pConfig, pAllocationCallbacks, pVorbis);
+    if (result != MA_SUCCESS) {
+        ma_free(pVorbis, pAllocationCallbacks);
+        return result;
+    }
+
+    *ppBackend = pVorbis;
+
+    return MA_SUCCESS;
+}
+
+static void ma_decoding_backend_uninit__libvorbis(void* pUserData, ma_data_source* pBackend, const ma_allocation_callbacks* pAllocationCallbacks)
+{
+    ma_libvorbis* pVorbis = (ma_libvorbis*)pBackend;
+
+    (void)pUserData;
+
+    ma_libvorbis_uninit(pVorbis, pAllocationCallbacks);
+    ma_free(pVorbis, pAllocationCallbacks);
+}
+
+static ma_result ma_decoding_backend_get_channel_map__libvorbis(void* pUserData, ma_data_source* pBackend, ma_channel* pChannelMap, size_t channelMapCap)
+{
+    ma_libvorbis* pVorbis = (ma_libvorbis*)pBackend;
+
+    (void)pUserData;
+
+    return ma_libvorbis_get_data_format(pVorbis, NULL, NULL, NULL, pChannelMap, channelMapCap);
+}
+
+static ma_decoding_backend_vtable g_ma_decoding_backend_vtable_libvorbis =
+{
+    ma_decoding_backend_init__libvorbis,
+    ma_decoding_backend_init_file__libvorbis,
+    NULL, /* onInitFileW() */
+    NULL, /* onInitMemory() */
+    ma_decoding_backend_uninit__libvorbis
+};
+#pragma endregion
 
 enum class EmbeddedSound
 {
@@ -34,7 +108,7 @@ struct EmbeddedSoundData
 
 static ma_engine g_audioEngine = {};
 static std::array<EmbeddedSoundData, size_t(EmbeddedSound::Count)> g_embeddedSoundData = {};
-static const std::unordered_map<std::string, EmbeddedSound> g_embeddedSoundMap =
+static const std::unordered_map<std::string_view, EmbeddedSound> g_embeddedSoundMap =
 {
     { "sys_worldmap_cursor", EmbeddedSound::SysWorldMapCursor },
     { "sys_worldmap_finaldecide", EmbeddedSound::SysWorldMapFinalDecide },
@@ -91,9 +165,19 @@ static void PlayEmbeddedSound(EmbeddedSound s)
                 return;
             }
 
+            ma_decoding_backend_vtable* pCustomBackendVTables[] =
+            {
+                &g_ma_decoding_backend_vtable_libvorbis
+            };
+
+            ma_decoder_config decoderConfig = ma_decoder_config_init_default();
+            decoderConfig.pCustomBackendUserData = NULL;
+            decoderConfig.ppCustomBackendVTables = pCustomBackendVTables;
+            decoderConfig.customBackendCount = std::size(pCustomBackendVTables);
+
             ma_result res;
             data.decoders[i] = std::make_unique<ma_decoder>();
-            res = ma_decoder_init_memory(soundData, soundDataSize, nullptr, data.decoders[i].get());
+            res = ma_decoder_init_memory(soundData, soundDataSize, &decoderConfig, data.decoders[i].get());
             if (res != MA_SUCCESS)
             {
                 fprintf(stderr, "ma_decoder_init_memory failed with error code %d.\n", res);
@@ -139,7 +223,7 @@ void EmbeddedPlayer::Init()
     engineConfig.sampleRate = XAUDIO_SAMPLES_HZ;
 
     ma_result res = ma_engine_init(&engineConfig, &g_audioEngine);
-    if (res == MA_SUCCESS)
+    if (res != MA_SUCCESS)
     {
         fprintf(stderr, "ma_engine_init failed with error code %d.\n", res);
     }

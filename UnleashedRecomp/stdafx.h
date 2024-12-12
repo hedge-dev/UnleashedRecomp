@@ -34,6 +34,8 @@
 #include <smolv.h>
 #include <print>
 #include <set>
+#include <miniaudio.h>
+#include <extras/miniaudio_libvorbis.h>
 
 using Microsoft::WRL::ComPtr;
 
