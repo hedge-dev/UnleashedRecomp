@@ -32,7 +32,6 @@ struct EmbeddedSoundData
 };
 
 static ma_engine g_audioEngine = {};
-static bool g_audioEngineInitialized = false;
 static std::array<EmbeddedSoundData, size_t(EmbeddedSound::Count)> g_embeddedSoundData = {};
 static const std::unordered_map<std::string, EmbeddedSound> g_embeddedSoundMap =
 {
@@ -134,6 +133,13 @@ static void PlayEmbeddedSound(EmbeddedSound s)
 
 void EmbeddedPlayer::Init() 
 {
+    ma_engine_config engineConfig = ma_engine_config_init();
+    ma_result res = ma_engine_init(&engineConfig, &g_audioEngine);
+    if (res == MA_SUCCESS)
+    {
+        fprintf(stderr, "ma_engine_init failed with error code %d.\n", res);
+    }
+
     s_isActive = true;
 }
 
@@ -145,19 +151,6 @@ void EmbeddedPlayer::Play(const char *name)
     if (it == g_embeddedSoundMap.end())
     {
         return;
-    }
-
-    if (!g_audioEngineInitialized)
-    {
-        ma_engine_config engineConfig = ma_engine_config_init();
-        ma_result res = ma_engine_init(&engineConfig, &g_audioEngine);
-        if (res != MA_SUCCESS)
-        {
-            fprintf(stderr, "ma_engine_init failed with error code %d.\n", res);
-        }
-
-        // Do not attempt to initialize this again if it fails.
-        g_audioEngineInitialized = true;
     }
 
     if (g_audioEngine.pDevice == nullptr)
@@ -204,6 +197,5 @@ void EmbeddedPlayer::Shutdown()
         ma_engine_uninit(&g_audioEngine);
     }
 
-    g_audioEngineInitialized = false;
     s_isActive = false;
 }
