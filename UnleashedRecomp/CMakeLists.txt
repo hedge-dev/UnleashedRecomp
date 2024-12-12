@@ -92,9 +92,14 @@ set(SWA_GPU_CXX_SOURCES
     "gpu/imgui/imgui_common.cpp"
     "gpu/imgui/imgui_font_builder.cpp"
     "gpu/imgui/imgui_snapshot.cpp"
-    "gpu/rhi/plume_d3d12.cpp"
     "gpu/rhi/plume_vulkan.cpp"
 )
+
+if (WIN32)
+    list(APPEND SWA_GPU_CXX_SOURCES
+        "gpu/rhi/plume_d3d12.cpp"
+    )
+endif()
 
 set(SWA_APU_CXX_SOURCES
     "apu/audio.cpp"
@@ -206,9 +211,12 @@ endif()
 
 set_target_properties(UnleashedRecomp PROPERTIES OUTPUT_NAME ${TARGET_NAME})
 
-find_package(directx-headers CONFIG REQUIRED)
-find_package(directx12-agility CONFIG REQUIRED)
-find_package(d3d12-memory-allocator CONFIG REQUIRED)
+if (WIN32)
+    find_package(directx-headers CONFIG REQUIRED)
+    find_package(directx12-agility CONFIG REQUIRED)
+    find_package(d3d12-memory-allocator CONFIG REQUIRED)
+endif()
+
 find_package(SDL2 CONFIG REQUIRED)
 find_package(unordered_dense CONFIG REQUIRED)
 find_package(VulkanHeaders CONFIG)
@@ -228,39 +236,44 @@ find_package(nfd CONFIG REQUIRED)
 find_package(Vorbis CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
-add_custom_command(TARGET UnleashedRecomp POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Core,IMPORTED_LOCATION_RELEASE> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Layers,IMPORTED_LOCATION_DEBUG> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
-   COMMAND_EXPAND_LISTS
-)
+if (WIN32)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
+    add_custom_command(TARGET UnleashedRecomp POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Core,IMPORTED_LOCATION_RELEASE> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Layers,IMPORTED_LOCATION_DEBUG> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
+       COMMAND_EXPAND_LISTS
+    )
 
-file(COPY ${PACKAGE_PREFIX_DIR}/bin/dxil.dll DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY ${PACKAGE_PREFIX_DIR}/bin/dxil.dll DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+    target_link_libraries(UnleashedRecomp PRIVATE
+        Microsoft::DirectX-Headers 
+        Microsoft::DirectX-Guids 
+        Microsoft::DirectX12-Agility
+        Microsoft::DirectXShaderCompiler
+        unofficial::D3D12MemoryAllocator
+        comctl32
+        dxgi
+        ntdll
+        winmm
+        Synchronization
+    )
+endif()
 
 target_link_libraries(UnleashedRecomp PRIVATE
-    Microsoft::DirectX-Headers 
-    Microsoft::DirectX-Guids 
-    Microsoft::DirectX12-Agility
-    Microsoft::DirectXShaderCompiler
-    comctl32
-    dxgi
     Vulkan::Headers
     volk::volk 
     volk::volk_headers
     GPUOpen::VulkanMemoryAllocator
-    ntdll
     o1heap
     PowerUtils
     SDL2::SDL2-static
     UnleashedRecompLib
-    unofficial::D3D12MemoryAllocator
     unordered_dense::unordered_dense
-    winmm
     xxHash::xxhash
     PkgConfig::tomlplusplus
     zstd::libzstd_static
     unofficial::concurrentqueue::concurrentqueue
-    Synchronization
     imgui::imgui
     magic_enum::magic_enum
     unofficial::tiny-aes-c::tiny-aes-c
@@ -287,17 +300,20 @@ target_precompile_headers(UnleashedRecomp PUBLIC ${SWA_PRECOMPILED_HEADERS})
 function(compile_shader FILE_PATH TARGET_NAME)
     set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/${FILE_PATH}.hlsl)
     cmake_path(GET FILE_PATH STEM VARIABLE_NAME)
-    add_custom_command(
-        OUTPUT ${FILE_PATH}.dxil.h
-        COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil
-        DEPENDS ${FILE_PATH}
-    )
+    if (WIN32)
+        add_custom_command(
+            OUTPUT ${FILE_PATH}.dxil.h
+            COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil
+            DEPENDS ${FILE_PATH}
+        )
+        target_sources(UnleashedRecomp PRIVATE ${FILE_PATH}.dxil.h)
+    endif()
     add_custom_command(
         OUTPUT ${FILE_PATH}.spirv.h
         COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -Fh ${FILE_PATH}.spirv.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_spirv
         DEPENDS ${FILE_PATH}
     )
-    target_sources(UnleashedRecomp PRIVATE ${FILE_PATH}.dxil.h ${FILE_PATH}.spirv.h)
+    target_sources(UnleashedRecomp PRIVATE ${FILE_PATH}.spirv.h)
 endfunction()
 
 function(compile_vertex_shader FILE_PATH)

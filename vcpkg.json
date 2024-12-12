@@ -1,9 +1,26 @@
 {
     "builtin-baseline": "e63bd09dc0b7204467705c1c7c71d0e2a3f8860b",
     "dependencies": [
-        "directx-headers",
-        "directx12-agility",
-        "d3d12-memory-allocator",
+        {
+            "name": "directx-headers",
+            "platform": "windows"
+        },
+        {
+            "name": "directx12-agility",
+            "platform": "windows"
+        },
+        {
+            "name": "d3d12-memory-allocator",
+            "platform": "windows"
+        },
+        {
+            "name": "pkgconf",
+            "platform": "windows"
+        },
+        {
+            "name": "imgui",
+            "features": [ "sdl2-binding" ]
+        },
         "directx-dxc",
         "sdl2",
         "unordered-dense",
@@ -11,16 +28,11 @@
         "vulkan-headers",
         "vulkan-memory-allocator",
         "xxhash",
-        "pkgconf",
         "tomlplusplus",
         "zstd",
         "stb",
         "concurrentqueue",
         "tiny-aes-c",
-        {
-            "name": "imgui",
-            "features": [ "sdl2-binding" ]
-        },
         "magic-enum",
         "nativefiledialog-extended",
         "freetype",
