@@ -22,6 +22,7 @@
     SOFTWARE.
 */
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <cstdio>

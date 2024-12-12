@@ -1,5 +1,7 @@
 #include "bc_diff.h"
+#include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <filesystem>
 #include <vector>
 #include <xxhash.h>
