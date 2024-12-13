@@ -5,9 +5,46 @@
 #include <kernel/function.h>
 #include <cpu/guest_thread.h>
 
+static constexpr uint32_t GUEST_INVALID_HANDLE_VALUE = 0xFFFFFFFF;
+
+struct FileHandle
+{
+    std::fstream stream;
+    std::filesystem::path path;
+};
+
+struct FindHandle
+{
+    std::filesystem::path searchPath;
+    std::filesystem::directory_iterator iterator;
+
+    void fillFindData(LPWIN32_FIND_DATAA lpFindFileData)
+    {
+        if (iterator->is_directory())
+            lpFindFileData->dwFileAttributes = std::byteswap(FILE_ATTRIBUTE_DIRECTORY);
+        else if (iterator->is_regular_file())
+            lpFindFileData->dwFileAttributes = std::byteswap(FILE_ATTRIBUTE_NORMAL);
+
+        std::u8string pathU8Str = std::filesystem::relative(iterator->path(), searchPath).u8string();
+        uint64_t fileSize = iterator->file_size();
+        strncpy(lpFindFileData->cFileName, (const char *)(pathU8Str.c_str()), sizeof(lpFindFileData->cFileName));
+        lpFindFileData->nFileSizeLow = std::byteswap(uint32_t(fileSize >> 32U));
+        lpFindFileData->nFileSizeHigh = std::byteswap(uint32_t(fileSize));
+        lpFindFileData->ftCreationTime = {};
+        lpFindFileData->ftLastAccessTime = {};
+        lpFindFileData->ftLastWriteTime = {};
+    }
+};
+
+bool FileHandleCloser(void* handle)
+{
+    delete (FileHandle *)(handle);
+    return false;
+}
+
 bool FindHandleCloser(void* handle)
 {
-    FindClose(handle);
+    delete (FindHandle *)(handle);
     return false;
 }
 
@@ -19,41 +56,82 @@ SWA_API uint32_t XCreateFileA(
     DWORD dwCreationDisposition,
     DWORD dwFlagsAndAttributes)
 {
-    const auto handle = (uint32_t)CreateFileA(
-        FileSystem::TransformPath(lpFileName),
-        dwDesiredAccess,
-        dwShareMode,
-        nullptr,
-        dwCreationDisposition,
-        dwFlagsAndAttributes & ~(FILE_FLAG_NO_BUFFERING | FILE_FLAG_OVERLAPPED),
-        nullptr);
+    assert(((dwDesiredAccess & ~(GENERIC_READ | GENERIC_WRITE | FILE_READ_DATA)) == 0) && "Unknown desired access bits.");
+    assert(((dwShareMode & ~(FILE_SHARE_READ | FILE_SHARE_WRITE)) == 0) && "Unknown share mode bits.");
+    assert(((dwCreationDisposition & ~(CREATE_NEW | CREATE_ALWAYS)) == 0) && "Unknown creation disposition bits.");
 
-    GuestThread::SetLastError(GetLastError());
-    printf("CreateFileA(%s, %lx, %lx, %p, %lx, %lx): %x\n", lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, handle);
+    std::filesystem::path filePath = FileSystem::TransformPath(lpFileName);
+    std::fstream fileStream;
+    std::ios::openmode fileOpenMode = std::ios::binary;
+    if (dwDesiredAccess & (GENERIC_READ | FILE_READ_DATA))
+    {
+        fileOpenMode |= std::ios::in;
+    }
 
-    return handle;
+    if (dwDesiredAccess & GENERIC_WRITE)
+    {
+        fileOpenMode |= std::ios::out;
+    }
+
+    fileStream.open(filePath, fileOpenMode);
+    if (!fileStream.is_open())
+    {
+#ifdef _WIN32
+        GuestThread::SetLastError(GetLastError());
+#endif
+        return GUEST_INVALID_HANDLE_VALUE;
+    }
+
+    FileHandle *fileHandle = new FileHandle();
+    fileHandle->stream = std::move(fileStream);
+    fileHandle->path = std::move(filePath);
+    return GUEST_HANDLE(ObInsertObject(fileHandle, FileHandleCloser));
 }
 
 static DWORD XGetFileSizeA(
     uint32_t hFile,
     LPDWORD lpFileSizeHigh)
 {
-    DWORD fileSize = GetFileSize((HANDLE)hFile, lpFileSizeHigh);
-    if (lpFileSizeHigh != nullptr)
-        *lpFileSizeHigh = std::byteswap(*lpFileSizeHigh);
+    FileHandle *handle = (FileHandle *)(ObQueryObject(HOST_HANDLE(hFile)));
+    if (handle != nullptr)
+    {
+        std::error_code ec;
+        auto fileSize = std::filesystem::file_size(handle->path, ec);
+        if (!ec)
+        {
+            if (lpFileSizeHigh != nullptr)
+            {
+                *lpFileSizeHigh = std::byteswap(DWORD(fileSize >> 32U));
+            }
 
-    return fileSize;
+            return (DWORD)(fileSize);
+        }
+    }
+
+    return INVALID_FILE_SIZE;
 }
 
 BOOL XGetFileSizeExA(
     uint32_t hFile,
     PLARGE_INTEGER lpFileSize)
 {
-    BOOL result = GetFileSizeEx((HANDLE)hFile, lpFileSize);
-    if (result)
-        lpFileSize->QuadPart = std::byteswap(lpFileSize->QuadPart);
+    FileHandle *handle = (FileHandle *)(ObQueryObject(HOST_HANDLE(hFile)));
+    if (handle != nullptr)
+    {
+        std::error_code ec;
+        auto fileSize = std::filesystem::file_size(handle->path, ec);
+        if (!ec)
+        {
+            if (lpFileSize != nullptr)
+            {
+                lpFileSize->QuadPart = std::byteswap(fileSize);
+            }
 
-    return result;
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 BOOL XReadFile(
@@ -63,15 +141,32 @@ BOOL XReadFile(
     XLPDWORD lpNumberOfBytesRead,
     XOVERLAPPED* lpOverlapped)
 {
+    FileHandle *handle = (FileHandle *)(ObQueryObject(HOST_HANDLE(hFile)));
+    if (handle == nullptr)
+    {
+        return FALSE;
+    }
+
+    BOOL result = FALSE;
     if (lpOverlapped != nullptr)
     {
-        LONG distanceToMoveHigh = lpOverlapped->OffsetHigh;
-        if (SetFilePointer((HANDLE)hFile, lpOverlapped->Offset, &distanceToMoveHigh, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+        std::streamoff streamOffset = lpOverlapped->Offset + (std::streamoff(lpOverlapped->OffsetHigh.get()) << 32U);
+        handle->stream.clear();
+        handle->stream.seekg(streamOffset, std::ios::beg);
+        if (handle->stream.bad())
+        {
             return FALSE;
+        }
     }
 
     DWORD numberOfBytesRead;
-    BOOL result = ReadFile((HANDLE)hFile, lpBuffer, nNumberOfBytesToRead, &numberOfBytesRead, nullptr);
+    handle->stream.read((char *)(lpBuffer), nNumberOfBytesToRead);
+    if (!handle->stream.bad())
+    {
+        numberOfBytesRead = DWORD(handle->stream.gcount());
+        result = TRUE;
+    }
+
     if (result)
     {
         if (lpOverlapped != nullptr)
@@ -88,8 +183,6 @@ BOOL XReadFile(
         }
     }
 
-    //printf("ReadFile(): %x %x %x %x %x %x\n", hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped, result);
-
     return result;
 }
 
@@ -99,12 +192,43 @@ DWORD XSetFilePointer(
     PLONG lpDistanceToMoveHigh,
     DWORD dwMoveMethod)
 {
-    LONG distanceToMoveHigh = lpDistanceToMoveHigh ? std::byteswap(*lpDistanceToMoveHigh) : 0;
-    DWORD result = SetFilePointer((HANDLE)hFile, lDistanceToMove, lpDistanceToMoveHigh ? &distanceToMoveHigh : nullptr, dwMoveMethod);
-    if (lpDistanceToMoveHigh != nullptr)
-        *lpDistanceToMoveHigh = std::byteswap(distanceToMoveHigh);
+    FileHandle *handle = (FileHandle *)(ObQueryObject(HOST_HANDLE(hFile)));
+    if (handle == nullptr)
+    {
+        return INVALID_SET_FILE_POINTER;
+    }
 
-    return result;
+    LONG distanceToMoveHigh = lpDistanceToMoveHigh ? std::byteswap(*lpDistanceToMoveHigh) : 0;
+    std::streamoff streamOffset = lDistanceToMove + (std::streamoff(distanceToMoveHigh) << 32U);
+    std::fstream::seekdir streamSeekDir = {};
+    switch (dwMoveMethod)
+    {
+    case FILE_BEGIN:
+        streamSeekDir = std::ios::beg;
+        break;
+    case FILE_CURRENT:
+        streamSeekDir = std::ios::cur;
+        break;
+    case FILE_END:
+        streamSeekDir = std::ios::end;
+        break;
+    default:
+        assert(false && "Unknown move method.");
+        break;
+    }
+
+    handle->stream.clear();
+    handle->stream.seekg(streamOffset, streamSeekDir);
+    if (handle->stream.bad())
+    {
+        return INVALID_SET_FILE_POINTER;
+    }
+
+    std::streampos streamPos = handle->stream.tellg();
+    if (lpDistanceToMoveHigh != nullptr)
+        *lpDistanceToMoveHigh = std::byteswap(LONG(streamPos >> 32U));
+
+    return DWORD(streamPos);
 }
 
 BOOL XSetFilePointerEx(
@@ -113,50 +237,99 @@ BOOL XSetFilePointerEx(
     PLARGE_INTEGER lpNewFilePointer,
     DWORD dwMoveMethod)
 {
-    LARGE_INTEGER distanceToMove;
-    distanceToMove.QuadPart = lDistanceToMove;
+    FileHandle *handle = (FileHandle *)(ObQueryObject(HOST_HANDLE(hFile)));
+    if (handle == nullptr)
+    {
+        return FALSE;
+    }
 
-    DWORD result = SetFilePointerEx((HANDLE)hFile, distanceToMove, lpNewFilePointer, dwMoveMethod);
+    std::fstream::seekdir streamSeekDir = {};
+    switch (dwMoveMethod)
+    {
+    case FILE_BEGIN:
+        streamSeekDir = std::ios::beg;
+        break;
+    case FILE_CURRENT:
+        streamSeekDir = std::ios::cur;
+        break;
+    case FILE_END:
+        streamSeekDir = std::ios::end;
+        break;
+    default:
+        assert(false && "Unknown move method.");
+        break;
+    }
+
+    handle->stream.clear();
+    handle->stream.seekg(lDistanceToMove, streamSeekDir);
+    if (handle->stream.bad())
+    {
+        return FALSE;
+    }
+
     if (lpNewFilePointer != nullptr)
-        lpNewFilePointer->QuadPart = std::byteswap(lpNewFilePointer->QuadPart);
+    {
+        lpNewFilePointer->QuadPart = std::byteswap(LONGLONG(handle->stream.tellg()));
+    }
 
-    return result;
+    return TRUE;
 }
 
 uint32_t XFindFirstFileA(
     LPCSTR lpFileName,
     LPWIN32_FIND_DATAA lpFindFileData)
 {
-    auto& data = *lpFindFileData;
-    const auto handle = FindFirstFileA(FileSystem::TransformPath(lpFileName), &data);
-    GuestThread::SetLastError(GetLastError());
-    if (handle == INVALID_HANDLE_VALUE)
+    const char *transformedPath = FileSystem::TransformPath(lpFileName);
+    size_t transformedPathLength = strlen(transformedPath);
+    if (transformedPathLength == 0)
+        return GUEST_INVALID_HANDLE_VALUE;
+
+    std::filesystem::path dirPath;
+    if (strstr(transformedPath, "\\*") == (&transformedPath[transformedPathLength - 2]))
     {
-        return 0xFFFFFFFF;
+        dirPath = std::string(transformedPath, transformedPathLength - 2);
+    }
+    else if (strstr(transformedPath, "\\*.*") == (&transformedPath[transformedPathLength - 4]))
+    {
+        dirPath = std::string(transformedPath, transformedPathLength - 4);
+    }
+    else
+    {
+        dirPath = std::string(transformedPath, transformedPathLength);
+        assert(!dirPath.has_extension() && "Unknown search pattern.");
     }
 
-    ByteSwap(data.dwFileAttributes);
-    ByteSwap(*(uint64_t*)&data.ftCreationTime);
-    ByteSwap(*(uint64_t*)&data.ftLastAccessTime);
-    ByteSwap(*(uint64_t*)&data.ftLastWriteTime);
-    ByteSwap(*(uint64_t*)&data.nFileSizeHigh);
+    if (!std::filesystem::is_directory(dirPath))
+        return GUEST_INVALID_HANDLE_VALUE;
 
-    return GUEST_HANDLE(ObInsertObject(handle, FindHandleCloser));
+    std::filesystem::directory_iterator dirIterator(dirPath);
+    if (dirIterator == std::filesystem::directory_iterator())
+        return GUEST_INVALID_HANDLE_VALUE;
+
+    FindHandle *findHandle = new FindHandle();
+    findHandle->searchPath = std::move(dirPath);
+    findHandle->iterator = std::move(dirIterator);
+    findHandle->fillFindData(lpFindFileData);
+    return GUEST_HANDLE(ObInsertObject(findHandle, FindHandleCloser));
 }
 
 uint32_t XFindNextFileA(uint32_t Handle, LPWIN32_FIND_DATAA lpFindFileData)
 {
-    auto* handle = ObQueryObject(HOST_HANDLE(Handle));
-    auto& data = *lpFindFileData;
-    const auto result = FindNextFileA(handle, &data);
+    FindHandle *findHandle = (FindHandle *)(ObQueryObject(HOST_HANDLE(Handle)));
+    if (findHandle == nullptr)
+        return FALSE;
 
-    ByteSwap(data.dwFileAttributes);
-    ByteSwap(*(uint64_t*)&data.ftCreationTime);
-    ByteSwap(*(uint64_t*)&data.ftLastAccessTime);
-    ByteSwap(*(uint64_t*)&data.ftLastWriteTime);
-    ByteSwap(*(uint64_t*)&data.nFileSizeHigh);
+    findHandle->iterator++;
 
-    return result;
+    if (findHandle->iterator == std::filesystem::directory_iterator())
+    {
+        return FALSE;
+    }
+    else
+    {
+        findHandle->fillFindData(lpFindFileData);
+        return TRUE;
+    }
 }
 
 BOOL XReadFileEx(
@@ -166,12 +339,25 @@ BOOL XReadFileEx(
     XOVERLAPPED* lpOverlapped,
     uint32_t lpCompletionRoutine)
 {
-    LONG distanceToMoveHigh = lpOverlapped->OffsetHigh;
-    if (SetFilePointer((HANDLE)hFile, lpOverlapped->Offset, &distanceToMoveHigh, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+    FileHandle *handle = (FileHandle *)(ObQueryObject(HOST_HANDLE(hFile)));
+    if (handle == nullptr)
         return FALSE;
 
+    BOOL result = FALSE;
     DWORD numberOfBytesRead;
-    BOOL result = ReadFile((HANDLE)hFile, lpBuffer, nNumberOfBytesToRead, &numberOfBytesRead, nullptr);
+    std::streamoff streamOffset = lpOverlapped->Offset + (std::streamoff(lpOverlapped->OffsetHigh.get()) << 32U);
+    handle->stream.clear();
+    handle->stream.seekg(streamOffset, std::ios::beg);
+    if (handle->stream.bad())
+        return FALSE;
+
+    handle->stream.read((char *)(lpBuffer), nNumberOfBytesToRead);
+    if (!handle->stream.bad())
+    {
+        numberOfBytesRead = DWORD(handle->stream.gcount());
+        result = TRUE;
+    }
+
     if (result)
     {
         lpOverlapped->Internal = 0;
@@ -181,14 +367,18 @@ BOOL XReadFileEx(
             SetEvent((HANDLE)lpOverlapped->hEvent.get());
     }
 
-    //printf("ReadFileEx(): %x %x %x %x %x %x\n", hFile, lpBuffer, nNumberOfBytesToRead, lpOverlapped, lpCompletionRoutine, result);
-
     return result;
 }
 
 DWORD XGetFileAttributesA(LPCSTR lpFileName)
 {
-    return GetFileAttributesA(FileSystem::TransformPath(lpFileName));
+    std::filesystem::path filePath = FileSystem::TransformPath(lpFileName);
+    if (std::filesystem::is_directory(filePath))
+        return FILE_ATTRIBUTE_DIRECTORY;
+    else if (std::filesystem::is_regular_file(filePath))
+        return FILE_ATTRIBUTE_NORMAL;
+    else
+        return INVALID_FILE_ATTRIBUTES;
 }
 
 BOOL XWriteFile(
@@ -198,13 +388,20 @@ BOOL XWriteFile(
     LPDWORD lpNumberOfBytesWritten,
     LPOVERLAPPED lpOverlapped)
 {
-    assert(lpOverlapped == nullptr);
+    assert(lpOverlapped == nullptr && "Overlapped not implemented.");
 
-    BOOL result = WriteFile((HANDLE)hFile, lpBuffer, nNumberOfBytesToWrite, lpNumberOfBytesWritten, nullptr);
-    if (result && lpNumberOfBytesWritten != nullptr)
-        ByteSwap(*lpNumberOfBytesWritten);
+    FileHandle *handle = (FileHandle *)(ObQueryObject(HOST_HANDLE(hFile)));
+    if (handle == nullptr)
+        return FALSE;
 
-    return result;
+    handle->stream.write((const char *)(lpBuffer), nNumberOfBytesToWrite);
+    if (handle->stream.bad())
+        return FALSE;
+
+    if (lpNumberOfBytesWritten != nullptr)
+        *lpNumberOfBytesWritten = DWORD(handle->stream.gcount());
+
+    return TRUE;
 }
 
 const char* FileSystem::TransformPath(const char* path)
