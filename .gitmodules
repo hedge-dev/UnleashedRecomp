@@ -19,3 +19,6 @@
 [submodule "thirdparty/miniaudio"]
 	path = thirdparty/miniaudio
 	url = https://github.com/mackron/miniaudio
+[submodule "thirdparty/vcpkg"]
+	path = thirdparty/vcpkg
+	url = https://github.com/microsoft/vcpkg
