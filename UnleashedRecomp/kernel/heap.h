@@ -19,7 +19,7 @@ struct Heap
     size_t Size(void* ptr);
 
     template<typename T, typename... Args>
-    T* Alloc(Args... args)
+    T* Alloc(Args&&... args)
     {
         T* obj = (T*)Alloc(sizeof(T));
         new (obj) T(std::forward<Args>(args)...);
@@ -27,7 +27,7 @@ struct Heap
     }
 
     template<typename T, typename... Args>
-    T* AllocPhysical(Args... args)
+    T* AllocPhysical(Args&&... args)
     {
         T* obj = (T*)AllocPhysical(sizeof(T), alignof(T));
         new (obj) T(std::forward<Args>(args)...);

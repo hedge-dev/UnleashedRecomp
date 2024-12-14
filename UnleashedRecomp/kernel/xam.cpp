@@ -13,6 +13,79 @@
 // Needed for commctrl
 #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
+struct XamListener : KernelObject
+{
+    uint32_t id{};
+    uint64_t areas{};
+    std::vector<std::tuple<DWORD, DWORD>> notifications;
+
+    XamListener(const XamListener&) = delete;
+    XamListener& operator=(const XamListener&) = delete;
+
+    XamListener();
+    ~XamListener();
+};
+
+struct XamEnumeratorBase : KernelObject
+{
+    virtual uint32_t Next(void* buffer)
+    {
+        return -1;
+    }
+};
+
+template<typename TIterator = std::vector<XHOSTCONTENT_DATA>::iterator>
+struct XamEnumerator : XamEnumeratorBase
+{
+    uint32_t fetch;
+    size_t size;
+    TIterator position;
+    TIterator begin;
+    TIterator end;
+
+    XamEnumerator() = default;
+    XamEnumerator(uint32_t fetch, size_t size, TIterator begin, TIterator end) : fetch(fetch), size(size), position(begin), begin(begin), end(end)
+    {
+
+    }
+
+    uint32_t Next(void* buffer) override
+    {
+        if (position == end)
+        {
+            return -1;
+        }
+
+        if (buffer == nullptr)
+        {
+            for (size_t i = 0; i < fetch; i++)
+            {
+                if (position == end)
+                {
+                    return i == 0 ? -1 : i;
+                }
+
+                ++position;
+            }
+        }
+
+        for (size_t i = 0; i < fetch; i++)
+        {
+            if (position == end)
+            {
+                return i == 0 ? -1 : i;
+            }
+
+            memcpy(buffer, &*position, size);
+
+            ++position;
+            buffer = (void*)((size_t)buffer + size);
+        }
+
+        return fetch;
+    }
+};
+
 std::array<xxHashMap<XHOSTCONTENT_DATA>, 3> gContentRegistry{};
 std::unordered_set<XamListener*> gListeners{};
 xxHashMap<std::string> gRootMap;
@@ -69,12 +142,11 @@ void XamRegisterContent(DWORD type, const std::string_view name, const std::stri
 
 SWA_API DWORD XamNotifyCreateListener(uint64_t qwAreas)
 {
-    int handle;
-    auto* listener = ObCreateObject<XamListener>(handle);
+    auto* listener = CreateKernelObject<XamListener>();
 
     listener->areas = qwAreas;
 
-    return GUEST_HANDLE(handle);
+    return GetKernelHandle(listener);
 }
 
 SWA_API void XamNotifyEnqueueEvent(DWORD dwId, DWORD dwParam)
@@ -90,7 +162,7 @@ SWA_API void XamNotifyEnqueueEvent(DWORD dwId, DWORD dwParam)
 
 SWA_API bool XNotifyGetNext(DWORD hNotification, DWORD dwMsgFilter, XDWORD* pdwId, XDWORD* pParam)
 {
-    auto& listener = *ObTryQueryObject<XamListener>(HOST_HANDLE(hNotification));
+    auto& listener = *GetKernelObject<XamListener>(hNotification);
 
     if (dwMsgFilter)
     {
@@ -188,19 +260,19 @@ SWA_API uint32_t XamContentCreateEnumerator(DWORD dwUserIndex, DWORD DeviceID, D
 
     const auto& registry = gContentRegistry[dwContentType - 1];
     const auto& values = registry | std::views::values;
-    const int handle = ObInsertObject(new XamEnumerator(cItem, sizeof(_XCONTENT_DATA), values.begin(), values.end()));
+    auto* enumerator = CreateKernelObject<XamEnumerator<decltype(values.begin())>>(cItem, sizeof(_XCONTENT_DATA), values.begin(), values.end());
 
     if (pcbBuffer)
         *pcbBuffer = sizeof(_XCONTENT_DATA) * cItem;
 
-    *phEnum = GUEST_HANDLE(handle);
+    *phEnum = GetKernelHandle(enumerator);
 
     return 0;
 }
 
 SWA_API uint32_t XamEnumerate(uint32_t hEnum, DWORD dwFlags, PVOID pvBuffer, DWORD cbBuffer, XLPDWORD pcItemsReturned, XXOVERLAPPED* pOverlapped)
 {
-    auto* enumerator = ObTryQueryObject<XamEnumeratorBase>(HOST_HANDLE(hEnum));
+    auto* enumerator = GetKernelObject<XamEnumeratorBase>(hEnum);
     const auto count = enumerator->Next(pvBuffer);
 
     if (count == -1)

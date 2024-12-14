@@ -1,56 +1,73 @@
 #pragma once
-#define DUMMY_HANDLE (DWORD)('HAND')
-#define OBJECT_SIGNATURE (DWORD)'XBOX'
 
-extern Mutex gKernelLock;
+#include "heap.h"
+#include "memory.h"
 
-void* ObQueryObject(size_t handle);
-uint32_t ObInsertObject(void* object, TypeDestructor_t destructor);
-void ObCloseHandle(uint32_t handle);
+#define OBJECT_SIGNATURE           (DWORD)'XBOX'
+#define GUEST_INVALID_HANDLE_VALUE 0xFFFFFFFF
+
+struct KernelObject
+{
+    virtual ~KernelObject() 
+    {
+        ;
+    }
+};
+
+template<typename T, typename... Args>
+inline T* CreateKernelObject(Args&&... args)
+{
+    static_assert(std::is_base_of_v<KernelObject, T>);
+    return g_userHeap.AllocPhysical<T>(std::forward<Args>(args)...);
+}
+
+template<typename T = KernelObject>
+inline T* GetKernelObject(uint32_t handle)
+{
+    assert(handle != GUEST_INVALID_HANDLE_VALUE);
+    return reinterpret_cast<T*>(g_memory.Translate(handle));
+}
+
+uint32_t GetKernelHandle(KernelObject* obj);
+
+void DestroyKernelObject(KernelObject* obj);
+void DestroyKernelObject(uint32_t handle);
+
+bool IsKernelObject(uint32_t handle);
+bool IsKernelObject(void* obj);
+
+bool IsInvalidKernelObject(void* obj);
+
+template<typename T = void>
+inline T* GetInvalidKernelObject()
+{
+    return reinterpret_cast<T*>(g_memory.Translate(GUEST_INVALID_HANDLE_VALUE));
+}
+
+extern Mutex g_kernelLock;
 
 template<typename T>
-T* ObQueryObject(XDISPATCHER_HEADER& header)
+inline T* QueryKernelObject(XDISPATCHER_HEADER& header)
 {
-    std::lock_guard guard{ gKernelLock };
+    std::lock_guard guard{ g_kernelLock };
     if (header.WaitListHead.Flink != OBJECT_SIGNATURE)
     {
         header.WaitListHead.Flink = OBJECT_SIGNATURE;
-        auto* obj = new T(reinterpret_cast<typename T::guest_type*>(&header));
-        header.WaitListHead.Blink = ObInsertObject(obj, DestroyObject<T>);
+        auto* obj = CreateKernelObject<T>(reinterpret_cast<typename T::guest_type*>(&header));
+        header.WaitListHead.Blink = g_memory.MapVirtual(obj);
 
         return obj;
     }
 
-    return static_cast<T*>(ObQueryObject(header.WaitListHead.Blink.get()));
-}
-
-template<typename T>
-size_t ObInsertObject(T* object)
-{
-    return ObInsertObject(object, DestroyObject<T>);
-}
-
-template<typename T>
-T* ObCreateObject(int& handle)
-{
-    auto* obj = new T();
-    handle = ::ObInsertObject(obj, DestroyObject<T>);
-
-    return obj;
+    return static_cast<T*>(g_memory.Translate(header.WaitListHead.Blink.get()));
 }
 
 // Get object without initialisation
 template<typename T>
-T* ObTryQueryObject(XDISPATCHER_HEADER& header)
+inline T* TryQueryKernelObject(XDISPATCHER_HEADER& header)
 {
     if (header.WaitListHead.Flink != OBJECT_SIGNATURE)
         return nullptr;
 
-    return static_cast<T*>(ObQueryObject(header.WaitListHead.Blink));
-}
-
-template<typename T>
-T* ObTryQueryObject(int handle)
-{
-    return static_cast<T*>(ObQueryObject(handle));
+    return static_cast<T*>(g_memory.Translate(header.WaitListHead.Blink.get()));
 }

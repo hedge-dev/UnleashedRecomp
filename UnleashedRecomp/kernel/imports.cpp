@@ -23,7 +23,7 @@ inline void CloseKernelObject(XDISPATCHER_HEADER& header)
         return;
     }
 
-    ObCloseHandle(header.WaitListHead.Blink);
+    DestroyKernelObject(header.WaitListHead.Blink);
 }
 
 DWORD GuestTimeoutToMilliseconds(XLPQWORD timeout)
@@ -232,12 +232,12 @@ DWORD NtCreateFile
 
 uint32_t NtClose(uint32_t handle)
 {
-    if (handle == (uint32_t)INVALID_HANDLE_VALUE)
+    if (handle == GUEST_INVALID_HANDLE_VALUE)
         return 0xFFFFFFFF;
 
-    if (CHECK_GUEST_HANDLE(handle))
+    if (IsKernelObject(handle))
     {
-        ObCloseHandle(HOST_HANDLE(handle));
+        DestroyKernelObject(handle);
         return 0;
     }
 
@@ -531,7 +531,7 @@ uint32_t KeSetAffinityThread(DWORD Thread, DWORD Affinity, XLPDWORD lpPreviousAf
     return 0;
 }
 
-struct Event : HostObject<XKEVENT>
+struct Event : KernelObject, HostObject<XKEVENT>
 {
     HANDLE handle;
 
@@ -551,7 +551,7 @@ struct Event : HostObject<XKEVENT>
     }
 };
 
-struct Semaphore : HostObject<XKSEMAPHORE>
+struct Semaphore : KernelObject, HostObject<XKSEMAPHORE>
 {
     HANDLE handle;
 
@@ -866,12 +866,12 @@ void KeUnlockL2()
 
 bool KeSetEvent(XKEVENT* pEvent, DWORD Increment, bool Wait)
 {
-    return ObQueryObject<Event>(*pEvent)->Set();
+    return QueryKernelObject<Event>(*pEvent)->Set();
 }
 
 bool KeResetEvent(XKEVENT* pEvent)
 {
-    return ObQueryObject<Event>(*pEvent)->Reset();
+    return QueryKernelObject<Event>(*pEvent)->Reset();
 }
 
 DWORD KeWaitForSingleObject(XDISPATCHER_HEADER* Object, DWORD WaitReason, DWORD WaitMode, bool Alertable, XLPQWORD Timeout)
@@ -884,11 +884,11 @@ DWORD KeWaitForSingleObject(XDISPATCHER_HEADER* Object, DWORD WaitReason, DWORD 
     {
         case 0:
         case 1:
-            handle = ObQueryObject<Event>(*Object)->handle;
+            handle = QueryKernelObject<Event>(*Object)->handle;
             break;
 
         case 5:
-            handle = ObQueryObject<Semaphore>(*Object)->handle;
+            handle = QueryKernelObject<Semaphore>(*Object)->handle;
             break;
 
         default:
@@ -1340,7 +1340,7 @@ DWORD KeWaitForMultipleObjects(DWORD Count, xpointer<XDISPATCHER_HEADER>* Object
     for (size_t i = 0; i < Count; i++)
     {
         assert(Objects[i]->Type <= 1);
-        events[i] = ObQueryObject<Event>(*Objects[i].get())->handle;
+        events[i] = QueryKernelObject<Event>(*Objects[i].get())->handle;
     }
 
     return WaitForMultipleObjectsEx(Count, events.data(), WaitType == 0, timeout, Alertable);
@@ -1355,7 +1355,7 @@ void KfLowerIrql() { }
 
 uint32_t KeReleaseSemaphore(XKSEMAPHORE* semaphore, uint32_t increment, uint32_t adjustment, uint32_t wait)
 {
-    auto* object = ObQueryObject<Semaphore>(semaphore->Header);
+    auto* object = QueryKernelObject<Semaphore>(semaphore->Header);
     return ReleaseSemaphore(object->handle, adjustment, nullptr) ? 0 : 0xFFFFFFFF;
 }
 
@@ -1382,7 +1382,7 @@ void KeInitializeSemaphore(XKSEMAPHORE* semaphore, uint32_t count, uint32_t limi
     semaphore->Header.SignalState = count;
     semaphore->Limit = limit;
 
-    auto* object = ObQueryObject<Semaphore>(semaphore->Header);
+    auto* object = QueryKernelObject<Semaphore>(semaphore->Header);
 }
 
 void XMAReleaseContext()

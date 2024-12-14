@@ -2,47 +2,36 @@
 #include "xdm.h"
 #include "freelist.h"
 
-FreeList<std::tuple<std::unique_ptr<char>, TypeDestructor_t>> gKernelObjects;
-Mutex gKernelLock;
+Mutex g_kernelLock;
 
-void* ObQueryObject(size_t handle)
+void DestroyKernelObject(KernelObject* obj)
 {
-    std::lock_guard guard{ gKernelLock };
-
-    if (handle >= gKernelObjects.items.size())
-        return nullptr;
-
-    return std::get<0>(gKernelObjects[handle]).get();
+    obj->~KernelObject();
+    g_userHeap.Free(obj);
 }
 
-uint32_t ObInsertObject(void* object, TypeDestructor_t destructor)
+uint32_t GetKernelHandle(KernelObject* obj)
 {
-    std::lock_guard guard{ gKernelLock };
-
-    const auto handle = gKernelObjects.Alloc();
-
-    auto& holder = gKernelObjects[handle];
-
-    std::get<0>(holder).reset(static_cast<char*>(object));
-    std::get<1>(holder) = destructor;
-
-    return handle;
+    assert(obj != GetInvalidKernelObject());
+    return g_memory.MapVirtual(obj);
 }
 
-void ObCloseHandle(uint32_t handle)
+void DestroyKernelObject(uint32_t handle)
 {
-    std::lock_guard guard{ gKernelLock };
+    DestroyKernelObject(GetKernelObject(handle));
+}
 
-    auto& obj = gKernelObjects[handle];
+bool IsKernelObject(uint32_t handle)
+{
+    return (handle & 0x80000000) != 0;
+}
 
-    if (std::get<1>(obj)(std::get<0>(obj).get()))
-    {
-        std::get<0>(obj).reset();
-    }
-    else
-    {
-        std::get<0>(obj).release();
-    }
+bool IsKernelObject(void* obj)
+{
+    return IsKernelObject(g_memory.MapVirtual(obj));
+}
 
-    gKernelObjects.Free(handle);
+bool IsInvalidKernelObject(void* obj)
+{
+    return obj == GetInvalidKernelObject();
 }
