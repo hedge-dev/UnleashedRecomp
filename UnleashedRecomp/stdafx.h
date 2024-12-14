@@ -4,13 +4,19 @@
 
 #if defined(_WIN32)
 #include <windows.h>
+#include <ShlObj_core.h>
+#include <wrl/client.h>
+
+using Microsoft::WRL::ComPtr;
+#elif defined(__linux__)
+#include <unistd.h>
+#include <pwd.h>
 #endif
 
 #ifdef SWA_D3D12
 #include <dxcapi.h>
 #endif
 
-#include <ShlObj_core.h>
 #include <algorithm>
 #include <mutex>
 #include <filesystem>
@@ -35,14 +41,11 @@
 #include <imgui_impl_sdl2.h>
 #include <o1heap.h>
 #include <cstddef>
-#include <wrl/client.h>
 #include <smolv.h>
 #include <set>
 #include <miniaudio.h>
 #include <extras/miniaudio_libvorbis.h>
 #include <fmt/core.h>
-
-using Microsoft::WRL::ComPtr;
 
 #include "framework.h"
 #include "mutex.h"
