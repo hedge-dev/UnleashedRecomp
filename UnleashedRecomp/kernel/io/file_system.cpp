@@ -26,7 +26,7 @@ struct FindHandle
         else if (iterator->is_regular_file())
             lpFindFileData->dwFileAttributes = ByteSwap(FILE_ATTRIBUTE_NORMAL);
 
-        std::u8string pathU8Str = std::filesystem::relative(iterator->path(), searchPath).u8string();
+        std::u8string pathU8Str = iterator->path().lexically_relative(searchPath).u8string();
         uint64_t fileSize = iterator->file_size();
         strncpy(lpFindFileData->cFileName, (const char *)(pathU8Str.c_str()), sizeof(lpFindFileData->cFileName));
         lpFindFileData->nFileSizeLow = ByteSwap(uint32_t(fileSize >> 32U));
