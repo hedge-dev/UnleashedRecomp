@@ -904,7 +904,7 @@ DWORD KeWaitForSingleObject(XDISPATCHER_HEADER* Object, DWORD WaitReason, DWORD 
 static thread_local std::vector<uint32_t> KeTlsValues;
 static std::vector<size_t> KeTlsFreeIndices;
 static size_t KeTlsNextIndex = 0;
-static std::mutex KeTlsAllocationMutex;
+static Mutex KeTlsAllocationMutex;
 
 static void KeTlsEnsureTlsCapacity(size_t index)
 {
@@ -929,10 +929,10 @@ BOOL KeTlsSetValue(DWORD dwTlsIndex, DWORD lpTlsValue)
 
 DWORD KeTlsAlloc()
 {
-    std::lock_guard<std::mutex> lock(KeTlsAllocationMutex);
+    std::lock_guard<Mutex> lock(KeTlsAllocationMutex);
     if (!KeTlsFreeIndices.empty())
     {
-        size_t index = KeTlsFreeIndices.front();
+        size_t index = KeTlsFreeIndices.back();
         KeTlsFreeIndices.pop_back();
         return index;
     }
@@ -942,7 +942,7 @@ DWORD KeTlsAlloc()
 
 BOOL KeTlsFree(DWORD dwTlsIndex)
 {
-    std::lock_guard<std::mutex> lock(KeTlsAllocationMutex);
+    std::lock_guard<Mutex> lock(KeTlsAllocationMutex);
     KeTlsFreeIndices.push_back(dwTlsIndex);
     return TRUE;
 }
