@@ -901,24 +901,50 @@ DWORD KeWaitForSingleObject(XDISPATCHER_HEADER* Object, DWORD WaitReason, DWORD 
     return WaitForSingleObjectEx(handle, timeout, Alertable);
 }
 
+static thread_local std::vector<uint32_t> KeTlsValues;
+static std::vector<size_t> KeTlsFreeIndices;
+static size_t KeTlsNextIndex = 0;
+static std::mutex KeTlsAllocationMutex;
+
+static void KeTlsEnsureTlsCapacity(size_t index)
+{
+    if (KeTlsValues.size() <= index)
+    {
+        KeTlsValues.resize(index + 1, 0);
+    }
+}
+
 uint32_t KeTlsGetValue(DWORD dwTlsIndex)
 {
-    return (uint32_t)TlsGetValue(dwTlsIndex);
+    KeTlsEnsureTlsCapacity(dwTlsIndex);
+    return KeTlsValues[dwTlsIndex];
 }
 
 BOOL KeTlsSetValue(DWORD dwTlsIndex, DWORD lpTlsValue)
 {
-    return TlsSetValue(dwTlsIndex, (LPVOID)lpTlsValue);
+    KeTlsEnsureTlsCapacity(dwTlsIndex);
+    KeTlsValues[dwTlsIndex] = lpTlsValue;
+    return TRUE;
 }
 
 DWORD KeTlsAlloc()
 {
-    return TlsAlloc();
+    std::lock_guard<std::mutex> lock(KeTlsAllocationMutex);
+    if (!KeTlsFreeIndices.empty())
+    {
+        size_t index = KeTlsFreeIndices.front();
+        KeTlsFreeIndices.pop_back();
+        return index;
+    }
+
+    return KeTlsNextIndex++;
 }
 
 BOOL KeTlsFree(DWORD dwTlsIndex)
 {
-    return TlsFree(dwTlsIndex);
+    std::lock_guard<std::mutex> lock(KeTlsAllocationMutex);
+    KeTlsFreeIndices.push_back(dwTlsIndex);
+    return TRUE;
 }
 
 DWORD XMsgInProcessCall(uint32_t app, uint32_t message, XDWORD* param1, XDWORD* param2)
