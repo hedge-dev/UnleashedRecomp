@@ -36,7 +36,7 @@
 
 #include "../../tools/ShaderRecomp/ShaderRecomp/shader_common.h"
 
-#if defined(SWA_D3D12)
+#ifdef SWA_D3D12
 #include "shader/copy_vs.hlsl.dxil.h"
 #include "shader/csd_filter_ps.hlsl.dxil.h"
 #include "shader/enhanced_motion_blur_ps.hlsl.dxil.h"
@@ -78,7 +78,7 @@ extern "C"
 
 namespace plume
 {
-#if defined(SWA_D3D12)
+#ifdef SWA_D3D12
     extern std::unique_ptr<RenderInterface> CreateD3D12Interface();
 #endif
     extern std::unique_ptr<RenderInterface> CreateVulkanInterface();
@@ -180,7 +180,7 @@ static FORCEINLINE void SetDirtyValue(bool& dirtyState, T& dest, const T& src)
     }
 }
 
-#if defined(SWA_D3D12)
+#ifdef SWA_D3D12
 static bool g_vulkan = false;
 #else
 static constexpr bool g_vulkan = true;
@@ -590,13 +590,18 @@ static std::unique_ptr<uint8_t[]> g_buttonBcDiff;
 
 static void LoadEmbeddedResources()
 {
-    const size_t decompressedSize = g_vulkan ? g_spirvCacheDecompressedSize : g_dxilCacheDecompressedSize;
-    g_shaderCache = std::make_unique<uint8_t[]>(decompressedSize);
-
-    ZSTD_decompress(g_shaderCache.get(), 
-        decompressedSize, 
-        g_vulkan ? g_compressedSpirvCache : g_compressedDxilCache, 
-        g_vulkan ? g_spirvCacheCompressedSize : g_dxilCacheCompressedSize);
+    if (g_vulkan)
+    {
+        g_shaderCache = std::make_unique<uint8_t[]>(g_spirvCacheDecompressedSize);
+        ZSTD_decompress(g_shaderCache.get(), g_spirvCacheDecompressedSize, g_compressedSpirvCache, g_spirvCacheCompressedSize);
+    }
+#ifdef SWA_D3D12
+    else
+    {
+        g_shaderCache = std::make_unique<uint8_t[]>(g_dxilCacheDecompressedSize);
+        ZSTD_decompress(g_shaderCache.get(), g_dxilCacheDecompressedSize, g_compressedDxilCache, g_dxilCacheCompressedSize);
+    }
+#endif
 
     g_buttonBcDiff = decompressZstd(g_button_bc_diff, g_button_bc_diff_uncompressed_size);
 }
@@ -1073,7 +1078,7 @@ static GuestShader* g_csdShader;
 
 static std::unique_ptr<GuestShader> g_enhancedMotionBlurShader;
 
-#if defined(SWA_D3D12)
+#ifdef SWA_D3D12
 
 #define CREATE_SHADER(NAME) \
     g_device->createShader( \
@@ -1308,13 +1313,13 @@ void Video::CreateHostDevice()
 
     Window::Init();
 
-#if defined(SWA_D3D12)
+#ifdef SWA_D3D12
     g_vulkan = DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan;
 #endif
 
     LoadEmbeddedResources();
 
-#if defined(SWA_D3D12)
+#ifdef SWA_D3D12
     g_interface = g_vulkan ? CreateVulkanInterface() : CreateD3D12Interface();
 #else
     g_interface = CreateVulkanInterface();
@@ -2832,7 +2837,7 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
         shader = guestShader->linkedShaders[specConstants].get();
     }
 
-#if defined(SWA_D3D12)
+#ifdef SWA_D3D12
     if (shader == nullptr)
     {
         static Mutex g_compiledSpecConstantLibraryBlobMutex;

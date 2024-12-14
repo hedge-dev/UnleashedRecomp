@@ -6,7 +6,7 @@
 #include <windows.h>
 #endif
 
-#if defined(SWA_D3D12)
+#ifdef SWA_D3D12
 #include <dxcapi.h>
 #endif
 
