@@ -4821,40 +4821,18 @@ struct PipelineStateQueueItem
 
 static moodycamel::BlockingConcurrentQueue<PipelineStateQueueItem> g_pipelineStateQueue;
 
-struct MinimalGuestThreadContext
-{
-    uint8_t* stack = nullptr;
-    PPCContext ppcContext{};
-
-    ~MinimalGuestThreadContext()
-    {
-        if (stack != nullptr)
-            g_userHeap.Free(stack);
-    }
-
-    void ensureValid()
-    {
-        if (stack == nullptr)
-        {
-            stack = reinterpret_cast<uint8_t*>(g_userHeap.Alloc(0x4000));
-            ppcContext.fn = (uint8_t*)g_codeCache.bucket;
-            ppcContext.r1.u64 = g_memory.MapVirtual(stack + 0x4000);
-            SetPPCContext(ppcContext);
-        }
-    }
-};
-
 static void PipelineCompilerThread()
 {
     GuestThread::SetThreadName(GetCurrentThreadId(), "Pipeline Compiler Thread");
-    MinimalGuestThreadContext ctx;
+    std::unique_ptr<GuestThreadContext> ctx;
 
     while (true)
     {
         PipelineStateQueueItem queueItem;
         g_pipelineStateQueue.wait_dequeue(queueItem);
 
-        ctx.ensureValid();
+        if (ctx == nullptr)
+            ctx = std::make_unique<GuestThreadContext>(0);
 
         auto pipeline = CreateGraphicsPipeline(queueItem.pipelineState);
 #ifdef ASYNC_PSO_DEBUG
@@ -5499,7 +5477,7 @@ static void ModelConsumerThread()
     GuestThread::SetThreadName(GetCurrentThreadId(), "Model Consumer Thread");
 
     std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> localPendingDataQueue;
-    MinimalGuestThreadContext ctx;
+    std::unique_ptr<GuestThreadContext> ctx;
 
     while (true)
     {
@@ -5508,7 +5486,8 @@ static void ModelConsumerThread()
         while ((pendingDataCount = g_pendingDataCount.load()) == 0)
             g_pendingDataCount.wait(pendingDataCount);
 
-        ctx.ensureValid();
+        if (ctx == nullptr)
+            ctx = std::make_unique<GuestThreadContext>(0);
 
         if (g_pendingPipelineStateCache)
         {

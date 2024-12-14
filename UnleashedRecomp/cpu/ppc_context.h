@@ -1,13 +1,13 @@
 #pragma once
 
-inline thread_local PPCContext* gPPCContext;
+inline thread_local PPCContext* g_ppcContext;
 
 inline PPCContext* GetPPCContext()
 {
-    return gPPCContext;
+    return g_ppcContext;
 }
 
 inline void SetPPCContext(PPCContext& ctx)
 {
-    gPPCContext = &ctx;
+    g_ppcContext = &ctx;
 }

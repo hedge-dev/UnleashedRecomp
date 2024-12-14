@@ -561,8 +561,6 @@ struct Semaphore : KernelObject, HostObject<XKSEMAPHORE>
     }
 };
 
-// https://devblogs.microsoft.com/oldnewthing/20160825-00/?p=94165
-
 void RtlLeaveCriticalSection(XRTL_CRITICAL_SECTION* cs)
 {
     cs->RecursionCount--;
@@ -570,25 +568,29 @@ void RtlLeaveCriticalSection(XRTL_CRITICAL_SECTION* cs)
     if (cs->RecursionCount != 0)
         return;
 
-    InterlockedExchange(&cs->OwningThread, 0);
-    WakeByAddressSingle(&cs->OwningThread);
+    std::atomic_ref owningThread(cs->OwningThread);
+    owningThread.store(0);
+    owningThread.notify_one();
 }
 
 void RtlEnterCriticalSection(XRTL_CRITICAL_SECTION* cs)
 {
-    DWORD thisThread = GetCurrentThreadId();
+    uint32_t thisThread = g_ppcContext->r13.u32;
+    assert(thisThread != NULL);
+
+    std::atomic_ref owningThread(cs->OwningThread);
 
     while (true) 
     {
-        DWORD previousOwner = InterlockedCompareExchangeAcquire(&cs->OwningThread, thisThread, 0);
+        uint32_t previousOwner = 0;
 
-        if (previousOwner == 0 || previousOwner == thisThread)
+        if (owningThread.compare_exchange_weak(previousOwner, thisThread) || previousOwner == thisThread)
         {
             cs->RecursionCount++;
             return;
         }
 
-        WaitOnAddress(&cs->OwningThread, &previousOwner, sizeof(previousOwner), INFINITE);
+        owningThread.wait(previousOwner);
     }
 }
 
@@ -1036,10 +1038,14 @@ void XexGetModuleHandle()
 
 bool RtlTryEnterCriticalSection(XRTL_CRITICAL_SECTION* cs)
 {
-    DWORD thisThread = GetCurrentThreadId();
-    DWORD previousOwner = InterlockedCompareExchangeAcquire(&cs->OwningThread, thisThread, 0);
+    uint32_t thisThread = g_ppcContext->r13.u32;
+    assert(thisThread != NULL);
 
-    if (previousOwner == 0 || previousOwner == thisThread)
+    std::atomic_ref owningThread(cs->OwningThread);
+
+    uint32_t previousOwner = 0;
+
+    if (owningThread.compare_exchange_weak(previousOwner, thisThread) || previousOwner == thisThread)
     {
         cs->RecursionCount++;
         return true;
