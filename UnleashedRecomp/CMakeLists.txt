@@ -1,6 +1,10 @@
 project("UnleashedRecomp")
 set(TARGET_NAME "SWA")
 
+if (WIN32)
+    option(SWA_D3D12 "Add D3D12 support for rendering" ON)
+endif()
+
 option(SWA_XAUDIO2 "Use XAudio2 for audio playback" OFF)
 
 function(BIN2C)
@@ -95,7 +99,7 @@ set(SWA_GPU_CXX_SOURCES
     "gpu/rhi/plume_vulkan.cpp"
 )
 
-if (WIN32)
+if (SWA_D3D12)
     list(APPEND SWA_GPU_CXX_SOURCES
         "gpu/rhi/plume_d3d12.cpp"
     )
@@ -211,10 +215,11 @@ endif()
 
 set_target_properties(UnleashedRecomp PROPERTIES OUTPUT_NAME ${TARGET_NAME})
 
-if (WIN32)
+if (SWA_D3D12)
     find_package(directx-headers CONFIG REQUIRED)
     find_package(directx12-agility CONFIG REQUIRED)
     find_package(d3d12-memory-allocator CONFIG REQUIRED)
+    target_compile_definitions(UnleashedRecomp PRIVATE SWA_D3D12)
 endif()
 
 find_package(SDL2 CONFIG REQUIRED)
@@ -236,7 +241,7 @@ find_package(nfd CONFIG REQUIRED)
 find_package(Vorbis CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 
-if (WIN32)
+if (SWA_D3D12)
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
     add_custom_command(TARGET UnleashedRecomp POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Core,IMPORTED_LOCATION_RELEASE> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
@@ -252,8 +257,13 @@ if (WIN32)
         Microsoft::DirectX12-Agility
         Microsoft::DirectXShaderCompiler
         unofficial::D3D12MemoryAllocator
-        comctl32
         dxgi
+    )
+endif()
+
+if (WIN32)
+    target_link_libraries(UnleashedRecomp PRIVATE
+        comctl32
         ntdll
         winmm
         Synchronization
@@ -300,7 +310,7 @@ target_precompile_headers(UnleashedRecomp PUBLIC ${SWA_PRECOMPILED_HEADERS})
 function(compile_shader FILE_PATH TARGET_NAME)
     set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/${FILE_PATH}.hlsl)
     cmake_path(GET FILE_PATH STEM VARIABLE_NAME)
-    if (WIN32)
+    if (SWA_D3D12)
         add_custom_command(
             OUTPUT ${FILE_PATH}.dxil.h
             COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil

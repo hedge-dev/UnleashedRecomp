@@ -2,8 +2,14 @@
 
 #define NOMINMAX
 
+#if defined(_WIN32)
 #include <windows.h>
+#endif
+
+#ifdef SWA_D3D12
 #include <dxcapi.h>
+#endif
+
 #include <ShlObj_core.h>
 #include <algorithm>
 #include <mutex>

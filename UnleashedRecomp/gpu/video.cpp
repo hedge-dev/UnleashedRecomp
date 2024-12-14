@@ -35,35 +35,39 @@
 #endif
 
 #include "../../tools/ShaderRecomp/ShaderRecomp/shader_common.h"
+
+#ifdef SWA_D3D12
 #include "shader/copy_vs.hlsl.dxil.h"
-#include "shader/copy_vs.hlsl.spirv.h"
 #include "shader/csd_filter_ps.hlsl.dxil.h"
-#include "shader/csd_filter_ps.hlsl.spirv.h"
 #include "shader/enhanced_motion_blur_ps.hlsl.dxil.h"
-#include "shader/enhanced_motion_blur_ps.hlsl.spirv.h"
 #include "shader/gamma_correction_ps.hlsl.dxil.h"
-#include "shader/gamma_correction_ps.hlsl.spirv.h"
 #include "shader/gaussian_blur_3x3.hlsl.dxil.h"
-#include "shader/gaussian_blur_3x3.hlsl.spirv.h"
 #include "shader/gaussian_blur_5x5.hlsl.dxil.h"
-#include "shader/gaussian_blur_5x5.hlsl.spirv.h"
 #include "shader/gaussian_blur_7x7.hlsl.dxil.h"
-#include "shader/gaussian_blur_7x7.hlsl.spirv.h"
 #include "shader/gaussian_blur_9x9.hlsl.dxil.h"
-#include "shader/gaussian_blur_9x9.hlsl.spirv.h"
 #include "shader/imgui_ps.hlsl.dxil.h"
-#include "shader/imgui_ps.hlsl.spirv.h"
 #include "shader/imgui_vs.hlsl.dxil.h"
-#include "shader/imgui_vs.hlsl.spirv.h"
 #include "shader/movie_ps.hlsl.dxil.h"
-#include "shader/movie_ps.hlsl.spirv.h"
 #include "shader/movie_vs.hlsl.dxil.h"
-#include "shader/movie_vs.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_2x.hlsl.dxil.h"
-#include "shader/resolve_msaa_depth_2x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_4x.hlsl.dxil.h"
-#include "shader/resolve_msaa_depth_4x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.dxil.h"
+#endif
+
+#include "shader/copy_vs.hlsl.spirv.h"
+#include "shader/csd_filter_ps.hlsl.spirv.h"
+#include "shader/enhanced_motion_blur_ps.hlsl.spirv.h"
+#include "shader/gamma_correction_ps.hlsl.spirv.h"
+#include "shader/gaussian_blur_3x3.hlsl.spirv.h"
+#include "shader/gaussian_blur_5x5.hlsl.spirv.h"
+#include "shader/gaussian_blur_7x7.hlsl.spirv.h"
+#include "shader/gaussian_blur_9x9.hlsl.spirv.h"
+#include "shader/imgui_ps.hlsl.spirv.h"
+#include "shader/imgui_vs.hlsl.spirv.h"
+#include "shader/movie_ps.hlsl.spirv.h"
+#include "shader/movie_vs.hlsl.spirv.h"
+#include "shader/resolve_msaa_depth_2x.hlsl.spirv.h"
+#include "shader/resolve_msaa_depth_4x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.spirv.h"
 
 extern "C"
@@ -74,7 +78,9 @@ extern "C"
 
 namespace plume
 {
+#ifdef SWA_D3D12
     extern std::unique_ptr<RenderInterface> CreateD3D12Interface();
+#endif
     extern std::unique_ptr<RenderInterface> CreateVulkanInterface();
 }
 
@@ -174,7 +180,12 @@ static FORCEINLINE void SetDirtyValue(bool& dirtyState, T& dest, const T& src)
     }
 }
 
-static bool g_vulkan;
+#ifdef SWA_D3D12
+static bool g_vulkan = false;
+#else
+static constexpr bool g_vulkan = true;
+#endif
+
 static std::unique_ptr<RenderInterface> g_interface;
 static std::unique_ptr<RenderDevice> g_device;
 
@@ -579,13 +590,18 @@ static std::unique_ptr<uint8_t[]> g_buttonBcDiff;
 
 static void LoadEmbeddedResources()
 {
-    const size_t decompressedSize = g_vulkan ? g_spirvCacheDecompressedSize : g_dxilCacheDecompressedSize;
-    g_shaderCache = std::make_unique<uint8_t[]>(decompressedSize);
-
-    ZSTD_decompress(g_shaderCache.get(), 
-        decompressedSize, 
-        g_vulkan ? g_compressedSpirvCache : g_compressedDxilCache, 
-        g_vulkan ? g_spirvCacheCompressedSize : g_dxilCacheCompressedSize);
+    if (g_vulkan)
+    {
+        g_shaderCache = std::make_unique<uint8_t[]>(g_spirvCacheDecompressedSize);
+        ZSTD_decompress(g_shaderCache.get(), g_spirvCacheDecompressedSize, g_compressedSpirvCache, g_spirvCacheCompressedSize);
+    }
+#ifdef SWA_D3D12
+    else
+    {
+        g_shaderCache = std::make_unique<uint8_t[]>(g_dxilCacheDecompressedSize);
+        ZSTD_decompress(g_shaderCache.get(), g_dxilCacheDecompressedSize, g_compressedDxilCache, g_dxilCacheCompressedSize);
+    }
+#endif
 
     g_buttonBcDiff = decompressZstd(g_button_bc_diff, g_button_bc_diff_uncompressed_size);
 }
@@ -1062,12 +1078,21 @@ static GuestShader* g_csdShader;
 
 static std::unique_ptr<GuestShader> g_enhancedMotionBlurShader;
 
+#ifdef SWA_D3D12
+
 #define CREATE_SHADER(NAME) \
     g_device->createShader( \
         g_vulkan ? g_##NAME##_spirv : g_##NAME##_dxil, \
         g_vulkan ? sizeof(g_##NAME##_spirv) : sizeof(g_##NAME##_dxil), \
         "main", \
         g_vulkan ? RenderShaderFormat::SPIRV : RenderShaderFormat::DXIL)
+
+#else
+
+#define CREATE_SHADER(NAME) \
+    g_device->createShader(g_##NAME##_spirv, sizeof(g_##NAME##_spirv), "main", RenderShaderFormat::SPIRV);
+
+#endif
 
 static bool DetectWine()
 {
@@ -1288,11 +1313,18 @@ void Video::CreateHostDevice()
 
     Window::Init();
 
+#ifdef SWA_D3D12
     g_vulkan = DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan;
+#endif
 
     LoadEmbeddedResources();
 
+#ifdef SWA_D3D12
     g_interface = g_vulkan ? CreateVulkanInterface() : CreateD3D12Interface();
+#else
+    g_interface = CreateVulkanInterface();
+#endif
+
     g_device = g_interface->createDevice();
 
     g_triangleFanSupported = g_device->getCapabilities().triangleFan;
@@ -2765,9 +2797,6 @@ static void ProcSetScissorRect(const RenderCommand& cmd)
     SetDirtyValue<int32_t>(g_dirtyStates.scissorRect, g_scissorRect.right, args.right);
 }
 
-static Mutex g_compiledSpecConstantLibraryBlobMutex;
-static ankerl::unordered_dense::map<uint32_t, ComPtr<IDxcBlob>> g_compiledSpecConstantLibraryBlobs;
-
 static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specConstants)
 {
     if (g_vulkan ||
@@ -2808,8 +2837,12 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
         shader = guestShader->linkedShaders[specConstants].get();
     }
 
+#ifdef SWA_D3D12
     if (shader == nullptr)
     {
+        static Mutex g_compiledSpecConstantLibraryBlobMutex;
+        static ankerl::unordered_dense::map<uint32_t, ComPtr<IDxcBlob>> g_compiledSpecConstantLibraryBlobs;
+
         thread_local ComPtr<IDxcCompiler3> s_dxcCompiler;
         thread_local ComPtr<IDxcLinker> s_dxcLinker;
         thread_local ComPtr<IDxcUtils> s_dxcUtils;
@@ -2916,6 +2949,7 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
             shader = linkedShader.get();
         }        
     }
+#endif
 
     return shader;
 }
