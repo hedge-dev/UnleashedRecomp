@@ -28,7 +28,12 @@ public:
     CONFIG_DEFINE_LOCALISED("Audio", bool, MusicAttenuation, false);
     CONFIG_DEFINE_LOCALISED("Audio", bool, BattleTheme, true);
 
+#if defined(SWA_D3D12)
     CONFIG_DEFINE_ENUM("Video", EGraphicsAPI, GraphicsAPI, EGraphicsAPI::D3D12);
+#else
+    CONFIG_DEFINE_ENUM("Video", EGraphicsAPI, GraphicsAPI, EGraphicsAPI::Vulkan);
+#endif
+
     CONFIG_DEFINE("Video", int32_t, WindowX, WINDOWPOS_CENTRED);
     CONFIG_DEFINE("Video", int32_t, WindowY, WINDOWPOS_CENTRED);
     CONFIG_DEFINE("Video", int32_t, WindowWidth, 1280);

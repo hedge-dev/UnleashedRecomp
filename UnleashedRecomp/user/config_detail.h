@@ -95,13 +95,17 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EVoiceLanguage)
 
 enum class EGraphicsAPI : uint32_t
 {
+#if defined(SWA_D3D12)
     D3D12,
+#endif
     Vulkan
 };
 
 CONFIG_DEFINE_ENUM_TEMPLATE(EGraphicsAPI)
 {
+#if defined(SWA_D3D12)
     { "D3D12",  EGraphicsAPI::D3D12 },
+#endif
     { "Vulkan", EGraphicsAPI::Vulkan }
 };
 

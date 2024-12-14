@@ -274,8 +274,10 @@ struct GuestShader : GuestResource
     std::unique_ptr<RenderShader> shader;
     struct ShaderCacheEntry* shaderCacheEntry = nullptr;
     ankerl::unordered_dense::map<uint32_t, std::unique_ptr<RenderShader>> linkedShaders;
+#if defined(SWA_D3D12)
     std::vector<ComPtr<IDxcBlob>> shaderBlobs;
     ComPtr<IDxcBlobEncoding> libraryBlob;
+#endif
 #ifdef ASYNC_PSO_DEBUG
     const char* name = "<unknown>";
 #endif
