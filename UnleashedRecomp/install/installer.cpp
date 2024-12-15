@@ -52,7 +52,7 @@ static std::unique_ptr<VirtualFileSystem> createFileSystemFromPath(const std::fi
     {
         return XContentFileSystem::create(path);
     }
-    else if (toLower(path.extension().string()) == ISOExtension)
+    else if (toLower(fromPath(path.extension())) == ISOExtension)
     {
         return ISOFileSystem::create(path);
     }
@@ -122,7 +122,7 @@ static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFi
     if (!outStream.is_open())
     {
         journal.lastResult = Journal::Result::FileCreationFailed;
-        journal.lastErrorMessage = fmt::format("Failed to create file at {}.", targetPath.string());
+        journal.lastErrorMessage = fmt::format("Failed to create file at {}.", fromPath(targetPath));
         return false;
     }
 
@@ -132,7 +132,7 @@ static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFi
     if (outStream.bad())
     {
         journal.lastResult = Journal::Result::FileWriteFailed;
-        journal.lastErrorMessage = fmt::format("Failed to create file at {}.", targetPath.string());
+        journal.lastErrorMessage = fmt::format("Failed to create file at {}.", fromPath(targetPath));
         return false;
     }
 
@@ -162,7 +162,7 @@ static DLC detectDLC(const std::filesystem::path &sourcePath, VirtualFileSystem 
     if (typeStartLocation == nullptr || typeEndLocation == nullptr)
     {
         journal.lastResult = Journal::Result::DLCParsingFailed;
-        journal.lastErrorMessage = "Failed to find DLC type for " + sourcePath.string() + ".";
+        journal.lastErrorMessage = "Failed to find DLC type for " + fromPath(sourcePath) + ".";
         return DLC::Unknown;
     }
 
@@ -171,7 +171,7 @@ static DLC detectDLC(const std::filesystem::path &sourcePath, VirtualFileSystem 
     if (typeNumberCount != 1)
     {
         journal.lastResult = Journal::Result::UnknownDLCType;
-        journal.lastErrorMessage = "DLC type for " + sourcePath.string() + " is unknown.";
+        journal.lastErrorMessage = "DLC type for " + fromPath(sourcePath) + " is unknown.";
         return DLC::Unknown;
     }
 
@@ -191,7 +191,7 @@ static DLC detectDLC(const std::filesystem::path &sourcePath, VirtualFileSystem 
         return DLC::EmpireCityAdabat;
     default:
         journal.lastResult = Journal::Result::UnknownDLCType;
-        journal.lastErrorMessage = "DLC type for " + sourcePath.string() + " is unknown.";
+        journal.lastErrorMessage = "DLC type for " + fromPath(sourcePath) + " is unknown.";
         return DLC::Unknown;
     }
 }

@@ -2,9 +2,9 @@
 
 std::filesystem::path os::process::detail::GetExecutablePath()
 {
-    char exePath[MAX_PATH];
+    WCHAR exePath[MAX_PATH];
 
-    if (!GetModuleFileNameA(nullptr, exePath, MAX_PATH))
+    if (!GetModuleFileNameW(nullptr, exePath, MAX_PATH))
         return std::filesystem::path();
 
     return std::filesystem::path(exePath);
@@ -12,9 +12,9 @@ std::filesystem::path os::process::detail::GetExecutablePath()
 
 std::filesystem::path os::process::detail::GetWorkingDirectory()
 {
-    char workPath[MAX_PATH];
+    WCHAR workPath[MAX_PATH];
 
-    if (!GetCurrentDirectoryA(MAX_PATH, workPath))
+    if (!GetCurrentDirectoryW(MAX_PATH, workPath))
         return std::filesystem::path();
 
     return std::filesystem::path(workPath);
@@ -28,14 +28,17 @@ bool os::process::detail::StartProcess(const std::filesystem::path path, const s
     if (work.empty())
         work = path.parent_path();
 
-    auto cli = path.string();
+    auto cli = path.wstring();
+
+    // NOTE: We assume the CLI arguments only contain ASCII characters.
     for (auto& arg : args)
-        cli += " " + arg;
+        cli += L" " + std::wstring(arg.begin(), arg.end());
 
-    STARTUPINFOA startInfo{ sizeof(STARTUPINFOA) };
+    STARTUPINFOW startInfo{ sizeof(STARTUPINFOW) };
     PROCESS_INFORMATION procInfo{};
-
-    if (!CreateProcessA(path.string().c_str(), cli.data(), nullptr, nullptr, false, 0, nullptr, work.string().c_str(), &startInfo, &procInfo))
+    std::wstring pathW = path.wstring();
+    std::wstring workW = work.wstring();
+    if (!CreateProcessW(pathW.c_str(), cli.data(), nullptr, nullptr, false, 0, nullptr, workW.c_str(), &startInfo, &procInfo))
         return false;
 
     CloseHandle(procInfo.hProcess);

@@ -13,7 +13,12 @@ void Config::Load()
 
     try
     {
-        auto toml = toml::parse_file(configPath.string());
+        toml::parse_result toml;
+        std::ifstream tomlStream(configPath);
+        if (tomlStream.is_open())
+        {
+            toml = toml::parse(tomlStream);
+        }
 
         for (auto def : Config::Definitions)
         {

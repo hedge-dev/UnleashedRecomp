@@ -49,7 +49,7 @@ SWA_API FileHandle* XCreateFileA
     assert(((dwShareMode & ~(FILE_SHARE_READ | FILE_SHARE_WRITE)) == 0) && "Unknown share mode bits.");
     assert(((dwCreationDisposition & ~(CREATE_NEW | CREATE_ALWAYS)) == 0) && "Unknown creation disposition bits.");
 
-    std::filesystem::path filePath = FileSystem::TransformPath(lpFileName);
+    std::filesystem::path filePath = std::u8string_view((const char8_t*)(FileSystem::TransformPath(lpFileName)));
     std::fstream fileStream;
     std::ios::openmode fileOpenMode = std::ios::binary;
     if (dwDesiredAccess & (GENERIC_READ | FILE_READ_DATA))
@@ -238,15 +238,15 @@ FindHandle* XFindFirstFileA(LPCSTR lpFileName, LPWIN32_FIND_DATAA lpFindFileData
     std::filesystem::path dirPath;
     if (strstr(transformedPath, "\\*") == (&transformedPath[transformedPathLength - 2]))
     {
-        dirPath = std::string(transformedPath, transformedPathLength - 2);
+        dirPath = std::u8string_view((const char8_t*)(transformedPath), transformedPathLength - 2);
     }
     else if (strstr(transformedPath, "\\*.*") == (&transformedPath[transformedPathLength - 4]))
     {
-        dirPath = std::string(transformedPath, transformedPathLength - 4);
+        dirPath = std::u8string_view((const char8_t *)(transformedPath), transformedPathLength - 4);
     }
     else
     {
-        dirPath = std::string(transformedPath, transformedPathLength);
+        dirPath = std::u8string_view((const char8_t *)(transformedPath), transformedPathLength);
         assert(!dirPath.has_extension() && "Unknown search pattern.");
     }
 
@@ -310,7 +310,7 @@ BOOL XReadFileEx(FileHandle* hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead,
 
 DWORD XGetFileAttributesA(LPCSTR lpFileName)
 {
-    std::filesystem::path filePath = FileSystem::TransformPath(lpFileName);
+    std::filesystem::path filePath(std::u8string_view((const char8_t*)(FileSystem::TransformPath(lpFileName))));
     if (std::filesystem::is_directory(filePath))
         return FILE_ATTRIBUTE_DIRECTORY;
     else if (std::filesystem::is_regular_file(filePath))
