@@ -44,22 +44,26 @@ namespace Hedgehog::Base
 
     inline void SStringHolder::AddRef()
     {
+        std::atomic_ref atomicRef(RefCountAndLength.value);
+
         uint32_t originalValue, incrementedValue;
         do
         {
             originalValue = RefCountAndLength.value;
             incrementedValue = ByteSwap(ByteSwap(originalValue) + 1);
-        } while (InterlockedCompareExchange(reinterpret_cast<LONG*>(&RefCountAndLength), incrementedValue, originalValue) != originalValue);
+        } while (!atomicRef.compare_exchange_weak(originalValue, incrementedValue));
     }
 
     inline void SStringHolder::Release()
     {
+        std::atomic_ref atomicRef(RefCountAndLength.value);
+
         uint32_t originalValue, decrementedValue;
         do
         {
             originalValue = RefCountAndLength.value;
             decrementedValue = ByteSwap(ByteSwap(originalValue) - 1);
-        } while (InterlockedCompareExchange(reinterpret_cast<LONG*>(&RefCountAndLength), decrementedValue, originalValue) != originalValue);
+        } while (!atomicRef.compare_exchange_weak(originalValue, decrementedValue));
 
         if (RefCountAndLength == 0)
             __HH_FREE(this);
