@@ -29,7 +29,7 @@ struct GuestThreadHandle : KernelObject
     GuestThreadHandle(const GuestThreadParams& params);
     ~GuestThreadHandle() override;
 
-    void Wait(uint32_t timeout) override;
+    uint32_t Wait(uint32_t timeout) override;
 };
 
 struct GuestThread
