@@ -27,7 +27,7 @@ GuestThreadContext::GuestThreadContext(uint32_t cpuNumber)
     *(thread + 0x10C) = cpuNumber;
 
     *(uint32_t*)(thread + PCR_SIZE + 0x10) = 0xFFFFFFFF; // that one TLS entry that felt quirky
-    *(uint32_t*)(thread + PCR_SIZE + TLS_SIZE + 0x14C) = ByteSwap(GetCurrentThreadId()); // thread id
+    *(uint32_t*)(thread + PCR_SIZE + TLS_SIZE + 0x14C) = ByteSwap(GuestThread::GetCurrentThreadId()); // thread id
 
     ppcContext.fn = (uint8_t*)g_codeCache.bucket;
     ppcContext.r1.u64 = g_memory.MapVirtual(thread + PCR_SIZE + TLS_SIZE + TEB_SIZE + STACK_SIZE); // stack pointer
@@ -42,42 +42,82 @@ GuestThreadContext::~GuestThreadContext()
     g_userHeap.Free(thread);
 }
 
-DWORD GuestThread::Start(uint32_t function)
+static void GuestThreadFunc(GuestThreadHandle* hThread)
 {
-    const GuestThreadParameter parameter{ function };
-    return Start(parameter);
+    hThread->suspended.wait(true);
+    GuestThread::Start(hThread->params);
 }
 
-DWORD GuestThread::Start(const GuestThreadParameter& parameter)
+GuestThreadHandle::GuestThreadHandle(const GuestThreadParams& params)
+    : params(params), suspended((params.flags & 0x1) != 0), thread(GuestThreadFunc, this)
 {
-    const auto procMask = (uint8_t)(parameter.flags >> 24);
+}
+
+GuestThreadHandle::~GuestThreadHandle()
+{
+    if (thread.joinable())
+        thread.join();
+}
+
+void GuestThreadHandle::Wait(uint32_t timeout)
+{
+    assert(timeout == INFINITE);
+
+    if (thread.joinable())
+        thread.join();
+}
+
+uint32_t GuestThread::Start(const GuestThreadParams& params)
+{
+    const auto procMask = (uint8_t)(params.flags >> 24);
     const auto cpuNumber = procMask == 0 ? 0 : 7 - std::countl_zero(procMask);
 
     GuestThreadContext ctx(cpuNumber);
-    ctx.ppcContext.r3.u64 = parameter.value;
+    ctx.ppcContext.r3.u64 = params.value;
 
-    GuestCode::Run(g_codeCache.Find(parameter.function), &ctx.ppcContext, g_memory.Translate(0));
+    GuestCode::Run(g_codeCache.Find(params.function), &ctx.ppcContext, g_memory.Translate(0));
 
-    return (DWORD)ctx.ppcContext.r3.u64;
+    return ctx.ppcContext.r3.u32;
 }
 
-DWORD HostThreadStart(void* pParameter)
+static uint32_t GetThreadId(const std::thread::id& id)
 {
-    auto* parameter = static_cast<GuestThreadParameter*>(pParameter);
-    const auto result = GuestThread::Start(*parameter);
-
-    delete parameter;
-    return result;
+    if constexpr (sizeof(id) == 4)
+        return *reinterpret_cast<const uint32_t*>(&id);
+    else
+        return XXH32(&id, sizeof(id), 0);
 }
 
-HANDLE GuestThread::Start(uint32_t function, uint32_t parameter, uint32_t flags, LPDWORD threadId)
+GuestThreadHandle* GuestThread::Start(const GuestThreadParams& params, uint32_t* threadId)
 {
-    const auto hostCreationFlags = (flags & 1) != 0 ? CREATE_SUSPENDED : 0;
-    //return CreateThread(nullptr, 0, Start, (void*)((uint64_t(parameter) << 32) | function), suspended ? CREATE_SUSPENDED : 0, threadId);
-    return CreateThread(nullptr, 0, HostThreadStart, new GuestThreadParameter{ function, parameter, flags }, hostCreationFlags, threadId);
+    auto hThread = CreateKernelObject<GuestThreadHandle>(params);
+
+    if (threadId != nullptr)
+        *threadId = GetThreadId(hThread->thread.get_id());
+
+    return hThread;
 }
 
-void GuestThread::SetThreadName(uint32_t id, const char* name)
+uint32_t GuestThread::GetCurrentThreadId()
+{
+    return GetThreadId(std::this_thread::get_id());
+}
+
+void GuestThread::SetLastError(uint32_t error)
+{
+    auto* thread = (char*)g_memory.Translate(GetPPCContext()->r13.u32);
+    if (*(uint32_t*)(thread + 0x150))
+    {
+        // Program doesn't want errors
+        return;
+    }
+
+    // TEB + 0x160 : Win32LastError
+    *(uint32_t*)(thread + TEB_OFFSET + 0x160) = ByteSwap(error);
+}
+
+#ifdef _WIN32
+void GuestThread::SetThreadName(uint32_t threadId, const char* name)
 {
 #pragma pack(push,8)
     const DWORD MS_VC_EXCEPTION = 0x406D1388;
@@ -94,7 +134,7 @@ void GuestThread::SetThreadName(uint32_t id, const char* name)
     THREADNAME_INFO info;
     info.dwType = 0x1000;
     info.szName = name;
-    info.dwThreadID = id;
+    info.dwThreadID = threadId;
     info.dwFlags = 0;
 
     __try
@@ -105,41 +145,31 @@ void GuestThread::SetThreadName(uint32_t id, const char* name)
     {
     }
 }
-
-void GuestThread::SetLastError(DWORD error)
-{
-    auto* thread = (char*)g_memory.Translate(GetPPCContext()->r13.u32);
-    if (*(DWORD*)(thread + 0x150))
-    {
-        // Program doesn't want errors
-        return;
-    }
-
-    // TEB + 0x160 : Win32LastError
-    *(DWORD*)(thread + TEB_OFFSET + 0x160) = ByteSwap(error);
-}
-
-PPCContext* GuestThread::Invoke(uint32_t address)
-{
-    auto* ctx = GetPPCContext();
-    GuestCode::Run(g_codeCache.Find(address), ctx);
-
-    return ctx;
-}
+#endif
 
 void SetThreadNameImpl(uint32_t a1, uint32_t threadId, uint32_t* name)
 {
+#ifdef _WIN32
     GuestThread::SetThreadName(threadId, (const char*)g_memory.Translate(ByteSwap(*name)));
+#endif
 }
 
-int GetThreadPriorityImpl(uint32_t hThread)
+int GetThreadPriorityImpl(GuestThreadHandle* hThread)
 {
-    return GetThreadPriority((HANDLE)hThread);
+#ifdef _WIN32
+    return GetThreadPriority(hThread == GetKernelObject(CURRENT_THREAD_HANDLE) ? GetCurrentThread() : hThread->thread.native_handle());
+#else 
+    return 0;
+#endif
 }
 
-DWORD SetThreadIdealProcessorImpl(uint32_t hThread, DWORD dwIdealProcessor)
+uint32_t SetThreadIdealProcessorImpl(GuestThreadHandle* hThread, uint32_t dwIdealProcessor)
 {
-    return SetThreadIdealProcessor((HANDLE)hThread, dwIdealProcessor);
+#ifdef _WIN32
+    return SetThreadIdealProcessor(hThread == GetKernelObject(CURRENT_THREAD_HANDLE) ? GetCurrentThread() : hThread->thread.native_handle(), dwIdealProcessor);
+#else
+    return 0;
+#endif
 }
 
 GUEST_FUNCTION_HOOK(sub_82DFA2E8, SetThreadNameImpl);

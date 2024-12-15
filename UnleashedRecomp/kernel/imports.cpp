@@ -256,15 +256,25 @@ uint32_t FscSetCacheElementCount()
 
 DWORD NtWaitForSingleObjectEx(DWORD Handle, DWORD WaitMode, DWORD Alertable, XLPQWORD Timeout)
 {
-    const auto status = WaitForSingleObjectEx((HANDLE)Handle, GuestTimeoutToMilliseconds(Timeout), Alertable);
+    uint32_t timeout = GuestTimeoutToMilliseconds(Timeout);
+    assert(timeout == 0 || timeout == INFINITE);
 
-    if (status == WAIT_IO_COMPLETION)
+    if (IsKernelObject(Handle))
     {
-        return STATUS_USER_APC;
+        GetKernelObject(Handle)->Wait(timeout);
     }
-    else if (status)
+    else
     {
-        return STATUS_ALERTED;
+        const auto status = WaitForSingleObjectEx((HANDLE)Handle, timeout, Alertable);
+
+        if (status == WAIT_IO_COMPLETION)
+        {
+            return STATUS_USER_APC;
+        }
+        else if (status)
+        {
+            return STATUS_ALERTED;
+        }
     }
 
     return STATUS_SUCCESS;
@@ -474,8 +484,9 @@ void ObDereferenceObject()
     LOG_UTILITY("!!! STUB !!!");
 }
 
-void KeSetBasePriorityThread(uint32_t thread, int priority)
+void KeSetBasePriorityThread(GuestThreadHandle* hThread, int priority)
 {
+#ifdef _WIN32
     if (priority == 16)
     {
         priority = 15;
@@ -485,7 +496,8 @@ void KeSetBasePriorityThread(uint32_t thread, int priority)
         priority = -15;
     }
 
-    SetThreadPriority((HANDLE)thread, priority);
+    SetThreadPriority(hThread == GetKernelObject(CURRENT_THREAD_HANDLE) ? GetCurrentThread() : hThread->thread.native_handle(), priority);
+#endif
 }
 
 uint32_t ObReferenceObjectByHandle(uint32_t handle, uint32_t objectType, XLPDWORD object)
@@ -499,15 +511,12 @@ void KeQueryBasePriorityThread()
     LOG_UTILITY("!!! STUB !!!");
 }
 
-uint32_t NtSuspendThread(uint32_t hThread, uint32_t* suspendCount)
+uint32_t NtSuspendThread(GuestThreadHandle* hThread, uint32_t* suspendCount)
 {
-    DWORD count = SuspendThread((HANDLE)hThread);
+    assert(hThread != GetKernelObject(CURRENT_THREAD_HANDLE) && hThread->thread.get_id() == std::this_thread::get_id());
 
-    if (count == (DWORD)-1)
-        return E_FAIL;
-
-    if (suspendCount != nullptr)
-        *suspendCount = ByteSwap(count);
+    hThread->suspended = true;
+    hThread->suspended.wait(true);
 
     return S_OK;
 }
@@ -890,29 +899,32 @@ DWORD KeWaitForSingleObject(XDISPATCHER_HEADER* Object, DWORD WaitReason, DWORD 
     return WaitForSingleObjectEx(handle, timeout, Alertable);
 }
 
-static thread_local std::vector<uint32_t> g_tlsValues;
 static std::vector<size_t> g_tlsFreeIndices;
 static size_t g_tlsNextIndex = 0;
 static Mutex g_tlsAllocationMutex;
 
-static void KeTlsEnsureTlsCapacity(size_t index)
+static uint32_t& KeTlsGetValueRef(size_t index)
 {
-    if (g_tlsValues.size() <= index)
+    // Having this a global thread_local variable
+    // for some reason crashes on boot in debug builds.
+    thread_local std::vector<uint32_t> s_tlsValues;
+
+    if (s_tlsValues.size() <= index)
     {
-        g_tlsValues.resize(index + 1, 0);
+        s_tlsValues.resize(index + 1, 0);
     }
+
+    return s_tlsValues[index];
 }
 
 uint32_t KeTlsGetValue(DWORD dwTlsIndex)
 {
-    KeTlsEnsureTlsCapacity(dwTlsIndex);
-    return g_tlsValues[dwTlsIndex];
+    return KeTlsGetValueRef(dwTlsIndex);
 }
 
 BOOL KeTlsSetValue(DWORD dwTlsIndex, DWORD lpTlsValue)
 {
-    KeTlsEnsureTlsCapacity(dwTlsIndex);
-    g_tlsValues[dwTlsIndex] = lpTlsValue;
+    KeTlsGetValueRef(dwTlsIndex) = lpTlsValue;
     return TRUE;
 }
 
@@ -1169,15 +1181,12 @@ uint32_t NtClearEvent(uint32_t handle, uint32_t* previousState)
     return ResetEvent((HANDLE)handle) ? 0 : 0xFFFFFFFF;
 }
 
-uint32_t NtResumeThread(uint32_t hThread, uint32_t* suspendCount)
+uint32_t NtResumeThread(GuestThreadHandle* hThread, uint32_t* suspendCount)
 {
-    DWORD count = ResumeThread((HANDLE)hThread);
+    assert(hThread != GetKernelObject(CURRENT_THREAD_HANDLE));
 
-    if (count == (DWORD)-1)
-        return E_FAIL;
-
-    if (suspendCount != nullptr)
-        *suspendCount = ByteSwap(count);
+    hThread->suspended = false;
+    hThread->suspended.notify_all();
 
     return S_OK;
 }
@@ -1270,9 +1279,9 @@ uint32_t ExCreateThread(XLPDWORD handle, uint32_t stackSize, XLPDWORD threadId, 
     LOGF_UTILITY("0x{:X}, 0x{:X}, 0x{:X}, 0x{:X}, 0x{:X}, 0x{:X}, 0x{:X}",
         (intptr_t)handle, stackSize, (intptr_t)threadId, xApiThreadStartup, startAddress, startContext, creationFlags);
 
-    DWORD hostThreadId;
+    uint32_t hostThreadId;
 
-    *handle = (uint32_t)GuestThread::Start(startAddress, startContext, creationFlags, &hostThreadId);
+    *handle = GetKernelHandle(GuestThread::Start({ startAddress, startContext, creationFlags }, &hostThreadId));
 
     if (threadId != nullptr)
         *threadId = hostThreadId;
@@ -1391,10 +1400,13 @@ DWORD XAudioGetVoiceCategoryVolumeChangeMask(DWORD Driver, XLPDWORD Mask)
     return 0;
 }
 
-uint32_t KeResumeThread(uint32_t object)
+uint32_t KeResumeThread(GuestThreadHandle* object)
 {
-    LOGF_UTILITY("0x{:x}", object);
-    return ResumeThread((HANDLE)object);
+    assert(object != GetKernelObject(CURRENT_THREAD_HANDLE));
+
+    object->suspended = false;
+    object->suspended.notify_all();
+    return 0;
 }
 
 void KeInitializeSemaphore(XKSEMAPHORE* semaphore, uint32_t count, uint32_t limit)

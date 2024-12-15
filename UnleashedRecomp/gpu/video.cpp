@@ -4047,8 +4047,9 @@ static void ProcSetPixelShader(const RenderCommand& cmd)
 
 static std::thread g_renderThread([]
     {
+#ifdef _WIN32
         GuestThread::SetThreadName(GetCurrentThreadId(), "Render Thread");
-
+#endif
         RenderCommand commands[32];
 
         while (true)
@@ -4857,7 +4858,9 @@ static moodycamel::BlockingConcurrentQueue<PipelineStateQueueItem> g_pipelineSta
 
 static void PipelineCompilerThread()
 {
+#ifdef _WIN32
     GuestThread::SetThreadName(GetCurrentThreadId(), "Pipeline Compiler Thread");
+#endif
     std::unique_ptr<GuestThreadContext> ctx;
 
     while (true)
@@ -5508,8 +5511,9 @@ static bool CheckMadeAll(const T& modelData)
 
 static void ModelConsumerThread()
 {
+#ifdef _WIN32
     GuestThread::SetThreadName(GetCurrentThreadId(), "Model Consumer Thread");
-
+#endif
     std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> localPendingDataQueue;
     std::unique_ptr<GuestThreadContext> ctx;
 
