@@ -316,7 +316,10 @@ SWA_API uint32_t XamContentCreateEx(DWORD dwUserIndex, LPCSTR szRootName, const 
             }
 
             XamRegisterContent(*pContentData, root);
-            CreateDirectoryA(root.c_str(), nullptr);
+
+            std::error_code ec;
+            std::filesystem::create_directory(std::u8string_view((const char8_t*)(root.c_str())), ec);
+
             XamRootCreate(szRootName, root);
         }
         else
