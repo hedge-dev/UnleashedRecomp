@@ -973,7 +973,8 @@ static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
         stringStream << Localise("Installer_Message_InvalidFilesList") << std::endl;
         for (const std::filesystem::path &path : failedPaths)
         {
-            stringStream << std::endl << "- " << Truncate(path.filename().string(), 32, true, true);
+            std::u8string filenameU8 = path.filename().u8string();
+            stringStream << std::endl << "- " << Truncate(std::string(filenameU8.begin(), filenameU8.end()), 32, true, true);
         }
 
         if (isFailedPathsOverLimit)

@@ -56,9 +56,11 @@ void KiSystemStartup()
     const auto savePath = GetSavePath();
     const auto saveName = "SYS-DATA";
 
-    // TODO: implement save slots?
     if (std::filesystem::exists(savePath / saveName))
-        XamRegisterContent(XamMakeContent(XCONTENTTYPE_SAVEDATA, saveName), savePath.string());
+    {
+        std::u8string savePathU8 = savePath.u8string();
+        XamRegisterContent(XamMakeContent(XCONTENTTYPE_SAVEDATA, saveName), (const char *)(savePathU8.c_str()));
+    }
 
     // Mount game
     XamContentCreateEx(0, "game", &gameContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
@@ -91,9 +93,9 @@ void KiSystemStartup()
     XAudioInitializeSystem();
 }
 
-uint32_t LdrLoadModule(const char* path)
+uint32_t LdrLoadModule(const std::filesystem::path &path)
 {
-    auto loadResult = LoadFile(FileSystem::TransformPath(GAME_XEX_PATH));
+    auto loadResult = LoadFile(path);
     if (loadResult.empty())
     {
         assert("Failed to load module" && false);
@@ -175,7 +177,8 @@ int main(int argc, char *argv[])
 
     KiSystemStartup();
 
-    uint32_t entry = LdrLoadModule(FileSystem::TransformPath(GAME_XEX_PATH));
+    const char *modulePath = FileSystem::TransformPath(GAME_XEX_PATH);
+    uint32_t entry = LdrLoadModule(std::u8string_view((const char8_t*)(modulePath)));
 
     if (!runInstallerWizard)
         Video::CreateHostDevice();

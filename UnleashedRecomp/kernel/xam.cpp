@@ -303,7 +303,8 @@ SWA_API uint32_t XamContentCreateEx(DWORD dwUserIndex, LPCSTR szRootName, const 
 
             if (pContentData->dwContentType == XCONTENTTYPE_SAVEDATA)
             {
-                root = GetSavePath().string();
+                std::u8string savePathU8 = GetSavePath().u8string();
+                root = (const char *)(savePathU8.c_str());
             }
             else if (pContentData->dwContentType == XCONTENTTYPE_DLC)
             {
