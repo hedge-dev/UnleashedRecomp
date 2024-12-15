@@ -1,25 +1,29 @@
 #pragma once
 
+#define CONFIG_LOCALE std::unordered_map<ELanguage, std::tuple<std::string, std::string>>
+#define CONFIG_ENUM_LOCALE(type) std::unordered_map<ELanguage, std::unordered_map<type, std::tuple<std::string, std::string>>>
+
 #define CONFIG_DEFINE(section, type, name, defaultValue) \
     static inline ConfigDef<type> name{section, #name, defaultValue};
 
 #define CONFIG_DEFINE_LOCALISED(section, type, name, defaultValue) \
+    static CONFIG_LOCALE g_##name##_locale; \
     static inline ConfigDef<type> name{section, #name, &g_##name##_locale, defaultValue};
 
 #define CONFIG_DEFINE_ENUM(section, type, name, defaultValue) \
     static inline ConfigDef<type> name{section, #name, defaultValue, &g_##type##_template};
 
 #define CONFIG_DEFINE_ENUM_LOCALISED(section, type, name, defaultValue) \
+    static CONFIG_LOCALE g_##name##_locale; \
+    static CONFIG_ENUM_LOCALE(type) g_##type##_locale; \
     static inline ConfigDef<type> name{section, #name, &g_##name##_locale, defaultValue, &g_##type##_template, &g_##type##_locale};
 
 #define CONFIG_DEFINE_CALLBACK(section, type, name, defaultValue, readCallback) \
+    static CONFIG_LOCALE g_##name##_locale; \
     static inline ConfigDef<type> name{section, #name, defaultValue, [](ConfigDef<type>* def) readCallback};
 
 #define CONFIG_DEFINE_ENUM_TEMPLATE(type) \
     inline std::unordered_map<std::string, type> g_##type##_template =
-
-#define CONFIG_LOCALE std::unordered_map<ELanguage, std::tuple<std::string, std::string>>
-#define CONFIG_ENUM_LOCALE(type) std::unordered_map<ELanguage, std::unordered_map<type, std::tuple<std::string, std::string>>>
 
 #define WINDOWPOS_CENTRED 0x2FFF0000
 

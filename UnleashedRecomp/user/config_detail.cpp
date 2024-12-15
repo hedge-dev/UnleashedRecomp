@@ -1,5 +1,6 @@
 #include "config.h"
 #include "config_detail.h"
+#include <locale/locale.h>
 
 // CONFIG_DEFINE
 template<typename T>
@@ -100,7 +101,9 @@ std::string ConfigDef<T>::GetValueLocalised() const
     }
     else if constexpr (std::is_same_v<T, bool>)
     {
-        locale = &g_bool_locale;
+        return Value
+            ? Localise("Common_On")
+            : Localise("Common_Off");
     }
 
     if (!locale)
@@ -138,7 +141,7 @@ std::string ConfigDef<T>::GetValueDescription() const
     }
     else if constexpr (std::is_same_v<T, bool>)
     {
-        locale = &g_bool_locale;
+        return "";
     }
 
     if (!locale)

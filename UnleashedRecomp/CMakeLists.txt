@@ -66,6 +66,11 @@ set(SWA_KERNEL_CXX_SOURCES
     "kernel/io/file_system.cpp"
 )
 
+set(SWA_LOCALE_CXX_SOURCES
+    "locale/config_locale.cpp"
+    "locale/locale.cpp"
+)
+
 set(SWA_OS_CXX_SOURCES
     "os/logger.cpp"
     "os/media.cpp"
@@ -182,6 +187,7 @@ set(SWA_CXX_SOURCES
     "stdafx.cpp"
     
     ${SWA_KERNEL_CXX_SOURCES}
+    ${SWA_LOCALE_CXX_SOURCES}
     ${SWA_OS_CXX_SOURCES}
     ${SWA_CPU_CXX_SOURCES}
     ${SWA_GPU_CXX_SOURCES}

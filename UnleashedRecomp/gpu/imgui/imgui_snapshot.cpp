@@ -211,15 +211,6 @@ void ImFontAtlasSnapshot::GenerateGlyphRanges()
     {
         for (auto& [language, value] : locale)
             GetGlyphs(glyphs, value);
-    }   
-    
-    for (auto& [language, locale] : g_bool_locale)
-    {
-        for (auto& [value, nameAndDesc] : locale)
-        {
-            GetGlyphs(glyphs, std::get<0>(nameAndDesc));
-            GetGlyphs(glyphs, std::get<1>(nameAndDesc));
-        }
     }
 
     for (size_t i = XDBF_LANGUAGE_ENGLISH; i <= XDBF_LANGUAGE_ITALIAN; i++)

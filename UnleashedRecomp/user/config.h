@@ -1,7 +1,6 @@
 #pragma once
 
 #include <user/config_detail.h>
-#include <locale/config_locale.h>
 #include <user/paths.h>
 #include <exports.h>
 

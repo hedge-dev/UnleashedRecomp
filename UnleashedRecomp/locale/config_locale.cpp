@@ -1,58 +1,11 @@
-#pragma once
-
+#include <user/config.h>
 #include <user/config_detail.h>
 
 #define CONFIG_DEFINE_LOCALE(name) \
-    inline std::unordered_map<ELanguage, std::tuple<std::string, std::string>> g_##name##_locale =
+    CONFIG_LOCALE Config::g_##name##_locale =
 
 #define CONFIG_DEFINE_ENUM_LOCALE(type) \
-    inline std::unordered_map<ELanguage, std::unordered_map<type, std::tuple<std::string, std::string>>> g_##type##_locale =
-
-CONFIG_DEFINE_ENUM_LOCALE(bool)
-{
-    {
-        ELanguage::English,
-        {
-            { true,  { "ON", "" } },
-            { false, { "OFF", "" } }
-        }
-    },
-    {
-        ELanguage::Japanese,
-        {
-            { true,  { "オン", "" } },
-            { false, { "オフ", "" } }
-        }
-    },
-    {
-        ELanguage::German,
-        {
-            { true,  { "EIN", "" } },
-            { false, { "AUS", "" } }
-        }
-    },
-    {
-        ELanguage::French,
-        {
-            { true,  { "OUI", "" } },
-            { false, { "NON", "" } }
-        }
-    },
-    {
-        ELanguage::Spanish,
-        {
-            { true,  { "SÍ", "" } },
-            { false, { "NO", "" } }
-        }
-    },
-    {
-        ELanguage::Italian,
-        {
-            { true,  { "SÌ", "" } },
-            { false, { "NO", "" } }
-        }
-    }
-};
+    CONFIG_ENUM_LOCALE(type) Config::g_##type##_locale =
 
 CONFIG_DEFINE_LOCALE(Language)
 {
