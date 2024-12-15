@@ -695,15 +695,22 @@ void RtlRaiseException_x()
 
 void KfReleaseSpinLock(uint32_t* spinLock)
 {
-    InterlockedExchange((volatile long*)spinLock, 0);
+    std::atomic_ref spinLockRef(*spinLock);
+    spinLockRef = 0;
 }
 
 void KfAcquireSpinLock(uint32_t* spinLock)
 {
-    const auto ctx = GetPPCContext();
+    std::atomic_ref spinLockRef(*spinLock);
 
-    while (InterlockedCompareExchange((volatile long*)spinLock, ByteSwap(*(uint32_t*)(g_memory.Translate(ctx->r13.u32 + 0x110))), 0) != 0)
+    while (true)
+    {
+        uint32_t expected = 0;
+        if (spinLockRef.compare_exchange_weak(expected, g_ppcContext->r13.u32))
+            break;
+
         std::this_thread::yield();
+    }
 }
 
 uint64_t KeQueryPerformanceFrequency()
@@ -735,15 +742,22 @@ void VdGetSystemCommandBuffer()
 
 void KeReleaseSpinLockFromRaisedIrql(uint32_t* spinLock)
 {
-    InterlockedExchange((volatile long*)spinLock, 0);
+    std::atomic_ref spinLockRef(*spinLock);
+    spinLockRef = 0;
 }
 
 void KeAcquireSpinLockAtRaisedIrql(uint32_t* spinLock)
 {
-    const auto ctx = GetPPCContext();
+    std::atomic_ref spinLockRef(*spinLock);
 
-    while (InterlockedCompareExchange((volatile long*)spinLock, ByteSwap(*(uint32_t*)(g_memory.Translate(ctx->r13.u32 + 0x110))), 0) != 0)
+    while (true)
+    {
+        uint32_t expected = 0;
+        if (spinLockRef.compare_exchange_weak(expected, g_ppcContext->r13.u32))
+            break;
+
         std::this_thread::yield();
+    }
 }
 
 uint32_t KiApcNormalRoutineNop()
