@@ -419,18 +419,7 @@ DWORD KeDelayExecutionThread(DWORD WaitMode, bool Alertable, XLPQWORD Timeout)
     if (Alertable)
         return STATUS_USER_APC;
 
-    timeBeginPeriod(1);
-    const auto status = SleepEx(GuestTimeoutToMilliseconds(Timeout), Alertable);
-    timeEndPeriod(1);
-
-    if (status == WAIT_IO_COMPLETION)
-    {
-        return STATUS_USER_APC;
-    }
-    else if (status)
-    {
-        return STATUS_ALERTED;
-    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(GuestTimeoutToMilliseconds(Timeout)));
 
     return STATUS_SUCCESS;
 }
@@ -649,7 +638,7 @@ void KfAcquireSpinLock(uint32_t* spinLock)
     const auto ctx = GetPPCContext();
 
     while (InterlockedCompareExchange((volatile long*)spinLock, ByteSwap(*(uint32_t*)(g_memory.Translate(ctx->r13.u32 + 0x110))), 0) != 0)
-        Sleep(0);
+        std::this_thread::yield();
 }
 
 uint64_t KeQueryPerformanceFrequency()
@@ -689,7 +678,7 @@ void KeAcquireSpinLockAtRaisedIrql(uint32_t* spinLock)
     const auto ctx = GetPPCContext();
 
     while (InterlockedCompareExchange((volatile long*)spinLock, ByteSwap(*(uint32_t*)(g_memory.Translate(ctx->r13.u32 + 0x110))), 0) != 0)
-        Sleep(0);
+        std::this_thread::yield();
 }
 
 uint32_t KiApcNormalRoutineNop()
