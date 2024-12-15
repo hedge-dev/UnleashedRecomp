@@ -10,7 +10,11 @@ struct KernelObject
 {
     virtual ~KernelObject() 
     {
-        ;
+    }
+
+    virtual void Wait(uint32_t timeout) 
+    {
+        assert(false && "Wait not implemented for this kernel object.");
     }
 };
 

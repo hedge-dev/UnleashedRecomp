@@ -1,12 +1,8 @@
 #pragma once
 
-struct PPCContext;
-struct GuestThreadParameter
-{
-    uint32_t function;
-    uint32_t value;
-    uint32_t flags;
-};
+#include <kernel/xdm.h>
+
+#define CURRENT_THREAD_HANDLE uint32_t(-2)
 
 struct GuestThreadContext
 {
@@ -17,13 +13,34 @@ struct GuestThreadContext
     ~GuestThreadContext();
 };
 
+struct GuestThreadParams
+{
+    uint32_t function;
+    uint32_t value;
+    uint32_t flags;
+};
+
+struct GuestThreadHandle : KernelObject
+{
+    GuestThreadParams params;
+    std::atomic<bool> suspended;
+    std::thread thread;
+
+    GuestThreadHandle(const GuestThreadParams& params);
+    ~GuestThreadHandle() override;
+
+    void Wait(uint32_t timeout) override;
+};
+
 struct GuestThread
 {
-    static DWORD Start(uint32_t function);
-    static DWORD Start(const GuestThreadParameter& parameter);
-    static HANDLE Start(uint32_t function, uint32_t parameter, uint32_t flags, LPDWORD threadId);
+    static uint32_t Start(const GuestThreadParams& params);
+    static GuestThreadHandle* Start(const GuestThreadParams& params, uint32_t* threadId);
 
-    static void SetThreadName(uint32_t id, const char* name);
-    static void SetLastError(DWORD error);
-    static PPCContext* Invoke(uint32_t address);
+    static uint32_t GetCurrentThreadId();
+    static void SetLastError(uint32_t error);
+
+#ifdef _WIN32
+    static void SetThreadName(uint32_t threadId, const char* name);
+#endif
 };

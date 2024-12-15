@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
 
     Video::StartPipelinePrecompilation();
 
-    GuestThread::Start(entry);
+    GuestThread::Start({ entry, 0, 0 });
 
     return 0;
 }
