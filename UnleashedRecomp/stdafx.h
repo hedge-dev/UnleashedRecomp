@@ -49,3 +49,7 @@ using Microsoft::WRL::ComPtr;
 
 #include "framework.h"
 #include "mutex.h"
+
+#ifndef _WIN32
+#include <sys/mman.h>
+#endif
