@@ -1,4 +1,5 @@
 #include <ui/options_menu_thumbnails.h>
+#include <decompressor.h>
 
 // TODO (Hyper): lower the resolution of these textures once final.
 #include <res/images/options_menu/thumbnails/achievement_notifications.dds.h>
