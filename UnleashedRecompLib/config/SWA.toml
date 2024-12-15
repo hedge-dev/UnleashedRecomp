@@ -564,3 +564,27 @@ jump_address = 0x82585480
 [[midasm_hook]]
 name = "LoadingScreenControllerMidAsmHook"
 address = 0x824DC9D4
+
+# CPlayerSpeedPostureInputOnPath
+[[midasm_hook]]
+name = "PostureDPadSupportMidAsmHook"
+address = 0x8234F174
+registers = ["r3"]
+
+# CPlayerSpeedPostureInputOnPathLocal
+[[midasm_hook]]
+name = "PostureDPadSupportMidAsmHook"
+address = 0x8234F518
+registers = ["r3"]
+
+# CPlayerSpeedPostureInput3DStandard
+[[midasm_hook]]
+name = "PostureDPadSupportMidAsmHook"
+address = 0x8234EEC8
+registers = ["r3"]
+
+# CEvilPostureInputStandard
+[[midasm_hook]]
+name = "PostureDPadSupportMidAsmHook"
+address = 0x823CDA2C
+registers = ["r3"]

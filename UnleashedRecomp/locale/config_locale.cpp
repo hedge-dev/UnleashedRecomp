@@ -1,58 +1,11 @@
-#pragma once
-
+#include <user/config.h>
 #include <user/config_detail.h>
 
 #define CONFIG_DEFINE_LOCALE(name) \
-    inline std::unordered_map<ELanguage, std::tuple<std::string, std::string>> g_##name##_locale =
+    CONFIG_LOCALE Config::g_##name##_locale =
 
 #define CONFIG_DEFINE_ENUM_LOCALE(type) \
-    inline std::unordered_map<ELanguage, std::unordered_map<type, std::tuple<std::string, std::string>>> g_##type##_locale =
-
-CONFIG_DEFINE_ENUM_LOCALE(bool)
-{
-    {
-        ELanguage::English,
-        {
-            { true,  { "ON", "" } },
-            { false, { "OFF", "" } }
-        }
-    },
-    {
-        ELanguage::Japanese,
-        {
-            { true,  { "オン", "" } },
-            { false, { "オフ", "" } }
-        }
-    },
-    {
-        ELanguage::German,
-        {
-            { true,  { "EIN", "" } },
-            { false, { "AUS", "" } }
-        }
-    },
-    {
-        ELanguage::French,
-        {
-            { true,  { "OUI", "" } },
-            { false, { "NON", "" } }
-        }
-    },
-    {
-        ELanguage::Spanish,
-        {
-            { true,  { "SÍ", "" } },
-            { false, { "NO", "" } }
-        }
-    },
-    {
-        ELanguage::Italian,
-        {
-            { true,  { "SÌ", "" } },
-            { false, { "NO", "" } }
-        }
-    }
-};
+    CONFIG_ENUM_LOCALE(type) Config::g_##type##_locale =
 
 CONFIG_DEFINE_LOCALE(Language)
 {
@@ -142,6 +95,11 @@ CONFIG_DEFINE_LOCALE(AllowBackgroundInput)
     { ELanguage::English, { "Allow Background Input", "Accept controller input whilst the game window is unfocused." } }
 };
 
+CONFIG_DEFINE_LOCALE(AllowDPadMovement)
+{
+    { ELanguage::English, { "Allow D-Pad Movement", "Allow the player to also be controlled using the directional pad." } }
+};
+
 CONFIG_DEFINE_LOCALE(MusicVolume)
 {
     { ELanguage::English, { "Music Volume", "Adjust the volume for the music." } }
@@ -181,6 +139,11 @@ CONFIG_DEFINE_LOCALE(Subtitles)
 CONFIG_DEFINE_LOCALE(BattleTheme)
 {
     { ELanguage::English, { "Battle Theme", "Play the Werehog battle theme during combat.\n\nThis option will apply the next time you're in combat." } }
+};
+
+CONFIG_DEFINE_LOCALE(Monitor)
+{
+    { ELanguage::English, { "Monitor", "Change which monitor to display the game on." } }
 };
 
 CONFIG_DEFINE_LOCALE(AspectRatio)
@@ -293,7 +256,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EMotionBlur)
     }
 };
 
-CONFIG_DEFINE_LOCALE(XboxColourCorrection)
+CONFIG_DEFINE_LOCALE(XboxColorCorrection)
 {
     { ELanguage::English, { "Xbox Color Correction", "Use the warm tint from the Xbox version of the game." } }
 };

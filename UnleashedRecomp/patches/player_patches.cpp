@@ -9,6 +9,26 @@ uint32_t m_lastCheckpointScore = 0;
 float m_lastDarkGaiaEnergy = 0.0f;
 bool m_isUnleashCancelled = false;
 
+void PostureDPadSupportMidAsmHook(PPCRegister& r3)
+{
+    if (!Config::AllowDPadMovement)
+        return;
+
+    auto pPadState = (SWA::SPadState*)g_memory.Translate(r3.u32);
+    
+    if (pPadState->IsDown(SWA::eKeyState_DpadUp))
+        pPadState->LeftStickVertical = 1.0f;
+    
+    if (pPadState->IsDown(SWA::eKeyState_DpadDown))
+        pPadState->LeftStickVertical = -1.0f;
+    
+    if (pPadState->IsDown(SWA::eKeyState_DpadLeft))
+        pPadState->LeftStickHorizontal = -1.0f;
+    
+    if (pPadState->IsDown(SWA::eKeyState_DpadRight))
+        pPadState->LeftStickHorizontal = 1.0f;
+}
+
 /* Hook function for when checkpoints are activated
    to preserve the current checkpoint score. */
 PPC_FUNC_IMPL(__imp__sub_82624308);
