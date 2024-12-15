@@ -9,6 +9,7 @@
 #include <CommCtrl.h>
 #include "xxHashMap.h"
 #include <user/paths.h>
+#include <SDL.h>
 
 // Needed for commctrl
 #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -396,73 +397,63 @@ SWA_API uint32_t XamInputGetCapabilities(uint32_t unk, uint32_t userIndex, uint3
 
 SWA_API uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_STATE* state)
 {
+    memset(state, 0, sizeof(*state));
+
     uint32_t result = hid::GetState(userIndex, state);
 
-    if (result == ERROR_SUCCESS)
+    if (Window::s_isFocused)
     {
-        ByteSwapInplace(state->dwPacketNumber);
-        ByteSwapInplace(state->Gamepad.wButtons);
-        ByteSwapInplace(state->Gamepad.sThumbLX);
-        ByteSwapInplace(state->Gamepad.sThumbLY);
-        ByteSwapInplace(state->Gamepad.sThumbRX);
-        ByteSwapInplace(state->Gamepad.sThumbRY);
-    }
-    else if (userIndex == 0)
-    {
-        if (!Window::s_isFocused)
-            return ERROR_SUCCESS;
+        auto keyboardState = SDL_GetKeyboardState(NULL);
 
-        memset(state, 0, sizeof(*state));
-        if (GetAsyncKeyState('W') & 0x8000)
+        if (keyboardState[SDL_SCANCODE_W])
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_Y;
-        if (GetAsyncKeyState('A') & 0x8000)
+        if (keyboardState[SDL_SCANCODE_A])
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_X;
-        if (GetAsyncKeyState('S') & 0x8000)
+        if (keyboardState[SDL_SCANCODE_S])
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_A;
-        if (GetAsyncKeyState('D') & 0x8000)
+        if (keyboardState[SDL_SCANCODE_D])
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_B;
-        if (GetAsyncKeyState('Q') & 0x8000)
+
+        if (keyboardState[SDL_SCANCODE_Q])
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_LEFT_SHOULDER;
-        if (GetAsyncKeyState('E') & 0x8000)
+        if (keyboardState[SDL_SCANCODE_E])
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_RIGHT_SHOULDER;
-        if (GetAsyncKeyState('1') & 0x8000)
+        if (keyboardState[SDL_SCANCODE_1])
             state->Gamepad.bLeftTrigger = 0xFF;
-        if (GetAsyncKeyState('3') & 0x8000)
+        if (keyboardState[SDL_SCANCODE_3])
             state->Gamepad.bRightTrigger = 0xFF;
 
-        if (GetAsyncKeyState('I') & 0x8000)
+        if (keyboardState[SDL_SCANCODE_I])
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_DPAD_UP;
-        if (GetAsyncKeyState('J') & 0x8000)
+        if (keyboardState[SDL_SCANCODE_J])
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_DPAD_LEFT;
-        if (GetAsyncKeyState('K') & 0x8000)
+        if (keyboardState[SDL_SCANCODE_K])
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_DPAD_DOWN;
-        if (GetAsyncKeyState('L') & 0x8000)
+        if (keyboardState[SDL_SCANCODE_L])
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_DPAD_RIGHT;
 
-        if (GetAsyncKeyState(VK_UP) & 0x8000)
+        if (keyboardState[SDL_SCANCODE_UP])
             state->Gamepad.sThumbLY = 32767;
-        if (GetAsyncKeyState(VK_LEFT) & 0x8000)
+        if (keyboardState[SDL_SCANCODE_LEFT])
             state->Gamepad.sThumbLX = -32768;
-        if (GetAsyncKeyState(VK_DOWN) & 0x8000)
+        if (keyboardState[SDL_SCANCODE_DOWN])
             state->Gamepad.sThumbLY = -32768;
-        if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
+        if (keyboardState[SDL_SCANCODE_RIGHT])
             state->Gamepad.sThumbLX = 32767;
 
-        if (GetAsyncKeyState(VK_RETURN) & 0x8000)
-            state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_START;    
-        if (GetAsyncKeyState(VK_BACK) & 0x8000)
+        if (keyboardState[SDL_SCANCODE_RETURN])
+            state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_START;
+        if (keyboardState[SDL_SCANCODE_BACKSPACE])
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_BACK;
-
-        ByteSwapInplace(state->Gamepad.wButtons);
-        ByteSwapInplace(state->Gamepad.sThumbLX);
-        ByteSwapInplace(state->Gamepad.sThumbLY);
-        ByteSwapInplace(state->Gamepad.sThumbRX);
-        ByteSwapInplace(state->Gamepad.sThumbRY);
-
-        result = ERROR_SUCCESS;
     }
 
-    return result;
+    ByteSwapInplace(state->Gamepad.wButtons);
+    ByteSwapInplace(state->Gamepad.sThumbLX);
+    ByteSwapInplace(state->Gamepad.sThumbLY);
+    ByteSwapInplace(state->Gamepad.sThumbRX);
+    ByteSwapInplace(state->Gamepad.sThumbRY);
+
+    return ERROR_SUCCESS;
 }
 
 SWA_API uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION* vibration)
