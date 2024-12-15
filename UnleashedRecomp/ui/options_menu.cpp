@@ -833,7 +833,7 @@ static void DrawConfigOptions()
         DrawConfigOption(rowCount++, yOffset, &Config::ShadowResolution, true);
         DrawConfigOption(rowCount++, yOffset, &Config::GITextureFiltering, true);
         DrawConfigOption(rowCount++, yOffset, &Config::MotionBlur, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::XboxColourCorrection, true);
+        DrawConfigOption(rowCount++, yOffset, &Config::XboxColorCorrection, true);
         DrawConfigOption(rowCount++, yOffset, &Config::MovieScaleMode, true);
         DrawConfigOption(rowCount++, yOffset, &Config::UIScaleMode, true);
         break;
@@ -953,8 +953,10 @@ static void DrawInfoPanel()
     if (g_selectedItem)
     {
         auto desc = g_selectedItem->GetDescription();
+        auto thumbnail = GetThumbnail(g_selectedItem);
 
-        drawList->AddImage(GetThumbnail(g_selectedItem->GetName()), clipRectMin, thumbnailMax);
+        if (thumbnail)
+            drawList->AddImage(thumbnail, clipRectMin, thumbnailMax);
 
         if (g_inaccessibleReason)
         {

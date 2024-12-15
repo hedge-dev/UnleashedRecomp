@@ -80,8 +80,8 @@ enum class EControllerIcons : uint32_t
 
 CONFIG_DEFINE_ENUM_TEMPLATE(EControllerIcons)
 {
-    { "Auto", EControllerIcons::Auto },
-    { "Xbox", EControllerIcons::Xbox },
+    { "Auto",        EControllerIcons::Auto },
+    { "Xbox",        EControllerIcons::Xbox },
     { "PlayStation", EControllerIcons::PlayStation }
 };
 
@@ -146,8 +146,8 @@ enum class ETripleBuffering : uint32_t
 CONFIG_DEFINE_ENUM_TEMPLATE(ETripleBuffering)
 {
     { "Auto", ETripleBuffering::Auto },
-    { "On",  ETripleBuffering::On },
-    { "Off", ETripleBuffering::Off }
+    { "On",   ETripleBuffering::On },
+    { "Off",  ETripleBuffering::Off }
 };
 
 enum class EAntiAliasing : uint32_t

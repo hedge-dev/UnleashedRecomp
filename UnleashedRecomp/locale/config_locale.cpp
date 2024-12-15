@@ -251,7 +251,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EMotionBlur)
     }
 };
 
-CONFIG_DEFINE_LOCALE(XboxColourCorrection)
+CONFIG_DEFINE_LOCALE(XboxColorCorrection)
 {
     { ELanguage::English, { "Xbox Color Correction", "Use the warm tint from the Xbox version of the game." } }
 };

@@ -1550,7 +1550,7 @@ static void BeginCommandList()
 
     if (g_swapChainValid)
     {
-        bool applyingGammaCorrection = Config::XboxColourCorrection || abs(Config::Brightness - 0.5f) > 0.001f;
+        bool applyingGammaCorrection = Config::XboxColorCorrection || abs(Config::Brightness - 0.5f) > 0.001f;
 
         if (applyingGammaCorrection)
         {
@@ -2068,7 +2068,7 @@ static void ProcPresent(const RenderCommand& cmd)
                 uint32_t textureDescriptorIndex;
             } constants;
 
-            if (Config::XboxColourCorrection)
+            if (Config::XboxColorCorrection)
             {
                 constants.gammaR = 1.2f;
                 constants.gammaG = 1.17f;
