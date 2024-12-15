@@ -59,12 +59,14 @@ GuestThreadHandle::~GuestThreadHandle()
         thread.join();
 }
 
-void GuestThreadHandle::Wait(uint32_t timeout)
+uint32_t GuestThreadHandle::Wait(uint32_t timeout)
 {
     assert(timeout == INFINITE);
 
     if (thread.joinable())
         thread.join();
+
+    return STATUS_WAIT_0;
 }
 
 uint32_t GuestThread::Start(const GuestThreadParams& params)
