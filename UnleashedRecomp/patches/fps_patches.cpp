@@ -1,6 +1,6 @@
 #include <cpu/guest_code.h>
 #include <api/SWA.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 #include <user/config.h>
 #include <app.h>
 

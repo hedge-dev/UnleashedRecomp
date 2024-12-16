@@ -2,7 +2,7 @@
 #include "xam.h"
 #include "xdm.h"
 #include <hid/hid.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 #include <cpu/guest_thread.h>
 #include <ranges>
 #include <unordered_set>
@@ -232,7 +232,6 @@ SWA_API uint32_t XamShowMessageBoxUI(uint32_t dwUserIndex, be<uint16_t>* wszTitl
 
     TASKDIALOGCONFIG config{};
     config.cbSize = sizeof(config);
-    // config.hwndParent = Window::s_hWnd;
     config.pszWindowTitle = texts[0].c_str();
     config.pszContent = texts[1].c_str();
     config.cButtons = cButtons;
@@ -406,7 +405,7 @@ SWA_API uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_S
 
     uint32_t result = hid::GetState(userIndex, state);
 
-    if (Window::s_isFocused)
+    if (GameWindow::s_isFocused)
     {
         auto keyboardState = SDL_GetKeyboardState(NULL);
 

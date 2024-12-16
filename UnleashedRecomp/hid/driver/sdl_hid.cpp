@@ -2,7 +2,7 @@
 #include <SDL.h>
 #include <user/config.h>
 #include <hid/hid_detail.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 #include <kernel/xdm.h>
 
 #define TRANSLATE_INPUT(S, X) SDL_GameControllerGetButton(controller, S) << FirstBitLow(X)
@@ -66,7 +66,7 @@ public:
 
     bool CanPoll()
     {
-        return controller && (Window::s_isFocused || Config::AllowBackgroundInput);
+        return controller && (GameWindow::s_isFocused || Config::AllowBackgroundInput);
     }
 
     void PollAxis()

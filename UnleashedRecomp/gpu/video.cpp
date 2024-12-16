@@ -26,7 +26,7 @@
 #include <ui/message_window.h>
 #include <ui/options_menu.h>
 #include <ui/sdl_listener.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 #include <user/config.h>
 #include <xxHashMap.h>
 
@@ -1041,7 +1041,7 @@ static void ProcSetRenderState(const RenderCommand& cmd)
     }
 }
 
-static const std::pair<GuestRenderState, void*> g_setRenderStateFunctions[] =
+static const std::pair<GuestRenderState, PPCFunc*> g_setRenderStateFunctions[] =
 {
     { D3DRS_ZENABLE, HostToGuestFunction<SetRenderState<D3DRS_ZENABLE>> },
     { D3DRS_ZWRITEENABLE, HostToGuestFunction<SetRenderState<D3DRS_ZWRITEENABLE>> },
@@ -1096,11 +1096,13 @@ static std::unique_ptr<GuestShader> g_enhancedMotionBlurShader;
 
 #endif
 
+#ifdef _WIN32
 static bool DetectWine()
 {
     HMODULE dllHandle = GetModuleHandle("ntdll.dll");
     return dllHandle != nullptr && GetProcAddress(dllHandle, "wine_get_version") != nullptr;
 }
+#endif
 
 static constexpr size_t TEXTURE_DESCRIPTOR_SIZE = 65536;
 static constexpr size_t SAMPLER_DESCRIPTOR_SIZE = 1024;
@@ -1163,7 +1165,7 @@ static void CreateImGuiBackend()
     OptionsMenu::Init();
     InstallerWizard::Init();
 
-    ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
+    ImGui_ImplSDL2_InitForOther(GameWindow::s_pWindow);
 
 #ifdef ENABLE_IM_FONT_ATLAS_SNAPSHOT
     g_imFontTexture = LoadTexture(
@@ -1313,7 +1315,7 @@ void Video::CreateHostDevice()
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-    Window::Init();
+    GameWindow::Init();
 
 #ifdef SWA_D3D12
     g_vulkan = DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan;
@@ -1358,7 +1360,7 @@ void Video::CreateHostDevice()
         break;
     }
 
-    g_swapChain = g_queue->createSwapChain(Window::s_handle, bufferCount, BACKBUFFER_FORMAT);
+    g_swapChain = g_queue->createSwapChain(GameWindow::s_handle, bufferCount, BACKBUFFER_FORMAT);
     g_swapChain->setVsyncEnabled(Config::VSync);
     g_swapChainValid = !g_swapChain->needsResize();
 

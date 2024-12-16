@@ -1,7 +1,7 @@
 #include "options_menu.h"
 #include "options_menu_thumbnails.h"
 #include "imgui_utils.h"
-#include "window.h"
+#include "game_window.h"
 #include "exports.h"
 
 #include <api/SWA/System/InputState.h>
@@ -971,8 +971,8 @@ static void DrawInfoPanel()
                 auto resScale = round(*(float*)g_selectedItem->GetValue() * 1000) / 1000;
 
                 std::snprintf(buf, sizeof(buf), desc.c_str(),
-                    (int)((float)Window::s_width * resScale),
-                    (int)((float)Window::s_height * resScale));
+                    (int)((float)GameWindow::s_width * resScale),
+                    (int)((float)GameWindow::s_height * resScale));
 
                 desc = buf;
             }

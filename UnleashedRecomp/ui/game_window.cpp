@@ -1,4 +1,4 @@
-#include "window.h"
+#include "game_window.h"
 #include "sdl_listener.h"
 #include <user/config.h>
 #include <SDL_syswm.h>
@@ -31,10 +31,10 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
                     if (!(event->key.keysym.mod & KMOD_ALT) || !m_isFullscreenKeyReleased)
                         break;
 
-                    Config::Fullscreen = Window::SetFullscreen(!Window::IsFullscreen());
+                    Config::Fullscreen = GameWindow::SetFullscreen(!GameWindow::IsFullscreen());
 
                     if (!Config::Fullscreen)
-                        Config::WindowState = Window::SetMaximised(Config::WindowState == EWindowState::Maximised);
+                        Config::WindowState = GameWindow::SetMaximised(Config::WindowState == EWindowState::Maximised);
 
                     // Block holding ALT+ENTER spamming window changes.
                     m_isFullscreenKeyReleased = false;
@@ -44,17 +44,17 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
 
                 // Restore original window dimensions on F2.
                 case SDLK_F2:
-                    Config::Fullscreen = Window::SetFullscreen(false);
-                    Window::SetDimensions(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+                    Config::Fullscreen = GameWindow::SetFullscreen(false);
+                    GameWindow::SetDimensions(DEFAULT_WIDTH, DEFAULT_HEIGHT);
                     break;
 
                 // Recentre window on F3.
                 case SDLK_F3:
                 {
-                    if (Window::IsFullscreen())
+                    if (GameWindow::IsFullscreen())
                         break;
 
-                    Window::SetDimensions(Window::s_width, Window::s_height);
+                    GameWindow::SetDimensions(GameWindow::s_width, GameWindow::s_height);
 
                     break;
                 }
@@ -79,16 +79,16 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
             switch (event->window.event)
             {
                 case SDL_WINDOWEVENT_FOCUS_LOST:
-                    Window::s_isFocused = false;
+                    GameWindow::s_isFocused = false;
                     SDL_ShowCursor(SDL_ENABLE);
                     break;
 
                 case SDL_WINDOWEVENT_FOCUS_GAINED:
                 {
-                    Window::s_isFocused = true;
+                    GameWindow::s_isFocused = true;
 
-                    if (Window::IsFullscreen())
-                        SDL_ShowCursor(Window::s_isFullscreenCursorVisible ? SDL_ENABLE : SDL_DISABLE);
+                    if (GameWindow::IsFullscreen())
+                        SDL_ShowCursor(GameWindow::s_isFullscreenCursorVisible ? SDL_ENABLE : SDL_DISABLE);
 
                     break;
                 }
@@ -103,14 +103,14 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
 
                 case SDL_WINDOWEVENT_RESIZED:
                     m_isResizing = true;
-                    Window::s_width = event->window.data1;
-                    Window::s_height = event->window.data2;
-                    Window::SetTitle(fmt::format("{} - [{}x{}]", Window::GetTitle(), Window::s_width, Window::s_height).c_str());
+                    GameWindow::s_width = event->window.data1;
+                    GameWindow::s_height = event->window.data2;
+                    GameWindow::SetTitle(fmt::format("{} - [{}x{}]", GameWindow::GetTitle(), GameWindow::s_width, GameWindow::s_height).c_str());
                     break;
 
                 case SDL_WINDOWEVENT_MOVED:
-                    Window::s_x = event->window.data1;
-                    Window::s_y = event->window.data2;
+                    GameWindow::s_x = event->window.data1;
+                    GameWindow::s_y = event->window.data2;
                     break;
             }
 
@@ -119,13 +119,13 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
 
         case SDL_USER_EVILSONIC:
         {
-            Window::s_isIconNight = event->user.code;
-            Window::SetIcon(Window::s_isIconNight);
+            GameWindow::s_isIconNight = event->user.code;
+            GameWindow::SetIcon(GameWindow::s_isIconNight);
             break;
         }
     }
 
-    if (!Window::IsFullscreen())
+    if (!GameWindow::IsFullscreen())
     {
         if (event->type == SDL_CONTROLLERBUTTONDOWN || event->type == SDL_CONTROLLERBUTTONUP || event->type == SDL_CONTROLLERAXISMOTION)
         {
@@ -142,7 +142,7 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
     return 0;
 }
 
-void Window::Init()
+void GameWindow::Init()
 {
     SDL_InitSubSystem(SDL_INIT_VIDEO);
     SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
@@ -194,14 +194,14 @@ void Window::Init()
     SDL_ShowWindow(s_pWindow);
 }
 
-void Window::Update()
+void GameWindow::Update()
 {
-    if (!Window::IsFullscreen() && !Window::IsMaximised())
+    if (!GameWindow::IsFullscreen() && !GameWindow::IsMaximised())
     {
-        Config::WindowX = Window::s_x;
-        Config::WindowY = Window::s_y;
-        Config::WindowWidth = Window::s_width;
-        Config::WindowHeight = Window::s_height;
+        Config::WindowX = GameWindow::s_x;
+        Config::WindowY = GameWindow::s_y;
+        Config::WindowWidth = GameWindow::s_width;
+        Config::WindowHeight = GameWindow::s_height;
     }
 
     if (m_isResizing)

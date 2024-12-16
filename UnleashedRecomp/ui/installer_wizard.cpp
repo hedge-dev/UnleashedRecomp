@@ -13,7 +13,7 @@
 #include <ui/button_guide.h>
 #include <ui/message_window.h>
 #include <ui/sdl_listener.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 #include <decompressor.h>
 
 #include <res/images/installer/install_001.dds.h>
@@ -1439,18 +1439,18 @@ bool InstallerWizard::Run(bool skipGame)
         g_currentPage = g_firstPage;
     }
 
-    Window::SetFullscreenCursorVisibility(true);
+    GameWindow::SetFullscreenCursorVisibility(true);
     s_isVisible = true;
 
     while (s_isVisible)
     {
         SDL_PumpEvents();
         SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-        Window::Update();
+        GameWindow::Update();
         Video::HostPresent();
     }
 
-    Window::SetFullscreenCursorVisibility(false);
+    GameWindow::SetFullscreenCursorVisibility(false);
     NFD_Quit();
 
     InstallerWizard::Shutdown();

@@ -1,7 +1,7 @@
 #include <app.h>
 #include <install/installer.h>
 #include <kernel/function.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 #include <patches/audio_patches.h>
 #include <user/config.h>
 #include <os/process.h>
@@ -41,7 +41,7 @@ PPC_FUNC(sub_822C1130)
     SDL_PumpEvents();
     SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 
-    Window::Update();
+    GameWindow::Update();
     AudioPatches::Update(App::s_deltaTime);
 
     __imp__sub_822C1130(ctx, base);

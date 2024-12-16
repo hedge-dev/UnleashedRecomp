@@ -1,6 +1,6 @@
 #include <cpu/guest_code.h>
 #include <api/SWA.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 #include <user/config.h>
 
 constexpr float m_baseAspectRatio = 16.0f / 9.0f;
@@ -8,7 +8,7 @@ constexpr float m_baseAspectRatio = 16.0f / 9.0f;
 bool CameraAspectRatioMidAsmHook(PPCRegister& r31)
 {
     auto pCamera = (SWA::CCamera*)g_memory.Translate(r31.u32);
-    auto newAspectRatio = (float)Window::s_width / (float)Window::s_height;
+    auto newAspectRatio = (float)GameWindow::s_width / (float)GameWindow::s_height;
 
     // Dynamically adjust horizontal aspect ratio to window dimensions.
     pCamera->m_HorzAspectRatio = newAspectRatio;
@@ -27,7 +27,7 @@ bool CameraBoostAspectRatioMidAsmHook(PPCRegister& r31, PPCRegister& f0, PPCRegi
 {
     auto pCamera = (SWA::CCamera*)g_memory.Translate(r31.u32);
 
-    if (Window::s_width < Window::s_height)
+    if (GameWindow::s_width < GameWindow::s_height)
     {
         pCamera->m_VertFieldOfView = pCamera->m_HorzFieldOfView + f10.f64;
     }

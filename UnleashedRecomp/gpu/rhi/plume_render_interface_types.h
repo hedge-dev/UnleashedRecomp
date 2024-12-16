@@ -19,9 +19,7 @@
 #elif defined(__ANDROID__)
 #include "android/native_window.h"
 #elif defined(__linux__)
-#define Window X11Window
 #include "X11/Xlib.h"
-#undef Window
 #undef None
 #undef Status
 #undef LockMask
@@ -40,7 +38,7 @@ namespace plume {
 #elif defined(__linux__)
     struct RenderWindow {
         Display* display;
-        X11Window* window;
+        Window* window;
         bool operator==(const struct RenderWindow& rhs) const {
             return display == rhs.display && window == rhs.window;
         }

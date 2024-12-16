@@ -153,7 +153,7 @@ set(SWA_UI_CXX_SOURCES
     "ui/options_menu_thumbnails.cpp"
     "ui/options_menu.cpp"
     "ui/sdl_listener.cpp"
-    "ui/window.cpp"
+    "ui/game_window.cpp"
 )
 
 set(SWA_INSTALL_CXX_SOURCES

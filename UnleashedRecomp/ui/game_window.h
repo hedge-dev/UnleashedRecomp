@@ -15,7 +15,7 @@
 #define DEFAULT_WIDTH 1280
 #define DEFAULT_HEIGHT 720
 
-class Window
+class GameWindow
 {
 public:
     static inline SDL_Window* s_pWindow;
@@ -109,7 +109,7 @@ public:
         {
             SDL_SetWindowFullscreen(s_pWindow, 0);
             SDL_ShowCursor(SDL_ENABLE);
-            SetIcon(Window::s_isIconNight);
+            SetIcon(GameWindow::s_isIconNight);
         }
 
         return isEnabled;

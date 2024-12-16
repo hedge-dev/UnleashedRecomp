@@ -1,7 +1,7 @@
 #include <cpu/guest_code.h>
 #include <user/config.h>
 #include <api/SWA.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 
 // TODO: to be removed.
 constexpr float m_baseAspectRatio = 16.0f / 9.0f;
@@ -12,7 +12,7 @@ void CSDAspectRatioMidAsmHook(PPCRegister& f1, PPCRegister& f2)
     if (Config::UIScaleMode == EUIScaleMode::Stretch)
         return;
 
-    auto newAspectRatio = (float)Window::s_width / (float)Window::s_height;
+    auto newAspectRatio = (float)GameWindow::s_width / (float)GameWindow::s_height;
 
     if (newAspectRatio > m_baseAspectRatio)
     {
