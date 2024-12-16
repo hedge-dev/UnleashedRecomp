@@ -28,22 +28,26 @@ namespace boost
 
             void add_ref()
             {
+                std::atomic_ref useCount(use_count_.value);
+
                 be<uint32_t> original, incremented;
                 do
                 {
                     original = use_count_;
                     incremented = original + 1;
-                } while (InterlockedCompareExchange((unsigned long*)&use_count_, incremented.value, original.value) != original.value);
+                } while (!useCount.compare_exchange_weak(original.value, incremented.value));
             }
 
             void release()
             {
+                std::atomic_ref useCount(use_count_.value);
+
                 be<uint32_t> original, decremented;
                 do
                 {
                     original = use_count_;
                     decremented = original - 1;
-                } while (InterlockedCompareExchange((unsigned long*)&use_count_, decremented.value, original.value) != original.value);
+                } while (!useCount.compare_exchange_weak(original.value, decremented.value));
 
                 if (decremented == 0)
                 {
@@ -54,12 +58,14 @@ namespace boost
 
             void weak_release()
             {
+                std::atomic_ref weakCount(weak_count_.value);
+
                 be<uint32_t> original, decremented;
                 do
                 {
                     original = weak_count_;
                     decremented = original - 1;
-                } while (InterlockedCompareExchange((unsigned long*)&weak_count_, decremented.value, original.value) != original.value);
+                } while (!weakCount.compare_exchange_weak(original.value, decremented.value));
 
                 if (decremented == 0)
                 {
