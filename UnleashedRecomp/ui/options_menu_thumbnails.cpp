@@ -24,7 +24,9 @@
 #include <res/images/options_menu/thumbnails/motion_blur_off.dds.h>
 #include <res/images/options_menu/thumbnails/motion_blur_original.dds.h>
 #include <res/images/options_menu/thumbnails/motion_blur_enhanced.dds.h>
-#include <res/images/options_menu/thumbnails/movie_scale_mode.dds.h>
+#include <res/images/options_menu/thumbnails/movie_scale_fit.dds.h>
+#include <res/images/options_menu/thumbnails/movie_scale_fill.dds.h>
+#include <res/images/options_menu/thumbnails/movie_scale_stretch.dds.h>
 #include <res/images/options_menu/thumbnails/music_attenuation.dds.h>
 #include <res/images/options_menu/thumbnails/music_volume.dds.h>
 #include <res/images/options_menu/thumbnails/resolution_scale.dds.h>
@@ -58,6 +60,7 @@ static VALUE_THUMBNAIL_MAP(EShadowResolution) g_shadowResolutionThumbnails;
 static VALUE_THUMBNAIL_MAP(EGITextureFiltering) g_giTextureFilteringThumbnails;
 static VALUE_THUMBNAIL_MAP(EMotionBlur) g_motionBlurThumbnails;
 static VALUE_THUMBNAIL_MAP(bool) g_xboxColorCorrectionThumbnails;
+static VALUE_THUMBNAIL_MAP(EMovieScaleMode) g_movieScaleModeThumbnails;
 
 void LoadThumbnails()
 {
@@ -111,8 +114,14 @@ void LoadThumbnails()
     g_motionBlurThumbnails[EMotionBlur::Original] = LOAD_ZSTD_TEXTURE(g_motion_blur_original);
     g_motionBlurThumbnails[EMotionBlur::Enhanced] = LOAD_ZSTD_TEXTURE(g_motion_blur_enhanced);
 
-    g_configThumbnails[&Config::XboxColorCorrection] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction);
     g_configThumbnails[&Config::UIAlignmentMode] = LOAD_ZSTD_TEXTURE(g_ui_alignment_mode);
+
+    g_movieScaleModeThumbnails[EMovieScaleMode::Fit] = LOAD_ZSTD_TEXTURE(g_movie_scale_fit);
+    g_movieScaleModeThumbnails[EMovieScaleMode::Fill] = LOAD_ZSTD_TEXTURE(g_movie_scale_fill);
+    g_movieScaleModeThumbnails[EMovieScaleMode::Stretch] = LOAD_ZSTD_TEXTURE(g_movie_scale_stretch); // To be removed
+
+    g_xboxColorCorrectionThumbnails[false] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_false);
+    g_xboxColorCorrectionThumbnails[true] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_true);
 }
 
 template<typename T>
@@ -167,6 +176,14 @@ GuestTexture* GetThumbnail(const IConfigDef* cfg)
         else if (cfg == &Config::MotionBlur)
         {
             TryGetValueThumbnail<EMotionBlur>(cfg, &g_motionBlurThumbnails, &texture);
+        }
+        else if (cfg == &Config::XboxColorCorrection)
+        {
+            TryGetValueThumbnail<bool>(cfg, &g_xboxColorCorrectionThumbnails, &texture);
+        }
+        else if (cfg == &Config::MovieScaleMode)
+        {
+            TryGetValueThumbnail<EMovieScaleMode>(cfg, &g_movieScaleModeThumbnails, &texture);
         }
 
         return texture;
