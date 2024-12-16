@@ -1,7 +1,16 @@
+add_subdirectory("${SWA_THIRDPARTY_ROOT}/magic_enum")
+
 set(MSDF_ATLAS_BUILD_STANDALONE OFF)
 set(MSDF_ATLAS_USE_SKIA OFF)
 set(MSDF_ATLAS_NO_ARTERY_FONT ON)
 set(MSDFGEN_DISABLE_PNG ON)
+add_subdirectory("${SWA_THIRDPARTY_ROOT}/msdf-atlas-gen")
 
-add_subdirectory(${SWA_THIRDPARTY_ROOT}/o1heap)
-add_subdirectory(${SWA_THIRDPARTY_ROOT}/msdf-atlas-gen)
+add_subdirectory("${SWA_THIRDPARTY_ROOT}/nativefiledialog-extended")
+add_subdirectory("${SWA_THIRDPARTY_ROOT}/ogg")
+add_subdirectory("${SWA_THIRDPARTY_ROOT}/o1heap")
+add_subdirectory("${SWA_THIRDPARTY_ROOT}/SDL")
+add_subdirectory("${SWA_THIRDPARTY_ROOT}/unordered_dense")
+add_subdirectory("${SWA_THIRDPARTY_ROOT}/volk")
+add_subdirectory("${SWA_THIRDPARTY_ROOT}/vorbis")
+add_subdirectory("${SWA_THIRDPARTY_ROOT}/Vulkan-Headers")

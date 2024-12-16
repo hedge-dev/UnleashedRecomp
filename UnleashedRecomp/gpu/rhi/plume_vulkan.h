@@ -22,9 +22,18 @@
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
 
-#include "volk.h"
+#include <volk.h>
 
-#include "vk_mem_alloc.h"
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnullability-completeness"
+#endif
+
+#include <vk_mem_alloc.h>
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 namespace plume {
     struct VulkanCommandQueue;
