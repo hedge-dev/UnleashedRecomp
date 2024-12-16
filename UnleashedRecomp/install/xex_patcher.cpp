@@ -308,14 +308,14 @@ inline bool bitScanForward(uint64_t v, uint32_t *outFirstSetIndex)
 inline bool bitScanForward(uint32_t v, uint32_t *outFirstSetIndex)
 {
     int i = ffs(v);
-    *out_first_set_index = i - 1;
+    *outFirstSetIndex = i - 1;
     return i != 0;
 }
 
 inline bool bitScanForward(uint64_t v, uint32_t *outFirstSetIndex)
 {
     int i = __builtin_ffsll(v);
-    *out_first_set_index = i - 1;
+    *outFirstSetIndex = i - 1;
     return i != 0;
 }
 #endif
