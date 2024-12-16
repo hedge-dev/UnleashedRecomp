@@ -558,7 +558,7 @@ static void DestructTempResources()
     g_tempBuffers[g_frame].clear();
 }
 
-static uint32_t g_mainThreadId;
+static std::thread::id g_mainThreadId;
 
 static ankerl::unordered_dense::map<RenderTexture*, RenderTextureLayout> g_barrierMap;
 
@@ -1370,7 +1370,7 @@ void Video::CreateHostDevice()
     for (auto& renderSemaphore : g_renderSemaphores)
         renderSemaphore = g_device->createCommandSemaphore();
 
-    g_mainThreadId = GetCurrentThreadId();
+    g_mainThreadId = std::this_thread::get_id();
 
     RenderPipelineLayoutBuilder pipelineLayoutBuilder;
     pipelineLayoutBuilder.begin(false, true);
@@ -1799,7 +1799,7 @@ static void UnlockBuffer(GuestBuffer* buffer)
 {
     if (!buffer->lockedReadOnly)
     {
-        if (GetCurrentThreadId() == g_mainThreadId)
+        if (std::this_thread::get_id() == g_mainThreadId)
         {
             RenderCommand cmd;
             cmd.type = (sizeof(T) == 2) ? RenderCommandType::UnlockBuffer16 : RenderCommandType::UnlockBuffer32;
