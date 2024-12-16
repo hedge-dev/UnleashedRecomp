@@ -88,7 +88,7 @@ public:
             : 19; // DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1
 
         const DWORD useImmersiveDarkMode = isEnabled;
-        DwmSetWindowAttribute(s_handle, flag, &useImmersiveDarkMode, sizeof(useImmersiveDarkMode));
+        DwmSetWindowAttribute(s_renderWindow, flag, &useImmersiveDarkMode, sizeof(useImmersiveDarkMode));
 #endif
     }
 

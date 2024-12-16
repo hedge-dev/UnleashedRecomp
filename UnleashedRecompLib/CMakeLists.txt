@@ -1,11 +1,16 @@
 project("UnleashedRecompLib")
 
 add_compile_options(
-    -ffp-model=strict
     -march=sandybridge
     -mlzcnt
     -fno-strict-aliasing
 )
+
+if (WIN32)
+    add_compile_options(/fp:strict)
+else()
+    add_compile_options(-ffp-model=strict)
+endif()
 
 target_compile_definitions(PowerRecomp PRIVATE CONFIG_FILE_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/config/SWA.toml\")
 

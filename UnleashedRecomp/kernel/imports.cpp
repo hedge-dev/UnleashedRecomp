@@ -13,6 +13,10 @@
 #include <user/config.h>
 #include <os/logger.h>
 
+#ifdef _WIN32
+#include <ntstatus.h>
+#endif
+
 struct Event final : KernelObject, HostObject<XKEVENT>
 {
     bool manualReset;
@@ -1259,17 +1263,18 @@ uint32_t RtlMultiByteToUnicodeN(wchar_t* UnicodeString, uint32_t MaxBytesInUnico
         MultiByteString, MultiByteString + BytesInMultiByteString
     );
 
-    uint32_t bytesRequired = static_cast<uint32_t>(wideString.size() * sizeof(wchar_t));
+    uint32_t bytesRequired = static_cast<uint32_t>((wideString.size() + 1) * sizeof(wchar_t));
 
     uint32_t bytesToCopy = (bytesRequired > MaxBytesInUnicodeString)
         ? MaxBytesInUnicodeString
         : bytesRequired;
 
     memcpy(UnicodeString, wideString.data(), bytesToCopy);
-    for (size_t i = 0; i < bytesToCopy; i += sizeof(uint16_t))
+    for (size_t i = 0; i < bytesToCopy / 2; i++)
         UnicodeString[i] = ByteSwap(UnicodeString[i]);
 
-    *BytesInUnicodeString = bytesToCopy;
+    if (BytesInUnicodeString != nullptr)
+        *BytesInUnicodeString = bytesToCopy;
 
     return STATUS_SUCCESS;
 }

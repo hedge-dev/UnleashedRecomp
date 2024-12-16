@@ -38,7 +38,6 @@ function(BIN2C)
 endfunction()
 
 add_compile_options(
-    -ffp-model=strict
     -march=sandybridge
     -fno-strict-aliasing
 
@@ -52,6 +51,12 @@ add_compile_options(
     -Wno-null-arithmetic
     -Wno-null-conversion
 )
+
+if (WIN32)
+    add_compile_options(/fp:strict)
+else()
+    add_compile_options(-ffp-model=strict)
+endif()
 
 add_compile_definitions(
     SWA_IMPL
