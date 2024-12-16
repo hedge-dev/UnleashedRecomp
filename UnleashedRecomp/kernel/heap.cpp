@@ -103,7 +103,7 @@ uint32_t RtlSizeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer
     return 0;
 }
 
-SWA_API uint32_t XAlloc(uint32_t size, uint32_t flags)
+SWA_API uint32_t XAllocMem(uint32_t size, uint32_t flags)
 {
     void* ptr = (flags & 0x80000000) != 0 ?
         g_userHeap.AllocPhysical(size, (1ull << ((flags >> 24) & 0xF))) :
@@ -116,7 +116,7 @@ SWA_API uint32_t XAlloc(uint32_t size, uint32_t flags)
     return g_memory.MapVirtual(ptr);
 }
 
-SWA_API void XFree(uint32_t baseAddress, uint32_t flags)
+SWA_API void XFreeMem(uint32_t baseAddress, uint32_t flags)
 {
     if (baseAddress != NULL)
         g_userHeap.Free(g_memory.Translate(baseAddress));
@@ -130,6 +130,5 @@ GUEST_FUNCTION_HOOK(sub_82BD8600, RtlFreeHeap);
 GUEST_FUNCTION_HOOK(sub_82BD88F0, RtlReAllocateHeap);
 GUEST_FUNCTION_HOOK(sub_82BD6FD0, RtlSizeHeap);
 
-// Seems like these handle allocation of virtual and physical pages
-GUEST_FUNCTION_HOOK(sub_831CC9C8, XAlloc);
-GUEST_FUNCTION_HOOK(sub_831CCA60, XFree);
+GUEST_FUNCTION_HOOK(sub_831CC9C8, XAllocMem);
+GUEST_FUNCTION_HOOK(sub_831CCA60, XFreeMem);
