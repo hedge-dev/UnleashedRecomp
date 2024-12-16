@@ -1360,7 +1360,7 @@ void Video::CreateHostDevice()
         break;
     }
 
-    g_swapChain = g_queue->createSwapChain(GameWindow::s_handle, bufferCount, BACKBUFFER_FORMAT);
+    g_swapChain = g_queue->createSwapChain(GameWindow::s_renderWindow, bufferCount, BACKBUFFER_FORMAT);
     g_swapChain->setVsyncEnabled(Config::VSync);
     g_swapChainValid = !g_swapChain->needsResize();
 
@@ -1662,9 +1662,9 @@ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
     memset(device, 0, sizeof(*device));
 
     uint32_t functionOffset = 0x443344; // D3D
-    g_codeCache.Insert(functionOffset, reinterpret_cast<void*>(HostToGuestFunction<SetRenderStateUnimplemented>));
+    g_codeCache.Insert(functionOffset, HostToGuestFunction<SetRenderStateUnimplemented>);
 
-    for (size_t i = 0; i < _countof(device->setRenderStateFunctions); i++)
+    for (size_t i = 0; i < std::size(device->setRenderStateFunctions); i++)
         device->setRenderStateFunctions[i] = functionOffset;
 
     for (auto& [state, function] : g_setRenderStateFunctions)
@@ -1674,7 +1674,7 @@ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
         device->setRenderStateFunctions[state / 4] = functionOffset;
     }
 
-    for (size_t i = 0; i < _countof(device->setSamplerStateFunctions); i++)
+    for (size_t i = 0; i < std::size(device->setSamplerStateFunctions); i++)
         device->setSamplerStateFunctions[i] = *reinterpret_cast<uint32_t*>(g_memory.Translate(0x8330F3DC + i * 0xC));
 
     device->viewport.width = 1280.0f;

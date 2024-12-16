@@ -181,14 +181,17 @@ void GameWindow::Init()
     SetTitle();
     SDL_SetWindowMinimumSize(s_pWindow, 640, 480);
 
-#ifdef _WIN32
     SDL_SysWMinfo info;
     SDL_VERSION(&info.version);
     SDL_GetWindowWMInfo(s_pWindow, &info);
 
-    s_handle = info.info.win.window;
-
+#if defined(_WIN32)
+    s_renderWindow = info.info.win.window;
     SetDarkTitleBar(true);
+#elif defined(__linux__)
+    s_renderWindow = { info.info.x11.display, info.info.x11.window };
+#else
+    static_assert(false, "Unknown platform.");
 #endif
 
     SDL_ShowWindow(s_pWindow);

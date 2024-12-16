@@ -36,12 +36,12 @@ void CodeCache::Init()
     }
 }
 
-void CodeCache::Insert(uint32_t guest, const void* host)
+void CodeCache::Insert(uint32_t guest, PPCFunc* host)
 {
 #ifdef _WIN32
     VirtualAlloc(bucket + static_cast<uint64_t>(guest) * 2, sizeof(void*), MEM_COMMIT, PAGE_READWRITE);
 #endif
-    *reinterpret_cast<const void**>(bucket + static_cast<uint64_t>(guest) * 2) = host;
+    *reinterpret_cast<PPCFunc**>(bucket + static_cast<uint64_t>(guest) * 2) = host;
 }
 
 void* CodeCache::Find(uint32_t guest) const
@@ -56,5 +56,5 @@ SWA_API PPCFunc* KeFindHostFunction(uint32_t guest)
 
 SWA_API void KeInsertHostFunction(uint32_t guest, PPCFunc* function)
 {
-    g_codeCache.Insert(guest, (const void*)function);
+    g_codeCache.Insert(guest, function);
 }

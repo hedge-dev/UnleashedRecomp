@@ -38,7 +38,7 @@ namespace plume {
 #elif defined(__linux__)
     struct RenderWindow {
         Display* display;
-        Window* window;
+        Window window;
         bool operator==(const struct RenderWindow& rhs) const {
             return display == rhs.display && window == rhs.window;
         }

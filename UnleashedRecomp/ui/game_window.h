@@ -6,6 +6,7 @@
 #include <os/version.h>
 #include <ui/window_events.h>
 #include <user/config.h>
+#include <gpu/rhi/plume_render_interface_types.h>
 
 #if _WIN32
 #include <dwmapi.h>
@@ -19,9 +20,7 @@ class GameWindow
 {
 public:
     static inline SDL_Window* s_pWindow;
-#ifdef _WIN32
-    static inline HWND s_handle;
-#endif
+    static inline plume::RenderWindow s_renderWindow;
 
     static inline int s_x;
     static inline int s_y;
