@@ -20,7 +20,7 @@ void Config::Load()
             toml = toml::parse(tomlStream);
         }
 
-        for (auto def : Config::Definitions)
+        for (auto def : g_configDefinitions)
         {
             def->ReadValue(toml);
 #if _DEBUG
@@ -44,7 +44,7 @@ void Config::Save()
     std::string result;
     std::string section;
 
-    for (auto def : Config::Definitions)
+    for (auto def : g_configDefinitions)
     {
         auto isFirstSection = section.empty();
         auto isDefWithSection = section != def->GetSection();

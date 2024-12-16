@@ -195,7 +195,6 @@ set(MINIAUDIO_INCLUDE_DIRS "${SWA_THIRDPARTY_ROOT}/miniaudio")
 set(SWA_USER_CXX_SOURCES
     "user/achievement_data.cpp"
     "user/config.cpp"
-    "user/config_detail.cpp"
 )
 
 set(SWA_CXX_SOURCES

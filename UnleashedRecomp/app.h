@@ -1,6 +1,6 @@
 #pragma once
 
-#include <user/config_detail.h>
+#include <user/config.h>
 
 class App
 {

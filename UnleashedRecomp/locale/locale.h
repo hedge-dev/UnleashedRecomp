@@ -1,6 +1,14 @@
 #pragma once
 
-#include <user/config.h>
+enum class ELanguage : uint32_t
+{
+    English = 1,
+    Japanese,
+    German,
+    French,
+    Spanish,
+    Italian
+};
 
 inline std::string g_localeMissing = "<missing string>";
 
