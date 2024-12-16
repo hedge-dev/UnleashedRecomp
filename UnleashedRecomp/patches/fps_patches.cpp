@@ -5,7 +5,7 @@
 #include <app.h>
 
 float m_lastLoadingFrameDelta = 0.0f;
-std::chrono::steady_clock::time_point m_lastLoadingFrameTime;
+std::chrono::high_resolution_clock::time_point m_lastLoadingFrameTime;
 
 void DownForceDeltaTimeFixMidAsmHook(PPCRegister& f0)
 {
