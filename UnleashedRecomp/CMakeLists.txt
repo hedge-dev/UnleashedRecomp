@@ -91,6 +91,13 @@ if (WIN32)
         "os/win32/process_win32.cpp"
         "os/win32/version_win32.cpp"
     )
+elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    list(APPEND SWA_OS_CXX_SOURCES
+        "os/linux/logger_linux.cpp"
+        "os/linux/media_linux.cpp"
+        "os/linux/process_linux.cpp"
+        "os/linux/version_linux.cpp"
+    )
 endif()
 
 set(SWA_CPU_CXX_SOURCES
