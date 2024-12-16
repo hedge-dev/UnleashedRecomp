@@ -14,6 +14,7 @@ struct FileHandle : KernelObject
 
 struct FindHandle : KernelObject
 {
+    std::error_code ec;
     std::filesystem::path searchPath;
     std::filesystem::directory_iterator iterator;
 
@@ -25,7 +26,7 @@ struct FindHandle : KernelObject
             lpFindFileData->dwFileAttributes = ByteSwap(FILE_ATTRIBUTE_NORMAL);
 
         std::u8string pathU8Str = iterator->path().lexically_relative(searchPath).u8string();
-        uint64_t fileSize = iterator->file_size();
+        uint64_t fileSize = iterator->file_size(ec);
         strncpy(lpFindFileData->cFileName, (const char *)(pathU8Str.c_str()), sizeof(lpFindFileData->cFileName));
         lpFindFileData->nFileSizeLow = ByteSwap(uint32_t(fileSize >> 32U));
         lpFindFileData->nFileSizeHigh = ByteSwap(uint32_t(fileSize));
@@ -233,11 +234,11 @@ FindHandle* XFindFirstFileA(const char* lpFileName, WIN32_FIND_DATAA* lpFindFile
         return (FindHandle*)GUEST_INVALID_HANDLE_VALUE;
 
     std::filesystem::path dirPath;
-    if (strstr(transformedPath, "\\*") == (&transformedPath[transformedPathLength - 2]))
+    if (strstr(transformedPath, "\\*") == (&transformedPath[transformedPathLength - 2]) || strstr(transformedPath, "/*") == (&transformedPath[transformedPathLength - 2]))
     {
         dirPath = std::u8string_view((const char8_t*)(transformedPath), transformedPathLength - 2);
     }
-    else if (strstr(transformedPath, "\\*.*") == (&transformedPath[transformedPathLength - 4]))
+    else if (strstr(transformedPath, "\\*.*") == (&transformedPath[transformedPathLength - 4]) || strstr(transformedPath, "/*.*") == (&transformedPath[transformedPathLength - 4]))
     {
         dirPath = std::u8string_view((const char8_t *)(transformedPath), transformedPathLength - 4);
     }
