@@ -147,7 +147,9 @@ void Window::Init()
     SDL_InitSubSystem(SDL_INIT_VIDEO);
     SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
     SDL_AddEventWatch(Window_OnSDLEvent, s_pWindow);
+#ifdef _WIN32
     SetProcessDPIAware();
+#endif
 
     s_x = Config::WindowX;
     s_y = Config::WindowY;
@@ -179,6 +181,7 @@ void Window::Init()
     SetTitle();
     SDL_SetWindowMinimumSize(s_pWindow, 640, 480);
 
+#ifdef _WIN32
     SDL_SysWMinfo info;
     SDL_VERSION(&info.version);
     SDL_GetWindowWMInfo(s_pWindow, &info);
@@ -186,6 +189,7 @@ void Window::Init()
     s_handle = info.info.win.window;
 
     SetDarkTitleBar(true);
+#endif
 
     SDL_ShowWindow(s_pWindow);
 }

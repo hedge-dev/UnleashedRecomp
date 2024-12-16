@@ -110,8 +110,8 @@ int main(int argc, const char** argv) {
 
         // Write decompressed size.
         if (!compressed_contents.empty()) {
-            output_c_file << "extern size_t " << array_name << "_uncompressed_size;\n";
-            output_c_file << "size_t " << array_name << "_uncompressed_size = " << contents.size() << ";\n";
+            output_c_file << "extern unsigned long long " << array_name << "_uncompressed_size;\n";
+            output_c_file << "unsigned long long " << array_name << "_uncompressed_size = " << contents.size() << ";\n";
         }
     }
 
@@ -126,7 +126,7 @@ int main(int argc, const char** argv) {
 
         // Write decompressed size.
         if (!compressed_contents.empty()) {
-            output_h_file << "extern size_t " << array_name << "_uncompressed_size;\n";
+            output_h_file << "extern unsigned long long " << array_name << "_uncompressed_size;\n";
         }
 
         output_h_file <<

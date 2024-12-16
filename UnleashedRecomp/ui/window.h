@@ -19,7 +19,9 @@ class Window
 {
 public:
     static inline SDL_Window* s_pWindow;
+#ifdef _WIN32
     static inline HWND s_handle;
+#endif
 
     static inline int s_x;
     static inline int s_y;

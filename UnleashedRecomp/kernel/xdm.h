@@ -3,8 +3,77 @@
 #include "heap.h"
 #include "memory.h"
 
-#define OBJECT_SIGNATURE           (DWORD)'XBOX'
+#define OBJECT_SIGNATURE           (uint32_t)'XBOX'
 #define GUEST_INVALID_HANDLE_VALUE 0xFFFFFFFF
+
+#ifndef _WIN32
+
+#define S_OK                       0x00000000
+#define FALSE                      0x00000000
+#define TRUE                       0x00000001
+#define STATUS_SUCCESS             0x00000000
+#define STATUS_WAIT_0              0x00000000
+#define STATUS_USER_APC            0x000000C0 
+#define STATUS_TIMEOUT             0x00000102
+#define STATUS_FAIL_CHECK          0xC0000229
+#define INFINITE                   0xFFFFFFFF
+#define FILE_ATTRIBUTE_DIRECTORY   0x00000010  
+#define FILE_ATTRIBUTE_NORMAL      0x00000080  
+#define GENERIC_READ               0x80000000
+#define GENERIC_WRITE              0x40000000
+#define FILE_READ_DATA             0x0001
+#define FILE_SHARE_READ            0x00000001  
+#define FILE_SHARE_WRITE           0x00000002
+#define CREATE_NEW                 1
+#define CREATE_ALWAYS              2
+#define OPEN_EXISTING              3
+#define INVALID_FILE_SIZE          0xFFFFFFFF
+#define INVALID_SET_FILE_POINTER   0xFFFFFFFF
+#define INVALID_FILE_ATTRIBUTES    0xFFFFFFFF
+#define FILE_BEGIN                 0
+#define FILE_CURRENT               1
+#define FILE_END                   2
+#define ERROR_NO_MORE_FILES        0x12
+#define ERROR_NO_SUCH_USER         0x525
+#define ERROR_SUCCESS              0x0
+#define ERROR_PATH_NOT_FOUND       0x3
+#define ERROR_BAD_ARGUMENTS        0xA0
+#define ERROR_DEVICE_NOT_CONNECTED 0x48F
+#define PAGE_READWRITE             0x04
+
+typedef union _LARGE_INTEGER {
+    struct {
+        uint32_t LowPart;
+        uint32_t HighPart;
+    } DUMMYSTRUCTNAME;
+    struct {
+        uint32_t LowPart;
+        uint32_t HighPart;
+    } u;
+    uint64_t QuadPart;
+} LARGE_INTEGER;
+
+typedef struct _FILETIME
+{
+    uint32_t dwLowDateTime;
+    uint32_t dwHighDateTime;
+} FILETIME;
+
+typedef struct _WIN32_FIND_DATAA
+{
+    uint32_t dwFileAttributes;
+    FILETIME ftCreationTime;
+    FILETIME ftLastAccessTime;
+    FILETIME ftLastWriteTime;
+    uint32_t nFileSizeHigh;
+    uint32_t nFileSizeLow;
+    uint32_t dwReserved0;
+    uint32_t dwReserved1;
+    char cFileName[260];
+    char cAlternateFileName[14];
+} WIN32_FIND_DATAA;
+
+#endif
 
 struct KernelObject
 {

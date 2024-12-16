@@ -27,8 +27,8 @@ function(BIN2C)
     endif()
 
     add_custom_command(OUTPUT "${BIN2C_ARGS_DEST_FILE}.c"
-        COMMAND file_to_c "${BIN2C_ARGS_SOURCE_FILE}" "${BIN2C_ARGS_ARRAY_NAME}" "${BIN2C_ARGS_COMPRESSION_TYPE}" "${BIN2C_ARGS_DEST_FILE}.c" "${BIN2C_ARGS_DEST_FILE}.h"
-        DEPENDS "${BIN2C_ARGS_SOURCE_FILE}" file_to_c
+        COMMAND $<TARGET_FILE:file_to_c> "${BIN2C_ARGS_SOURCE_FILE}" "${BIN2C_ARGS_ARRAY_NAME}" "${BIN2C_ARGS_COMPRESSION_TYPE}" "${BIN2C_ARGS_DEST_FILE}.c" "${BIN2C_ARGS_DEST_FILE}.h"
+        DEPENDS "${BIN2C_ARGS_SOURCE_FILE}"
         BYPRODUCTS "${BIN2C_ARGS_DEST_FILE}.h"
         COMMENT "Generating binary header for ${BIN2C_ARGS_SOURCE_FILE}..."
     )
@@ -38,7 +38,7 @@ function(BIN2C)
 endfunction()
 
 add_compile_options(
-    /fp:strict
+    -ffp-model=strict
     -march=sandybridge
     -fno-strict-aliasing
 
@@ -49,6 +49,8 @@ add_compile_options(
     -Wno-void-pointer-to-int-cast
     -Wno-int-to-void-pointer-cast
     -Wno-invalid-offsetof
+    -Wno-null-arithmetic
+    -Wno-null-conversion
 )
 
 add_compile_definitions(
@@ -268,6 +270,8 @@ if (SWA_D3D12)
     )
 endif()
 
+file(CHMOD ${DIRECTX_DXC_TOOL} PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+
 if (WIN32)
     target_link_libraries(UnleashedRecomp PRIVATE
         comctl32
@@ -311,6 +315,12 @@ target_include_directories(UnleashedRecomp PRIVATE
     ${MINIAUDIO_INCLUDE_DIRS}
     ${BC_DIFF_SOURCE_DIR}
 )
+
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    find_package(X11 REQUIRED)
+    target_include_directories(UnleashedRecomp PRIVATE ${X11_INCLUDE_DIR})
+    target_link_libraries(UnleashedRecomp PRIVATE ${X11_LIBRARIES})
+endif()
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${SWA_PRECOMPILED_HEADERS})
 

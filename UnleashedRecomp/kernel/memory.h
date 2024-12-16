@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef _WIN32
+#define MEM_COMMIT  0x00001000  
+#define MEM_RESERVE 0x00002000  
+#endif
+
 class Memory
 {
 public:

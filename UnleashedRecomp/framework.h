@@ -4,8 +4,9 @@
     #define SWA_DLLEXPORT __declspec(dllexport)
     #define SWA_DLLIMPORT __declspec(dllimport)
 #else
-    #define SWA_DLLEXPORT __attribute__((dllexport))
-    #define SWA_DLLIMPORT __attribute__((dllimport))
+    // TODO
+    #define SWA_DLLEXPORT
+    #define SWA_DLLIMPORT
 #endif
 
 #ifdef SWA_IMPL
@@ -31,19 +32,6 @@ template<typename T>
 inline T RoundDown(const T& in_rValue, uint32_t in_round)
 {
     return in_rValue & ~(in_round - 1);
-}
-
-inline bool FileExists(const char* path)
-{
-    const auto attributes = GetFileAttributesA(path);
-    return attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY);
-
-}
-
-inline bool DirectoryExists(const char* path)
-{
-    const auto attributes = GetFileAttributesA(path);
-    return attributes != INVALID_FILE_ATTRIBUTES && !!(attributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 inline size_t StringHash(const std::string_view& str)

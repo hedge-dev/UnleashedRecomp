@@ -70,11 +70,13 @@
 #include "shader/resolve_msaa_depth_4x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.spirv.h"
 
+#ifdef _WIN32
 extern "C"
 {
     __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
     __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
+#endif
 
 namespace plume
 {
@@ -171,7 +173,7 @@ struct DirtyStates
 static DirtyStates g_dirtyStates(true);
 
 template<typename T>
-static FORCEINLINE void SetDirtyValue(bool& dirtyState, T& dest, const T& src)
+static void SetDirtyValue(bool& dirtyState, T& dest, const T& src)
 {
     if (dest != src)
     {

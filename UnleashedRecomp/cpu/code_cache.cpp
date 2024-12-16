@@ -9,7 +9,7 @@ CodeCache::CodeCache()
     assert(bucket != nullptr);
 #else
     bucket = (char*)mmap(NULL, 0x200000000, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-    assert(bucket != (char *)MAP_FAILED)
+    assert(bucket != (char*)MAP_FAILED);
 #endif
 }
 

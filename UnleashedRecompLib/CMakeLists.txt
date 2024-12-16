@@ -1,9 +1,10 @@
 project("UnleashedRecompLib")
 
 add_compile_options(
-    "/fp:strict"
-    "-march=sandybridge"
-    "-fno-strict-aliasing"
+    -ffp-model=strict
+    -march=sandybridge
+    -mlzcnt
+    -fno-strict-aliasing
 )
 
 target_compile_definitions(PowerRecomp PRIVATE CONFIG_FILE_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/config/SWA.toml\")
@@ -21,7 +22,7 @@ endforeach()
 
 add_custom_command(
     OUTPUT ${SWA_PPC_RECOMPILED_SOURCES}
-    COMMAND PowerRecomp
+    COMMAND $<TARGET_FILE:PowerRecomp>
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/private/default.xex" "${CMAKE_CURRENT_SOURCE_DIR}/config/SWA.toml"
 )
 
@@ -41,7 +42,7 @@ file(GLOB SHADER_RECOMP_SOURCES
 
 add_custom_command(
     OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/shader/shader_cache.cpp"
-    COMMAND ShaderRecomp
+    COMMAND $<TARGET_FILE:ShaderRecomp>
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/private/shader.ar" ${SHADER_RECOMP_SOURCES} ${SHADER_RECOMP_INCLUDE}
 )
 

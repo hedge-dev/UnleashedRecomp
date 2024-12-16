@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef _WIN32
+
 struct Mutex : CRITICAL_SECTION
 {
     Mutex()
@@ -21,3 +23,9 @@ struct Mutex : CRITICAL_SECTION
         LeaveCriticalSection(this);
     }
 };
+
+#else
+
+using Mutex = std::mutex;
+
+#endif
