@@ -327,11 +327,23 @@ uint32_t XWriteFile(FileHandle* hFile, const void* lpBuffer, uint32_t nNumberOfB
     return TRUE;
 }
 
+static void fixSlashes(char *path)
+{
+    while (*path != 0)
+    {
+        if (*path == '\\')
+        {
+            *path = '/';
+        }
+
+        path++;
+    }
+}
+
 const char* FileSystem::TransformPath(const char* path)
 {
     thread_local char builtPath[2048]{};
     const char* relativePath = strstr(path, ":\\");
-
     if (relativePath != nullptr)
     {
         // rooted folder, handle direction
@@ -343,12 +355,19 @@ const char* FileSystem::TransformPath(const char* path)
             strncpy(builtPath, newRoot.data(), newRoot.size());
             builtPath[newRoot.size()] = '\\';
             strcpy(builtPath + newRoot.size() + 1, relativePath + 2);
-
-            return builtPath;
+        }
+        else
+        {
+            strncpy(builtPath, relativePath + 2, sizeof(builtPath));
         }
     }
+    else
+    {
+        strncpy(builtPath, path, sizeof(builtPath));
+    }
 
-    return relativePath != nullptr ? relativePath + 2 : path;
+    fixSlashes(builtPath);
+    return builtPath;
 }
 
 SWA_API const char* XExpandFilePathA(const char* path)

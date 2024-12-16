@@ -313,7 +313,7 @@ SWA_API uint32_t XamContentCreateEx(uint32_t dwUserIndex, const char* szRootName
             }
             else if (pContentData->dwContentType == XCONTENTTYPE_DLC)
             {
-                root = ".\\dlc";
+                root = "./dlc";
             }
             else
             {

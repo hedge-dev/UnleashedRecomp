@@ -50,8 +50,8 @@ void KiSystemStartup()
 {
     const auto gameContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Game");
     const auto updateContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Update");
-    XamRegisterContent(gameContent, std::filesystem::exists(".\\game") ? ".\\game" : ".");
-    XamRegisterContent(updateContent, ".\\update");
+    XamRegisterContent(gameContent, std::filesystem::exists("./game") ? "./game" : ".");
+    XamRegisterContent(updateContent, "./update");
 
     const auto savePath = GetSavePath();
     const auto saveName = "SYS-DATA";
@@ -68,27 +68,6 @@ void KiSystemStartup()
 
     // OS mounts game data to D:
     XamContentCreateEx(0, "D", &gameContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
-
-    //WIN32_FIND_DATAA fdata;
-    //const auto findHandle = FindFirstFileA(".\\dlc\\*.*", &fdata);
-    //if (findHandle != INVALID_HANDLE_VALUE)
-    //{
-    //    char strBuf[256];
-    //    do
-    //    {
-    //        if (strcmp(fdata.cFileName, ".") == 0 || strcmp(fdata.cFileName, "..") == 0)
-    //        {
-    //            continue;
-    //        }
-
-    //        if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-    //        {
-    //            snprintf(strBuf, sizeof(strBuf), ".\\dlc\\%s", fdata.cFileName);
-    //            XamRegisterContent(XamMakeContent(XCONTENTTYPE_DLC, fdata.cFileName), strBuf);
-    //        }
-    //    } while (FindNextFileA(findHandle, &fdata));
-    //    FindClose(findHandle);
-    //}
 
     XAudioInitializeSystem();
 }
