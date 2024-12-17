@@ -69,7 +69,8 @@ void KiSystemStartup()
     // OS mounts game data to D:
     XamContentCreateEx(0, "D", &gameContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
 
-    for (auto& file : std::filesystem::directory_iterator("./dlc"))
+    std::error_code ec;
+    for (auto& file : std::filesystem::directory_iterator("./dlc", ec))
     {
         if (file.is_directory())
         {
