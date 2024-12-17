@@ -16,6 +16,9 @@
                     "type": "FILEPATH"
                 }
             },
+            "environment": {
+                "VCPKG_ROOT": "${sourceDir}/thirdparty/vcpkg"
+            },
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",

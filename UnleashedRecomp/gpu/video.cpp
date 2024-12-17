@@ -31,7 +31,7 @@
 #include <xxHashMap.h>
 
 #if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #endif
 
 #include "../../tools/ShaderRecomp/ShaderRecomp/shader_common.h"
