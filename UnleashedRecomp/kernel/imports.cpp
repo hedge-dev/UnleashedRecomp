@@ -1260,7 +1260,7 @@ uint32_t RtlMultiByteToUnicodeN(wchar_t* UnicodeString, uint32_t MaxBytesInUnico
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 
     std::wstring wideString = converter.from_bytes(
-        MultiByteString, MultiByteString + BytesInMultiByteString
+        MultiByteString, MultiByteString + (BytesInMultiByteString - 1)
     );
 
     uint32_t bytesRequired = static_cast<uint32_t>((wideString.size() + 1) * sizeof(wchar_t));
