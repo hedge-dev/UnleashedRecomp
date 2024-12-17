@@ -13,6 +13,8 @@ Memory::Memory(void* address, size_t size) : size(size)
 
     if (base == (char*)MAP_FAILED)
         base = (char*)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+
+    mprotect(base, 4096, PROT_NONE);
 #endif
 }
 
