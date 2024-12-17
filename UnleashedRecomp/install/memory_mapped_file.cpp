@@ -97,7 +97,7 @@ bool MemoryMappedFile::open(const std::filesystem::path &path)
     if (fileSize == (off_t)(-1))
     {
         fprintf(stderr, "lseek failed with error %s.\n", strerror(errno));
-        close(fileHandle);
+        ::close(fileHandle);
         fileHandle = -1;
         return false;
     }
@@ -106,7 +106,7 @@ bool MemoryMappedFile::open(const std::filesystem::path &path)
     if (fileView == MAP_FAILED)
     {
         fprintf(stderr, "mmap failed with error %s.\n", strerror(errno));
-        close(fileHandle);
+        ::close(fileHandle);
         fileHandle = -1;
         return false;
     }
@@ -140,7 +140,7 @@ void MemoryMappedFile::close()
 
     if (fileHandle != -1)
     {
-        close(fileHandle);
+        ::close(fileHandle);
     }
 #endif
 }

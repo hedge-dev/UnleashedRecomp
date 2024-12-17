@@ -1,3 +1,4 @@
+#include <user/config.h>
 #include <locale/locale.h>
 
 std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_locale =

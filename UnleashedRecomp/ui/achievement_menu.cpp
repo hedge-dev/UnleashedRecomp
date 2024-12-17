@@ -281,9 +281,14 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
         return;
 
     char buffer[32];
-    struct tm time;
-    localtime_s(&time, &timestamp);
-    strftime(buffer, sizeof(buffer), "%Y/%m/%d %H:%M", &time);
+#ifdef _WIN32
+    tm timeStruct;
+    tm *timePtr = &timeStruct;
+    localtime_s(timePtr, &timestamp);
+#else
+    tm *timePtr = localtime(&timestamp);
+#endif
+    strftime(buffer, sizeof(buffer), "%Y/%m/%d %H:%M", timePtr);
 
     fontSize = Scale(12);
     textSize = g_fntNewRodinDB->CalcTextSizeA(fontSize, FLT_MAX, 0, buffer);

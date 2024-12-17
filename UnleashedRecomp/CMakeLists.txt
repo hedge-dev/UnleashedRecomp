@@ -27,8 +27,8 @@ function(BIN2C)
     endif()
 
     add_custom_command(OUTPUT "${BIN2C_ARGS_DEST_FILE}.c"
-        COMMAND file_to_c "${BIN2C_ARGS_SOURCE_FILE}" "${BIN2C_ARGS_ARRAY_NAME}" "${BIN2C_ARGS_COMPRESSION_TYPE}" "${BIN2C_ARGS_DEST_FILE}.c" "${BIN2C_ARGS_DEST_FILE}.h"
-        DEPENDS "${BIN2C_ARGS_SOURCE_FILE}" file_to_c
+        COMMAND $<TARGET_FILE:file_to_c> "${BIN2C_ARGS_SOURCE_FILE}" "${BIN2C_ARGS_ARRAY_NAME}" "${BIN2C_ARGS_COMPRESSION_TYPE}" "${BIN2C_ARGS_DEST_FILE}.c" "${BIN2C_ARGS_DEST_FILE}.h"
+        DEPENDS "${BIN2C_ARGS_SOURCE_FILE}"
         BYPRODUCTS "${BIN2C_ARGS_DEST_FILE}.h"
         COMMENT "Generating binary header for ${BIN2C_ARGS_SOURCE_FILE}..."
     )
@@ -38,7 +38,6 @@ function(BIN2C)
 endfunction()
 
 add_compile_options(
-    /fp:strict
     -march=sandybridge
     -fno-strict-aliasing
 
@@ -49,7 +48,16 @@ add_compile_options(
     -Wno-void-pointer-to-int-cast
     -Wno-int-to-void-pointer-cast
     -Wno-invalid-offsetof
+    -Wno-null-arithmetic
+    -Wno-null-conversion
+    -Wno-tautological-undefined-compare
 )
+
+if (WIN32)
+    add_compile_options(/fp:strict)
+else()
+    add_compile_options(-ffp-model=strict)
+endif()
 
 add_compile_definitions(
     SWA_IMPL
@@ -88,6 +96,13 @@ if (WIN32)
         "os/win32/media_win32.cpp"
         "os/win32/process_win32.cpp"
         "os/win32/version_win32.cpp"
+    )
+elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    list(APPEND SWA_OS_CXX_SOURCES
+        "os/linux/logger_linux.cpp"
+        "os/linux/media_linux.cpp"
+        "os/linux/process_linux.cpp"
+        "os/linux/version_linux.cpp"
     )
 endif()
 
@@ -151,7 +166,7 @@ set(SWA_UI_CXX_SOURCES
     "ui/options_menu_thumbnails.cpp"
     "ui/options_menu.cpp"
     "ui/sdl_listener.cpp"
-    "ui/window.cpp"
+    "ui/game_window.cpp"
 )
 
 set(SWA_INSTALL_CXX_SOURCES
@@ -170,24 +185,47 @@ set(SWA_INSTALL_CXX_SOURCES
     "install/hashes/update.cpp"
 )
 
-set(LIBMSPACK_PATH ${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack)
-
-set(LIBMSPACK_C_SOURCES
-    ${LIBMSPACK_PATH}/lzxd.c
-)
-
-set_source_files_properties(${LIBMSPACK_C_SOURCES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
-
-set(SMOLV_SOURCE_DIR "${SWA_TOOLS_ROOT}/ShaderRecomp/thirdparty/smol-v/source")
-set(BC_DIFF_SOURCE_DIR "${SWA_TOOLS_ROOT}/bc_diff")
-
-set(MINIAUDIO_INCLUDE_DIRS "${SWA_THIRDPARTY_ROOT}/miniaudio")
-
 set(SWA_USER_CXX_SOURCES
     "user/achievement_data.cpp"
     "user/config.cpp"
-    "user/config_detail.cpp"
 )
+
+set(SWA_THIRDPARTY_SOURCES
+    "${SWA_THIRDPARTY_ROOT}/imgui/backends/imgui_impl_sdl2.cpp"
+    "${SWA_THIRDPARTY_ROOT}/imgui/imgui.cpp"
+    "${SWA_THIRDPARTY_ROOT}/imgui/imgui_demo.cpp"
+    "${SWA_THIRDPARTY_ROOT}/imgui/imgui_draw.cpp"
+    "${SWA_THIRDPARTY_ROOT}/imgui/imgui_tables.cpp"
+    "${SWA_THIRDPARTY_ROOT}/imgui/imgui_widgets.cpp"
+    "${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack/lzxd.c"
+    "${SWA_THIRDPARTY_ROOT}/tiny-AES-c/aes.c"
+    "${SWA_TOOLS_ROOT}/ShaderRecomp/thirdparty/smol-v/source/smolv.cpp"
+)
+
+set(SWA_THIRDPARTY_INCLUDES
+    "${SWA_THIRDPARTY_ROOT}/concurrentqueue"
+    "${SWA_THIRDPARTY_ROOT}/ddspp"
+    "${SWA_THIRDPARTY_ROOT}/imgui"
+    "${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack"
+    "${SWA_THIRDPARTY_ROOT}/magic_enum/include"
+    "${SWA_THIRDPARTY_ROOT}/miniaudio"
+    "${SWA_THIRDPARTY_ROOT}/stb"
+    "${SWA_THIRDPARTY_ROOT}/tiny-AES-c"
+    "${SWA_THIRDPARTY_ROOT}/TinySHA1"
+    "${SWA_THIRDPARTY_ROOT}/unordered_dense/include"
+    "${SWA_THIRDPARTY_ROOT}/volk"
+    "${SWA_THIRDPARTY_ROOT}/Vulkan-Headers/include"
+    "${SWA_THIRDPARTY_ROOT}/VulkanMemoryAllocator/include"
+    "${SWA_TOOLS_ROOT}/bc_diff"
+    "${SWA_TOOLS_ROOT}/ShaderRecomp/thirdparty/smol-v/source"
+)
+
+if (SWA_D3D12)
+    list(APPEND SWA_THIRDPARTY_INCLUDES "${SWA_THIRDPARTY_ROOT}/D3D12MemoryAllocator/include")
+    list(APPEND SWA_THIRDPARTY_SOURCES "${SWA_THIRDPARTY_ROOT}/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp")
+endif()
+
+set_source_files_properties(${SWA_THIRDPARTY_SOURCES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 
 set(SWA_CXX_SOURCES
     "app.cpp"
@@ -206,9 +244,8 @@ set(SWA_CXX_SOURCES
     ${SWA_PATCHES_CXX_SOURCES}
     ${SWA_UI_CXX_SOURCES}
     ${SWA_INSTALL_CXX_SOURCES}
-    ${LIBMSPACK_C_SOURCES}
-    "${SMOLV_SOURCE_DIR}/smolv.cpp"
     ${SWA_USER_CXX_SOURCES}
+    ${SWA_THIRDPARTY_SOURCES}
 )
 
 if (WIN32)
@@ -225,28 +262,10 @@ set_target_properties(UnleashedRecomp PROPERTIES OUTPUT_NAME ${TARGET_NAME})
 if (SWA_D3D12)
     find_package(directx-headers CONFIG REQUIRED)
     find_package(directx12-agility CONFIG REQUIRED)
-    find_package(d3d12-memory-allocator CONFIG REQUIRED)
     target_compile_definitions(UnleashedRecomp PRIVATE SWA_D3D12)
 endif()
 
-find_package(SDL2 CONFIG REQUIRED)
-find_package(unordered_dense CONFIG REQUIRED)
-find_package(VulkanHeaders CONFIG)
-find_package(volk CONFIG REQUIRED)
-find_package(VulkanMemoryAllocator CONFIG REQUIRED)
-find_package(xxHash CONFIG REQUIRED)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(tomlplusplus REQUIRED IMPORTED_TARGET tomlplusplus)
 find_package(directx-dxc REQUIRED)
-find_package(zstd CONFIG REQUIRED)
-find_package(Stb REQUIRED)
-find_package(unofficial-concurrentqueue REQUIRED)
-find_package(imgui CONFIG REQUIRED)
-find_package(magic_enum CONFIG REQUIRED)
-find_package(unofficial-tiny-aes-c CONFIG REQUIRED)
-find_package(nfd CONFIG REQUIRED)
-find_package(Vorbis CONFIG REQUIRED)
-find_package(fmt CONFIG REQUIRED)
 
 if (SWA_D3D12)
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
@@ -263,10 +282,12 @@ if (SWA_D3D12)
         Microsoft::DirectX-Guids 
         Microsoft::DirectX12-Agility
         Microsoft::DirectXShaderCompiler
-        unofficial::D3D12MemoryAllocator
+        Microsoft::DXIL
         dxgi
     )
 endif()
+
+file(CHMOD ${DIRECTX_DXC_TOOL} PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 
 if (WIN32)
     target_link_libraries(UnleashedRecomp PRIVATE
@@ -278,39 +299,29 @@ if (WIN32)
 endif()
 
 target_link_libraries(UnleashedRecomp PRIVATE
-    Vulkan::Headers
-    volk::volk 
-    volk::volk_headers
-    GPUOpen::VulkanMemoryAllocator
+    fmt::fmt
+    libzstd_static
+    msdf-atlas-gen::msdf-atlas-gen
+    nfd::nfd
     o1heap
     PowerUtils
     SDL2::SDL2-static
+    tomlplusplus::tomlplusplus
     UnleashedRecompLib
-    unordered_dense::unordered_dense
-    xxHash::xxhash
-    PkgConfig::tomlplusplus
-    zstd::libzstd_static
-    unofficial::concurrentqueue::concurrentqueue
-    imgui::imgui
-    magic_enum::magic_enum
-    unofficial::tiny-aes-c::tiny-aes-c
-    nfd::nfd
-    msdf-atlas-gen::msdf-atlas-gen
     Vorbis::vorbisfile
-    fmt::fmt
-)
+    xxHash::xxhash)
 
 target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/api
-    ${SWA_THIRDPARTY_ROOT}/ddspp
-    ${SWA_THIRDPARTY_ROOT}/TinySHA1
-    ${LIBMSPACK_PATH}
-    ${Stb_INCLUDE_DIR}
-    ${SMOLV_SOURCE_DIR}
-    ${MINIAUDIO_INCLUDE_DIRS}
-    ${BC_DIFF_SOURCE_DIR}
+    "${CMAKE_CURRENT_SOURCE_DIR}/api"
+    ${SWA_THIRDPARTY_INCLUDES}
 )
+
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    find_package(X11 REQUIRED)
+    target_include_directories(UnleashedRecomp PRIVATE ${X11_INCLUDE_DIR})
+    target_link_libraries(UnleashedRecomp PRIVATE ${X11_LIBRARIES})
+endif()
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${SWA_PRECOMPILED_HEADERS})
 

@@ -6,6 +6,7 @@
 #include <os/version.h>
 #include <ui/window_events.h>
 #include <user/config.h>
+#include <gpu/rhi/plume_render_interface_types.h>
 
 #if _WIN32
 #include <dwmapi.h>
@@ -15,11 +16,11 @@
 #define DEFAULT_WIDTH 1280
 #define DEFAULT_HEIGHT 720
 
-class Window
+class GameWindow
 {
 public:
     static inline SDL_Window* s_pWindow;
-    static inline HWND s_handle;
+    static inline plume::RenderWindow s_renderWindow;
 
     static inline int s_x;
     static inline int s_y;
@@ -87,7 +88,7 @@ public:
             : 19; // DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1
 
         const DWORD useImmersiveDarkMode = isEnabled;
-        DwmSetWindowAttribute(s_handle, flag, &useImmersiveDarkMode, sizeof(useImmersiveDarkMode));
+        DwmSetWindowAttribute(s_renderWindow, flag, &useImmersiveDarkMode, sizeof(useImmersiveDarkMode));
 #endif
     }
 
@@ -107,7 +108,7 @@ public:
         {
             SDL_SetWindowFullscreen(s_pWindow, 0);
             SDL_ShowCursor(SDL_ENABLE);
-            SetIcon(Window::s_isIconNight);
+            SetIcon(GameWindow::s_isIconNight);
         }
 
         return isEnabled;

@@ -8,7 +8,7 @@ struct CodeCache
     ~CodeCache();
 
     void Init();
-    void Insert(uint32_t guest, const void* host);
+    void Insert(uint32_t guest, PPCFunc* host);
 
     void* Find(uint32_t guest) const;
 };

@@ -1,5 +1,4 @@
 #include <user/config.h>
-#include <user/config_detail.h>
 
 #define CONFIG_DEFINE_LOCALE(name) \
     CONFIG_LOCALE Config::g_##name##_locale =

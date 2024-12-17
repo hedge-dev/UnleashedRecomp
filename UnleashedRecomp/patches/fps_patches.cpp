@@ -1,11 +1,11 @@
 #include <cpu/guest_code.h>
 #include <api/SWA.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 #include <user/config.h>
 #include <app.h>
 
 float m_lastLoadingFrameDelta = 0.0f;
-std::chrono::steady_clock::time_point m_lastLoadingFrameTime;
+std::chrono::high_resolution_clock::time_point m_lastLoadingFrameTime;
 
 void DownForceDeltaTimeFixMidAsmHook(PPCRegister& f0)
 {

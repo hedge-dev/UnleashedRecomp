@@ -1,6 +1,6 @@
 #include <cpu/guest_code.h>
 #include <api/SWA.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 #include <ui/window_events.h>
 #include <user/config.h>
 #include <os/logger.h>
@@ -126,7 +126,7 @@ PPC_FUNC(sub_823B49D8)
 {
     __imp__sub_823B49D8(ctx, base);
 
-    SDL_User_EvilSonic(Window::s_pWindow, true);
+    SDL_User_EvilSonic(GameWindow::s_pWindow, true);
 }
 
 // SWA::Player::CEvilSonicContext::Dtor
@@ -135,5 +135,5 @@ PPC_FUNC(sub_823B4590)
 {
     __imp__sub_823B4590(ctx, base);
 
-    SDL_User_EvilSonic(Window::s_pWindow, false);
+    SDL_User_EvilSonic(GameWindow::s_pWindow, false);
 }

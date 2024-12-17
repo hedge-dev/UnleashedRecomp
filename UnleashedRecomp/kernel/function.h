@@ -39,7 +39,7 @@ std::enable_if_t<(I < sizeof...(TArgs)), void> _tuple_for(std::tuple<TArgs...>& 
 
 struct ArgTranslator
 {
-    FORCEINLINE constexpr static uint64_t GetIntegerArgumentValue(const PPCContext& ctx, uint8_t* base, size_t arg) noexcept
+    constexpr static uint64_t GetIntegerArgumentValue(const PPCContext& ctx, uint8_t* base, size_t arg) noexcept
     {
         if (arg <= 7)
         {
@@ -57,10 +57,10 @@ struct ArgTranslator
             }
         }
 
-        return *reinterpret_cast<XLPDWORD>(base + ctx.r1.u32 + 0x54 + ((arg - 8) * 8));
+        return *reinterpret_cast<be<uint32_t>*>(base + ctx.r1.u32 + 0x54 + ((arg - 8) * 8));
     }
 
-    FORCEINLINE static double GetPrecisionArgumentValue(const PPCContext& ctx, uint8_t* base, size_t arg) noexcept
+    static double GetPrecisionArgumentValue(const PPCContext& ctx, uint8_t* base, size_t arg) noexcept
     {
         switch (arg)
         {
@@ -84,7 +84,7 @@ struct ArgTranslator
         return 0;
     }
 
-    FORCEINLINE constexpr static void SetIntegerArgumentValue(PPCContext& ctx, uint8_t* base, size_t arg, uint64_t value) noexcept
+    constexpr static void SetIntegerArgumentValue(PPCContext& ctx, uint8_t* base, size_t arg, uint64_t value) noexcept
     {
         if (arg <= 7)
         {
@@ -105,7 +105,7 @@ struct ArgTranslator
         assert(arg < 7 && "Pushing to stack memory is not yet supported.");
     }
 
-    FORCEINLINE static void SetPrecisionArgumentValue(PPCContext& ctx, uint8_t* base, size_t arg, double value) noexcept
+    static void SetPrecisionArgumentValue(PPCContext& ctx, uint8_t* base, size_t arg, double value) noexcept
     {
         switch (arg)
         {
@@ -129,7 +129,7 @@ struct ArgTranslator
     }
 
     template<typename T>
-    FORCEINLINE constexpr static std::enable_if_t<!std::is_pointer_v<T>, T> GetValue(PPCContext& ctx, uint8_t* base, size_t idx) noexcept
+    constexpr static std::enable_if_t<!std::is_pointer_v<T>, T> GetValue(PPCContext& ctx, uint8_t* base, size_t idx) noexcept
     {
         if constexpr (is_precise_v<T>)
         {
@@ -142,7 +142,7 @@ struct ArgTranslator
     }
 
     template<typename T>
-    FORCEINLINE constexpr static std::enable_if_t<std::is_pointer_v<T>, T> GetValue(PPCContext& ctx, uint8_t* base, size_t idx) noexcept
+    constexpr static std::enable_if_t<std::is_pointer_v<T>, T> GetValue(PPCContext& ctx, uint8_t* base, size_t idx) noexcept
     {
         const auto v = GetIntegerArgumentValue(ctx, base, idx);
         if (!v)
@@ -154,7 +154,7 @@ struct ArgTranslator
     }
 
     template<typename T>
-    FORCEINLINE constexpr static std::enable_if_t<!std::is_pointer_v<T>, void> SetValue(PPCContext& ctx, uint8_t* base, size_t idx, T value) noexcept
+    constexpr static std::enable_if_t<!std::is_pointer_v<T>, void> SetValue(PPCContext& ctx, uint8_t* base, size_t idx, T value) noexcept
     {
         if constexpr (is_precise_v<T>)
         {
@@ -175,7 +175,7 @@ struct ArgTranslator
     }
 
     template<typename T>
-    FORCEINLINE constexpr static std::enable_if_t<std::is_pointer_v<T>, void> SetValue(PPCContext& ctx, uint8_t* base, size_t idx, T value) noexcept
+    constexpr static std::enable_if_t<std::is_pointer_v<T>, void> SetValue(PPCContext& ctx, uint8_t* base, size_t idx, T value) noexcept
     {
         const auto v = g_memory.MapVirtual((void*)value);
         if (!v)
@@ -240,13 +240,13 @@ struct arg_ordinal_t
 };
 
 template<auto Func, int I = 0, typename ...TArgs>
-FORCEINLINE void _translate_args_to_host(PPCContext& ctx, uint8_t* base, std::tuple<TArgs...>&) noexcept
+void _translate_args_to_host(PPCContext& ctx, uint8_t* base, std::tuple<TArgs...>&) noexcept
     requires (I >= sizeof...(TArgs))
 {
 }
 
 template <auto Func, int I = 0, typename ...TArgs>
-FORCEINLINE std::enable_if_t<(I < sizeof...(TArgs)), void> _translate_args_to_host(PPCContext& ctx, uint8_t* base, std::tuple<TArgs...>& tpl) noexcept
+std::enable_if_t<(I < sizeof...(TArgs)), void> _translate_args_to_host(PPCContext& ctx, uint8_t* base, std::tuple<TArgs...>& tpl) noexcept
 {
     using T = std::tuple_element_t<I, std::remove_reference_t<decltype(tpl)>>;
     std::get<I>(tpl) = ArgTranslator::GetValue<T>(ctx, base, arg_ordinal_t<Func, I>::value);
@@ -255,13 +255,13 @@ FORCEINLINE std::enable_if_t<(I < sizeof...(TArgs)), void> _translate_args_to_ho
 }
 
 template<int I = 0, typename ...TArgs>
-FORCEINLINE void _translate_args_to_guest(PPCContext& ctx, uint8_t* base, std::tuple<TArgs...>&) noexcept
+void _translate_args_to_guest(PPCContext& ctx, uint8_t* base, std::tuple<TArgs...>&) noexcept
     requires (I >= sizeof...(TArgs))
 {
 }
 
 template <int I = 0, typename ...TArgs>
-FORCEINLINE std::enable_if_t<(I < sizeof...(TArgs)), void> _translate_args_to_guest(PPCContext& ctx, uint8_t* base, std::tuple<TArgs...>& tpl) noexcept
+std::enable_if_t<(I < sizeof...(TArgs)), void> _translate_args_to_guest(PPCContext& ctx, uint8_t* base, std::tuple<TArgs...>& tpl) noexcept
 {
     using T = std::tuple_element_t<I, std::remove_reference_t<decltype(tpl)>>;
     ArgTranslator::SetValue<T>(ctx, base, GatherFunctionArguments(std::tuple<TArgs...>{})[I].ordinal, std::get<I>(tpl));
@@ -270,7 +270,7 @@ FORCEINLINE std::enable_if_t<(I < sizeof...(TArgs)), void> _translate_args_to_gu
 }
 
 template<auto Func>
-FORCEINLINE PPC_FUNC(HostToGuestFunction)
+PPC_FUNC(HostToGuestFunction)
 {
     using ret_t = decltype(std::apply(Func, function_args(Func)));
 
@@ -293,7 +293,7 @@ FORCEINLINE PPC_FUNC(HostToGuestFunction)
             }
             else
             {
-                ctx.r3.u64 = NULL;
+                ctx.r3.u64 = 0;
             }
         }
         else if constexpr (is_precise_v<ret_t>)
@@ -308,7 +308,7 @@ FORCEINLINE PPC_FUNC(HostToGuestFunction)
 }
 
 template<typename T, typename TFunction, typename... TArgs>
-FORCEINLINE T GuestToHostFunction(const TFunction& func, TArgs&&... argv)
+T GuestToHostFunction(const TFunction& func, TArgs&&... argv)
 {
     auto args = std::make_tuple(std::forward<TArgs>(argv)...);
     auto& currentCtx = *GetPPCContext();
@@ -331,11 +331,7 @@ FORCEINLINE T GuestToHostFunction(const TFunction& func, TArgs&&... argv)
     currentCtx.fpscr = newCtx.fpscr;
     SetPPCContext(currentCtx);
 
-    if constexpr (std::is_void_v<T>)
-    {
-        return;
-    }
-    else if constexpr (std::is_pointer_v<T>)
+    if constexpr (std::is_pointer_v<T>)
     {
         return reinterpret_cast<T>((uint64_t)g_memory.Translate(newCtx.r3.u32));
     }
@@ -349,7 +345,7 @@ FORCEINLINE T GuestToHostFunction(const TFunction& func, TArgs&&... argv)
     }
     else
     {
-        static_assert(false, "Unsupported return type.");
+        static_assert(std::is_void_v<T>, "Unsupported return type.");
     }
 }
 

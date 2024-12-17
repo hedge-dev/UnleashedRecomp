@@ -5,7 +5,7 @@
 #include <kernel/heap.h>
 
 static PPCFunc* g_clientCallback{};
-static DWORD g_clientCallbackParam{}; // pointer in guest memory
+static uint32_t g_clientCallbackParam{}; // pointer in guest memory
 static ma_device g_audioDevice{};
 static std::unique_ptr<GuestThreadContext> g_audioCtx;
 static uint32_t* g_audioOutput;

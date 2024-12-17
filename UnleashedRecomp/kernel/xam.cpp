@@ -2,23 +2,25 @@
 #include "xam.h"
 #include "xdm.h"
 #include <hid/hid.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 #include <cpu/guest_thread.h>
 #include <ranges>
 #include <unordered_set>
-#include <CommCtrl.h>
 #include "xxHashMap.h"
 #include <user/paths.h>
 #include <SDL.h>
 
+#ifdef _WIN32
+#include <CommCtrl.h>
 // Needed for commctrl
 #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
 
 struct XamListener : KernelObject
 {
     uint32_t id{};
     uint64_t areas{};
-    std::vector<std::tuple<DWORD, DWORD>> notifications;
+    std::vector<std::tuple<uint32_t, uint32_t>> notifications;
 
     XamListener(const XamListener&) = delete;
     XamListener& operator=(const XamListener&) = delete;
@@ -116,7 +118,7 @@ XamListener::~XamListener()
     gListeners.erase(this);
 }
 
-XCONTENT_DATA XamMakeContent(DWORD type, const std::string_view& name)
+XCONTENT_DATA XamMakeContent(uint32_t type, const std::string_view& name)
 {
     XCONTENT_DATA data{ 1, type };
 
@@ -132,7 +134,7 @@ void XamRegisterContent(const XCONTENT_DATA& data, const std::string_view& root)
     gContentRegistry[idx].emplace(StringHash(data.szFileName), XHOSTCONTENT_DATA{ data }).first->second.szRoot = root;
 }
 
-void XamRegisterContent(DWORD type, const std::string_view name, const std::string_view& root)
+void XamRegisterContent(uint32_t type, const std::string_view name, const std::string_view& root)
 {
     XCONTENT_DATA data{ 1, type, {}, "" };
 
@@ -141,7 +143,7 @@ void XamRegisterContent(DWORD type, const std::string_view name, const std::stri
     XamRegisterContent(data, root);
 }
 
-SWA_API DWORD XamNotifyCreateListener(uint64_t qwAreas)
+SWA_API uint32_t XamNotifyCreateListener(uint64_t qwAreas)
 {
     auto* listener = CreateKernelObject<XamListener>();
 
@@ -150,7 +152,7 @@ SWA_API DWORD XamNotifyCreateListener(uint64_t qwAreas)
     return GetKernelHandle(listener);
 }
 
-SWA_API void XamNotifyEnqueueEvent(DWORD dwId, DWORD dwParam)
+SWA_API void XamNotifyEnqueueEvent(uint32_t dwId, uint32_t dwParam)
 {
     for (const auto& listener : gListeners)
     {
@@ -161,7 +163,7 @@ SWA_API void XamNotifyEnqueueEvent(DWORD dwId, DWORD dwParam)
     }
 }
 
-SWA_API bool XNotifyGetNext(DWORD hNotification, DWORD dwMsgFilter, XDWORD* pdwId, XDWORD* pParam)
+SWA_API bool XNotifyGetNext(uint32_t hNotification, uint32_t dwMsgFilter, be<uint32_t>* pdwId, be<uint32_t>* pParam)
 {
     auto& listener = *GetKernelObject<XamListener>(hNotification);
 
@@ -202,9 +204,12 @@ SWA_API bool XNotifyGetNext(DWORD hNotification, DWORD dwMsgFilter, XDWORD* pdwI
     return false;
 }
 
-SWA_API uint32_t XamShowMessageBoxUI(DWORD dwUserIndex, XWORD* wszTitle, XWORD* wszText, DWORD cButtons,
-    xpointer<XWORD>* pwszButtons, DWORD dwFocusButton, DWORD dwFlags, XLPDWORD pResult, XXOVERLAPPED* pOverlapped)
+SWA_API uint32_t XamShowMessageBoxUI(uint32_t dwUserIndex, be<uint16_t>* wszTitle, be<uint16_t>* wszText, uint32_t cButtons,
+    xpointer<be<uint16_t>>* pwszButtons, uint32_t dwFocusButton, uint32_t dwFlags, be<uint32_t>* pResult, XXOVERLAPPED* pOverlapped)
 {
+    int button{};
+
+#ifdef _WIN32
     std::vector<std::wstring> texts{};
     std::vector<TASKDIALOG_BUTTON> buttons{};
 
@@ -227,20 +232,19 @@ SWA_API uint32_t XamShowMessageBoxUI(DWORD dwUserIndex, XWORD* wszTitle, XWORD* 
 
     TASKDIALOGCONFIG config{};
     config.cbSize = sizeof(config);
-    // config.hwndParent = Window::s_hWnd;
     config.pszWindowTitle = texts[0].c_str();
     config.pszContent = texts[1].c_str();
     config.cButtons = cButtons;
     config.pButtons = buttons.data();
 
-    int button{};
     TaskDialogIndirect(&config, &button, nullptr, nullptr);
+#endif
 
     *pResult = button;
 
     if (pOverlapped)
     {
-        pOverlapped->dwCompletionContext = GetCurrentThreadId();
+        pOverlapped->dwCompletionContext = GuestThread::GetCurrentThreadId();
         pOverlapped->Error = 0;
         pOverlapped->Length = -1;
     }
@@ -250,8 +254,8 @@ SWA_API uint32_t XamShowMessageBoxUI(DWORD dwUserIndex, XWORD* wszTitle, XWORD* 
     return 0;
 }
 
-SWA_API uint32_t XamContentCreateEnumerator(DWORD dwUserIndex, DWORD DeviceID, DWORD dwContentType,
-    DWORD dwContentFlags, DWORD cItem, XLPDWORD pcbBuffer, XLPDWORD phEnum)
+SWA_API uint32_t XamContentCreateEnumerator(uint32_t dwUserIndex, uint32_t DeviceID, uint32_t dwContentType,
+    uint32_t dwContentFlags, uint32_t cItem, be<uint32_t>* pcbBuffer, be<uint32_t>* phEnum)
 {
     if (dwUserIndex != 0)
     {
@@ -271,7 +275,7 @@ SWA_API uint32_t XamContentCreateEnumerator(DWORD dwUserIndex, DWORD DeviceID, D
     return 0;
 }
 
-SWA_API uint32_t XamEnumerate(uint32_t hEnum, DWORD dwFlags, PVOID pvBuffer, DWORD cbBuffer, XLPDWORD pcItemsReturned, XXOVERLAPPED* pOverlapped)
+SWA_API uint32_t XamEnumerate(uint32_t hEnum, uint32_t dwFlags, void* pvBuffer, uint32_t cbBuffer, be<uint32_t>* pcItemsReturned, XXOVERLAPPED* pOverlapped)
 {
     auto* enumerator = GetKernelObject<XamEnumeratorBase>(hEnum);
     const auto count = enumerator->Next(pvBuffer);
@@ -285,9 +289,9 @@ SWA_API uint32_t XamEnumerate(uint32_t hEnum, DWORD dwFlags, PVOID pvBuffer, DWO
     return ERROR_SUCCESS;
 }
 
-SWA_API uint32_t XamContentCreateEx(DWORD dwUserIndex, LPCSTR szRootName, const XCONTENT_DATA* pContentData,
-    DWORD dwContentFlags, XLPDWORD pdwDisposition, XLPDWORD pdwLicenseMask,
-    DWORD dwFileCacheSize, uint64_t uliContentSize, PXXOVERLAPPED pOverlapped)
+SWA_API uint32_t XamContentCreateEx(uint32_t dwUserIndex, const char* szRootName, const XCONTENT_DATA* pContentData,
+    uint32_t dwContentFlags, be<uint32_t>* pdwDisposition, be<uint32_t>* pdwLicenseMask,
+    uint32_t dwFileCacheSize, uint64_t uliContentSize, PXXOVERLAPPED pOverlapped)
 {
     const auto& registry = gContentRegistry[pContentData->dwContentType - 1];
     const auto exists = registry.contains(StringHash(pContentData->szFileName));
@@ -309,7 +313,7 @@ SWA_API uint32_t XamContentCreateEx(DWORD dwUserIndex, LPCSTR szRootName, const 
             }
             else if (pContentData->dwContentType == XCONTENTTYPE_DLC)
             {
-                root = ".\\dlc";
+                root = "./dlc";
             }
             else
             {
@@ -354,13 +358,13 @@ SWA_API uint32_t XamContentCreateEx(DWORD dwUserIndex, LPCSTR szRootName, const 
     return ERROR_PATH_NOT_FOUND;
 }
 
-SWA_API uint32_t XamContentClose(LPCSTR szRootName, XXOVERLAPPED* pOverlapped)
+SWA_API uint32_t XamContentClose(const char* szRootName, XXOVERLAPPED* pOverlapped)
 {
     gRootMap.erase(StringHash(szRootName));
     return 0;
 }
 
-SWA_API uint32_t XamContentGetDeviceData(DWORD DeviceID, XDEVICE_DATA* pDeviceData)
+SWA_API uint32_t XamContentGetDeviceData(uint32_t DeviceID, XDEVICE_DATA* pDeviceData)
 {
     pDeviceData->DeviceID = DeviceID;
     pDeviceData->DeviceType = XCONTENTDEVICETYPE_HDD;
@@ -401,7 +405,7 @@ SWA_API uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_S
 
     uint32_t result = hid::GetState(userIndex, state);
 
-    if (Window::s_isFocused)
+    if (GameWindow::s_isFocused)
     {
         auto keyboardState = SDL_GetKeyboardState(NULL);
 

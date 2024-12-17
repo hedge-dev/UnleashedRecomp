@@ -26,12 +26,12 @@
 #include <ui/message_window.h>
 #include <ui/options_menu.h>
 #include <ui/sdl_listener.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
 #include <user/config.h>
 #include <xxHashMap.h>
 
 #if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #endif
 
 #include "../../tools/ShaderRecomp/ShaderRecomp/shader_common.h"
@@ -70,11 +70,13 @@
 #include "shader/resolve_msaa_depth_4x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.spirv.h"
 
+#ifdef _WIN32
 extern "C"
 {
     __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
     __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
+#endif
 
 namespace plume
 {
@@ -171,7 +173,7 @@ struct DirtyStates
 static DirtyStates g_dirtyStates(true);
 
 template<typename T>
-static FORCEINLINE void SetDirtyValue(bool& dirtyState, T& dest, const T& src)
+static void SetDirtyValue(bool& dirtyState, T& dest, const T& src)
 {
     if (dest != src)
     {
@@ -556,7 +558,7 @@ static void DestructTempResources()
     g_tempBuffers[g_frame].clear();
 }
 
-static uint32_t g_mainThreadId;
+static std::thread::id g_mainThreadId;
 
 static ankerl::unordered_dense::map<RenderTexture*, RenderTextureLayout> g_barrierMap;
 
@@ -1039,7 +1041,7 @@ static void ProcSetRenderState(const RenderCommand& cmd)
     }
 }
 
-static const std::pair<GuestRenderState, void*> g_setRenderStateFunctions[] =
+static const std::pair<GuestRenderState, PPCFunc*> g_setRenderStateFunctions[] =
 {
     { D3DRS_ZENABLE, HostToGuestFunction<SetRenderState<D3DRS_ZENABLE>> },
     { D3DRS_ZWRITEENABLE, HostToGuestFunction<SetRenderState<D3DRS_ZWRITEENABLE>> },
@@ -1094,11 +1096,13 @@ static std::unique_ptr<GuestShader> g_enhancedMotionBlurShader;
 
 #endif
 
+#ifdef _WIN32
 static bool DetectWine()
 {
     HMODULE dllHandle = GetModuleHandle("ntdll.dll");
     return dllHandle != nullptr && GetProcAddress(dllHandle, "wine_get_version") != nullptr;
 }
+#endif
 
 static constexpr size_t TEXTURE_DESCRIPTOR_SIZE = 65536;
 static constexpr size_t SAMPLER_DESCRIPTOR_SIZE = 1024;
@@ -1161,7 +1165,7 @@ static void CreateImGuiBackend()
     OptionsMenu::Init();
     InstallerWizard::Init();
 
-    ImGui_ImplSDL2_InitForOther(Window::s_pWindow);
+    ImGui_ImplSDL2_InitForOther(GameWindow::s_pWindow);
 
 #ifdef ENABLE_IM_FONT_ATLAS_SNAPSHOT
     g_imFontTexture = LoadTexture(
@@ -1311,7 +1315,7 @@ void Video::CreateHostDevice()
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-    Window::Init();
+    GameWindow::Init();
 
 #ifdef SWA_D3D12
     g_vulkan = DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan;
@@ -1356,7 +1360,7 @@ void Video::CreateHostDevice()
         break;
     }
 
-    g_swapChain = g_queue->createSwapChain(Window::s_handle, bufferCount, BACKBUFFER_FORMAT);
+    g_swapChain = g_queue->createSwapChain(GameWindow::s_renderWindow, bufferCount, BACKBUFFER_FORMAT);
     g_swapChain->setVsyncEnabled(Config::VSync);
     g_swapChainValid = !g_swapChain->needsResize();
 
@@ -1366,7 +1370,7 @@ void Video::CreateHostDevice()
     for (auto& renderSemaphore : g_renderSemaphores)
         renderSemaphore = g_device->createCommandSemaphore();
 
-    g_mainThreadId = GetCurrentThreadId();
+    g_mainThreadId = std::this_thread::get_id();
 
     RenderPipelineLayoutBuilder pipelineLayoutBuilder;
     pipelineLayoutBuilder.begin(false, true);
@@ -1658,9 +1662,9 @@ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
     memset(device, 0, sizeof(*device));
 
     uint32_t functionOffset = 0x443344; // D3D
-    g_codeCache.Insert(functionOffset, reinterpret_cast<void*>(HostToGuestFunction<SetRenderStateUnimplemented>));
+    g_codeCache.Insert(functionOffset, HostToGuestFunction<SetRenderStateUnimplemented>);
 
-    for (size_t i = 0; i < _countof(device->setRenderStateFunctions); i++)
+    for (size_t i = 0; i < std::size(device->setRenderStateFunctions); i++)
         device->setRenderStateFunctions[i] = functionOffset;
 
     for (auto& [state, function] : g_setRenderStateFunctions)
@@ -1670,7 +1674,7 @@ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
         device->setRenderStateFunctions[state / 4] = functionOffset;
     }
 
-    for (size_t i = 0; i < _countof(device->setSamplerStateFunctions); i++)
+    for (size_t i = 0; i < std::size(device->setSamplerStateFunctions); i++)
         device->setSamplerStateFunctions[i] = *reinterpret_cast<uint32_t*>(g_memory.Translate(0x8330F3DC + i * 0xC));
 
     device->viewport.width = 1280.0f;
@@ -1795,7 +1799,7 @@ static void UnlockBuffer(GuestBuffer* buffer)
 {
     if (!buffer->lockedReadOnly)
     {
-        if (GetCurrentThreadId() == g_mainThreadId)
+        if (std::this_thread::get_id() == g_mainThreadId)
         {
             RenderCommand cmd;
             cmd.type = (sizeof(T) == 2) ? RenderCommandType::UnlockBuffer16 : RenderCommandType::UnlockBuffer32;

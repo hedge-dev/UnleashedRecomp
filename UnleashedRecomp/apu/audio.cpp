@@ -14,7 +14,7 @@
 std::ofstream g_audioDumpStream;
 #endif
 
-uint32_t XAudioRegisterRenderDriverClient(XLPDWORD callback, XLPDWORD driver)
+uint32_t XAudioRegisterRenderDriverClient(be<uint32_t>* callback, be<uint32_t>* driver)
 {
 #ifdef AUDIO_DUMP_SAMPLES_PATH
     g_audioDumpStream.open(AUDIO_DUMP_SAMPLES_PATH, std::ios::binary);
@@ -25,7 +25,7 @@ uint32_t XAudioRegisterRenderDriverClient(XLPDWORD callback, XLPDWORD driver)
     return 0;
 }
 
-uint32_t XAudioUnregisterRenderDriverClient(DWORD driver)
+uint32_t XAudioUnregisterRenderDriverClient(uint32_t driver)
 {
     return 0;
 }

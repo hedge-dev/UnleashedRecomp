@@ -34,11 +34,11 @@ using Microsoft::WRL::ComPtr;
 #include <toml++/toml.hpp>
 #include <zstd.h>
 #include <stb_image.h>
-#include <concurrentqueue/blockingconcurrentqueue.h>
+#include <blockingconcurrentqueue.h>
 #include <SDL.h>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <imgui_impl_sdl2.h>
+#include <backends/imgui_impl_sdl2.h>
 #include <o1heap.h>
 #include <cstddef>
 #include <smolv.h>
@@ -46,6 +46,7 @@ using Microsoft::WRL::ComPtr;
 #include <miniaudio.h>
 #include <extras/miniaudio_libvorbis.h>
 #include <fmt/core.h>
+#include <list>
 
 #include "framework.h"
 #include "mutex.h"

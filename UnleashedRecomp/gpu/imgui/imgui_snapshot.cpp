@@ -196,7 +196,7 @@ void ImFontAtlasSnapshot::GenerateGlyphRanges()
 {
     std::vector<std::string_view> localeStrings;
 
-    for (auto& config : Config::Definitions)
+    for (auto& config : g_configDefinitions)
         config->GetLocaleStrings(localeStrings);
 
     std::set<ImWchar> glyphs;

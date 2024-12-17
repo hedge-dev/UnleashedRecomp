@@ -22,3 +22,45 @@
 [submodule "thirdparty/vcpkg"]
 	path = thirdparty/vcpkg
 	url = https://github.com/microsoft/vcpkg
+[submodule "thirdparty/volk"]
+	path = thirdparty/volk
+	url = https://github.com/zeux/volk
+[submodule "thirdparty/SDL"]
+	path = thirdparty/SDL
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "thirdparty/Vulkan-Headers"]
+	path = thirdparty/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "thirdparty/VulkanMemoryAllocator"]
+	path = thirdparty/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "thirdparty/D3D12MemoryAllocator"]
+	path = thirdparty/D3D12MemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator.git
+[submodule "thirdparty/stb"]
+	path = thirdparty/stb
+	url = https://github.com/nothings/stb.git
+[submodule "thirdparty/concurrentqueue"]
+	path = thirdparty/concurrentqueue
+	url = https://github.com/cameron314/concurrentqueue.git
+[submodule "thirdparty/tiny-AES-c"]
+	path = thirdparty/tiny-AES-c
+	url = https://github.com/kokke/tiny-AES-c.git
+[submodule "thirdparty/magic_enum"]
+	path = thirdparty/magic_enum
+	url = https://github.com/Neargye/magic_enum.git
+[submodule "thirdparty/nativefiledialog-extended"]
+	path = thirdparty/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "thirdparty/imgui"]
+	path = thirdparty/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "thirdparty/unordered_dense"]
+	path = thirdparty/unordered_dense
+	url = https://github.com/martinus/unordered_dense.git
+[submodule "thirdparty/vorbis"]
+	path = thirdparty/vorbis
+	url = https://gitlab.xiph.org/xiph/vorbis.git
+[submodule "thirdparty/ogg"]
+	path = thirdparty/ogg
+	url = https://gitlab.xiph.org/xiph/ogg.git

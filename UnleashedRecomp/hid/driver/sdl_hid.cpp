@@ -2,7 +2,8 @@
 #include <SDL.h>
 #include <user/config.h>
 #include <hid/hid_detail.h>
-#include <ui/window.h>
+#include <ui/game_window.h>
+#include <kernel/xdm.h>
 
 #define TRANSLATE_INPUT(S, X) SDL_GameControllerGetButton(controller, S) << FirstBitLow(X)
 #define VIBRATION_TIMEOUT_MS 5000
@@ -65,7 +66,7 @@ public:
 
     bool CanPoll()
     {
-        return controller && (Window::s_isFocused || Config::AllowBackgroundInput);
+        return controller && (GameWindow::s_isFocused || Config::AllowBackgroundInput);
     }
 
     void PollAxis()
@@ -128,7 +129,7 @@ public:
 std::array<Controller, 4> g_controllers;
 Controller* g_activeController;
 
-inline Controller* EnsureController(DWORD dwUserIndex)
+inline Controller* EnsureController(uint32_t dwUserIndex)
 {
     if (!g_controllers[dwUserIndex].controller)
         return nullptr;
@@ -260,7 +261,7 @@ void hid::detail::Init()
 
 uint32_t hid::detail::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
 {
-    static DWORD packet;
+    static uint32_t packet;
 
     if (!pState)
         return ERROR_BAD_ARGUMENTS;

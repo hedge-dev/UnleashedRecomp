@@ -1,7 +1,7 @@
 #include "options_menu.h"
 #include "options_menu_thumbnails.h"
 #include "imgui_utils.h"
-#include "window.h"
+#include "game_window.h"
 #include "exports.h"
 
 #include <api/SWA/System/InputState.h>
@@ -444,7 +444,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     ImVec2 min = { clipRectMin.x, clipRectMin.y + (optionHeight + optionPadding) * rowIndex + yOffset };
     ImVec2 max = { min.x + optionWidth, min.y + optionHeight };
 
-    auto configName = config->GetNameLocalised();
+    auto configName = config->GetNameLocalised(Config::Language);
     auto size = Scale(26.0f);
     auto textSize = g_seuratFont->CalcTextSizeA(size, FLT_MAX, 0.0f, configName.c_str());
 
@@ -747,7 +747,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     }
     else
     {
-        valueText = config->GetValueLocalised();
+        valueText = config->GetValueLocalised(Config::Language);
     }
 
     size = Scale(20.0f);
@@ -952,7 +952,7 @@ static void DrawInfoPanel()
 
     if (g_selectedItem)
     {
-        auto desc = g_selectedItem->GetDescription();
+        auto desc = g_selectedItem->GetDescription(Config::Language);
         auto thumbnail = GetThumbnail(g_selectedItem);
 
         if (thumbnail)
@@ -971,13 +971,13 @@ static void DrawInfoPanel()
                 auto resScale = round(*(float*)g_selectedItem->GetValue() * 1000) / 1000;
 
                 std::snprintf(buf, sizeof(buf), desc.c_str(),
-                    (int)((float)Window::s_width * resScale),
-                    (int)((float)Window::s_height * resScale));
+                    (int)((float)GameWindow::s_width * resScale),
+                    (int)((float)GameWindow::s_height * resScale));
 
                 desc = buf;
             }
 
-            desc += "\n\n" + g_selectedItem->GetValueDescription();
+            desc += "\n\n" + g_selectedItem->GetValueDescription(Config::Language);
         }
 
         auto size = Scale(26.0f);
