@@ -15,10 +15,7 @@ void App::Restart(std::vector<std::string> restartArgs)
 void App::Exit()
 {
     Config::Save();
-
-#if _WIN32
-    ExitProcess(0);
-#endif
+    std::exit(0);
 }
 
 // CApplication::Ctor
