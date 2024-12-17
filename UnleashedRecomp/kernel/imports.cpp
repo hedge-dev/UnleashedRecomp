@@ -150,7 +150,7 @@ inline void CloseKernelObject(XDISPATCHER_HEADER& header)
     DestroyKernelObject(header.WaitListHead.Blink);
 }
 
-uint32_t GuestTimeoutToMilliseconds(be<uint64_t>* timeout)
+uint32_t GuestTimeoutToMilliseconds(be<int64_t>* timeout)
 {
     return timeout ? (*timeout * -1) / 10000 : INFINITE;
 }
@@ -228,8 +228,7 @@ void XamContentDelete()
     LOG_UTILITY("!!! STUB !!!");
 }
 
-
-uint32_t XamContentGetCreator(uint32_t userIndex, const XCONTENT_DATA* contentData, uint32_t* isCreator, be<uint64_t>* xuid, XXOVERLAPPED* overlapped)
+uint32_t XamContentGetCreator(uint32_t userIndex, const XCONTENT_DATA* contentData, be<uint32_t>* isCreator, be<uint64_t>* xuid, XXOVERLAPPED* overlapped)
 {
     if (isCreator)
         *isCreator = true;
@@ -381,7 +380,7 @@ uint32_t FscSetCacheElementCount()
     return 0;
 }
 
-uint32_t NtWaitForSingleObjectEx(uint32_t Handle, uint32_t WaitMode, uint32_t Alertable, be<uint64_t>* Timeout)
+uint32_t NtWaitForSingleObjectEx(uint32_t Handle, uint32_t WaitMode, uint32_t Alertable, be<int64_t>* Timeout)
 {
     uint32_t timeout = GuestTimeoutToMilliseconds(Timeout);
     assert(timeout == 0 || timeout == INFINITE);
@@ -541,7 +540,7 @@ uint32_t RtlUnicodeToMultiByteN(char* MultiByteString, uint32_t MaxBytesInMultiB
     return STATUS_SUCCESS;
 }
 
-uint32_t KeDelayExecutionThread(uint32_t WaitMode, bool Alertable, be<uint64_t>* Timeout)
+uint32_t KeDelayExecutionThread(uint32_t WaitMode, bool Alertable, be<int64_t>* Timeout)
 {
     // We don't do async file reads.
     if (Alertable)
@@ -981,7 +980,7 @@ bool KeResetEvent(XKEVENT* pEvent)
     return QueryKernelObject<Event>(*pEvent)->Reset();
 }
 
-uint32_t KeWaitForSingleObject(XDISPATCHER_HEADER* Object, uint32_t WaitReason, uint32_t WaitMode, bool Alertable, be<uint64_t>* Timeout)
+uint32_t KeWaitForSingleObject(XDISPATCHER_HEADER* Object, uint32_t WaitReason, uint32_t WaitMode, bool Alertable, be<int64_t>* Timeout)
 {
     const uint32_t timeout = GuestTimeoutToMilliseconds(Timeout);
     assert(timeout == INFINITE);
@@ -1255,7 +1254,7 @@ void NtQueryFullAttributesFile()
     LOG_UTILITY("!!! STUB !!!");
 }
 
-uint32_t RtlMultiByteToUnicodeN(wchar_t* UnicodeString, uint32_t MaxBytesInUnicodeString, uint16_t* BytesInUnicodeString, const char* MultiByteString, uint32_t BytesInMultiByteString)
+uint32_t RtlMultiByteToUnicodeN(wchar_t* UnicodeString, uint32_t MaxBytesInUnicodeString, be<uint32_t>* BytesInUnicodeString, const char* MultiByteString, uint32_t BytesInMultiByteString)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 
@@ -1317,7 +1316,7 @@ uint32_t NtCreateSemaphore(be<uint32_t>* Handle, XOBJECT_ATTRIBUTES* ObjectAttri
     return STATUS_SUCCESS;
 }
 
-uint32_t NtReleaseSemaphore(Semaphore* Handle, uint32_t ReleaseCount, uint32_t* PreviousCount)
+uint32_t NtReleaseSemaphore(Semaphore* Handle, uint32_t ReleaseCount, int32_t* PreviousCount)
 {
     uint32_t previousCount;
     Handle->Release(ReleaseCount, &previousCount);
@@ -1481,7 +1480,7 @@ void NetDll_XNetGetTitleXnAddr()
     LOG_UTILITY("!!! STUB !!!");
 }
 
-uint32_t KeWaitForMultipleObjects(uint32_t Count, xpointer<XDISPATCHER_HEADER>* Objects, uint32_t WaitType, uint32_t WaitReason, uint32_t WaitMode, uint32_t Alertable, be<uint64_t>* Timeout)
+uint32_t KeWaitForMultipleObjects(uint32_t Count, xpointer<XDISPATCHER_HEADER>* Objects, uint32_t WaitType, uint32_t WaitReason, uint32_t WaitMode, uint32_t Alertable, be<int64_t>* Timeout)
 {
     // FIXME: This function is only accounting for events.
 

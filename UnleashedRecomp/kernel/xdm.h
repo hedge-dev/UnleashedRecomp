@@ -44,13 +44,13 @@
 typedef union _LARGE_INTEGER {
     struct {
         uint32_t LowPart;
-        uint32_t HighPart;
-    } DUMMYSTRUCTNAME;
+        int32_t HighPart;
+    };
     struct {
         uint32_t LowPart;
-        uint32_t HighPart;
+        int32_t HighPart;
     } u;
-    uint64_t QuadPart;
+    int64_t QuadPart;
 } LARGE_INTEGER;
 
 typedef struct _FILETIME

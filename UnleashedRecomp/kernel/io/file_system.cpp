@@ -157,9 +157,9 @@ uint32_t XReadFile
     return result;
 }
 
-uint32_t XSetFilePointer(FileHandle* hFile, uint32_t lDistanceToMove, be<uint32_t>* lpDistanceToMoveHigh, uint32_t dwMoveMethod)
+uint32_t XSetFilePointer(FileHandle* hFile, int32_t lDistanceToMove, be<int32_t>* lpDistanceToMoveHigh, uint32_t dwMoveMethod)
 {
-    uint32_t distanceToMoveHigh = lpDistanceToMoveHigh ? lpDistanceToMoveHigh->get() : 0;
+    int32_t distanceToMoveHigh = lpDistanceToMoveHigh ? lpDistanceToMoveHigh->get() : 0;
     std::streamoff streamOffset = lDistanceToMove + (std::streamoff(distanceToMoveHigh) << 32U);
     std::fstream::seekdir streamSeekDir = {};
     switch (dwMoveMethod)
@@ -187,12 +187,12 @@ uint32_t XSetFilePointer(FileHandle* hFile, uint32_t lDistanceToMove, be<uint32_
 
     std::streampos streamPos = hFile->stream.tellg();
     if (lpDistanceToMoveHigh != nullptr)
-        *lpDistanceToMoveHigh = uint32_t(streamPos >> 32U);
+        *lpDistanceToMoveHigh = int32_t(streamPos >> 32U);
 
     return uint32_t(streamPos);
 }
 
-uint32_t XSetFilePointerEx(FileHandle* hFile, uint32_t lDistanceToMove, LARGE_INTEGER* lpNewFilePointer, uint32_t dwMoveMethod)
+uint32_t XSetFilePointerEx(FileHandle* hFile, int32_t lDistanceToMove, LARGE_INTEGER* lpNewFilePointer, uint32_t dwMoveMethod)
 {
     std::fstream::seekdir streamSeekDir = {};
     switch (dwMoveMethod)
@@ -220,7 +220,7 @@ uint32_t XSetFilePointerEx(FileHandle* hFile, uint32_t lDistanceToMove, LARGE_IN
 
     if (lpNewFilePointer != nullptr)
     {
-        lpNewFilePointer->QuadPart = ByteSwap(uint64_t(hFile->stream.tellg()));
+        lpNewFilePointer->QuadPart = ByteSwap(int64_t(hFile->stream.tellg()));
     }
 
     return TRUE;
