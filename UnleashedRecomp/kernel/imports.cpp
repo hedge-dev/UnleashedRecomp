@@ -520,9 +520,9 @@ void XexGetModuleSection()
     LOG_UTILITY("!!! STUB !!!");
 }
 
-uint32_t RtlUnicodeToMultiByteN(char* MultiByteString, uint32_t MaxBytesInMultiByteString, be<uint32_t>* BytesInMultiByteString, const wchar_t* UnicodeString, uint32_t BytesInUnicodeString)
+uint32_t RtlUnicodeToMultiByteN(char* MultiByteString, uint32_t MaxBytesInMultiByteString, be<uint32_t>* BytesInMultiByteString, const be<uint16_t>* UnicodeString, uint32_t BytesInUnicodeString)
 {
-    const auto reqSize = BytesInUnicodeString / sizeof(wchar_t);
+    const auto reqSize = BytesInUnicodeString / sizeof(uint16_t);
 
     if (BytesInMultiByteString)
         *BytesInMultiByteString = reqSize;
@@ -532,7 +532,7 @@ uint32_t RtlUnicodeToMultiByteN(char* MultiByteString, uint32_t MaxBytesInMultiB
 
     for (size_t i = 0; i < reqSize; i++)
     {
-        const auto c = ByteSwap(UnicodeString[i]);
+        const auto c = UnicodeString[i].get();
 
         MultiByteString[i] = c < 256 ? c : '?';
     }
@@ -1254,26 +1254,15 @@ void NtQueryFullAttributesFile()
     LOG_UTILITY("!!! STUB !!!");
 }
 
-uint32_t RtlMultiByteToUnicodeN(wchar_t* UnicodeString, uint32_t MaxBytesInUnicodeString, be<uint32_t>* BytesInUnicodeString, const char* MultiByteString, uint32_t BytesInMultiByteString)
+uint32_t RtlMultiByteToUnicodeN(be<uint16_t>* UnicodeString, uint32_t MaxBytesInUnicodeString, be<uint32_t>* BytesInUnicodeString, const char* MultiByteString, uint32_t BytesInMultiByteString)
 {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    uint32_t length = std::min(MaxBytesInUnicodeString / 2, BytesInMultiByteString);
 
-    std::wstring wideString = converter.from_bytes(
-        MultiByteString, MultiByteString + (BytesInMultiByteString - 1)
-    );
-
-    uint32_t bytesRequired = static_cast<uint32_t>((wideString.size() + 1) * sizeof(wchar_t));
-
-    uint32_t bytesToCopy = (bytesRequired > MaxBytesInUnicodeString)
-        ? MaxBytesInUnicodeString
-        : bytesRequired;
-
-    memcpy(UnicodeString, wideString.data(), bytesToCopy);
-    for (size_t i = 0; i < bytesToCopy / 2; i++)
-        UnicodeString[i] = ByteSwap(UnicodeString[i]);
+    for (size_t i = 0; i < length; i++)
+        UnicodeString[i] = MultiByteString[i];
 
     if (BytesInUnicodeString != nullptr)
-        *BytesInUnicodeString = bytesToCopy;
+        *BytesInUnicodeString = length * 2;
 
     return STATUS_SUCCESS;
 }

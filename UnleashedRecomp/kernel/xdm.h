@@ -53,11 +53,15 @@ typedef union _LARGE_INTEGER {
     int64_t QuadPart;
 } LARGE_INTEGER;
 
+static_assert(sizeof(LARGE_INTEGER) == 8);
+
 typedef struct _FILETIME
 {
     uint32_t dwLowDateTime;
     uint32_t dwHighDateTime;
 } FILETIME;
+
+static_assert(sizeof(FILETIME) == 8);
 
 typedef struct _WIN32_FIND_DATAA
 {
@@ -72,6 +76,8 @@ typedef struct _WIN32_FIND_DATAA
     char cFileName[260];
     char cAlternateFileName[14];
 } WIN32_FIND_DATAA;
+
+static_assert(sizeof(WIN32_FIND_DATAA) == 320);
 
 #endif
 

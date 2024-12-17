@@ -46,7 +46,6 @@ using Microsoft::WRL::ComPtr;
 #include <miniaudio.h>
 #include <extras/miniaudio_libvorbis.h>
 #include <fmt/core.h>
-#include <codecvt>
 #include <list>
 
 #include "framework.h"
