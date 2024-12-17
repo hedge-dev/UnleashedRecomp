@@ -133,8 +133,12 @@ static WizardPage g_firstPage = WizardPage::SelectLanguage;
 static WizardPage g_currentPage = g_firstPage;
 static std::string g_currentMessagePrompt = "";
 static bool g_currentMessagePromptConfirmation = false;
+static std::list<std::filesystem::path> g_currentPickerResults;
+static std::atomic<bool> g_currentPickerResultsReady = false;
+static std::unique_ptr<std::thread> g_currentPickerThread;
+static bool g_currentPickerVisible = false;
+static bool g_currentPickerFolderMode = false;
 static int g_currentMessageResult = -1;
-static bool g_filesPickerSkipUpdate = false;
 static ImVec2 g_joypadAxis = {};
 static int g_currentCursorIndex = -1;
 static int g_currentCursorDefault = 0;
@@ -148,7 +152,7 @@ public:
     {
         constexpr float AxisValueRange = 32767.0f;
         constexpr float AxisTapRange = 0.5f;
-        if (!InstallerWizard::s_isVisible || !g_currentMessagePrompt.empty())
+        if (!InstallerWizard::s_isVisible || !g_currentMessagePrompt.empty() || g_currentPickerVisible)
         {
             return;
         }
@@ -217,7 +221,7 @@ public:
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEMOTION:
         {
-            for (size_t i = 0; i < g_currentCursorRects.size() && !g_filesPickerSkipUpdate; i++)
+            for (size_t i = 0; i < g_currentCursorRects.size(); i++)
             {
                 auto &currentRect = g_currentCursorRects[i];
                 if (ImGui::IsMouseHoveringRect(currentRect.first, currentRect.second, false))
@@ -734,7 +738,7 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
 
     int baser = 0;
     int baseg = 0;
-    if (g_currentMessagePrompt.empty() && !sourceButton && buttonEnabled && (alpha >= 1.0f))
+    if (g_currentMessagePrompt.empty() && !g_currentPickerVisible && !sourceButton && buttonEnabled && (alpha >= 1.0f))
     {
         bool cursorOnButton = PushCursorRect(min, max, buttonPressed, makeDefault);
         if (cursorOnButton)
@@ -882,44 +886,44 @@ static bool ConvertPathSet(const nfdpathset_t *pathSet, std::list<std::filesyste
     return true;
 }
 
-static bool ShowFilesPicker(std::list<std::filesystem::path> &filePaths)
+static void PickerThreadProcess()
 {
-    filePaths.clear();
-
     const nfdpathset_t *pathSet;
-    nfdresult_t result = NFD_OpenDialogMultipleU8(&pathSet, nullptr, 0, nullptr);
-    g_filesPickerSkipUpdate = true;
-
-    if (result == NFD_OKAY)
+    nfdresult_t result = NFD_ERROR;
+    if (g_currentPickerFolderMode)
     {
-        bool pathsConverted = ConvertPathSet(pathSet, filePaths);
-        NFD_PathSet_Free(pathSet);
-        return pathsConverted;
+        nfdpickfolderu8args_t openArgs = {};
+        result = NFD_PickFolderMultipleU8_With(&pathSet, &openArgs);
     }
     else
     {
-        return false;
+        nfdopendialogu8args_t openArgs = {};
+        result = NFD_OpenDialogMultipleU8_With(&pathSet, &openArgs);
     }
+    
+    if (result == NFD_OKAY)
+    {
+        bool pathsConverted = ConvertPathSet(pathSet, g_currentPickerResults);
+        NFD_PathSet_Free(pathSet);
+    }
+
+    g_currentPickerResultsReady = true;
+    g_currentPickerVisible = false;
 }
 
-static bool ShowFoldersPicker(std::list<std::filesystem::path> &folderPaths)
+static void ShowPicker(bool folderMode)
 {
-    folderPaths.clear();
-
-    const nfdpathset_t *pathSet;
-    nfdresult_t result = NFD_PickFolderMultipleU8(&pathSet, nullptr);
-    g_filesPickerSkipUpdate = true;
-
-    if (result == NFD_OKAY)
+    if (g_currentPickerThread != nullptr)
     {
-        bool pathsConverted = ConvertPathSet(pathSet, folderPaths);
-        NFD_PathSet_Free(pathSet);
-        return pathsConverted;
+        g_currentPickerThread->join();
+        g_currentPickerThread.reset();
     }
-    else
-    {
-        return false;
-    }
+
+    g_currentPickerResults.clear();
+    g_currentPickerFolderMode = folderMode;
+    g_currentPickerResultsReady = false;
+    g_currentPickerVisible = true;
+    g_currentPickerThread = std::make_unique<std::thread>(PickerThreadProcess);
 }
 
 static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
@@ -1013,8 +1017,6 @@ static void DrawLanguagePicker()
 
 static void DrawSourcePickers()
 {
-    g_filesPickerSkipUpdate = false;
-
     bool buttonPressed = false;
     std::list<std::filesystem::path> paths;
     if (g_currentPage == WizardPage::SelectGameAndUpdate || g_currentPage == WizardPage::SelectDLC)
@@ -1028,9 +1030,9 @@ static void DrawSourcePickers()
         ImVec2 min = { Scale(AlignToNextGrid(CONTAINER_X) + BOTTOM_X_GAP), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP) };
         ImVec2 max = { Scale(AlignToNextGrid(CONTAINER_X) + BOTTOM_X_GAP + textSize.x * squashRatio), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT) + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
         DrawButton(min, max, addFilesText.c_str(), false, true, buttonPressed, ADD_BUTTON_MAX_TEXT_WIDTH);
-        if (buttonPressed && ShowFilesPicker(paths))
+        if (buttonPressed)
         {
-            ParseSourcePaths(paths);
+            ShowPicker(false);
         }
 
         min.x += Scale(BOTTOM_X_GAP + textSize.x * squashRatio);
@@ -1041,9 +1043,9 @@ static void DrawSourcePickers()
 
         max.x = min.x + Scale(textSize.x * squashRatio);
         DrawButton(min, max, addFolderText.c_str(), false, true, buttonPressed, ADD_BUTTON_MAX_TEXT_WIDTH);
-        if (buttonPressed && ShowFoldersPicker(paths))
+        if (buttonPressed)
         {
-            ParseSourcePaths(paths);
+            ShowPicker(true);
         }
     }
 }
@@ -1305,14 +1307,6 @@ static void DrawBorders()
 
 static void DrawMessagePrompt()
 {
-    if (g_filesPickerSkipUpdate)
-    {
-        // If a blocking function like the files picker is called, we must wait one update before actually showing
-        // the message box, as a lot of time has passed since the last real update. Otherwise, animations will play
-        // too quickly and input glitches might happen.
-        return;
-    }
-
     if (g_currentMessagePrompt.empty())
     {
         return;
@@ -1340,6 +1334,18 @@ static void DrawMessagePrompt()
         g_currentMessagePrompt.clear();
         g_currentMessageResult = -1;
     }
+}
+
+static void CheckPickerResults()
+{
+    if (!g_currentPickerResultsReady)
+    {
+        return;
+    }
+
+    ParseSourcePaths(g_currentPickerResults);
+    g_currentPickerResultsReady = false;
+    g_currentPickerVisible = false;
 }
 
 void InstallerWizard::Init()
@@ -1380,6 +1386,7 @@ void InstallerWizard::Draw()
     DrawNextButton();
     DrawBorders();
     DrawMessagePrompt();
+    CheckPickerResults();
 
     if (g_isDisappearing)
     {
