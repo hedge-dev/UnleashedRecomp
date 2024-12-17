@@ -1,0 +1,54 @@
+{
+  "id": "io.github.hedge_dev.unleashedrecomp",
+  "runtime": "org.freedesktop.Platform",
+  "runtime-version": "23.08",
+  "sdk": "org.freedesktop.Sdk",
+  "sdk-extensions" : [ "org.freedesktop.Sdk.Extension.llvm18" ],
+  "finish-args": [
+    "--share=network",
+    "--socket=x11",
+    "--socket=pulseaudio",
+    "--device=dri",
+    "--filesystem=host",
+    "--filesystem=/media",
+    "--filesystem=/run/media",
+    "--filesystem=/mnt"
+  ],
+  "modules": [
+    {
+      "name": "UnleashedRecomp",
+      "buildsystem": "simple",
+      "build-commands": [
+        "cmake --preset linux-release",
+        "cmake --build out/build/linux-release",
+        "mkdir -p /app/bin",
+        "cp out/build/linux-release/UnleashedRecomp/SWA /app/bin/SWA"
+      ],
+      "sources": [
+        {
+          "type": "git",
+          "branch": "linux",
+          "disable-shallow-clone": true,
+          "url": "https://github.com/hedge-dev/UnleashedRecomp.git"
+        },
+        {
+          "type": "file",
+          "path": "default.xex",
+          "dest": "UnleashedRecompLib/private"
+        },
+        {
+          "type": "file",
+          "path": "shader.ar",
+          "dest": "UnleashedRecompLib/private"
+        }
+      ],
+      "build-options": {
+        "append-path": "/usr/lib/sdk/llvm18/bin",
+        "prepend-ld-library-path": "/usr/lib/sdk/llvm18/lib",
+        "build-args": [
+          "--share=network"
+        ]
+      }
+    }
+  ]
+}
