@@ -207,11 +207,14 @@ set(SWA_THIRDPARTY_INCLUDES
     "${SWA_THIRDPARTY_ROOT}/ddspp"
     "${SWA_THIRDPARTY_ROOT}/imgui"
     "${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack"
-    "${SWA_THIRDPARTY_ROOT}/miniaudio"
+    "${SWA_THIRDPARTY_ROOT}/magic_enum/include"
     "${SWA_THIRDPARTY_ROOT}/miniaudio"
     "${SWA_THIRDPARTY_ROOT}/stb"
     "${SWA_THIRDPARTY_ROOT}/tiny-AES-c"
     "${SWA_THIRDPARTY_ROOT}/TinySHA1"
+    "${SWA_THIRDPARTY_ROOT}/unordered_dense/include"
+    "${SWA_THIRDPARTY_ROOT}/volk"
+    "${SWA_THIRDPARTY_ROOT}/Vulkan-Headers/include"
     "${SWA_THIRDPARTY_ROOT}/VulkanMemoryAllocator/include"
     "${SWA_TOOLS_ROOT}/bc_diff"
     "${SWA_TOOLS_ROOT}/ShaderRecomp/thirdparty/smol-v/source"
@@ -298,7 +301,6 @@ endif()
 target_link_libraries(UnleashedRecomp PRIVATE
     fmt::fmt
     libzstd_static
-    magic_enum::magic_enum
     msdf-atlas-gen::msdf-atlas-gen
     nfd::nfd
     o1heap
@@ -306,10 +308,7 @@ target_link_libraries(UnleashedRecomp PRIVATE
     SDL2::SDL2-static
     tomlplusplus::tomlplusplus
     UnleashedRecompLib
-    unordered_dense::unordered_dense
-    volk::volk_headers
     Vorbis::vorbisfile
-    Vulkan::Headers
     xxHash::xxhash)
 
 target_include_directories(UnleashedRecomp PRIVATE
