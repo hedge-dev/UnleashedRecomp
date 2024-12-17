@@ -69,6 +69,16 @@ void KiSystemStartup()
     // OS mounts game data to D:
     XamContentCreateEx(0, "D", &gameContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
 
+    for (auto& file : std::filesystem::directory_iterator("./dlc"))
+    {
+        if (file.is_directory())
+        {
+            std::u8string fileNameU8 = file.path().filename().u8string();
+            std::u8string filePathU8 = file.path().u8string();
+            XamRegisterContent(XamMakeContent(XCONTENTTYPE_DLC, (const char*)(fileNameU8.c_str())), (const char*)(filePathU8.c_str()));
+        }
+    }
+
     XAudioInitializeSystem();
 }
 
