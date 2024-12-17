@@ -15,7 +15,7 @@ void App::Restart(std::vector<std::string> restartArgs)
 void App::Exit()
 {
     Config::Save();
-    std::exit(0);
+    std::_Exit(0);
 }
 
 // CApplication::Ctor
