@@ -30,13 +30,12 @@ inline std::filesystem::path GetUserPath()
     if (homeDir != nullptr)
     {
         // Prefer to store in the .config directory if it exists. Use the home directory otherwise.
-        const std::string dirName = "." USER_DIRECTORY;
         std::filesystem::path homePath = homeDir;
         std::filesystem::path configPath = homePath / ".config";
         if (std::filesystem::exists(configPath))
-            userPath = configPath / dirName;
+            userPath = configPath / USER_DIRECTORY;
         else
-            userPath = homePath / dirName;
+            userPath = homePath / ("." USER_DIRECTORY);
     }
 #else
     static_assert(false, "GetUserPath() not implemented for this platform.");
