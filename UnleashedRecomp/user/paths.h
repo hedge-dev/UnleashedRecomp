@@ -8,13 +8,13 @@
 
 inline std::filesystem::path GetGamePath()
 {
-    return std::filesystem::current_path();
+    return GAME_INSTALL_DIRECTORY;
 }
 
 inline std::filesystem::path GetUserPath()
 {
-    if (std::filesystem::exists("portable.txt"))
-        return std::filesystem::current_path();
+    if (std::filesystem::exists(GAME_INSTALL_DIRECTORY "portable.txt"))
+        return GAME_INSTALL_DIRECTORY;
 
     std::filesystem::path userPath;
 
