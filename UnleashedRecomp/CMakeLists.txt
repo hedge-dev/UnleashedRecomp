@@ -1,6 +1,10 @@
 project("UnleashedRecomp")
 set(TARGET_NAME "SWA")
 
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    option(SWA_FLATPAK "Configure the build for Flatpak compatibility." OFF)
+endif()
+
 if (WIN32)
     option(SWA_D3D12 "Add D3D12 support for rendering" ON)
 endif()
@@ -259,6 +263,10 @@ endif()
 
 set_target_properties(UnleashedRecomp PROPERTIES OUTPUT_NAME ${TARGET_NAME})
 
+if (SWA_FLATPAK)
+    target_compile_definitions(UnleashedRecomp PRIVATE "GAME_INSTALL_DIRECTORY=\"/var/data\"")
+endif()
+
 if (SWA_D3D12)
     find_package(directx-headers CONFIG REQUIRED)
     find_package(directx12-agility CONFIG REQUIRED)
@@ -309,7 +317,8 @@ target_link_libraries(UnleashedRecomp PRIVATE
     tomlplusplus::tomlplusplus
     UnleashedRecompLib
     Vorbis::vorbisfile
-    xxHash::xxhash)
+    xxHash::xxhash
+)
 
 target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}

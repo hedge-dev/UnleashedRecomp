@@ -19,7 +19,7 @@
       "name": "UnleashedRecomp",
       "buildsystem": "simple",
       "build-commands": [
-        "cmake --preset linux-release",
+        "cmake --preset linux-release -DSWA_FLATPAK=ON",
         "cmake --build out/build/linux-release",
         "mkdir -p /app/bin",
         "cp out/build/linux-release/UnleashedRecomp/SWA /app/bin/SWA"
@@ -27,7 +27,7 @@
       "sources": [
         {
           "type": "git",
-          "branch": "linux",
+          "branch": "linux-flatpak",
           "disable-shallow-clone": true,
           "url": "https://github.com/hedge-dev/UnleashedRecomp.git"
         },

@@ -96,7 +96,7 @@ static double g_appearTime = 0.0;
 static double g_disappearTime = DBL_MAX;
 static bool g_isDisappearing = false;
 
-static std::filesystem::path g_installPath = ".";
+static std::filesystem::path g_installPath;
 static std::filesystem::path g_gameSourcePath;
 static std::filesystem::path g_updateSourcePath;
 static std::array<std::filesystem::path, int(DLC::Count)> g_dlcSourcePaths;
@@ -1426,8 +1426,10 @@ void InstallerWizard::Shutdown()
     }
 }
 
-bool InstallerWizard::Run(bool skipGame)
+bool InstallerWizard::Run(std::filesystem::path installPath, bool skipGame)
 {
+    g_installPath = installPath;
+
     EmbeddedPlayer::Init();
     NFD_Init();
 

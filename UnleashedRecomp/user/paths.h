@@ -2,6 +2,10 @@
 
 #define USER_DIRECTORY "SWA"
 
+#ifndef GAME_INSTALL_DIRECTORY
+#define GAME_INSTALL_DIRECTORY "."
+#endif
+
 inline std::filesystem::path GetGamePath()
 {
     return std::filesystem::current_path();

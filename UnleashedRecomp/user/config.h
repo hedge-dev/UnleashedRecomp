@@ -50,7 +50,7 @@ public:
 
 #define WINDOWPOS_CENTRED 0x2FFF0000
 
-static inline std::vector<IConfigDef*> g_configDefinitions{};
+inline std::vector<IConfigDef*> g_configDefinitions;
 
 CONFIG_DEFINE_ENUM_TEMPLATE(ELanguage)
 {

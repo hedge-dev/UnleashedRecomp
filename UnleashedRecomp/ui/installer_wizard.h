@@ -9,5 +9,5 @@ struct InstallerWizard
     static void Init();
     static void Draw();
     static void Shutdown();
-    static bool Run(bool skipGame);
+    static bool Run(std::filesystem::path installPath, bool skipGame);
 };
