@@ -313,11 +313,11 @@ SWA_API uint32_t XamContentCreateEx(uint32_t dwUserIndex, const char* szRootName
             }
             else if (pContentData->dwContentType == XCONTENTTYPE_DLC)
             {
-                root = "./dlc";
+                root = GAME_INSTALL_DIRECTORY "/dlc";
             }
             else
             {
-                root = ".";
+                root = GAME_INSTALL_DIRECTORY;
             }
 
             XamRegisterContent(*pContentData, root);

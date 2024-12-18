@@ -5,6 +5,10 @@ if (WIN32)
     option(SWA_D3D12 "Add D3D12 support for rendering" ON)
 endif()
 
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    option(SWA_FLATPAK "Configure the build for Flatpak compatibility." OFF)
+endif()
+
 option(SWA_XAUDIO2 "Use XAudio2 for audio playback" OFF)
 
 function(BIN2C)
@@ -258,6 +262,10 @@ else()
 endif()
 
 set_target_properties(UnleashedRecomp PROPERTIES OUTPUT_NAME ${TARGET_NAME})
+
+if (SWA_FLATPAK)
+    target_compile_definitions(UnleashedRecomp PRIVATE "GAME_INSTALL_DIRECTORY=\"/var/data\"")
+endif()
 
 if (SWA_D3D12)
     find_package(directx-headers CONFIG REQUIRED)

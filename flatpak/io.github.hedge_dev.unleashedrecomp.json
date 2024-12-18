@@ -1,0 +1,58 @@
+{
+  "id": "io.github.hedge_dev.unleashedrecomp",
+  "runtime": "org.freedesktop.Platform",
+  "runtime-version": "23.08",
+  "sdk": "org.freedesktop.Sdk",
+  "sdk-extensions" : [ "org.freedesktop.Sdk.Extension.llvm18" ],
+  "finish-args": [
+    "--share=network",
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--socket=pulseaudio",
+    "--device=all",
+    "--filesystem=host",
+    "--filesystem=/media",
+    "--filesystem=/run/media",
+    "--filesystem=/mnt"
+  ],
+  "modules": [
+    {
+      "name": "UnleashedRecomp",
+      "buildsystem": "simple",
+      "build-commands": [
+        "cmake --preset linux-release -DSWA_FLATPAK=ON",
+        "cmake --build out/build/linux-release",
+        "mkdir -p /app/bin",
+        "cp out/build/linux-release/UnleashedRecomp/SWA /app/bin/SWA",
+        "install -Dm644 UnleashedRecompResources/images/game_icon.png /app/share/icons/hicolor/128x128/apps/${FLATPAK_ID}.png",
+        "install -Dm644 flatpak/io.github.hedge_dev.unleashedrecomp.metainfo.xml /app/share/metainfo/${FLATPAK_ID}.metainfo.xml",
+        "install -Dm644 flatpak/io.github.hedge_dev.unleashedrecomp.desktop /app/share/applications/${FLATPAK_ID}.desktop"
+      ],
+      "sources": [
+        {
+          "type": "git",
+          "branch": "linux-flatpak",
+          "disable-shallow-clone": true,
+          "url": "https://github.com/hedge-dev/UnleashedRecomp.git"
+        },
+        {
+          "type": "file",
+          "path": "default.xex",
+          "dest": "UnleashedRecompLib/private"
+        },
+        {
+          "type": "file",
+          "path": "shader.ar",
+          "dest": "UnleashedRecompLib/private"
+        }
+      ],
+      "build-options": {
+        "append-path": "/usr/lib/sdk/llvm18/bin",
+        "prepend-ld-library-path": "/usr/lib/sdk/llvm18/lib",
+        "build-args": [
+          "--share=network"
+        ]
+      }
+    }
+  ]
+}
