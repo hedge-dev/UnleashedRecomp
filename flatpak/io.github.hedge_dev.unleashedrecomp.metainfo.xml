@@ -16,7 +16,9 @@
   
   <description>
     <p>
-      Static recompilation of Sonic Unleashed.
+      A native PC port of Sonic Unleashed for Xbox 360 achieved through static recompilation.
+
+      https://github.com/hedge-dev/UnleashedRecomp
     </p>
   </description>
   

@@ -9,6 +9,8 @@
     "--socket=x11",
     "--socket=pulseaudio",
     "--device=dri",
+    "--device=input",
+    "--device=usb",
     "--filesystem=host",
     "--filesystem=/media",
     "--filesystem=/run/media",
@@ -19,7 +21,7 @@
       "name": "UnleashedRecomp",
       "buildsystem": "simple",
       "build-commands": [
-        "cmake --preset linux-release -DSWA_FLATPAK=ON",
+        "cmake --preset linux-release -DSWA_FLATPAK=ON -DNFD_PORTAL=ON",
         "cmake --build out/build/linux-release",
         "mkdir -p /app/bin",
         "cp out/build/linux-release/UnleashedRecomp/SWA /app/bin/SWA",
