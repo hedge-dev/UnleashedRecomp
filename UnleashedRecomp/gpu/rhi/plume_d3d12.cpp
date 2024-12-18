@@ -3345,7 +3345,8 @@ namespace plume {
         D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
         allocatorDesc.pDevice = d3d;
         allocatorDesc.pAdapter = adapter;
-        allocatorDesc.Flags = D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED | D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED;
+        allocatorDesc.Flags = D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED | 
+            D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED;
 
         res = D3D12MA::CreateAllocator(&allocatorDesc, &allocator);
         if (FAILED(res)) {
