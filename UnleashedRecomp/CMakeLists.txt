@@ -1,12 +1,12 @@
 project("UnleashedRecomp")
 set(TARGET_NAME "SWA")
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    option(SWA_FLATPAK "Configure the build for Flatpak compatibility." OFF)
-endif()
-
 if (WIN32)
     option(SWA_D3D12 "Add D3D12 support for rendering" ON)
+endif()
+
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    option(SWA_FLATPAK "Configure the build for Flatpak compatibility." OFF)
 endif()
 
 option(SWA_XAUDIO2 "Use XAudio2 for audio playback" OFF)
@@ -317,8 +317,7 @@ target_link_libraries(UnleashedRecomp PRIVATE
     tomlplusplus::tomlplusplus
     UnleashedRecompLib
     Vorbis::vorbisfile
-    xxHash::xxhash
-)
+    xxHash::xxhash)
 
 target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
