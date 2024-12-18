@@ -15,6 +15,11 @@ void App::Restart(std::vector<std::string> restartArgs)
 void App::Exit()
 {
     Config::Save();
+
+#ifdef _WIN32
+    timeEndPeriod(1);
+#endif
+
     std::_Exit(0);
 }
 

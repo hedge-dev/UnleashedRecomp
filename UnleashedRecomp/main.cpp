@@ -137,6 +137,10 @@ uint32_t LdrLoadModule(const std::filesystem::path &path)
 
 int main(int argc, char *argv[])
 {
+#ifdef _WIN32
+    timeBeginPeriod(1);
+#endif
+
     os::logger::Init();
 
     bool forceInstaller = false;

@@ -546,7 +546,13 @@ uint32_t KeDelayExecutionThread(uint32_t WaitMode, bool Alertable, be<int64_t>* 
     if (Alertable)
         return STATUS_USER_APC;
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(GuestTimeoutToMilliseconds(Timeout)));
+    uint32_t timeout = GuestTimeoutToMilliseconds(Timeout);
+
+#ifdef _WIN32
+    Sleep(timeout);
+#else
+    std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
+#endif
 
     return STATUS_SUCCESS;
 }
