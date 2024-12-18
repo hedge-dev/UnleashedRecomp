@@ -135,6 +135,7 @@ static std::string g_currentMessagePrompt = "";
 static bool g_currentMessagePromptConfirmation = false;
 static std::list<std::filesystem::path> g_currentPickerResults;
 static std::atomic<bool> g_currentPickerResultsReady = false;
+static std::string g_currentPickerErrorMessage;
 static std::unique_ptr<std::thread> g_currentPickerThread;
 static bool g_currentPickerVisible = false;
 static bool g_currentPickerFolderMode = false;
@@ -872,15 +873,15 @@ static bool ConvertPathSet(const nfdpathset_t *pathSet, std::list<std::filesyste
 
     for (nfdpathsetsize_t i = 0; i < pathSetCount; i++)
     {
-        char *pathSetPath = nullptr;
-        if (NFD_PathSet_GetPathU8(pathSet, i, &pathSetPath) != NFD_OKAY)
+        nfdnchar_t *pathSetPath = nullptr;
+        if (NFD_PathSet_GetPathN(pathSet, i, &pathSetPath) != NFD_OKAY)
         {
             filePaths.clear();
             return false;
         }
 
-        filePaths.emplace_back(std::filesystem::path(std::u8string_view((const char8_t *)(pathSetPath))));
-        NFD_PathSet_FreePathU8(pathSetPath);
+        filePaths.emplace_back(std::filesystem::path(pathSetPath));
+        NFD_PathSet_FreePathN(pathSetPath);
     }
 
     return true;
@@ -892,27 +893,21 @@ static void PickerThreadProcess()
     nfdresult_t result = NFD_ERROR;
     if (g_currentPickerFolderMode)
     {
-        nfdpickfolderu8args_t openArgs = {};
-#if defined(__linux__)
-        openArgs.parentWindow.type = NFD_WINDOW_HANDLE_TYPE_X11;
-        openArgs.parentWindow.handle = (void*)(GameWindow::s_renderWindow.window);
-#endif
-        result = NFD_PickFolderMultipleU8_With(&pathSet, &openArgs);
+        result = NFD_PickFolderMultipleN(&pathSet, nullptr);
     }
     else
     {
-        nfdopendialogu8args_t openArgs = {};
-#if defined(__linux__)
-        openArgs.parentWindow.type = NFD_WINDOW_HANDLE_TYPE_X11;
-        openArgs.parentWindow.handle = (void*)(GameWindow::s_renderWindow.window);
-#endif
-        result = NFD_OpenDialogMultipleU8_With(&pathSet, &openArgs);
+        result = NFD_OpenDialogMultipleN(&pathSet, nullptr, 0, nullptr);
     }
     
     if (result == NFD_OKAY)
     {
         bool pathsConverted = ConvertPathSet(pathSet, g_currentPickerResults);
         NFD_PathSet_Free(pathSet);
+    }
+    else if (result == NFD_ERROR)
+    {
+        g_currentPickerErrorMessage = NFD_GetError();
     }
 
     g_currentPickerResultsReady = true;
@@ -1349,6 +1344,13 @@ static void CheckPickerResults()
     if (!g_currentPickerResultsReady)
     {
         return;
+    }
+
+    if (!g_currentPickerErrorMessage.empty())
+    {
+        g_currentMessagePrompt = g_currentPickerErrorMessage;
+        g_currentMessagePromptConfirmation = false;
+        g_currentPickerErrorMessage.clear();
     }
 
     ParseSourcePaths(g_currentPickerResults);
