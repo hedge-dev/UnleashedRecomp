@@ -137,7 +137,7 @@ set(SWA_APU_CXX_SOURCES
 if (SWA_XAUDIO2)
     list(APPEND SWA_APU_CXX_SOURCES "apu/driver/xaudio_driver.cpp")
 else()
-    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/miniaudio_driver.cpp")
+    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/sdl2_driver.cpp")
 endif()
 
 set(SWA_HID_CXX_SOURCES
