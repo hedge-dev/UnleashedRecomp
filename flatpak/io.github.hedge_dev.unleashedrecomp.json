@@ -6,7 +6,8 @@
   "sdk-extensions" : [ "org.freedesktop.Sdk.Extension.llvm18" ],
   "finish-args": [
     "--share=network",
-    "--socket=x11",
+    "--socket=wayland",
+    "--socket=fallback-x11",
     "--socket=pulseaudio",
     "--device=all",
     "--filesystem=host",
@@ -19,7 +20,7 @@
       "name": "UnleashedRecomp",
       "buildsystem": "simple",
       "build-commands": [
-        "cmake --preset linux-release -DSWA_FLATPAK=ON -DNFD_PORTAL=ON",
+        "cmake --preset linux-release -DSWA_FLATPAK=ON",
         "cmake --build out/build/linux-release",
         "mkdir -p /app/bin",
         "cp out/build/linux-release/UnleashedRecomp/SWA /app/bin/SWA",
