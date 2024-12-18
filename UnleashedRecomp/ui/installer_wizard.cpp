@@ -893,11 +893,19 @@ static void PickerThreadProcess()
     if (g_currentPickerFolderMode)
     {
         nfdpickfolderu8args_t openArgs = {};
+#if defined(__linux__)
+        openArgs.parentWindow.type = NFD_WINDOW_HANDLE_TYPE_X11;
+        openArgs.parentWindow.handle = (void*)(GameWindow::s_renderWindow.window);
+#endif
         result = NFD_PickFolderMultipleU8_With(&pathSet, &openArgs);
     }
     else
     {
         nfdopendialogu8args_t openArgs = {};
+#if defined(__linux__)
+        openArgs.parentWindow.type = NFD_WINDOW_HANDLE_TYPE_X11;
+        openArgs.parentWindow.handle = (void*)(GameWindow::s_renderWindow.window);
+#endif
         result = NFD_OpenDialogMultipleU8_With(&pathSet, &openArgs);
     }
     
