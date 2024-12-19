@@ -2,137 +2,46 @@ namespace Hedgehog::Base
 {
     inline SStringHolder* SStringHolder::GetHolder(const char* in_pStr)
     {
-        return (SStringHolder*)((size_t)in_pStr - sizeof(RefCountAndLength));
+        return (SStringHolder*)((size_t)in_pStr - sizeof(RefCount));
     }
 
-    inline size_t SStringHolder::GetMemorySize(const size_t in_Length)
+    inline SStringHolder* SStringHolder::Make(const char* in_pStr)
     {
-        return sizeof(RefCountAndLength) + in_Length;
-    }
-
-    inline size_t SStringHolder::GetMemorySizeAligned(const size_t in_Length)
-    {
-        return (GetMemorySize(in_Length) + 0x10) & ~0x0F;
-    }
-
-    inline SStringHolder* SStringHolder::Make(const char* in_pStr, const size_t in_Length)
-    {
-        const size_t memSize = GetMemorySize(in_Length);
-        const size_t memSizeAligned = GetMemorySizeAligned(in_Length);
-
-        auto pHolder = (SStringHolder*)__HH_ALLOC(memSizeAligned);
+        auto pHolder = (SStringHolder*)__HH_ALLOC(sizeof(RefCount) + strlen(in_pStr) + 1);
         pHolder->RefCount = 1;
-        pHolder->Length = (uint16_t)in_Length;
-
-        if (in_pStr)
-            memcpy(pHolder->aStr, in_pStr, in_Length);
-
-        memset(&pHolder->aStr[in_Length], 0, memSizeAligned - memSize);
-
-        return pHolder;
-    }
-
-    inline SStringHolder* SStringHolder::Concat(const char* in_pStrA, const size_t in_LengthA, const char* in_pStrB, const size_t in_LengthB)
-    {
-        SStringHolder* pHolder = Make(nullptr, in_LengthA + in_LengthB);
-
-        memcpy(pHolder->aStr, in_pStrA, in_LengthA);
-        memcpy(&pHolder->aStr[in_LengthA], in_pStrB, in_LengthB);
-
+        strcpy(pHolder->aStr, in_pStr);
         return pHolder;
     }
 
     inline void SStringHolder::AddRef()
     {
-        std::atomic_ref atomicRef(RefCountAndLength.value);
+        std::atomic_ref refCount(RefCount.value);
 
-        uint32_t originalValue, incrementedValue;
+        be<uint32_t> original, incremented;
         do
         {
-            originalValue = RefCountAndLength.value;
-            incrementedValue = ByteSwap(ByteSwap(originalValue) + 1);
-        } while (!atomicRef.compare_exchange_weak(originalValue, incrementedValue));
+            original = RefCount;
+            incremented = original + 1;
+        } while (!refCount.compare_exchange_weak(original.value, incremented.value));
     }
 
     inline void SStringHolder::Release()
     {
-        std::atomic_ref atomicRef(RefCountAndLength.value);
+        std::atomic_ref refCount(RefCount.value);
 
-        uint32_t originalValue, decrementedValue;
+        be<uint32_t> original, decremented;
         do
         {
-            originalValue = RefCountAndLength.value;
-            decrementedValue = ByteSwap(ByteSwap(originalValue) - 1);
-        } while (!atomicRef.compare_exchange_weak(originalValue, decrementedValue));
+            original = RefCount;
+            decremented = original - 1;
+        } while (!refCount.compare_exchange_weak(original.value, decremented.value));
 
-        if ((decrementedValue & 0xFFFF0000) == 0)
+        if (decremented == 0)
             __HH_FREE(this);
     }
 
     inline bool SStringHolder::IsUnique() const
     {
         return RefCount == 1;
-    }
-
-    inline bool SStringHolder::TryInplaceAssign(const char* in_pStr, const size_t in_Length)
-    {
-        if (!IsUnique())
-            return false;
-
-        const size_t memSizeAligned = GetMemorySizeAligned(in_Length);
-
-        if (memSizeAligned > GetMemorySizeAligned(Length))
-            return false;
-
-        if (in_pStr)
-            memcpy(aStr, in_pStr, in_Length);
-
-        memset(&aStr[in_Length], 0, memSizeAligned - GetMemorySize(in_Length));
-
-        Length = (uint16_t)in_Length;
-
-        return true;
-    }
-
-    inline bool SStringHolder::TryInplaceAppend(const char* in_pStr, const size_t in_Length)
-    {
-        if (!IsUnique())
-            return false;
-
-        const size_t memSizeAligned = GetMemorySizeAligned(Length + in_Length);
-
-        if (memSizeAligned > GetMemorySizeAligned(Length))
-            return false;
-
-        if (in_pStr)
-            memcpy(&aStr[Length], in_pStr, in_Length);
-
-        memset(&aStr[Length + in_Length], 0, memSizeAligned - GetMemorySize(Length + in_Length));
-
-        Length = (uint16_t)(Length + in_Length);
-
-        return true;
-    }
-
-    inline bool SStringHolder::TryInplacePrepend(const char* in_pStr, const size_t in_Length)
-    {
-        if (!IsUnique())
-            return false;
-
-        const size_t memSizeAligned = GetMemorySizeAligned(in_Length + Length);
-
-        if (memSizeAligned > GetMemorySizeAligned(Length))
-            return false;
-
-        memmove(&aStr[in_Length], aStr, Length);
-
-        if (in_pStr)
-            memcpy(aStr, in_pStr, in_Length);
-
-        memset(&aStr[in_Length + Length], 0, memSizeAligned - GetMemorySize(in_Length + Length));
-
-        Length = (uint16_t)(in_Length + Length);
-
-        return true;
     }
 }

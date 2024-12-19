@@ -2,14 +2,14 @@
 
 #include "SWA.inl"
 
-inline static void* __HH_ALLOC(const uint32_t in_Size)
+inline void* __HH_ALLOC(const uint32_t in_Size)
 {
-    return GuestToHostFunction<void*>(0x82DFA0B0, in_Size, nullptr, 0, 0);
+    return GuestToHostFunction<void*>(sub_822C0988, in_Size);
 }
 
-inline static void __HH_FREE(const void* in_pData)
+inline void __HH_FREE(const void* in_pData)
 {
-    GuestToHostFunction<void>(0x82DF9E50, in_pData);
+    GuestToHostFunction<void>(sub_822C0270, in_pData);
 }
 
 namespace Hedgehog::Base
