@@ -1351,11 +1351,15 @@ void Video::CreateHostDevice()
     {
     case ETripleBuffering::Auto:
         if (g_vulkan)
+        {
             // Defaulting to 3 is fine if presentWait as supported, as the maximum frame latency allowed is only 1.
             bufferCount = g_device->getCapabilities().presentWait ? 3 : 2;
+        }
         else
+        {
             // Defaulting to 3 is fine on D3D12 thanks to flip discard model.
             bufferCount = 3;
+        }
 
         break;
     case ETripleBuffering::On:
