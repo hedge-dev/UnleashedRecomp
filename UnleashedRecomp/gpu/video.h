@@ -396,7 +396,7 @@ enum GuestTextureAddress
     D3DTADDRESS_BORDER = 6
 };
 
-extern bool g_needsResize;
+inline bool g_needsResize;
 
 extern std::unique_ptr<GuestTexture> LoadTexture(const uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping = RenderComponentMapping());
 
