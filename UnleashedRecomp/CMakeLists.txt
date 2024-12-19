@@ -314,10 +314,11 @@ target_link_libraries(UnleashedRecomp PRIVATE
     o1heap
     PowerUtils
     SDL2::SDL2-static
+    SDL2_mixer
     tomlplusplus::tomlplusplus
     UnleashedRecompLib
-    Vorbis::vorbisfile
-    xxHash::xxhash)
+    xxHash::xxhash
+)
 
 target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
