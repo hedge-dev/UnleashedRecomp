@@ -16,9 +16,6 @@
 [submodule "thirdparty/msdf-atlas-gen"]
 	path = thirdparty/msdf-atlas-gen
 	url = https://github.com/Chlumsky/msdf-atlas-gen.git
-[submodule "thirdparty/miniaudio"]
-	path = thirdparty/miniaudio
-	url = https://github.com/mackron/miniaudio
 [submodule "thirdparty/vcpkg"]
 	path = thirdparty/vcpkg
 	url = https://github.com/microsoft/vcpkg
@@ -58,9 +55,6 @@
 [submodule "thirdparty/unordered_dense"]
 	path = thirdparty/unordered_dense
 	url = https://github.com/martinus/unordered_dense.git
-[submodule "thirdparty/vorbis"]
-	path = thirdparty/vorbis
-	url = https://gitlab.xiph.org/xiph/vorbis.git
-[submodule "thirdparty/ogg"]
-	path = thirdparty/ogg
-	url = https://gitlab.xiph.org/xiph/ogg.git
+[submodule "thirdparty/SDL_mixer"]
+	path = thirdparty/SDL_mixer
+	url = https://github.com/libsdl-org/SDL_mixer

@@ -32,6 +32,7 @@ GuestThreadContext::GuestThreadContext(uint32_t cpuNumber)
     ppcContext.fn = (uint8_t*)g_codeCache.bucket;
     ppcContext.r1.u64 = g_memory.MapVirtual(thread + PCR_SIZE + TLS_SIZE + TEB_SIZE + STACK_SIZE); // stack pointer
     ppcContext.r13.u64 = g_memory.MapVirtual(thread);
+    ppcContext.fpscr.loadFromHost();
 
     assert(GetPPCContext() == nullptr);
     SetPPCContext(ppcContext);
@@ -77,7 +78,7 @@ uint32_t GuestThread::Start(const GuestThreadParams& params)
     GuestThreadContext ctx(cpuNumber);
     ctx.ppcContext.r3.u64 = params.value;
 
-    GuestCode::Run(g_codeCache.Find(params.function), &ctx.ppcContext, g_memory.Translate(0));
+    reinterpret_cast<PPCFunc*>(g_codeCache.Find(params.function))(ctx.ppcContext, reinterpret_cast<uint8_t*>(g_memory.base));
 
     return ctx.ppcContext.r3.u32;
 }

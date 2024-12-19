@@ -36,6 +36,7 @@ using Microsoft::WRL::ComPtr;
 #include <stb_image.h>
 #include <blockingconcurrentqueue.h>
 #include <SDL.h>
+#include <SDL_mixer.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <backends/imgui_impl_sdl2.h>
@@ -43,10 +44,9 @@ using Microsoft::WRL::ComPtr;
 #include <cstddef>
 #include <smolv.h>
 #include <set>
-#include <miniaudio.h>
-#include <extras/miniaudio_libvorbis.h>
 #include <fmt/core.h>
 #include <list>
+#include <semaphore>
 
 #include "framework.h"
 #include "mutex.h"

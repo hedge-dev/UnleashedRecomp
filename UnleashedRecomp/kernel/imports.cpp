@@ -76,16 +76,16 @@ static std::atomic<uint32_t> g_keSetEventGeneration;
 
 struct Semaphore final : KernelObject, HostObject<XKSEMAPHORE>
 {
-    std::atomic<uint32_t> count;
+    std::counting_semaphore<> semaphore;
     uint32_t maximumCount;
 
     Semaphore(XKSEMAPHORE* semaphore)
-        : count(semaphore->Header.SignalState), maximumCount(semaphore->Limit)
+        : semaphore(semaphore->Header.SignalState), maximumCount(semaphore->Limit)
     {
     }
 
     Semaphore(uint32_t count, uint32_t maximumCount)
-        : count(count), maximumCount(maximumCount)
+        : semaphore(count), maximumCount(maximumCount)
     {
     }
 
@@ -93,32 +93,11 @@ struct Semaphore final : KernelObject, HostObject<XKSEMAPHORE>
     {
         if (timeout == 0)
         {
-            uint32_t currentCount = count.load();
-            if (currentCount != 0)
-            {
-                if (count.compare_exchange_weak(currentCount, currentCount - 1))
-                    return STATUS_SUCCESS;
-            }
-
-            return STATUS_TIMEOUT;
+            return semaphore.try_acquire() ? STATUS_SUCCESS : STATUS_TIMEOUT;
         }
         else if (timeout == INFINITE)
         {
-            uint32_t currentCount;
-            while (true)
-            {
-                currentCount = count.load();
-                if (currentCount != 0)
-                {
-                    if (count.compare_exchange_weak(currentCount, currentCount - 1))
-                        return STATUS_SUCCESS;
-                }
-                else
-                {
-                    count.wait(0);
-                }
-            }
-
+            semaphore.acquire();
             return STATUS_SUCCESS;
         }
         else
@@ -130,13 +109,7 @@ struct Semaphore final : KernelObject, HostObject<XKSEMAPHORE>
 
     void Release(uint32_t releaseCount, uint32_t* previousCount)
     {
-        if (previousCount != nullptr)
-            *previousCount = count;
-
-        assert(count + releaseCount <= maximumCount);
-
-        count += releaseCount;
-        count.notify_all();
+        semaphore.release(releaseCount);
     }
 };
 
@@ -546,7 +519,13 @@ uint32_t KeDelayExecutionThread(uint32_t WaitMode, bool Alertable, be<int64_t>* 
     if (Alertable)
         return STATUS_USER_APC;
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(GuestTimeoutToMilliseconds(Timeout)));
+    uint32_t timeout = GuestTimeoutToMilliseconds(Timeout);
+
+#ifdef _WIN32
+    Sleep(timeout);
+#else
+    std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
+#endif
 
     return STATUS_SUCCESS;
 }

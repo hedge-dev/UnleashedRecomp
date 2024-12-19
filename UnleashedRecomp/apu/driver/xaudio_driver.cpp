@@ -90,7 +90,7 @@ void XAudioInitializeSystem()
     g_sourceVoice->Start();
 
     KeInsertHostFunction(XAUDIO_DRIVER_KEY, DriverLoop);
-    GuestThread::Start(XAUDIO_DRIVER_KEY, 0, 0, &g_driverThread);
+    GuestThread::Start({ XAUDIO_DRIVER_KEY, 0, 0 }, nullptr);
 }
 
 void XAudioRegisterClient(PPCFunc* callback, uint32_t param)

@@ -137,7 +137,7 @@ set(SWA_APU_CXX_SOURCES
 if (SWA_XAUDIO2)
     list(APPEND SWA_APU_CXX_SOURCES "apu/driver/xaudio_driver.cpp")
 else()
-    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/miniaudio_driver.cpp")
+    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/sdl2_driver.cpp")
 endif()
 
 set(SWA_HID_CXX_SOURCES
@@ -212,7 +212,6 @@ set(SWA_THIRDPARTY_INCLUDES
     "${SWA_THIRDPARTY_ROOT}/imgui"
     "${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack"
     "${SWA_THIRDPARTY_ROOT}/magic_enum/include"
-    "${SWA_THIRDPARTY_ROOT}/miniaudio"
     "${SWA_THIRDPARTY_ROOT}/stb"
     "${SWA_THIRDPARTY_ROOT}/tiny-AES-c"
     "${SWA_THIRDPARTY_ROOT}/TinySHA1"
@@ -314,10 +313,11 @@ target_link_libraries(UnleashedRecomp PRIVATE
     o1heap
     PowerUtils
     SDL2::SDL2-static
+    SDL2_mixer
     tomlplusplus::tomlplusplus
     UnleashedRecompLib
-    Vorbis::vorbisfile
-    xxHash::xxhash)
+    xxHash::xxhash
+)
 
 target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
