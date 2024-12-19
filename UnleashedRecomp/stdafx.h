@@ -46,6 +46,7 @@ using Microsoft::WRL::ComPtr;
 #include <set>
 #include <fmt/core.h>
 #include <list>
+#include <semaphore>
 
 #include "framework.h"
 #include "mutex.h"
