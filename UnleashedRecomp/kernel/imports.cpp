@@ -1356,7 +1356,7 @@ void KeQuerySystemTime(be<uint64_t>* time)
     int64_t currentTime100ns = std::chrono::duration_cast<std::chrono::duration<int64_t, std::ratio<1, 10000000>>>(timeSinceEpoch).count();
     currentTime100ns += FILETIME_EPOCH_DIFFERENCE;
 
-    *time = ((currentTime100ns & 0xFFFFFFFF) << 32) | (currentTime100ns & 0xFFFFFFFF);
+    *time = currentTime100ns;
 }
 
 void RtlTimeToTimeFields()
