@@ -147,9 +147,26 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
     return 0;
 }
 
-void GameWindow::Init()
+void GameWindow::Init(bool sdlVideoDefault)
 {
-    SDL_InitSubSystem(SDL_INIT_VIDEO);
+#ifdef __linux__
+    if (!sdlVideoDefault)
+    {
+        int videoRes = SDL_VideoInit("wayland");
+        if (videoRes != 0)
+            SDL_VideoInit(nullptr);
+    }
+#else
+    else
+    {
+        SDL_VideoInit(nullptr);
+    }
+#endif
+
+    const char* videoDriverName = SDL_GetCurrentVideoDriver();
+    if (videoDriverName != nullptr)
+        fmt::println("SDL Video Driver: {}", videoDriverName);
+
     SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
     SDL_AddEventWatch(Window_OnSDLEvent, s_pWindow);
 #ifdef _WIN32
@@ -185,6 +202,8 @@ void GameWindow::Init()
 #if defined(_WIN32)
     s_renderWindow = info.info.win.window;
     SetDarkTitleBar(true);
+#elif defined(SDL_VULKAN_ENABLED)
+    s_renderWindow = s_pWindow;
 #elif defined(__linux__)
     s_renderWindow = { info.info.x11.display, info.info.x11.window };
 #else

@@ -29,12 +29,18 @@
 typedef struct _NSWindow NSWindow;
 #endif
 
+#ifdef SDL_VULKAN_ENABLED
+#include <SDL_vulkan.h>
+#endif
+
 namespace plume {
 #if defined(_WIN64)
     // Native HWND handle to the target window.
     typedef HWND RenderWindow;
 #elif defined(__ANDROID__)
     typedef ANativeWindow* RenderWindow;
+#elif defined(SDL_VULKAN_ENABLED)
+    typedef SDL_Window *RenderWindow;
 #elif defined(__linux__)
     struct RenderWindow {
         Display* display;

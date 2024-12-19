@@ -1989,6 +1989,13 @@ namespace plume {
             fprintf(stderr, "vkCreateWin32SurfaceKHR failed with error code 0x%X.\n", res);
             return;
         }
+#   elif defined(SDL_VULKAN_ENABLED)
+        VulkanInterface *renderInterface = commandQueue->device->renderInterface;
+        SDL_bool sdlRes = SDL_Vulkan_CreateSurface(renderWindow, renderInterface->instance, &surface);
+        if (sdlRes == SDL_FALSE) {
+            fprintf(stderr, "SDL_Vulkan_CreateSurface failed with error %s.\n", SDL_GetError());
+            return;
+        }
 #   elif defined(__ANDROID__)
         assert(renderWindow != nullptr);
         VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
@@ -2312,6 +2319,8 @@ namespace plume {
         GetClientRect(renderWindow, &rect);
         dstWidth = rect.right - rect.left;
         dstHeight = rect.bottom - rect.top;
+#   elif defined(SDL_VULKAN_ENABLED)
+        SDL_GetWindowSize(renderWindow, (int *)(&dstWidth), (int *)(&dstHeight));
 #   elif defined(__ANDROID__)
         dstWidth = ANativeWindow_getWidth(renderWindow);
         dstHeight = ANativeWindow_getHeight(renderWindow);
@@ -4073,7 +4082,11 @@ namespace plume {
 
     // VulkanInterface
 
+#if SDL_VULKAN_ENABLED
+    VulkanInterface::VulkanInterface(RenderWindow sdlWindow) {
+#else
     VulkanInterface::VulkanInterface() {
+#endif
         VkResult res = volkInitialize();
         if (res != VK_SUCCESS) {
             fprintf(stderr, "volkInitialize failed with error code 0x%X.\n", res);
@@ -4100,11 +4113,31 @@ namespace plume {
         std::vector<VkExtensionProperties> availableExtensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
 
-        std::unordered_set<std::string> missingRequiredExtensions = RequiredInstanceExtensions;
+        std::unordered_set<std::string> requiredExtensions = RequiredInstanceExtensions;
         std::unordered_set<std::string> supportedOptionalExtensions;
 #   if DLSS_ENABLED
         const std::unordered_set<std::string> dlssExtensions = DLSS::getRequiredInstanceExtensionsVulkan();
 #   endif
+
+#   if SDL_VULKAN_ENABLED
+        // Push the extensions specified by SDL as required.
+        // SDL2 has this awkward requirement for the window to pull the extensions from. 
+        // This can be removed when upgrading to SDL3.
+        if (sdlWindow != nullptr) {
+            uint32_t sdlVulkanExtensionCount = 0;
+            if (SDL_Vulkan_GetInstanceExtensions(sdlWindow, &sdlVulkanExtensionCount, nullptr)) {
+                std::vector<char *> sdlVulkanExtensions;
+                sdlVulkanExtensions.resize(sdlVulkanExtensionCount);
+                if (SDL_Vulkan_GetInstanceExtensions(sdlWindow, &sdlVulkanExtensionCount, (const char **)(sdlVulkanExtensions.data()))) {
+                    for (char *sdlVulkanExtension : sdlVulkanExtensions) {
+                        requiredExtensions.insert(sdlVulkanExtension);
+                    }
+                }
+            }
+        }
+#   endif
+
+        std::unordered_set<std::string> missingRequiredExtensions = requiredExtensions;
         for (uint32_t i = 0; i < extensionCount; i++) {
             const std::string extensionName(availableExtensions[i].extensionName);
             missingRequiredExtensions.erase(extensionName);
@@ -4129,7 +4162,7 @@ namespace plume {
         }
 
         std::vector<const char *> enabledExtensions;
-        for (const std::string &extension : RequiredInstanceExtensions) {
+        for (const std::string &extension : requiredExtensions) {
             enabledExtensions.push_back(extension.c_str());
         }
 
@@ -4192,8 +4225,15 @@ namespace plume {
 
     // Global creation function.
 
+#if SDL_VULKAN_ENABLED
+    std::unique_ptr<RenderInterface> CreateVulkanInterface(RenderWindow sdlWindow) {
+        std::unique_ptr<VulkanInterface> createdInterface = std::make_unique<VulkanInterface>(sdlWindow);
+        return createdInterface->isValid() ? std::move(createdInterface) : nullptr;
+    }
+#else
     std::unique_ptr<RenderInterface> CreateVulkanInterface() {
         std::unique_ptr<VulkanInterface> createdInterface = std::make_unique<VulkanInterface>();
         return createdInterface->isValid() ? std::move(createdInterface) : nullptr;
     }
+#endif
 };
