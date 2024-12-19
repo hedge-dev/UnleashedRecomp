@@ -2124,6 +2124,12 @@ namespace plume {
     }
 
     bool VulkanSwapChain::present(uint32_t textureIndex, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount) {
+        constexpr uint64_t MaxFrameDelay = 1;
+        if (commandQueue->device->capabilities.presentWait && (currentPresentId > MaxFrameDelay)) {
+            constexpr uint64_t waitTimeout = 100000000;
+            vkWaitForPresentKHR(commandQueue->device->vk, vk, currentPresentId - MaxFrameDelay, waitTimeout);
+        }
+
         thread_local std::vector<VkSemaphore> waitSemaphoresVector;
         waitSemaphoresVector.clear();
         for (uint32_t i = 0; i < waitSemaphoreCount; i++) {
@@ -2138,6 +2144,15 @@ namespace plume {
         presentInfo.pImageIndices = &textureIndex;
         presentInfo.pWaitSemaphores = !waitSemaphoresVector.empty() ? waitSemaphoresVector.data() : nullptr;
         presentInfo.waitSemaphoreCount = uint32_t(waitSemaphoresVector.size());
+
+        VkPresentIdKHR presentId = {};
+        if (commandQueue->device->capabilities.presentWait) {
+            currentPresentId++;
+            presentId.sType = VK_STRUCTURE_TYPE_PRESENT_ID_KHR;
+            presentId.pPresentIds = &currentPresentId;
+            presentId.swapchainCount = 1;
+            presentInfo.pNext = &presentId;
+        }
         
         VkResult res;
         {
