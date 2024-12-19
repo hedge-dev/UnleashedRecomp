@@ -29,6 +29,11 @@ SWA_API void Game_PlaySound(const char* pName)
     }
 }
 
+SWA_API void Window_SetDisplay(int displayIndex)
+{
+    GameWindow::SetDisplay(displayIndex);
+}
+
 SWA_API void Window_SetFullscreen(bool isEnabled)
 {
     GameWindow::SetFullscreen(isEnabled);

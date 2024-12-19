@@ -30,6 +30,7 @@ public:
     static inline bool s_isFocused;
     static inline bool s_isIconNight;
     static inline bool s_isFullscreenCursorVisible;
+    static inline bool s_isChangingDisplay;
 
     static SDL_Surface* GetIconSurface(void* pIconBmp, size_t iconSize)
     {
@@ -108,7 +109,9 @@ public:
         {
             SDL_SetWindowFullscreen(s_pWindow, 0);
             SDL_ShowCursor(SDL_ENABLE);
+
             SetIcon(GameWindow::s_isIconNight);
+            SetDimensions(Config::WindowWidth, Config::WindowHeight, Config::WindowX, Config::WindowY);
         }
 
         return isEnabled;
@@ -173,6 +176,19 @@ public:
         SDL_MoveEvent(s_pWindow, x, y);
     }
 
+    static void ResetDimensions()
+    {
+        s_x = SDL_WINDOWPOS_CENTERED;
+        s_y = SDL_WINDOWPOS_CENTERED;
+        s_width = DEFAULT_WIDTH;
+        s_height = DEFAULT_HEIGHT;
+
+        Config::WindowX = s_x;
+        Config::WindowY = s_y;
+        Config::WindowWidth = s_width;
+        Config::WindowHeight = s_height;
+    }
+
     static uint32_t GetWindowFlags()
     {
         uint32_t flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
@@ -186,19 +202,78 @@ public:
         return flags;
     }
 
-    static bool IsPositionValid()
+    static int GetDisplayCount()
     {
-        auto displayCount = SDL_GetNumVideoDisplays();
+        auto result = SDL_GetNumVideoDisplays();
 
-        if (displayCount <= 0)
+        if (result < 0)
         {
-            LOGF_ERROR("Failed to validate window position: {}", SDL_GetError());
-            return false;
+            LOGF_ERROR("Failed to get display count: {}", SDL_GetError());
+            return 1;
         }
+
+        return result;
+    }
+
+    static int GetDisplay()
+    {
+        auto displayCount = GetDisplayCount();
 
         for (int i = 0; i < displayCount; i++)
         {
             SDL_Rect bounds;
+
+            if (SDL_GetDisplayBounds(i, &bounds) == 0)
+            {
+                auto x = s_x;
+                auto y = s_y;
+
+                if (x == SDL_WINDOWPOS_CENTERED)
+                    x = bounds.w / 2 - s_width / 2;
+
+                if (y == SDL_WINDOWPOS_CENTERED)
+                    y = bounds.h / 2 - s_height / 2;
+
+                if (x >= bounds.x && x < bounds.x + bounds.w &&
+                    y >= bounds.y && y < bounds.y + bounds.h)
+                {
+                    return i;
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    static void SetDisplay(int displayIndex)
+    {
+        if (!IsFullscreen())
+            return;
+
+        s_isChangingDisplay = true;
+
+        SDL_Rect bounds;
+
+        if (SDL_GetDisplayBounds(displayIndex, &bounds) == 0)
+        {
+            SetFullscreen(false);
+            SetDimensions(bounds.w, bounds.h, bounds.x, bounds.y);
+            SetFullscreen(true);
+        }
+        else
+        {
+            ResetDimensions();
+        }
+    }
+
+    static bool IsPositionValid()
+    {
+        auto displayCount = GetDisplayCount();
+
+        for (int i = 0; i < displayCount; i++)
+        {
+            SDL_Rect bounds;
+
             if (SDL_GetDisplayBounds(i, &bounds) == 0)
             {
                 auto x = s_x;

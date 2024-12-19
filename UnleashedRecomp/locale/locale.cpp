@@ -52,6 +52,18 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         }
     },
     {
+        "Options_Desc_NotAvailableWindowed",
+        {
+            { ELanguage::English, "This option is not available in windowed mode." }
+        }
+    },
+    {
+        "Options_Desc_NotAvailableHardware",
+        {
+            { ELanguage::English, "This option is not available with your current hardware configuration." }
+        }
+    },
+    {
         "Options_Desc_NotAvailableMSAA",
         {
             { ELanguage::English, "This option is not available without MSAA." }

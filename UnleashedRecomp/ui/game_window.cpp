@@ -3,6 +3,7 @@
 #include <user/config.h>
 #include <SDL_syswm.h>
 #include <app.h>
+#include <gpu/video.h>
 
 bool m_isFullscreenKeyReleased = true;
 bool m_isResizing = false;
@@ -33,8 +34,14 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
 
                     Config::Fullscreen = GameWindow::SetFullscreen(!GameWindow::IsFullscreen());
 
-                    if (!Config::Fullscreen)
+                    if (Config::Fullscreen)
+                    {
+                        Config::Monitor = GameWindow::GetDisplay();
+                    }
+                    else
+                    {
                         Config::WindowState = GameWindow::SetMaximised(Config::WindowState == EWindowState::Maximised);
+                    }
 
                     // Block holding ALT+ENTER spamming window changes.
                     m_isFullscreenKeyReleased = false;
@@ -45,7 +52,7 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
                 // Restore original window dimensions on F2.
                 case SDLK_F2:
                     Config::Fullscreen = GameWindow::SetFullscreen(false);
-                    GameWindow::SetDimensions(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+                    GameWindow::ResetDimensions();
                     break;
 
                 // Recentre window on F3.
@@ -118,11 +125,9 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
         }
 
         case SDL_USER_EVILSONIC:
-        {
             GameWindow::s_isIconNight = event->user.code;
             GameWindow::SetIcon(GameWindow::s_isIconNight);
             break;
-        }
     }
 
     if (!GameWindow::IsFullscreen())
@@ -160,22 +165,14 @@ void GameWindow::Init()
         s_x = s_y = SDL_WINDOWPOS_CENTERED;
 
     if (!IsPositionValid())
-    {
-        s_x = SDL_WINDOWPOS_CENTERED;
-        s_y = SDL_WINDOWPOS_CENTERED;
-        s_width = DEFAULT_WIDTH;
-        s_height = DEFAULT_HEIGHT;
-
-        Config::WindowX = s_x;
-        Config::WindowY = s_y;
-        Config::WindowWidth = s_width;
-        Config::WindowHeight = s_height;
-    }
+        GameWindow::ResetDimensions();
 
     s_pWindow = SDL_CreateWindow("SWA", s_x, s_y, s_width, s_height, GetWindowFlags());
 
     if (IsFullscreen())
         SDL_ShowCursor(SDL_DISABLE);
+
+    SetDisplay(Config::Monitor);
 
     SetIcon();
     SetTitle();
@@ -199,7 +196,7 @@ void GameWindow::Init()
 
 void GameWindow::Update()
 {
-    if (!GameWindow::IsFullscreen() && !GameWindow::IsMaximised())
+    if (!GameWindow::IsFullscreen() && !GameWindow::IsMaximised() && !s_isChangingDisplay)
     {
         Config::WindowX = GameWindow::s_x;
         Config::WindowY = GameWindow::s_y;
@@ -212,4 +209,7 @@ void GameWindow::Update()
         SetTitle();
         m_isResizing = false;
     }
+
+    if (g_needsResize)
+        s_isChangingDisplay = false;
 }

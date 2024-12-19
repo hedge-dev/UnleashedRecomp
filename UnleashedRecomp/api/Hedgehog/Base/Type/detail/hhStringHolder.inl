@@ -65,7 +65,7 @@ namespace Hedgehog::Base
             decrementedValue = ByteSwap(ByteSwap(originalValue) - 1);
         } while (!atomicRef.compare_exchange_weak(originalValue, decrementedValue));
 
-        if (RefCountAndLength == 0)
+        if ((decrementedValue & 0xFFFF0000) == 0)
             __HH_FREE(this);
     }
 

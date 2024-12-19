@@ -424,7 +424,7 @@ static bool DrawCategories()
 template<typename T>
 static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* config,
     bool isAccessible, std::string* inaccessibleReason = nullptr,
-    T valueMin = T(0), T valueCenter = T(0.5), T valueMax = T(1))
+    T valueMin = T(0), T valueCenter = T(0.5), T valueMax = T(1), bool isSlider = true)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
@@ -522,6 +522,10 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                     // TODO: check if value was changed?
                     VideoConfigValueChangedCallback(config);
 
+                    // TODO: check if value was changed?
+                    if (config->Callback)
+                        config->Callback(config);
+
                     Game_PlaySound("sys_worldmap_decide");
                 }
             }
@@ -568,44 +572,47 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 0, 0, 13 * alpha), IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 55 * alpha), IM_COL32(0, 0, 0, 6 * alpha));
     drawList->AddRectFilledMultiColor(min, max, IM_COL32(0, 130, 0, 13 * alpha), IM_COL32(0, 130, 0, 111 * alpha), IM_COL32(0, 130, 0, 0), IM_COL32(0, 130, 0, 55 * alpha));
 
-    if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int32_t>)
+    if (isSlider)
     {
-        // Inner container of slider
-        const uint32_t innerColor0 = IM_COL32(0, 65, 0, 255 * alpha);
-        const uint32_t innerColor1 = IM_COL32(0, 32, 0, 255 * alpha);
+        if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int32_t>)
+        {
+            // Inner container of slider
+            const uint32_t innerColor0 = IM_COL32(0, 65, 0, 255 * alpha);
+            const uint32_t innerColor1 = IM_COL32(0, 32, 0, 255 * alpha);
 
-        float xPadding = Scale(6.0f);
-        float yPadding = Scale(3.0f);
+            float xPadding = Scale(6.0f);
+            float yPadding = Scale(3.0f);
 
-        drawList->AddRectFilledMultiColor
-        (
-            { min.x + xPadding, min.y + yPadding }, 
-            { max.x - xPadding, max.y - yPadding }, 
-            innerColor0, 
-            innerColor0, 
-            innerColor1, 
-            innerColor1
-        );
+            drawList->AddRectFilledMultiColor
+            (
+                { min.x + xPadding, min.y + yPadding },
+                { max.x - xPadding, max.y - yPadding },
+                innerColor0,
+                innerColor0,
+                innerColor1,
+                innerColor1
+            );
 
-        // The actual slider
-        const uint32_t sliderColor0 = IM_COL32(57, 241, 0, 255 * alpha);
-        const uint32_t sliderColor1 = IM_COL32(2, 106, 0, 255 * alpha);
+            // The actual slider
+            const uint32_t sliderColor0 = IM_COL32(57, 241, 0, 255 * alpha);
+            const uint32_t sliderColor1 = IM_COL32(2, 106, 0, 255 * alpha);
 
-        xPadding += Scale(1.0f);
-        yPadding += Scale(1.0f);
+            xPadding += Scale(1.0f);
+            yPadding += Scale(1.0f);
 
-        ImVec2 sliderMin = { min.x + xPadding, min.y + yPadding };
-        ImVec2 sliderMax = { max.x - xPadding, max.y - yPadding };
-        float factor;
+            ImVec2 sliderMin = { min.x + xPadding, min.y + yPadding };
+            ImVec2 sliderMax = { max.x - xPadding, max.y - yPadding };
+            float factor;
 
-        if (config->Value <= valueCenter)
-            factor = float(config->Value - valueMin) / (valueCenter - valueMin) * 0.5f;
-        else
-            factor = 0.5f + float(config->Value - valueCenter) / (valueMax - valueCenter) * 0.5f;
-        
-        sliderMax.x = sliderMin.x + (sliderMax.x - sliderMin.x) * factor;
+            if (config->Value <= valueCenter)
+                factor = float(config->Value - valueMin) / (valueCenter - valueMin) * 0.5f;
+            else
+                factor = 0.5f + float(config->Value - valueCenter) / (valueMax - valueCenter) * 0.5f;
 
-        drawList->AddRectFilledMultiColor(sliderMin, sliderMax, sliderColor0, sliderColor0, sliderColor1, sliderColor1);
+            sliderMax.x = sliderMin.x + (sliderMax.x - sliderMin.x) * factor;
+
+            drawList->AddRectFilledMultiColor(sliderMin, sliderMax, sliderColor0, sliderColor0, sliderColor1, sliderColor1);
+        }
     }
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
@@ -732,7 +739,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             config->Value = std::clamp(config->Value, valueMin, valueMax);
         }
 
-        if (config->Callback)
+        if ((increment || decrement) && config->Callback)
             config->Callback(config);
     }
 
@@ -743,7 +750,10 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     }
     else if constexpr (std::is_same_v<T, int32_t>)
     {
-        valueText = config->Value >= valueMax ? Localise("Options_Value_Max") : fmt::format("{}", config->Value);
+        valueText = fmt::format("{}", config->Value);
+
+        if (isSlider && config->Value >= valueMax)
+            valueText = Localise("Options_Value_Max");
     }
     else
     {
@@ -798,45 +808,61 @@ static void DrawConfigOptions()
     // TODO: Don't use raw numbers here!
     switch (g_categoryIndex)
     {
-    case 0: // SYSTEM
-        DrawConfigOption(rowCount++, yOffset, &Config::Language, !OptionsMenu::s_isPause, cmnReason);
-        DrawConfigOption(rowCount++, yOffset, &Config::Hints, !isStage, cmnReason);
-        DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, !isStage, cmnReason);
-        DrawConfigOption(rowCount++, yOffset, &Config::AchievementNotifications, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::TimeOfDayTransition, true);
-        break;
-    case 1: // INPUT
-        DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraX, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraY, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::AllowBackgroundInput, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::AllowDPadMovement, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::ControllerIcons, true);
-        break;
-    case 2: // AUDIO
-        DrawConfigOption(rowCount++, yOffset, &Config::MusicVolume, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::EffectsVolume, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason);
-        DrawConfigOption(rowCount++, yOffset, &Config::Subtitles, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::MusicAttenuation, AudioPatches::CanAttenuate(), &Localise("Options_Desc_OSNotSupported"));
-        DrawConfigOption(rowCount++, yOffset, &Config::BattleTheme, true);
-        break;
-    case 3: // VIDEO
-        // TODO: expose WindowWidth/WindowHeight as WindowSize.
-        DrawConfigOption(rowCount++, yOffset, &Config::AspectRatio, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale, true, nullptr, 0.25f, 1.0f, 2.0f);
-        DrawConfigOption(rowCount++, yOffset, &Config::Fullscreen, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::VSync, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::FPS, true, nullptr, 15, 120, 240);
-        DrawConfigOption(rowCount++, yOffset, &Config::Brightness, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::TransparencyAntiAliasing, Config::AntiAliasing != EAntiAliasing::None, &Localise("Options_Desc_NotAvailableMSAA"));
-        DrawConfigOption(rowCount++, yOffset, &Config::ShadowResolution, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::GITextureFiltering, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::MotionBlur, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::XboxColorCorrection, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::MovieScaleMode, true);
-        DrawConfigOption(rowCount++, yOffset, &Config::UIScaleMode, true);
-        break;
+        case 0: // SYSTEM
+            DrawConfigOption(rowCount++, yOffset, &Config::Language, !OptionsMenu::s_isPause, cmnReason);
+            DrawConfigOption(rowCount++, yOffset, &Config::Hints, !isStage, cmnReason);
+            DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, !isStage, cmnReason);
+            DrawConfigOption(rowCount++, yOffset, &Config::AchievementNotifications, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::TimeOfDayTransition, true);
+            break;
+
+        case 1: // INPUT
+            DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraX, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraY, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::AllowBackgroundInput, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::AllowDPadMovement, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::ControllerIcons, true);
+            break;
+
+        case 2: // AUDIO
+            DrawConfigOption(rowCount++, yOffset, &Config::MusicVolume, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::EffectsVolume, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason);
+            DrawConfigOption(rowCount++, yOffset, &Config::Subtitles, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::MusicAttenuation, AudioPatches::CanAttenuate(), &Localise("Options_Desc_OSNotSupported"));
+            DrawConfigOption(rowCount++, yOffset, &Config::BattleTheme, true);
+            break;
+
+        case 3: // VIDEO
+        {
+            // TODO: expose WindowWidth/WindowHeight as WindowSize.
+
+            auto displayCount = GameWindow::GetDisplayCount();
+            auto canChangeMonitor = Config::Fullscreen && displayCount > 1;
+            auto monitorReason = &Localise("Options_Desc_NotAvailableWindowed");
+
+            if (Config::Fullscreen && displayCount <= 1)
+                monitorReason = &Localise("Options_Desc_NotAvailableHardware");
+
+            DrawConfigOption(rowCount++, yOffset, &Config::Monitor, canChangeMonitor, monitorReason, 0, 0, displayCount - 1, false);
+
+            DrawConfigOption(rowCount++, yOffset, &Config::AspectRatio, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale, true, nullptr, 0.25f, 1.0f, 2.0f);
+            DrawConfigOption(rowCount++, yOffset, &Config::Fullscreen, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::VSync, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::FPS, true, nullptr, 15, 120, 240);
+            DrawConfigOption(rowCount++, yOffset, &Config::Brightness, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::TransparencyAntiAliasing, Config::AntiAliasing != EAntiAliasing::None, &Localise("Options_Desc_NotAvailableMSAA"));
+            DrawConfigOption(rowCount++, yOffset, &Config::ShadowResolution, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::GITextureFiltering, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::MotionBlur, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::XboxColorCorrection, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::MovieScaleMode, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::UIScaleMode, true);
+
+            break;
+        }
     }
 
     auto inputState = SWA::CInputState::GetInstance();
@@ -948,7 +974,7 @@ static void DrawInfoPanel()
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
-    ImVec2 thumbnailMax = { clipRectMin.x + ScaleX(343.0f), clipRectMin.y + ScaleY(198.0f) };
+    ImVec2 thumbnailMax = { clipRectMax.x, clipRectMin.y + Scale(198.0f) };
 
     if (g_selectedItem)
     {

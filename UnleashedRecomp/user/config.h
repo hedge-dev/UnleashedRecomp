@@ -617,7 +617,14 @@ public:
     CONFIG_DEFINE("Video", int32_t, WindowWidth, 1280);
     CONFIG_DEFINE("Video", int32_t, WindowHeight, 720);
     CONFIG_DEFINE_ENUM("Video", EWindowState, WindowState, EWindowState::Normal);
-    CONFIG_DEFINE_LOCALISED("Video", size_t, Monitor, 0);
+
+    CONFIG_DEFINE_CALLBACK("Video", int32_t, Monitor, 0,
+    {
+        def->Locale = &g_Monitor_locale;
+
+        Window_SetDisplay(def->Value);
+    });
+
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EAspectRatio, AspectRatio, EAspectRatio::Auto);
 
     CONFIG_DEFINE_CALLBACK("Video", float, ResolutionScale, 1.0f,
@@ -631,6 +638,7 @@ public:
         def->Locale = &g_Fullscreen_locale;
 
         Window_SetFullscreen(def->Value);
+        Window_SetDisplay(Monitor);
     });
 
     CONFIG_DEFINE_LOCALISED("Video", bool, VSync, true);
