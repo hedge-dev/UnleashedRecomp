@@ -7,19 +7,7 @@
 static PPCFunc* g_clientCallback{};
 static uint32_t g_clientCallbackParam{}; // pointer in guest memory
 static SDL_AudioDeviceID g_audioDevice{};
-static std::unique_ptr<GuestThreadContext> g_audioCtx;
-static uint32_t* g_audioOutput;
 static bool g_downMixToStereo;
-
-static void AudioCallback(void*, uint8_t* frames, int len)
-{
-    if (g_audioCtx == nullptr)
-        g_audioCtx = std::make_unique<GuestThreadContext>(0);
-
-    g_audioCtx->ppcContext.r3.u64 = g_clientCallbackParam;
-    g_audioOutput = reinterpret_cast<uint32_t*>(frames);
-    (*g_clientCallback)(g_audioCtx->ppcContext, reinterpret_cast<uint8_t*>(g_memory.base));
-}
 
 void XAudioInitializeSystem()
 {
@@ -32,7 +20,6 @@ void XAudioInitializeSystem()
     desired.format = AUDIO_F32SYS;
     desired.channels = XAUDIO_NUM_CHANNELS;
     desired.samples = XAUDIO_NUM_SAMPLES;
-    desired.callback = AudioCallback;
     g_audioDevice = SDL_OpenAudioDevice(nullptr, 0, &desired, &obtained, SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
 
     if (obtained.channels != 2 && obtained.channels != XAUDIO_NUM_CHANNELS)
@@ -44,6 +31,44 @@ void XAudioInitializeSystem()
     g_downMixToStereo = (obtained.channels == 2);
 }
 
+static std::unique_ptr<std::thread> g_audioThread;
+
+static void AudioThread()
+{
+    using namespace std::chrono_literals;
+
+    GuestThreadContext ctx(0);
+
+    size_t channels = g_downMixToStereo ? 2 : XAUDIO_NUM_CHANNELS;
+
+    constexpr double INTERVAL = double(XAUDIO_NUM_SAMPLES) / double(XAUDIO_SAMPLES_HZ);
+    auto start = std::chrono::steady_clock::now();
+    size_t iteration = 1;
+
+    while (true)
+    {
+        uint32_t queuedAudioSize = SDL_GetQueuedAudioSize(g_audioDevice);
+        constexpr size_t MAX_LATENCY = 10;
+        const size_t callbackAudioSize = channels * XAUDIO_NUM_SAMPLES * sizeof(float);
+
+        if ((queuedAudioSize / callbackAudioSize) <= MAX_LATENCY)
+        {
+            ctx.ppcContext.r3.u32 = g_clientCallbackParam;
+            g_clientCallback(ctx.ppcContext, reinterpret_cast<uint8_t*>(g_memory.base));
+        }
+
+        auto next = start + std::chrono::duration<double>(iteration * INTERVAL);
+        auto now = std::chrono::steady_clock::now();
+
+        if ((next - now) > 1s)
+            next = now;
+
+        std::this_thread::sleep_until(next);
+
+        iteration = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count() / INTERVAL + 1;
+    }
+}
+
 void XAudioRegisterClient(PPCFunc* callback, uint32_t param)
 {
     auto* pClientParam = static_cast<uint32_t*>(g_userHeap.Alloc(sizeof(param)));
@@ -53,6 +78,7 @@ void XAudioRegisterClient(PPCFunc* callback, uint32_t param)
     g_clientCallback = callback;
 
     SDL_PauseAudioDevice(g_audioDevice, 0);
+    g_audioThread = std::make_unique<std::thread>(AudioThread);
 }
 
 void XAudioSubmitFrame(void* samples)
@@ -68,6 +94,8 @@ void XAudioSubmitFrame(void* samples)
 
         auto floatSamples = reinterpret_cast<be<float>*>(samples);
 
+        std::array<float, 2 * XAUDIO_NUM_SAMPLES> audioFrames;
+
         for (size_t i = 0; i < XAUDIO_NUM_SAMPLES; i++)
         {
             float ch0 = floatSamples[0 * XAUDIO_NUM_SAMPLES + i];
@@ -77,21 +105,24 @@ void XAudioSubmitFrame(void* samples)
             float ch4 = floatSamples[4 * XAUDIO_NUM_SAMPLES + i];
             float ch5 = floatSamples[5 * XAUDIO_NUM_SAMPLES + i];
 
-            float left  = ch0 + ch2 * 0.75f + ch4;
-            float right = ch1 + ch2 * 0.75f + ch5;
-
-            g_audioOutput[i * 2 + 0] = *reinterpret_cast<uint32_t*>(&left);
-            g_audioOutput[i * 2 + 1] = *reinterpret_cast<uint32_t*>(&right);
+            audioFrames[i * 2 + 0] = ch0 + ch2 * 0.75f + ch4;
+            audioFrames[i * 2 + 1] = ch1 + ch2 * 0.75f + ch5;
         }
+
+        SDL_QueueAudio(g_audioDevice, &audioFrames, sizeof(audioFrames));
     }
     else
     {
         auto rawSamples = reinterpret_cast<be<uint32_t>*>(samples);
 
+        std::array<uint32_t, XAUDIO_NUM_CHANNELS * XAUDIO_NUM_SAMPLES> audioFrames;
+
         for (size_t i = 0; i < XAUDIO_NUM_SAMPLES; i++)
         {
             for (size_t j = 0; j < XAUDIO_NUM_CHANNELS; j++)
-                g_audioOutput[i * XAUDIO_NUM_CHANNELS + j] = rawSamples[j * XAUDIO_NUM_SAMPLES + i];
+                audioFrames[i * XAUDIO_NUM_CHANNELS + j] = rawSamples[j * XAUDIO_NUM_SAMPLES + i];
         }
+
+        SDL_QueueAudio(g_audioDevice, &audioFrames, sizeof(audioFrames));
     }
 }

@@ -212,7 +212,6 @@ set(SWA_THIRDPARTY_INCLUDES
     "${SWA_THIRDPARTY_ROOT}/imgui"
     "${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack"
     "${SWA_THIRDPARTY_ROOT}/magic_enum/include"
-    "${SWA_THIRDPARTY_ROOT}/miniaudio"
     "${SWA_THIRDPARTY_ROOT}/stb"
     "${SWA_THIRDPARTY_ROOT}/tiny-AES-c"
     "${SWA_THIRDPARTY_ROOT}/TinySHA1"
