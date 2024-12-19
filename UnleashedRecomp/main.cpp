@@ -145,10 +145,12 @@ int main(int argc, char *argv[])
 
     bool forceInstaller = false;
     bool forceDLCInstaller = false;
+    bool sdlVideoDefault = false;
     for (uint32_t i = 1; i < argc; i++)
     {
         forceInstaller = forceInstaller || (strcmp(argv[i], "--install") == 0);
         forceDLCInstaller = forceDLCInstaller || (strcmp(argv[i], "--install-dlc") == 0);
+        sdlVideoDefault = sdlVideoDefault || (strcmp(argv[i], "--sdl-video-default") == 0);
     }
 
     Config::Load();
@@ -159,7 +161,7 @@ int main(int argc, char *argv[])
     bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
     if (runInstallerWizard)
     {
-        Video::CreateHostDevice();
+        Video::CreateHostDevice(sdlVideoDefault);
 
         if (!InstallerWizard::Run(GAME_INSTALL_DIRECTORY, isGameInstalled && forceDLCInstaller))
         {
@@ -175,7 +177,7 @@ int main(int argc, char *argv[])
     uint32_t entry = LdrLoadModule(std::u8string_view((const char8_t*)(modulePath)));
 
     if (!runInstallerWizard)
-        Video::CreateHostDevice();
+        Video::CreateHostDevice(sdlVideoDefault);
 
     Video::StartPipelinePrecompilation();
 

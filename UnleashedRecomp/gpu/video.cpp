@@ -83,7 +83,11 @@ namespace plume
 #ifdef SWA_D3D12
     extern std::unique_ptr<RenderInterface> CreateD3D12Interface();
 #endif
+#ifdef SDL_VULKAN_ENABLED
+    extern std::unique_ptr<RenderInterface> CreateVulkanInterface(RenderWindow sdlWindow);
+#else
     extern std::unique_ptr<RenderInterface> CreateVulkanInterface();
+#endif
 }
 
 #pragma pack(push, 1)
@@ -1306,7 +1310,7 @@ static void CreateImGuiBackend()
 
 static void BeginCommandList();
 
-void Video::CreateHostDevice()
+void Video::CreateHostDevice(bool sdlVideoDefault)
 {
     for (uint32_t i = 0; i < 16; i++)
         g_inputSlots[i].index = i;
@@ -1314,7 +1318,7 @@ void Video::CreateHostDevice()
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-    GameWindow::Init();
+    GameWindow::Init(sdlVideoDefault);
 
 #ifdef SWA_D3D12
     g_vulkan = DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan;
@@ -1322,10 +1326,15 @@ void Video::CreateHostDevice()
 
     LoadEmbeddedResources();
 
-#ifdef SWA_D3D12
-    g_interface = g_vulkan ? CreateVulkanInterface() : CreateD3D12Interface();
+    if (g_vulkan)
+#ifdef SDL_VULKAN_ENABLED
+        g_interface = CreateVulkanInterface(GameWindow::s_renderWindow);
 #else
-    g_interface = CreateVulkanInterface();
+        g_interface = CreateVulkanInterface();
+#endif
+#ifdef SWA_D3D12
+    else
+        g_interface = CreateD3D12Interface();
 #endif
 
     g_device = g_interface->createDevice();

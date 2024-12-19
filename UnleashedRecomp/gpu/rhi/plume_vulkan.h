@@ -422,7 +422,12 @@ namespace plume {
         VkApplicationInfo appInfo = {};
         RenderInterfaceCapabilities capabilities;
 
+#   if SDL_VULKAN_ENABLED
+        VulkanInterface(RenderWindow sdlWindow);
+#   else
         VulkanInterface();
+#   endif
+
         ~VulkanInterface() override;
         std::unique_ptr<RenderDevice> createDevice() override;
         const RenderInterfaceCapabilities &getCapabilities() const override;

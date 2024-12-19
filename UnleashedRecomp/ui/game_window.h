@@ -199,6 +199,10 @@ public:
         if (Config::Fullscreen)
             flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
+#ifdef SDL_VULKAN_ENABLED
+        flags |= SDL_WINDOW_VULKAN;
+#endif
+
         return flags;
     }
 
@@ -299,6 +303,6 @@ public:
         return false;
     }
 
-    static void Init();
+    static void Init(bool sdlVideoDefault);
     static void Update();
 };
