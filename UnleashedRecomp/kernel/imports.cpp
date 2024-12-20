@@ -36,18 +36,35 @@ struct Event final : KernelObject, HostObject<XKEVENT>
     {
         if (timeout == 0)
         {
-            if (!signaled)
-                return STATUS_TIMEOUT;
-
-            if (!manualReset)
-                signaled = false;
+            if (manualReset)
+            {
+                if (!signaled)
+                    return STATUS_TIMEOUT;
+            }
+            else
+            {
+                bool expected = true;
+                if (!signaled.compare_exchange_strong(expected, false))
+                    return STATUS_TIMEOUT;
+            }
         }
         else if (timeout == INFINITE)
         {
-            signaled.wait(false);
+            if (manualReset)
+            {
+                signaled.wait(false);
+            }
+            else
+            {
+                while (true)
+                {
+                    bool expected = true;
+                    if (signaled.compare_exchange_weak(expected, false))
+                        break;
 
-            if (!manualReset)
-                signaled = false;
+                    signaled.wait(expected);
+                }
+            }
         }
         else
         {
@@ -60,7 +77,11 @@ struct Event final : KernelObject, HostObject<XKEVENT>
     bool Set()
     {
         signaled = true;
-        signaled.notify_all();
+
+        if (manualReset)
+            signaled.notify_all();
+        else
+            signaled.notify_one();
 
         return TRUE;
     }
