@@ -524,7 +524,10 @@ uint32_t KeDelayExecutionThread(uint32_t WaitMode, bool Alertable, be<int64_t>* 
 #ifdef _WIN32
     Sleep(timeout);
 #else
-    std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
+    if (timeout == 0)
+        std::this_thread::yield();
+    else
+        std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
 #endif
 
     return STATUS_SUCCESS;
