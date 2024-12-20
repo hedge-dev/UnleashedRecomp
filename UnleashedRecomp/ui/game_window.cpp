@@ -150,6 +150,8 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
 void GameWindow::Init(bool sdlVideoDefault)
 {
 #ifdef __linux__
+    SDL_SetHint("SDL_APP_ID", "io.github.hedge_dev.unleashedrecomp");
+
     if (!sdlVideoDefault)
     {
         int videoRes = SDL_VideoInit("wayland");
