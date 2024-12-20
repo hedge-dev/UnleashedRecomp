@@ -911,7 +911,6 @@ static void PickerThreadProcess()
     }
 
     g_currentPickerResultsReady = true;
-    g_currentPickerVisible = false;
 }
 
 static void ShowPicker(bool folderMode)
@@ -926,7 +925,13 @@ static void ShowPicker(bool folderMode)
     g_currentPickerFolderMode = folderMode;
     g_currentPickerResultsReady = false;
     g_currentPickerVisible = true;
-    g_currentPickerThread = std::make_unique<std::thread>(PickerThreadProcess);
+    
+    // Optional single thread mode for testing on systems that do not interact well with the separate thread being used for NFD.
+    constexpr bool singleThreadMode = false;
+    if (singleThreadMode)
+        PickerThreadProcess();
+    else
+        g_currentPickerThread = std::make_unique<std::thread>(PickerThreadProcess);
 }
 
 static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
@@ -1410,11 +1415,17 @@ void InstallerWizard::Draw()
 
 void InstallerWizard::Shutdown()
 {
-    // Wait for and erase the thread.
+    // Wait for and erase the threads.
     if (g_installerThread != nullptr)
     {
         g_installerThread->join();
         g_installerThread.reset();
+    }
+
+    if (g_currentPickerThread != nullptr)
+    {
+        g_currentPickerThread->join();
+        g_currentPickerThread.reset();
     }
 
     // Erase the sources.
