@@ -154,14 +154,14 @@ void GameWindow::Init(bool sdlVideoDefault)
     {
         int videoRes = SDL_VideoInit("wayland");
         if (videoRes != 0)
-            SDL_VideoInit(nullptr);
+            sdlVideoDefault = true;
     }
 #else
-    else
-    {
-        SDL_VideoInit(nullptr);
-    }
+    sdlVideoDefault = true;
 #endif
+
+    if (sdlVideoDefault)
+        SDL_VideoInit(nullptr);
 
     const char* videoDriverName = SDL_GetCurrentVideoDriver();
     if (videoDriverName != nullptr)
