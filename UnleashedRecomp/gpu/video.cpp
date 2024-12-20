@@ -4904,6 +4904,8 @@ static void PipelineCompilerThread()
         cmd.addPipeline.hash = queueItem.pipelineHash;
         cmd.addPipeline.pipeline = pipeline.release();
         g_renderQueue.enqueue(cmd);
+
+        std::this_thread::yield();
     }
 }
 
@@ -5712,6 +5714,8 @@ static void ModelConsumerThread()
 
         if (allHandled)
             localPendingDataQueue.clear();
+
+        std::this_thread::yield();
     }
 }
 
