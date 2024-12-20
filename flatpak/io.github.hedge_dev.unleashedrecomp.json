@@ -20,7 +20,7 @@
       "name": "UnleashedRecomp",
       "buildsystem": "simple",
       "build-commands": [
-        "cmake --preset linux-release -DSWA_FLATPAK=ON",
+        "cmake --preset linux-release -DSWA_FLATPAK=ON -DSDL2MIXER_VORBIS=VORBISFILE",
         "cmake --build out/build/linux-release",
         "mkdir -p /app/bin",
         "cp out/build/linux-release/UnleashedRecomp/SWA /app/bin/SWA",
