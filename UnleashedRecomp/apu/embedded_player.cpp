@@ -24,9 +24,7 @@ enum class EmbeddedSound
 
 struct EmbeddedSoundData
 {
-    static const int SimultaneousLimit = 4;
     Mix_Chunk* chunk{};
-    int channelIndex{};
 };
 
 static std::array<EmbeddedSoundData, size_t(EmbeddedSound::Count)> g_embeddedSoundData = {};
@@ -40,6 +38,8 @@ static const std::unordered_map<std::string_view, EmbeddedSound> g_embeddedSound
     { "sys_actstg_pausewinclose", EmbeddedSound::SysActStgPauseWinClose },
     { "sys_actstg_pausewinopen", EmbeddedSound::SysActStgPauseWinOpen },
 };
+
+static size_t g_channelIndex;
 
 static void PlayEmbeddedSound(EmbeddedSound s)
 {
@@ -86,9 +86,9 @@ static void PlayEmbeddedSound(EmbeddedSound s)
 
         data.chunk = Mix_LoadWAV_RW(SDL_RWFromConstMem(soundData, soundDataSize), 1);
     }
-
-    Mix_PlayChannel(data.channelIndex % EmbeddedSoundData::SimultaneousLimit, data.chunk, 0);
-    ++data.channelIndex;
+    
+    Mix_PlayChannel(g_channelIndex % MIX_CHANNELS, data.chunk, 0);
+    ++g_channelIndex;
 }
 
 void EmbeddedPlayer::Init() 
