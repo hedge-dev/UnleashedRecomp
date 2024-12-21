@@ -39,6 +39,7 @@ using Microsoft::WRL::ComPtr;
 #include <SDL_mixer.h>
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <implot.h>
 #include <backends/imgui_impl_sdl2.h>
 #include <o1heap.h>
 #include <cstddef>
@@ -47,6 +48,7 @@ using Microsoft::WRL::ComPtr;
 #include <fmt/core.h>
 #include <list>
 #include <semaphore>
+#include <numeric>
 
 #include "framework.h"
 #include "mutex.h"

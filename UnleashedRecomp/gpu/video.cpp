@@ -4,6 +4,7 @@
 #include "imgui/imgui_snapshot.h"
 #include "imgui/imgui_font_builder.h"
 
+#include <app.h>
 #include <bc_diff.h>
 #include <cpu/code_cache.h>
 #include <cpu/guest_code.h>
@@ -1317,6 +1318,7 @@ void Video::CreateHostDevice(bool sdlVideoDefault)
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImPlot::CreateContext();
 
     GameWindow::Init(sdlVideoDefault);
 
@@ -1885,6 +1887,54 @@ static uint32_t HashVertexDeclaration(uint32_t vertexDeclaration)
     return vertexDeclaration;
 }
 
+static bool g_profilerVisible;
+static bool g_profilerWasToggled;
+static constexpr size_t PROFILER_VALUE_COUNT = 256;
+static double g_profilerDeltaTimes[PROFILER_VALUE_COUNT];
+static size_t g_profilerValueIndex;
+
+static void DrawProfiler()
+{
+    bool toggleProfiler = SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_F1] != 0;
+
+    if (!g_profilerWasToggled && toggleProfiler)
+        g_profilerVisible = !g_profilerVisible;
+
+    g_profilerWasToggled = toggleProfiler;
+
+    if (!g_profilerVisible)
+        return;
+
+    ImFont* font = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
+    float defaultScale = font->Scale;
+    font->Scale = 16.0f / font->FontSize;
+    ImGui::PushFont(font);
+
+    if (ImGui::Begin("Profiler", &g_profilerVisible))
+    {
+        g_profilerDeltaTimes[g_profilerValueIndex] = App::s_deltaTime * 1000.0;
+
+        if (ImPlot::BeginPlot("Frametimes"))
+        {
+            ImPlot::SetupAxisLimits(ImAxis_Y1, 8.0, 32.0);
+            ImPlot::SetupAxis(ImAxis_Y1, "ms", ImPlotAxisFlags_None);
+            ImPlot::PlotLine<double>("Application", g_profilerDeltaTimes, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
+
+            ImPlot::EndPlot();
+        }
+
+        g_profilerValueIndex = (g_profilerValueIndex + 1) % PROFILER_VALUE_COUNT;
+
+        const double deltaTimeAvg = std::accumulate(g_profilerDeltaTimes, g_profilerDeltaTimes + PROFILER_VALUE_COUNT, 0.0) / PROFILER_VALUE_COUNT;
+
+        ImGui::Text("Average Application: %g ms (%g FPS)", deltaTimeAvg, 1000.0 / deltaTimeAvg);
+    }
+    ImGui::End();
+
+    ImGui::PopFont();
+    font->Scale = defaultScale;
+}
+
 static void DrawImGui()
 {
     ImGui_ImplSDL2_NewFrame();
@@ -1915,6 +1965,8 @@ static void DrawImGui()
     Fader::Draw();
     MessageWindow::Draw();
     ButtonGuide::Draw();
+
+    DrawProfiler();
 
     ImGui::Render();
 
