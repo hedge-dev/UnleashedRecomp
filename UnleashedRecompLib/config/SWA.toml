@@ -588,3 +588,7 @@ registers = ["r3"]
 name = "PostureDPadSupportMidAsmHook"
 address = 0x823CDA2C
 registers = ["r3"]
+
+[[midasm_hook]]
+name = "ApplicationUpdateMidAsmHook"
+address = 0x822C0EC8

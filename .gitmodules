@@ -58,3 +58,6 @@
 [submodule "thirdparty/SDL_mixer"]
 	path = thirdparty/SDL_mixer
 	url = https://github.com/libsdl-org/SDL_mixer
+[submodule "thirdparty/implot"]
+	path = thirdparty/implot
+	url = https://github.com/epezent/implot.git
