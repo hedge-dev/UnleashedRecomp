@@ -4,8 +4,7 @@
 
 struct FrameLimiter
 {
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    int64_t frame = 0;
+    std::chrono::steady_clock::time_point next;
 
     void execute(int64_t fps);
 };

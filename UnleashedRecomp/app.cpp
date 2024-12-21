@@ -10,18 +10,21 @@ void FrameLimiter::execute(int64_t fps)
 {
     using namespace std::chrono_literals;
 
-    auto next = start + frame * 1000000000ns / fps;
     auto now = std::chrono::steady_clock::now();
 
-    if (next > now && (next - now) < (2000000000ns / fps))
+    if (now < next)
     {
         std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(next - now - 1ms));
 
         while ((now = std::chrono::steady_clock::now()) < next)
             std::this_thread::yield();
     }
+    else
+    {
+        next = now;
+    }
 
-    frame = std::chrono::nanoseconds(std::chrono::steady_clock::now() - start).count() * fps / 1000000000ll + 1;
+    next += 1000000000ns / fps;
 }
 
 static FrameLimiter g_frameLimiter;
