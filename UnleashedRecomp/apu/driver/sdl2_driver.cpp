@@ -59,7 +59,12 @@ static void AudioThread()
         auto now = std::chrono::steady_clock::now();
 
         if ((next - now) < 1s)
-            std::this_thread::sleep_until(next);
+        {
+            std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(next - now));
+
+            while ((now = std::chrono::steady_clock::now()) < next)
+                std::this_thread::yield();
+        }
 
         int64_t elapsed = std::chrono::nanoseconds(std::chrono::steady_clock::now() - start).count();
         iteration = ((elapsed * XAUDIO_SAMPLES_HZ) / (XAUDIO_NUM_SAMPLES * 1000000000ll)) + 1;
