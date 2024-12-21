@@ -40,10 +40,8 @@ static void AudioThread()
     GuestThreadContext ctx(0);
 
     size_t channels = g_downMixToStereo ? 2 : XAUDIO_NUM_CHANNELS;
-
-    constexpr double INTERVAL = double(XAUDIO_NUM_SAMPLES) / double(XAUDIO_SAMPLES_HZ);
     auto start = std::chrono::steady_clock::now();
-    size_t iteration = 1;
+    int64_t iteration = 1;
 
     while (true)
     {
@@ -57,15 +55,14 @@ static void AudioThread()
             g_clientCallback(ctx.ppcContext, reinterpret_cast<uint8_t*>(g_memory.base));
         }
 
-        auto next = start + std::chrono::duration<double>(iteration * INTERVAL);
+        auto next = start + std::chrono::nanoseconds((iteration * XAUDIO_NUM_SAMPLES * 1000000000ll) / XAUDIO_SAMPLES_HZ);
         auto now = std::chrono::steady_clock::now();
 
-        if ((next - now) > 1s)
-            next = now;
+        if ((next - now) < 1s)
+            std::this_thread::sleep_until(next);
 
-        std::this_thread::sleep_until(next);
-
-        iteration = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count() / INTERVAL + 1;
+        int64_t elapsed = std::chrono::nanoseconds(std::chrono::steady_clock::now() - start).count();
+        iteration = ((elapsed * XAUDIO_SAMPLES_HZ) / (XAUDIO_NUM_SAMPLES * 1000000000ll)) + 1;
     }
 }
 
