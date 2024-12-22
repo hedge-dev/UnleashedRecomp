@@ -42,7 +42,7 @@ PPC_FUNC(sub_822C1130)
     if (Config::FPS >= 15 && Config::FPS < 240)
     {
         double targetDeltaTime = 1.0 / Config::FPS;
-        if (abs(ctx.f1.f64 - targetDeltaTime) < 0.001)
+        if (abs(ctx.f1.f64 - targetDeltaTime) < 0.00001)
             ctx.f1.f64 = targetDeltaTime;
     }
 
