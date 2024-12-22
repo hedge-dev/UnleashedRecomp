@@ -38,6 +38,14 @@ PPC_FUNC(sub_824EB490)
 PPC_FUNC_IMPL(__imp__sub_822C1130);
 PPC_FUNC(sub_822C1130)
 {
+    // Correct small delta time errors.
+    if (Config::FPS >= 15 && Config::FPS < 240)
+    {
+        double targetDeltaTime = 1.0 / Config::FPS;
+        if (abs(ctx.f1.f64 - targetDeltaTime) < 0.001)
+            ctx.f1.f64 = targetDeltaTime;
+    }
+
     App::s_deltaTime = ctx.f1.f64;
 
     SDL_PumpEvents();
