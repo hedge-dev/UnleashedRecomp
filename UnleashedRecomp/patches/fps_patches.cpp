@@ -83,7 +83,7 @@ static std::chrono::steady_clock::time_point g_next;
 
 void ApplicationUpdateMidAsmHook()
 {
-    if (Config::FPS >= 15 && Config::FPS < 240)
+    if (Config::FPS >= FPS_MIN && Config::FPS < FPS_MAX)
     {
         auto now = std::chrono::steady_clock::now();
 

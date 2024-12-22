@@ -169,6 +169,9 @@ CONFIG_DEFINE_ENUM_TEMPLATE(ETripleBuffering)
     { "Off",  ETripleBuffering::Off }
 };
 
+static constexpr int32_t FPS_MIN = 15;
+static constexpr int32_t FPS_MAX = 240;
+
 enum class EAntiAliasing : uint32_t
 {
     None = 0,

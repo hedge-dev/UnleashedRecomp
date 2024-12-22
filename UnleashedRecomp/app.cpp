@@ -39,7 +39,7 @@ PPC_FUNC_IMPL(__imp__sub_822C1130);
 PPC_FUNC(sub_822C1130)
 {
     // Correct small delta time errors.
-    if (Config::FPS >= 15 && Config::FPS < 240)
+    if (Config::FPS >= FPS_MIN && Config::FPS < FPS_MAX)
     {
         double targetDeltaTime = 1.0 / Config::FPS;
         if (abs(ctx.f1.f64 - targetDeltaTime) < 0.00001)
