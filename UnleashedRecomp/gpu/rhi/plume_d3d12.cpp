@@ -1265,9 +1265,7 @@ namespace plume {
 
     bool D3D12SwapChain::present(uint32_t textureIndex, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount) {
         if (waitableObject != NULL) {
-            while (WaitForSingleObjectEx(waitableObject, 0, FALSE)) {
-                std::this_thread::yield();
-            }
+            WaitForSingleObject(waitableObject, INFINITE);
         }
 
         UINT syncInterval = vsyncEnabled ? 1 : 0;
