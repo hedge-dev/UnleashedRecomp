@@ -1896,17 +1896,17 @@ struct Profiler
     double values[PROFILER_VALUE_COUNT];
     std::chrono::steady_clock::time_point start;
 
-    void begin()
+    void Begin()
     {
         start = std::chrono::steady_clock::now();
     }
 
-    void end()
+    void End()
     {
         value = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
     }
 
-    double updateAndReturnAverage()
+    double UpdateAndReturnAverage()
     {
         values[g_profilerValueIndex] = value;
         return std::accumulate(values, values + PROFILER_VALUE_COUNT, 0.0) / PROFILER_VALUE_COUNT;
@@ -1939,7 +1939,7 @@ static void DrawProfiler()
     if (ImGui::Begin("Profiler", &g_profilerVisible))
     {
         g_applicationValues[g_profilerValueIndex] = App::s_deltaTime * 1000.0;
-        double renderDirectorAvg = g_renderDirectorProfiler.updateAndReturnAverage();
+        double renderDirectorAvg = g_renderDirectorProfiler.UpdateAndReturnAverage();
 
         if (ImPlot::BeginPlot("Frame Time"))
         {
@@ -4849,7 +4849,7 @@ PPC_FUNC(sub_8258C8A0)
 PPC_FUNC_IMPL(__imp__sub_8258CAE0);
 PPC_FUNC(sub_8258CAE0)
 {
-    g_renderDirectorProfiler.begin();
+    g_renderDirectorProfiler.Begin();
 
     if (g_needsResize)
     {
@@ -4864,7 +4864,7 @@ PPC_FUNC(sub_8258CAE0)
 
     __imp__sub_8258CAE0(ctx, base);
 
-    g_renderDirectorProfiler.end();
+    g_renderDirectorProfiler.End();
 }
 
 void PostProcessResolutionFix(PPCRegister& r4, PPCRegister& f1, PPCRegister& f2)

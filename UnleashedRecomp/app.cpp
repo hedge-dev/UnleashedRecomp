@@ -6,35 +6,6 @@
 #include <user/config.h>
 #include <os/process.h>
 
-void FrameLimiter::execute(int64_t fps)
-{
-    using namespace std::chrono_literals;
-
-    auto now = std::chrono::steady_clock::now();
-
-    if (now < next)
-    {
-        std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(next - now - 1ms));
-
-        while ((now = std::chrono::steady_clock::now()) < next)
-            std::this_thread::yield();
-    }
-    else
-    {
-        next = now;
-    }
-
-    next += 1000000000ns / fps;
-}
-
-static FrameLimiter g_frameLimiter;
-
-void ApplicationUpdateMidAsmHook()
-{
-    if (Config::FPS >= 15 && Config::FPS < 240)
-        g_frameLimiter.execute(Config::FPS);
-}
-
 void App::Restart(std::vector<std::string> restartArgs)
 {
     os::process::StartProcess(os::process::GetExecutablePath(), restartArgs, os::process::GetWorkingDirectory());

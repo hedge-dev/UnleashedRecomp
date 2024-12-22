@@ -1,11 +1,9 @@
+#include <cpu/code_cache.h>
 #include <cpu/guest_code.h>
 #include <api/SWA.h>
 #include <ui/game_window.h>
 #include <user/config.h>
 #include <app.h>
-
-float m_lastLoadingFrameDelta = 0.0f;
-std::chrono::high_resolution_clock::time_point m_lastLoadingFrameTime;
 
 void DownForceDeltaTimeFixMidAsmHook(PPCRegister& f0)
 {
@@ -79,14 +77,71 @@ void Camera2DSlopeLerpFixMidAsmHook(PPCRegister& t, PPCRegister& deltaTime)
     t.f64 = ComputeLerpFactor(t.f64, deltaTime.f64 / 60.0);
 }
 
-void LoadingScreenSpeedFixMidAsmHook(PPCRegister& r4)
+using namespace std::chrono_literals;
+
+static std::chrono::steady_clock::time_point g_next;
+
+void ApplicationUpdateMidAsmHook()
 {
-    auto now = std::chrono::high_resolution_clock::now();
+    if (Config::FPS >= 15 && Config::FPS < 240)
+    {
+        auto now = std::chrono::steady_clock::now();
 
-    m_lastLoadingFrameDelta = std::min(std::chrono::duration<float>(now - m_lastLoadingFrameTime).count(), 1.0f / 15.0f);
-    m_lastLoadingFrameTime = now;
+        if (now < g_next)
+        {
+            std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(g_next - now - 1ms));
 
-    auto pDeltaTime = (be<float>*)g_memory.Translate(r4.u32);
+            while ((now = std::chrono::steady_clock::now()) < g_next)
+                std::this_thread::yield();
+        }
+        else
+        {
+            g_next = now;
+        }
 
-    *pDeltaTime = m_lastLoadingFrameDelta;
+        g_next += 1000000000ns / Config::FPS;
+    }
+}
+
+static std::chrono::steady_clock::time_point g_prev;
+
+bool LoadingUpdateMidAsmHook(PPCRegister& r31)
+{
+    auto now = std::chrono::steady_clock::now();
+    double deltaTime = std::min(std::chrono::duration<double>(now - g_prev).count(), 1.0 / 15.0);
+    g_prev = now;
+
+    uint8_t* base = reinterpret_cast<uint8_t*>(g_memory.base);
+    uint32_t application = PPC_LOAD_U32(PPC_LOAD_U32(r31.u32 + 4));
+    uint32_t update = PPC_LOAD_U32(PPC_LOAD_U32(application) + 20);
+
+    g_ppcContext->r3.u32 = application;
+    g_ppcContext->f1.f64 = deltaTime;
+    reinterpret_cast<PPCFunc*>(g_codeCache.Find(update))(*g_ppcContext, base);
+
+    bool loading = PPC_LOAD_U8(0x83367A4C);
+    if (loading)
+    {
+        now = std::chrono::steady_clock::now();
+        constexpr auto INTERVAL = 1000000000ns / 30;
+        auto next = now + (INTERVAL - now.time_since_epoch() % INTERVAL);
+
+        std::this_thread::sleep_until(next);
+    }
+
+    return loading;
+}
+
+// ADXM_WaitVsync
+PPC_FUNC_IMPL(__imp__sub_8312DBF8);
+PPC_FUNC(sub_8312DBF8)
+{
+    auto now = std::chrono::steady_clock::now();
+    constexpr auto INTERVAL = 1000000000ns / 60;
+    auto next = now + (INTERVAL - now.time_since_epoch() % INTERVAL);
+
+    std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(next - now - 1ms));
+
+    while (std::chrono::steady_clock::now() < next)
+        std::this_thread::yield();
 }

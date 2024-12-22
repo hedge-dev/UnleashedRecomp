@@ -426,11 +426,6 @@ address = 0x827D25AC
 registers = ["r7"]
 
 [[midasm_hook]]
-name = "LoadingScreenSpeedFixMidAsmHook"
-address = 0x824DAB60
-registers = ["r4"]
-
-[[midasm_hook]]
 name = "MotionBlurPrevInvViewProjectionMidAsmHook"
 address = 0x82BA9E7C
 registers = ["r10"]
@@ -592,3 +587,10 @@ registers = ["r3"]
 [[midasm_hook]]
 name = "ApplicationUpdateMidAsmHook"
 address = 0x822C0EC8
+
+[[midasm_hook]]
+name = "LoadingUpdateMidAsmHook"
+address = 0x825360C8
+registers = ["r31"]
+jump_address_on_true = 0x825360C8
+jump_address_on_false = 0x82536140

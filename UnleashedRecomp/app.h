@@ -2,13 +2,6 @@
 
 #include <user/config.h>
 
-struct FrameLimiter
-{
-    std::chrono::steady_clock::time_point next;
-
-    void execute(int64_t fps);
-};
-
 class App
 {
 public:
