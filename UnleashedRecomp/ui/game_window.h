@@ -303,6 +303,6 @@ public:
         return false;
     }
 
-    static void Init(bool sdlVideoDefault);
+    static void Init(const char *sdlVideoDriver);
     static void Update();
 };

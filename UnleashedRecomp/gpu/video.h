@@ -14,7 +14,7 @@ using namespace plume;
 
 struct Video
 {
-    static void CreateHostDevice(bool sdlVideoDefault);
+    static void CreateHostDevice(const char *sdlVideoDriver);
     static void HostPresent();
     static void StartPipelinePrecompilation();
     static void WaitForGPU();

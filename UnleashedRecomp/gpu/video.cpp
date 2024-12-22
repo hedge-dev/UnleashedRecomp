@@ -1310,7 +1310,7 @@ static void CreateImGuiBackend()
 
 static void BeginCommandList();
 
-void Video::CreateHostDevice(bool sdlVideoDefault)
+void Video::CreateHostDevice(const char *sdlVideoDriver)
 {
     for (uint32_t i = 0; i < 16; i++)
         g_inputSlots[i].index = i;
@@ -1318,7 +1318,7 @@ void Video::CreateHostDevice(bool sdlVideoDefault)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-    GameWindow::Init(sdlVideoDefault);
+    GameWindow::Init(sdlVideoDriver);
 
 #ifdef SWA_D3D12
     g_vulkan = DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan;

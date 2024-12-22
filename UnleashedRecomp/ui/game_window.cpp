@@ -147,23 +147,18 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
     return 0;
 }
 
-void GameWindow::Init(bool sdlVideoDefault)
+void GameWindow::Init(const char *sdlVideoDriver)
 {
 #ifdef __linux__
     SDL_SetHint("SDL_APP_ID", "io.github.hedge_dev.unleashedrecomp");
-
-    if (!sdlVideoDefault)
-    {
-        int videoRes = SDL_VideoInit("wayland");
-        if (videoRes != 0)
-            sdlVideoDefault = true;
-    }
-#else
-    sdlVideoDefault = true;
 #endif
 
-    if (sdlVideoDefault)
+    int videoRes = SDL_VideoInit(sdlVideoDriver);
+    if (videoRes != 0 && sdlVideoDriver != nullptr)
+    {
+        fmt::println("Failed to initialize the specified SDL Video Driver {}. Falling back to default.", sdlVideoDriver);
         SDL_VideoInit(nullptr);
+    }
 
     const char* videoDriverName = SDL_GetCurrentVideoDriver();
     if (videoDriverName != nullptr)

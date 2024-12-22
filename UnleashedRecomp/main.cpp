@@ -145,12 +145,18 @@ int main(int argc, char *argv[])
 
     bool forceInstaller = false;
     bool forceDLCInstaller = false;
-    bool sdlVideoDefault = false;
+    const char *sdlVideoDriver = nullptr;
     for (uint32_t i = 1; i < argc; i++)
     {
         forceInstaller = forceInstaller || (strcmp(argv[i], "--install") == 0);
         forceDLCInstaller = forceDLCInstaller || (strcmp(argv[i], "--install-dlc") == 0);
-        sdlVideoDefault = sdlVideoDefault || (strcmp(argv[i], "--sdl-video-default") == 0);
+        if (strcmp(argv[i], "--sdl-video-driver") == 0)
+        {
+            if ((i + 1) < argc)
+                sdlVideoDriver = argv[++i];
+            else
+                fmt::println("No argument was specified for --sdl-video-driver. Option was ignored.");
+        }
     }
 
     Config::Load();
@@ -161,7 +167,7 @@ int main(int argc, char *argv[])
     bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
     if (runInstallerWizard)
     {
-        Video::CreateHostDevice(sdlVideoDefault);
+        Video::CreateHostDevice(sdlVideoDriver);
 
         if (!InstallerWizard::Run(GAME_INSTALL_DIRECTORY, isGameInstalled && forceDLCInstaller))
         {
@@ -177,7 +183,7 @@ int main(int argc, char *argv[])
     uint32_t entry = LdrLoadModule(std::u8string_view((const char8_t*)(modulePath)));
 
     if (!runInstallerWizard)
-        Video::CreateHostDevice(sdlVideoDefault);
+        Video::CreateHostDevice(sdlVideoDriver);
 
     Video::StartPipelinePrecompilation();
 
