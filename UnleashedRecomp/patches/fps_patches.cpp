@@ -89,7 +89,7 @@ void ApplicationUpdateMidAsmHook()
 
         if (now < g_next)
         {
-            std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(g_next - now - 1ms));
+            std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(g_next - now - 2ms));
 
             while ((now = std::chrono::steady_clock::now()) < g_next)
                 std::this_thread::yield();
