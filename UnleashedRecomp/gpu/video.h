@@ -16,7 +16,7 @@ struct Video
 {
     static void CreateHostDevice(const char *sdlVideoDriver);
     static void WaitOnSwapChain();
-    static void HostPresent();
+    static void Present();
     static void StartPipelinePrecompilation();
     static void WaitForGPU();
 };

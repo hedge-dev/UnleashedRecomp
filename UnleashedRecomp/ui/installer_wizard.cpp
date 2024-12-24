@@ -1478,7 +1478,7 @@ bool InstallerWizard::Run(std::filesystem::path installPath, bool skipGame)
         SDL_PumpEvents();
         SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
         GameWindow::Update();
-        Video::HostPresent();
+        Video::Present();
     }
 
     GameWindow::SetFullscreenCursorVisibility(false);

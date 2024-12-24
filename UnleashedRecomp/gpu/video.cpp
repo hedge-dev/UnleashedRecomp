@@ -629,7 +629,8 @@ enum class RenderCommandType
     UnlockBuffer16,
     UnlockBuffer32,
     DrawImGui,
-    Present,
+    ExecuteCommandList,
+    BeginCommandList,
     StretchRect,
     SetRenderTarget,
     SetDepthStencilSurface,
@@ -2179,14 +2180,14 @@ void Video::WaitOnSwapChain()
 }
 
 static bool g_shouldPrecompilePipelines;
-static std::atomic<bool> g_presented;
+static std::atomic<bool> g_executedCommandList;
 
-void Video::HostPresent() 
+void Video::Present() 
 {
     DrawImGui();
 
     RenderCommand cmd;
-    cmd.type = RenderCommandType::Present;
+    cmd.type = RenderCommandType::ExecuteCommandList;
     g_renderQueue.enqueue(cmd);
 
     // All the shaders are available at this point. We can precompile embedded PSOs then.
@@ -2201,18 +2202,49 @@ void Video::HostPresent()
         g_shouldPrecompilePipelines = false;
     }
 
-    g_presented.wait(false);
-    g_presented = false;
+    g_executedCommandList.wait(false);
+    g_executedCommandList = false;
+
+    if (g_swapChainValid)
+    {
+        RenderCommandSemaphore* signalSemaphores[] = { g_renderSemaphores[g_frame].get() };
+        g_swapChainValid = g_swapChain->present(g_backBufferIndex, signalSemaphores, std::size(signalSemaphores));
+    }
+
+    CheckSwapChain();
+
+    cmd.type = RenderCommandType::BeginCommandList;
+    g_renderQueue.enqueue(cmd);
+
+    if (Config::FPS >= FPS_MIN && Config::FPS < FPS_MAX)
+    {
+        using namespace std::chrono_literals;
+
+        static std::chrono::steady_clock::time_point g_next;
+
+        auto now = std::chrono::steady_clock::now();
+
+        if (now < g_next)
+        {
+            std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(g_next - now - 2ms));
+
+            while ((now = std::chrono::steady_clock::now()) < g_next)
+                std::this_thread::yield();
+        }
+        else
+        {
+            g_next = now;
+        }
+
+        g_next += 1000000000ns / Config::FPS;
+    }
+
+    g_presentProfiler.Reset();
 }
 
 void Video::StartPipelinePrecompilation()
 {
     g_shouldPrecompilePipelines = true;
-}
-
-static void GuestPresent() 
-{
-    Video::HostPresent();
 }
 
 static void SetRootDescriptor(const UploadAllocation& allocation, size_t index)
@@ -2225,7 +2257,7 @@ static void SetRootDescriptor(const UploadAllocation& allocation, size_t index)
         commandList->setGraphicsRootDescriptor(allocation.buffer->at(allocation.offset), index);
 }
 
-static void ProcPresent(const RenderCommand& cmd)
+static void ProcExecuteCommandList(const RenderCommand& cmd)
 {
     if (g_swapChainValid)
     {
@@ -2308,8 +2340,6 @@ static void ProcPresent(const RenderCommand& cmd)
             waitSemaphores, std::size(waitSemaphores),
             signalSemaphores, std::size(signalSemaphores),
             g_commandFences[g_frame].get());
-
-        g_swapChainValid = g_swapChain->present(g_backBufferIndex, signalSemaphores, std::size(signalSemaphores));
     }
     else
     {
@@ -2323,14 +2353,15 @@ static void ProcPresent(const RenderCommand& cmd)
 
     g_dirtyStates = DirtyStates(true);
     g_uploadAllocators[g_frame].reset();
+    g_triangleFanIndexData.reset();
+    g_quadIndexData.reset();
 
-    CheckSwapChain();
+    g_executedCommandList = true;
+    g_executedCommandList.notify_one();
+}
 
-    g_presentProfiler.Reset();
-
-    g_presented = true;
-    g_presented.notify_one();
-
+static void ProcBeginCommandList(const RenderCommand& cmd)
+{
     if (g_commandListStates[g_frame])
     {
         g_queue->waitForCommandFence(g_commandFences[g_frame].get());
@@ -2338,9 +2369,6 @@ static void ProcPresent(const RenderCommand& cmd)
     }
 
     DestructTempResources();
-    g_triangleFanIndexData.reset();
-    g_quadIndexData.reset();
-
     BeginCommandList();
 }
 
@@ -4207,7 +4235,8 @@ static std::thread g_renderThread([]
                 case RenderCommandType::UnlockBuffer16:           ProcUnlockBuffer16(cmd); break;
                 case RenderCommandType::UnlockBuffer32:           ProcUnlockBuffer32(cmd); break;
                 case RenderCommandType::DrawImGui:                ProcDrawImGui(cmd); break;
-                case RenderCommandType::Present:                  ProcPresent(cmd); break;
+                case RenderCommandType::ExecuteCommandList:       ProcExecuteCommandList(cmd); break;
+                case RenderCommandType::BeginCommandList:         ProcBeginCommandList(cmd); break;
                 case RenderCommandType::StretchRect:              ProcStretchRect(cmd); break;
                 case RenderCommandType::SetRenderTarget:          ProcSetRenderTarget(cmd); break;
                 case RenderCommandType::SetDepthStencilSurface:   ProcSetDepthStencilSurface(cmd); break;
@@ -6041,7 +6070,7 @@ GUEST_FUNCTION_HOOK(sub_82BE96F0, GetSurfaceDesc);
 GUEST_FUNCTION_HOOK(sub_82BE04B0, GetVertexDeclaration);
 GUEST_FUNCTION_HOOK(sub_82BE0530, HashVertexDeclaration);
 
-GUEST_FUNCTION_HOOK(sub_82BDA8C0, GuestPresent);
+GUEST_FUNCTION_HOOK(sub_82BDA8C0, Video::Present);
 GUEST_FUNCTION_HOOK(sub_82BDD330, GetBackBuffer);
 
 GUEST_FUNCTION_HOOK(sub_82BE9498, CreateTexture);
