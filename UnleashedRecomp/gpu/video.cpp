@@ -2211,6 +2211,20 @@ void Video::Present()
         g_swapChainValid = g_swapChain->present(g_backBufferIndex, signalSemaphores, std::size(signalSemaphores));
     }
 
+    g_frame = g_nextFrame;
+    g_nextFrame = (g_frame + 1) % NUM_FRAMES;
+
+    if (g_commandListStates[g_frame])
+    {
+        g_queue->waitForCommandFence(g_commandFences[g_frame].get());
+        g_commandListStates[g_frame] = false;
+    }
+
+    g_dirtyStates = DirtyStates(true);
+    g_uploadAllocators[g_frame].reset();
+    g_triangleFanIndexData.reset();
+    g_quadIndexData.reset();
+
     CheckSwapChain();
 
     cmd.type = RenderCommandType::BeginCommandList;
@@ -2348,26 +2362,12 @@ static void ProcExecuteCommandList(const RenderCommand& cmd)
 
     g_commandListStates[g_frame] = true;
 
-    g_frame = g_nextFrame;
-    g_nextFrame = (g_frame + 1) % NUM_FRAMES;
-
-    g_dirtyStates = DirtyStates(true);
-    g_uploadAllocators[g_frame].reset();
-    g_triangleFanIndexData.reset();
-    g_quadIndexData.reset();
-
     g_executedCommandList = true;
     g_executedCommandList.notify_one();
 }
 
 static void ProcBeginCommandList(const RenderCommand& cmd)
 {
-    if (g_commandListStates[g_frame])
-    {
-        g_queue->waitForCommandFence(g_commandFences[g_frame].get());
-        g_commandListStates[g_frame] = false;
-    }
-
     DestructTempResources();
     BeginCommandList();
 }
