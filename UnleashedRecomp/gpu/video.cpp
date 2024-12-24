@@ -1574,11 +1574,26 @@ void Video::WaitForGPU()
     }
 }
 
-static std::atomic<bool> g_pendingRenderThread;
+enum class RenderThreadState
+{
+    ProcessingPresent,
+    PendingWaitOnSwapChain,
+    PendingPresent
+};
+
+static std::atomic<RenderThreadState> g_renderThreadState = RenderThreadState::PendingWaitOnSwapChain;
 
 static void WaitForRenderThread()
 {
-    g_pendingRenderThread.wait(true);
+    g_renderThreadState.wait(RenderThreadState::ProcessingPresent);
+
+    if (g_renderThreadState == RenderThreadState::PendingWaitOnSwapChain)
+    {
+        if (g_swapChainValid)
+            g_swapChain->wait();
+
+        g_renderThreadState = RenderThreadState::PendingPresent;
+    }
 }
 
 static void BeginCommandList()
@@ -2187,7 +2202,8 @@ void Video::HostPresent()
     WaitForRenderThread();
     DrawImGui();
 
-    g_pendingRenderThread.store(true);
+    assert(g_renderThreadState == RenderThreadState::PendingPresent);
+    g_renderThreadState = RenderThreadState::ProcessingPresent;
 
     RenderCommand cmd;
     cmd.type = RenderCommandType::Present;
@@ -2228,6 +2244,8 @@ static void SetRootDescriptor(const UploadAllocation& allocation, size_t index)
 
 static void ProcPresent(const RenderCommand& cmd)
 {
+    assert(g_renderThreadState == RenderThreadState::ProcessingPresent);
+
     if (g_swapChainValid)
     {
         auto swapChainTexture = g_swapChain->getTexture(g_backBufferIndex);
@@ -2361,8 +2379,8 @@ static void ProcPresent(const RenderCommand& cmd)
 
     BeginCommandList();
 
-    g_pendingRenderThread.store(false);
-    g_pendingRenderThread.notify_all();
+    g_renderThreadState = RenderThreadState::PendingWaitOnSwapChain;
+    g_renderThreadState.notify_all();
 }
 
 static GuestSurface* GetBackBuffer() 

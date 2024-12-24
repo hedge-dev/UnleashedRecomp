@@ -1264,14 +1264,16 @@ namespace plume {
     }
 
     bool D3D12SwapChain::present(uint32_t textureIndex, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount) {
-        if (waitableObject != NULL) {
-            WaitForSingleObject(waitableObject, INFINITE);
-        }
-
         UINT syncInterval = vsyncEnabled ? 1 : 0;
         UINT flags = !vsyncEnabled ? DXGI_PRESENT_ALLOW_TEARING : 0;
         HRESULT res = d3d->Present(syncInterval, flags);
         return SUCCEEDED(res);
+    }
+
+    void D3D12SwapChain::wait() {
+        if (waitableObject != NULL) {
+            WaitForSingleObject(waitableObject, INFINITE);
+        }
     }
 
     bool D3D12SwapChain::resize() {

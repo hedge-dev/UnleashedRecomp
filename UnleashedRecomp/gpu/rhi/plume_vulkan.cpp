@@ -2131,12 +2131,6 @@ namespace plume {
     }
 
     bool VulkanSwapChain::present(uint32_t textureIndex, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount) {
-        constexpr uint64_t MaxFrameDelay = 1;
-        if (commandQueue->device->capabilities.presentWait && (currentPresentId > MaxFrameDelay)) {
-            constexpr uint64_t waitTimeout = 100000000;
-            vkWaitForPresentKHR(commandQueue->device->vk, vk, currentPresentId - MaxFrameDelay, waitTimeout);
-        }
-
         thread_local std::vector<VkSemaphore> waitSemaphoresVector;
         waitSemaphoresVector.clear();
         for (uint32_t i = 0; i < waitSemaphoreCount; i++) {
@@ -2173,6 +2167,14 @@ namespace plume {
         }
 
         return true;
+    }
+
+    void VulkanSwapChain::wait() {
+        constexpr uint64_t MaxFrameDelay = 1;
+        if (commandQueue->device->capabilities.presentWait && (currentPresentId > MaxFrameDelay)) {
+            constexpr uint64_t waitTimeout = 100000000;
+            vkWaitForPresentKHR(commandQueue->device->vk, vk, currentPresentId - MaxFrameDelay, waitTimeout);
+        }
     }
 
     bool VulkanSwapChain::resize() {

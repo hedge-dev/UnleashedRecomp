@@ -87,6 +87,7 @@ namespace plume {
     struct RenderSwapChain {
         virtual ~RenderSwapChain() { }
         virtual bool present(uint32_t textureIndex, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount) = 0;
+        virtual void wait() = 0;
         virtual bool resize() = 0;
         virtual bool needsResize() const = 0;
         virtual void setVsyncEnabled(bool vsyncEnabled) = 0;
