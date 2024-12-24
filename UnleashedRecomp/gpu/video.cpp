@@ -1906,6 +1906,12 @@ struct Profiler
         value = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
     }
 
+    void Reset()
+    {
+        End();
+        Begin();
+    }
+
     double UpdateAndReturnAverage()
     {
         values[g_profilerValueIndex] = value;
@@ -1914,6 +1920,7 @@ struct Profiler
 };
 
 static double g_applicationValues[PROFILER_VALUE_COUNT];
+static Profiler g_presentProfiler;
 static Profiler g_renderDirectorProfiler;
 
 static bool g_profilerVisible;
@@ -1939,6 +1946,9 @@ static void DrawProfiler()
     if (ImGui::Begin("Profiler", &g_profilerVisible))
     {
         g_applicationValues[g_profilerValueIndex] = App::s_deltaTime * 1000.0;
+
+        const double applicationAvg = std::accumulate(g_applicationValues, g_applicationValues + PROFILER_VALUE_COUNT, 0.0) / PROFILER_VALUE_COUNT;
+        double presentAvg = g_presentProfiler.UpdateAndReturnAverage();
         double renderDirectorAvg = g_renderDirectorProfiler.UpdateAndReturnAverage();
 
         if (ImPlot::BeginPlot("Frame Time"))
@@ -1946,18 +1956,23 @@ static void DrawProfiler()
             ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 20.0);
             ImPlot::SetupAxis(ImAxis_Y1, "ms", ImPlotAxisFlags_None);
             ImPlot::PlotLine<double>("Application", g_applicationValues, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
+            ImPlot::PlotLine<double>("Present", g_presentProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
             ImPlot::PlotLine<double>("Render Director", g_renderDirectorProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
-
             ImPlot::EndPlot();
         }
 
         g_profilerValueIndex = (g_profilerValueIndex + 1) % PROFILER_VALUE_COUNT;
 
-        const double applicationAvg = std::accumulate(g_applicationValues, g_applicationValues + PROFILER_VALUE_COUNT, 0.0) / PROFILER_VALUE_COUNT;
+        ImGui::Text("Current Application: %g ms (%g FPS)", App::s_deltaTime * 1000.0, 1.0 / App::s_deltaTime);
+        ImGui::Text("Current Present: %g ms (%g FPS)", g_presentProfiler.value.load(), 1000.0 / g_presentProfiler.value.load());
+        ImGui::Text("Current Render Director: %g ms (%g FPS)", g_renderDirectorProfiler.value.load(), 1000.0 / g_renderDirectorProfiler.value.load());
+        ImGui::NewLine();
 
         ImGui::Text("Average Application: %g ms (%g FPS)", applicationAvg, 1000.0 / applicationAvg);
+        ImGui::Text("Average Present: %g ms (%g FPS)", presentAvg, 1000.0 / presentAvg);
         ImGui::Text("Average Render Director: %g ms (%g FPS)", renderDirectorAvg, 1000.0 / renderDirectorAvg);
-        
+        ImGui::NewLine();
+
         O1HeapDiagnostics diagnostics, physicalDiagnostics;
         {
             std::lock_guard lock(g_userHeap.mutex);
@@ -1970,10 +1985,12 @@ static void DrawProfiler()
 
         ImGui::Text("Heap Allocated: %d MB", int32_t(diagnostics.allocated / (1024 * 1024)));
         ImGui::Text("Physical Heap Allocated: %d MB", int32_t(physicalDiagnostics.allocated / (1024 * 1024)));
+        ImGui::NewLine();
 
         auto capabilities = g_device->getCapabilities();
         ImGui::Text("Present Wait: %s", capabilities.presentWait ? "Supported" : "Unsupported");
         ImGui::Text("Triangle Fan: %s", capabilities.triangleFan ? "Supported" : "Unsupported");
+        ImGui::NewLine();
 
         const char* sdlVideoDriver = SDL_GetCurrentVideoDriver();
         if (sdlVideoDriver != nullptr)
@@ -2294,6 +2311,31 @@ static void ProcPresent(const RenderCommand& cmd)
             g_commandFences[g_frame].get());
 
         g_swapChainValid = g_swapChain->present(g_backBufferIndex, signalSemaphores, std::size(signalSemaphores));
+
+        if (Config::FPS >= FPS_MIN && Config::FPS < FPS_MAX)
+        {
+            using namespace std::chrono_literals;
+
+            static std::chrono::steady_clock::time_point s_next;
+
+            auto now = std::chrono::steady_clock::now();
+
+            if (now < s_next)
+            {
+                std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(s_next - now - 2ms));
+
+                while ((now = std::chrono::steady_clock::now()) < s_next)
+                    std::this_thread::yield();
+            }
+            else
+            {
+                s_next = now;
+            }
+
+            s_next += 1000000000ns / Config::FPS;
+        }
+
+        g_presentProfiler.Reset();
     }
     else
     {
