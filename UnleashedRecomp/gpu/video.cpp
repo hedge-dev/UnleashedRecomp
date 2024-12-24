@@ -2220,23 +2220,23 @@ void Video::Present()
     {
         using namespace std::chrono_literals;
 
-        static std::chrono::steady_clock::time_point g_next;
+        static std::chrono::steady_clock::time_point s_next;
 
         auto now = std::chrono::steady_clock::now();
 
-        if (now < g_next)
+        if (now < s_next)
         {
-            std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(g_next - now - 2ms));
+            std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(s_next - now - 2ms));
 
-            while ((now = std::chrono::steady_clock::now()) < g_next)
+            while ((now = std::chrono::steady_clock::now()) < s_next)
                 std::this_thread::yield();
         }
         else
         {
-            g_next = now;
+            s_next = now;
         }
 
-        g_next += 1000000000ns / Config::FPS;
+        s_next += 1000000000ns / Config::FPS;
     }
 
     g_presentProfiler.Reset();
