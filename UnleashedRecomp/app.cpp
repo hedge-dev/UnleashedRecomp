@@ -1,4 +1,5 @@
 #include <app.h>
+#include <gpu/video.h>
 #include <install/installer.h>
 #include <kernel/function.h>
 #include <ui/game_window.h>
@@ -38,6 +39,8 @@ PPC_FUNC(sub_824EB490)
 PPC_FUNC_IMPL(__imp__sub_822C1130);
 PPC_FUNC(sub_822C1130)
 {
+    Video::WaitOnSwapChain();
+
     // Correct small delta time errors.
     if (Config::FPS >= FPS_MIN && Config::FPS < FPS_MAX)
     {

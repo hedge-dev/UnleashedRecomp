@@ -1474,6 +1474,7 @@ bool InstallerWizard::Run(std::filesystem::path installPath, bool skipGame)
 
     while (s_isVisible)
     {
+        Video::WaitOnSwapChain();
         SDL_PumpEvents();
         SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
         GameWindow::Update();

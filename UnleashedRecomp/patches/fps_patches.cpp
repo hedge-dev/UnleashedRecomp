@@ -83,24 +83,24 @@ static std::chrono::steady_clock::time_point g_next;
 
 void ApplicationUpdateMidAsmHook()
 {
-    if (Config::FPS >= FPS_MIN && Config::FPS < FPS_MAX)
-    {
-        auto now = std::chrono::steady_clock::now();
+    //if (Config::FPS >= FPS_MIN && Config::FPS < FPS_MAX)
+    //{
+    //    auto now = std::chrono::steady_clock::now();
 
-        if (now < g_next)
-        {
-            std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(g_next - now - 2ms));
+    //    if (now < g_next)
+    //    {
+    //        std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(g_next - now - 2ms));
 
-            while ((now = std::chrono::steady_clock::now()) < g_next)
-                std::this_thread::yield();
-        }
-        else
-        {
-            g_next = now;
-        }
+    //        while ((now = std::chrono::steady_clock::now()) < g_next)
+    //            std::this_thread::yield();
+    //    }
+    //    else
+    //    {
+    //        g_next = now;
+    //    }
 
-        g_next += 1000000000ns / Config::FPS;
-    }
+    //    g_next += 1000000000ns / Config::FPS;
+    //}
 }
 
 static std::chrono::steady_clock::time_point g_prev;
@@ -117,7 +117,7 @@ bool LoadingUpdateMidAsmHook(PPCRegister& r31)
 
     g_ppcContext->r3.u32 = application;
     g_ppcContext->f1.f64 = deltaTime;
-    reinterpret_cast<PPCFunc*>(g_codeCache.Find(update))(*g_ppcContext, base);
+    //reinterpret_cast<PPCFunc*>(g_codeCache.Find(update))(*g_ppcContext, base);
 
     bool loading = PPC_LOAD_U8(0x83367A4C);
     if (loading)

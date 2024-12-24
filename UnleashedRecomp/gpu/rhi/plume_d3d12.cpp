@@ -1230,7 +1230,7 @@ namespace plume {
         }
 
         d3d = static_cast<IDXGISwapChain3 *>(swapChain1);
-        d3d->SetMaximumFrameLatency(1);
+        d3d->SetMaximumFrameLatency(2);
         waitableObject = d3d->GetFrameLatencyWaitableObject();
 
         textures.resize(textureCount);
