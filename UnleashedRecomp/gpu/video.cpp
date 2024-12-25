@@ -2173,10 +2173,23 @@ static void ProcDrawImGui(const RenderCommand& cmd)
     }
 }
 
+// We have to check for this to properly handle the following situation:
+// 1. Wait on swap chain.
+// 2. Create loading thread.
+// 3. Loading thread also waits on swap chain.
+// 4. Loading thread presents and quits.
+// 5. After the loading thread quits, application also presents.
+static bool g_pendingWaitOnSwapChain = true;
+
 void Video::WaitOnSwapChain()
 {
-    if (g_swapChainValid)
-        g_swapChain->wait();
+    if (g_pendingWaitOnSwapChain)
+    {
+        if (g_swapChainValid)
+            g_swapChain->wait();
+
+        g_pendingWaitOnSwapChain = false;
+    }
 }
 
 static bool g_shouldPrecompilePipelines;
@@ -2207,9 +2220,14 @@ void Video::Present()
 
     if (g_swapChainValid)
     {
+        if (g_pendingWaitOnSwapChain)
+            g_swapChain->wait(); // Never gonna happen outside loading threads as explained above.
+
         RenderCommandSemaphore* signalSemaphores[] = { g_renderSemaphores[g_frame].get() };
         g_swapChainValid = g_swapChain->present(g_backBufferIndex, signalSemaphores, std::size(signalSemaphores));
     }
+
+    g_pendingWaitOnSwapChain = true;
 
     g_frame = g_nextFrame;
     g_nextFrame = (g_frame + 1) % NUM_FRAMES;
