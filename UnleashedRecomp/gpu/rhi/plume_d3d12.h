@@ -107,8 +107,9 @@ namespace plume {
         uint32_t height = 0;
         uint32_t refreshRate = 0;
         bool vsyncEnabled = true;
+        uint32_t maxFrameLatency = 0;
 
-        D3D12SwapChain(D3D12CommandQueue *commandQueue, RenderWindow renderWindow, uint32_t textureCount, RenderFormat format);
+        D3D12SwapChain(D3D12CommandQueue *commandQueue, RenderWindow renderWindow, uint32_t textureCount, RenderFormat format, uint32_t maxFrameLatency);
         ~D3D12SwapChain() override;
         bool present(uint32_t textureIndex, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount) override;
         void wait() override;
@@ -231,7 +232,7 @@ namespace plume {
 
         D3D12CommandQueue(D3D12Device *device, RenderCommandListType type);
         ~D3D12CommandQueue() override;
-        std::unique_ptr<RenderSwapChain> createSwapChain(RenderWindow renderWindow, uint32_t textureCount, RenderFormat format) override;
+        std::unique_ptr<RenderSwapChain> createSwapChain(RenderWindow renderWindow, uint32_t textureCount, RenderFormat format, uint32_t newFrameLatency) override;
         void executeCommandLists(const RenderCommandList **commandLists, uint32_t commandListCount, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount, RenderCommandSemaphore **signalSemaphores, uint32_t signalSemaphoreCount, RenderCommandFence *signalFence) override;
         void waitForCommandFence(RenderCommandFence *fence) override;
     };

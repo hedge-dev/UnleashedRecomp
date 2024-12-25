@@ -1191,7 +1191,7 @@ namespace plume {
 
     // D3D12SwapChain
 
-    D3D12SwapChain::D3D12SwapChain(D3D12CommandQueue *commandQueue, RenderWindow renderWindow, uint32_t textureCount, RenderFormat format) {
+    D3D12SwapChain::D3D12SwapChain(D3D12CommandQueue *commandQueue, RenderWindow renderWindow, uint32_t textureCount, RenderFormat format, uint32_t maxFrameLatency) {
         assert(commandQueue != nullptr);
         assert(renderWindow != 0);
 
@@ -1199,6 +1199,7 @@ namespace plume {
         this->renderWindow = renderWindow;
         this->textureCount = textureCount;
         this->format = format;
+        this->maxFrameLatency = maxFrameLatency;
         
         // Store the native format representation.
         nativeFormat = toDXGI(format);
@@ -1230,7 +1231,7 @@ namespace plume {
         }
 
         d3d = static_cast<IDXGISwapChain3 *>(swapChain1);
-        d3d->SetMaximumFrameLatency(2);
+        d3d->SetMaximumFrameLatency(maxFrameLatency);
         waitableObject = d3d->GetFrameLatencyWaitableObject();
 
         textures.resize(textureCount);
@@ -2199,8 +2200,8 @@ namespace plume {
         }
     }
 
-    std::unique_ptr<RenderSwapChain> D3D12CommandQueue::createSwapChain(RenderWindow renderWindow, uint32_t bufferCount, RenderFormat format) {
-        return std::make_unique<D3D12SwapChain>(this, renderWindow, bufferCount, format);
+    std::unique_ptr<RenderSwapChain> D3D12CommandQueue::createSwapChain(RenderWindow renderWindow, uint32_t bufferCount, RenderFormat format, uint32_t maxFrameLatency) {
+        return std::make_unique<D3D12SwapChain>(this, renderWindow, bufferCount, format, maxFrameLatency);
     }
 
     void D3D12CommandQueue::executeCommandLists(const RenderCommandList **commandLists, uint32_t commandListCount, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount, RenderCommandSemaphore **signalSemaphores, uint32_t signalSemaphoreCount, RenderCommandFence *signalFence) {
