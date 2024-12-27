@@ -45,6 +45,11 @@ std::filesystem::path ModLoader::RedirectPath(std::string_view path)
     return pathCache.emplace(hash, std::filesystem::path{}).first->second;
 }
 
+std::vector<std::filesystem::path>* ModLoader::GetIncludeDirectories(size_t modIndex)
+{
+    return modIndex < g_mods.size() ? &g_mods[modIndex].includeDirs : nullptr;
+}
+
 void ModLoader::Init()
 {
     IniFile configIni;
@@ -78,7 +83,7 @@ void ModLoader::Init()
 
         auto modDirectoryPath = modIniFilePath.parent_path();
 
-        auto& mod = g_mods.emplace_back();
+        Mod mod;
 
         if (modIni.contains("Details") || modIni.contains("Filesystem")) // UMM
         {
@@ -97,5 +102,8 @@ void ModLoader::Init()
                     mod.includeDirs.emplace_back(modDirectoryPath / std::u8string_view((const char8_t*)includeDirU8.c_str()));
             }
         }
+
+        if (!mod.includeDirs.empty())
+            g_mods.emplace_back(std::move(mod));
     }
 }

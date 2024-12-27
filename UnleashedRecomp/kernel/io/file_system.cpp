@@ -16,21 +16,50 @@ struct FileHandle : KernelObject
 struct FindHandle : KernelObject
 {
     std::error_code ec;
-    std::filesystem::path searchPath;
-    std::filesystem::directory_iterator iterator;
+    ankerl::unordered_dense::map<std::u8string, std::pair<size_t, bool>> searchResult; // Relative path, file size, is directory
+    decltype(searchResult)::iterator iterator;
+
+    FindHandle(const std::string_view& path)
+    {
+        auto addDirectory = [&](const std::filesystem::path& directory)
+            {
+                for (auto& entry : std::filesystem::directory_iterator(directory, ec))
+                {
+                    std::u8string relativePath = entry.path().lexically_relative(directory).u8string();
+                    searchResult.emplace(relativePath, std::make_pair(entry.is_directory(ec) ? 0 : entry.file_size(ec), entry.is_directory(ec)));
+                }
+            };
+
+        std::string_view pathNoPrefix = path;
+        size_t index = pathNoPrefix.find(":\\");
+        if (index != std::string_view::npos)
+            pathNoPrefix.remove_prefix(index + 2);
+
+        for (size_t i = 0; ; i++)
+        {
+            auto* includeDirs = ModLoader::GetIncludeDirectories(i);
+            if (includeDirs == nullptr)
+                break;
+
+            for (auto& includeDir : *includeDirs)
+                addDirectory(includeDir / pathNoPrefix);
+        }
+
+        addDirectory(std::u8string_view((const char8_t*)FileSystem::TransformPath(path)));
+
+        iterator = searchResult.begin();
+    }
 
     void fillFindData(WIN32_FIND_DATAA* lpFindFileData)
     {
-        if (iterator->is_directory())
+        if (iterator->second.second)
             lpFindFileData->dwFileAttributes = ByteSwap(FILE_ATTRIBUTE_DIRECTORY);
-        else if (iterator->is_regular_file())
+        else
             lpFindFileData->dwFileAttributes = ByteSwap(FILE_ATTRIBUTE_NORMAL);
 
-        std::u8string pathU8Str = iterator->path().lexically_relative(searchPath).u8string();
-        uint64_t fileSize = iterator->file_size(ec);
-        strncpy(lpFindFileData->cFileName, (const char *)(pathU8Str.c_str()), sizeof(lpFindFileData->cFileName));
-        lpFindFileData->nFileSizeLow = ByteSwap(uint32_t(fileSize >> 32U));
-        lpFindFileData->nFileSizeHigh = ByteSwap(uint32_t(fileSize));
+        strncpy(lpFindFileData->cFileName, (const char *)(iterator->first.c_str()), sizeof(lpFindFileData->cFileName));
+        lpFindFileData->nFileSizeLow = ByteSwap(uint32_t(iterator->second.first >> 32U));
+        lpFindFileData->nFileSizeHigh = ByteSwap(uint32_t(iterator->second.first));
         lpFindFileData->ftCreationTime = {};
         lpFindFileData->ftLastAccessTime = {};
         lpFindFileData->ftLastWriteTime = {};
@@ -238,45 +267,35 @@ uint32_t XSetFilePointerEx(FileHandle* hFile, int32_t lDistanceToMove, LARGE_INT
 
 FindHandle* XFindFirstFileA(const char* lpFileName, WIN32_FIND_DATAA* lpFindFileData)
 {
-    const char *transformedPath = FileSystem::TransformPath(lpFileName);
-    size_t transformedPathLength = strlen(transformedPath);
-    if (transformedPathLength == 0)
-        return (FindHandle*)GUEST_INVALID_HANDLE_VALUE;
-
-    std::filesystem::path dirPath;
-    if (strstr(transformedPath, "\\*") == (&transformedPath[transformedPathLength - 2]) || strstr(transformedPath, "/*") == (&transformedPath[transformedPathLength - 2]))
+    std::string_view path = lpFileName;
+    if (path.find("\\*") == (path.size() - 2) || path.find("/*") == (path.size() - 2))
     {
-        dirPath = std::u8string_view((const char8_t*)(transformedPath), transformedPathLength - 2);
+        path.remove_suffix(1);
     }
-    else if (strstr(transformedPath, "\\*.*") == (&transformedPath[transformedPathLength - 4]) || strstr(transformedPath, "/*.*") == (&transformedPath[transformedPathLength - 4]))
+    else if (path.find("\\*.*") == (path.size() - 4) || path.find("/*.*") == (path.size() - 4))
     {
-        dirPath = std::u8string_view((const char8_t *)(transformedPath), transformedPathLength - 4);
+        path.remove_suffix(3);
     }
     else
     {
-        dirPath = std::u8string_view((const char8_t *)(transformedPath), transformedPathLength);
-        assert(!dirPath.has_extension() && "Unknown search pattern.");
+        assert(!std::filesystem::path(path).has_extension() && "Unknown search pattern.");
     }
 
-    if (!std::filesystem::is_directory(dirPath))
+    FindHandle findHandle(path);
+
+    if (findHandle.searchResult.empty())
         return GetInvalidKernelObject<FindHandle>();
 
-    std::filesystem::directory_iterator dirIterator(dirPath);
-    if (dirIterator == std::filesystem::directory_iterator())
-        return GetInvalidKernelObject<FindHandle>();
+    findHandle.fillFindData(lpFindFileData);
 
-    FindHandle *findHandle = CreateKernelObject<FindHandle>();
-    findHandle->searchPath = std::move(dirPath);
-    findHandle->iterator = std::move(dirIterator);
-    findHandle->fillFindData(lpFindFileData);
-    return findHandle;
+    return CreateKernelObject<FindHandle>(std::move(findHandle));
 }
 
 uint32_t XFindNextFileA(FindHandle* Handle, WIN32_FIND_DATAA* lpFindFileData)
 {
     Handle->iterator++;
 
-    if (Handle->iterator == std::filesystem::directory_iterator())
+    if (Handle->iterator == Handle->searchResult.end())
     {
         return FALSE;
     }
@@ -338,47 +357,34 @@ uint32_t XWriteFile(FileHandle* hFile, const void* lpBuffer, uint32_t nNumberOfB
     return TRUE;
 }
 
-static void fixSlashes(char *path)
+const char* FileSystem::TransformPath(const std::string_view& path)
 {
-    while (*path != 0)
-    {
-        if (*path == '\\')
-        {
-            *path = '/';
-        }
+    thread_local std::string builtPath;
+    builtPath.clear();
 
-        path++;
-    }
-}
-
-const char* FileSystem::TransformPath(const char* path)
-{
-    thread_local char builtPath[2048]{};
-    const char* relativePath = strstr(path, ":\\");
-    if (relativePath != nullptr)
+    size_t index = path.find(":\\");
+    if (index != std::string::npos)
     {
         // rooted folder, handle direction
-        const std::string_view root = std::string_view{ path, path + (relativePath - path) };
+        const std::string_view root = path.substr(0, index);
         const auto newRoot = XamGetRootPath(root);
 
         if (!newRoot.empty())
         {
-            strncpy(builtPath, newRoot.data(), newRoot.size());
-            builtPath[newRoot.size()] = '\\';
-            strcpy(builtPath + newRoot.size() + 1, relativePath + 2);
+            builtPath += newRoot;
+            builtPath += '/';
         }
-        else
-        {
-            strncpy(builtPath, relativePath + 2, sizeof(builtPath));
-        }
+        
+        builtPath += path.substr(index + 2);
     }
     else
     {
-        strncpy(builtPath, path, sizeof(builtPath));
+        builtPath += path;
     }
 
-    fixSlashes(builtPath);
-    return builtPath;
+    std::replace(builtPath.begin(), builtPath.end(), '\\', '/');
+
+    return builtPath.c_str();
 }
 
 SWA_API const char* XExpandFilePathA(const char* path)

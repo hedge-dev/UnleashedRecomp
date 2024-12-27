@@ -2,5 +2,5 @@
 
 struct FileSystem
 {
-    static const char* TransformPath(const char* path);
+    static const char* TransformPath(const std::string_view& path);
 };
