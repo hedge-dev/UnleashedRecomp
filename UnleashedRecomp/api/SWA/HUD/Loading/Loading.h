@@ -20,8 +20,12 @@ namespace SWA
     class CLoading
     {
     public:
-        SWA_INSERT_PADDING(0x128);
-        bool m_IsVisible;
+        SWA_INSERT_PADDING(0xD8);
+        be<uint32_t> m_pUnk;
+        SWA_INSERT_PADDING(0x3C);
+        Chao::CSD::RCPtr<Chao::CSD::CScene> m_rcNightToDay;
+        SWA_INSERT_PADDING(0x0C);
+        be<uint32_t> m_IsVisible;
         SWA_INSERT_PADDING(0x0C);
         be<ELoadingDisplayType> m_LoadingDisplayType;
         SWA_INSERT_PADDING(0x65);

@@ -3,6 +3,8 @@
 #include <user/config.h>
 #include <api/SWA.h>
 #include <os/logger.h>
+#include <hid/hid_detail.h>
+#include <app.h>
 
 const char* m_pStageID;
 
@@ -13,10 +15,12 @@ void GetStageIDMidAsmHook(PPCRegister& r5)
     m_pStageID = *(xpointer<const char>*)g_memory.Translate(r5.u32);
 }
 
-// Loading screen hook.
+// SWA::Message::MsgRequestStartLoading::Impl
 PPC_FUNC_IMPL(__imp__sub_824DCF38);
 PPC_FUNC(sub_824DCF38)
 {
+    App::s_isLoading = true;
+
     // TODO: use the actual PS3 loading screen ("n_2_d").
     if (Config::TimeOfDayTransition == ETimeOfDayTransition::PlayStation)
     {
@@ -33,6 +37,18 @@ PPC_FUNC(sub_824DCF38)
     }
 
     __imp__sub_824DCF38(ctx, base);
+}
+
+// SWA::CLoading::Update
+PPC_FUNC_IMPL(__imp__sub_824DAB60);
+PPC_FUNC(sub_824DAB60)
+{
+    auto pLoading = (SWA::CLoading*)g_memory.Translate(ctx.r3.u32);
+
+    __imp__sub_824DAB60(ctx, base);
+
+    if (!pLoading->m_LoadingDisplayType)
+        App::s_isLoading = false;
 }
 
 // Load voice language files.
@@ -112,10 +128,16 @@ void LoadingScreenControllerMidAsmHook()
         0x820301C4, // 360_sonic3
         0x820301D0, // 360_evil
         0x820301DC, // 360_robo
-        0x820301E8, // 360_super
+        0x820301E8  // 360_super
     };
 
-    const char* prefix = Config::ControllerIcons == EControllerIcons::PlayStation ? "ps3" : "360";
+    auto isPlayStation = Config::ControllerIcons == EControllerIcons::PlayStation;
+
+    if (Config::ControllerIcons == EControllerIcons::Auto)
+        isPlayStation = hid::detail::g_inputDeviceController == hid::detail::EInputDevice::PlayStation;
+
+    const char* prefix = isPlayStation ? "ps3" : "360";
+
     for (auto address : STR_ADDRESSES)
         memcpy(g_memory.Translate(address), prefix, 3);
 }

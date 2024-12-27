@@ -7,6 +7,7 @@ class App
 public:
     static inline bool s_isInit;
     static inline bool s_isMissingDLC;
+    static inline bool s_isLoading;
 
     static inline ELanguage s_language;
 

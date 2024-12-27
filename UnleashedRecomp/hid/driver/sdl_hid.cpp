@@ -4,6 +4,7 @@
 #include <hid/hid_detail.h>
 #include <ui/game_window.h>
 #include <kernel/xdm.h>
+#include <app.h>
 
 #define TRANSLATE_INPUT(S, X) SDL_GameControllerGetButton(controller, S) << FirstBitLow(X)
 #define VIBRATION_TIMEOUT_MS 5000
@@ -163,6 +164,10 @@ inline Controller* FindController(int which)
 static void SetControllerInputDevice(Controller* controller)
 {
     g_activeController = controller;
+
+    if (App::s_isLoading)
+        return;
+
     hid::detail::g_inputDevice = controller->GetInputDevice();
     hid::detail::g_inputDeviceController = hid::detail::g_inputDevice;
 }
