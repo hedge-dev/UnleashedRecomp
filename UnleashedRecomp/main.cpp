@@ -18,6 +18,7 @@
 #include <install/installer.h>
 #include <os/logger.h>
 #include <ui/installer_wizard.h>
+#include <mod/mod_loader.h>
 
 #define GAME_XEX_PATH "game:\\default.xex"
 
@@ -79,6 +80,8 @@ void KiSystemStartup()
             XamRegisterContent(XamMakeContent(XCONTENTTYPE_DLC, (const char*)(fileNameU8.c_str())), (const char*)(filePathU8.c_str()));
         }
     }
+
+    ModLoader::Init();
 
     XAudioInitializeSystem();
 }

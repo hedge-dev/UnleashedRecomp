@@ -194,6 +194,10 @@ set(SWA_USER_CXX_SOURCES
     "user/config.cpp"
 )
 
+set(SWA_MOD_CXX_SOURCES
+    "mod/mod_loader.cpp"
+)
+
 set(SWA_THIRDPARTY_SOURCES
     "${SWA_THIRDPARTY_ROOT}/imgui/backends/imgui_impl_sdl2.cpp"
     "${SWA_THIRDPARTY_ROOT}/imgui/imgui.cpp"
@@ -252,6 +256,7 @@ set(SWA_CXX_SOURCES
     ${SWA_UI_CXX_SOURCES}
     ${SWA_INSTALL_CXX_SOURCES}
     ${SWA_USER_CXX_SOURCES}
+    ${SWA_MOD_CXX_SOURCES}
     ${SWA_THIRDPARTY_SOURCES}
 )
 

@@ -5,6 +5,7 @@
 #include <kernel/function.h>
 #include <cpu/guest_thread.h>
 #include <os/logger.h>
+#include <mod/mod_loader.h>
 
 struct FileHandle : KernelObject
 {
@@ -36,6 +37,15 @@ struct FindHandle : KernelObject
     }
 };
 
+static std::filesystem::path TransformOrRedirectPath(const char* path)
+{
+    std::filesystem::path redirectedPath = ModLoader::RedirectPath(path);
+    if (redirectedPath.empty())
+        redirectedPath = std::u8string_view((const char8_t*)FileSystem::TransformPath(path));
+
+    return redirectedPath;
+}
+
 SWA_API FileHandle* XCreateFileA
 (
     const char* lpFileName,
@@ -50,7 +60,7 @@ SWA_API FileHandle* XCreateFileA
     assert(((dwShareMode & ~(FILE_SHARE_READ | FILE_SHARE_WRITE)) == 0) && "Unknown share mode bits.");
     assert(((dwCreationDisposition & ~(CREATE_NEW | CREATE_ALWAYS)) == 0) && "Unknown creation disposition bits.");
 
-    std::filesystem::path filePath = std::u8string_view((const char8_t*)(FileSystem::TransformPath(lpFileName)));
+    std::filesystem::path filePath = TransformOrRedirectPath(lpFileName);
     std::fstream fileStream;
     std::ios::openmode fileOpenMode = std::ios::binary;
     if (dwDesiredAccess & (GENERIC_READ | FILE_READ_DATA))
@@ -305,7 +315,7 @@ uint32_t XReadFileEx(FileHandle* hFile, void* lpBuffer, uint32_t nNumberOfBytesT
 
 uint32_t XGetFileAttributesA(const char* lpFileName)
 {
-    std::filesystem::path filePath(std::u8string_view((const char8_t*)(FileSystem::TransformPath(lpFileName))));
+    std::filesystem::path filePath = TransformOrRedirectPath(lpFileName);
     if (std::filesystem::is_directory(filePath))
         return FILE_ATTRIBUTE_DIRECTORY;
     else if (std::filesystem::is_regular_file(filePath))

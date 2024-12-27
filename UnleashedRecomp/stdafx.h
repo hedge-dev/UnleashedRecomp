@@ -49,6 +49,7 @@ using Microsoft::WRL::ComPtr;
 #include <list>
 #include <semaphore>
 #include <numeric>
+#include <charconv>
 
 #include "framework.h"
 #include "mutex.h"
