@@ -41,6 +41,7 @@ struct FindHandle : KernelObject
             if (includeDirs == nullptr)
                 break;
 
+            // TODO: Should cache what we find here to save on future lookups.
             for (auto& includeDir : *includeDirs)
                 addDirectory(includeDir / pathNoPrefix);
         }
