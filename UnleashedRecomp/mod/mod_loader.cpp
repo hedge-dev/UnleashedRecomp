@@ -18,7 +18,7 @@ struct Mod
     ModType type{};
     std::vector<std::filesystem::path> includeDirs;
     bool merge = false;
-    ankerl::unordered_dense::set<std::filesystem::path> readOnly;
+    ankerl::unordered_dense::set<XXH64_hash_t> readOnly;
 };
 
 static std::vector<Mod> g_mods;
@@ -39,15 +39,18 @@ std::filesystem::path ModLoader::RedirectPath(std::string_view path)
     if (findResult != s_pathCache.end())
         return findResult->second;
 
+    std::string pathStr(path);
+    std::replace(pathStr.begin(), pathStr.end(), '\\', '/');
+    hash = XXH3_64bits(pathStr.data(), pathStr.size());
+
     for (auto& mod : g_mods)
     {
-        // TODO: Check for read only.
-        if (mod.type == ModType::UMM && mod.merge)
+        if (mod.type == ModType::UMM && mod.merge && !mod.readOnly.contains(hash))
             continue;
 
         for (auto& includeDir : mod.includeDirs)
         {
-            std::filesystem::path modPath = includeDir / path;
+            std::filesystem::path modPath = includeDir / pathStr;
             if (std::filesystem::exists(modPath))
                 return s_pathCache.emplace(hash, modPath).first->second;
         }
@@ -101,6 +104,23 @@ void ModLoader::Init()
             mod.type = ModType::UMM;
             mod.includeDirs.emplace_back(std::move(modDirectoryPath));
             mod.merge = modIni.getBool("Details", "Merge", modIni.getBool("Filesystem", "Merge", false));
+
+            std::string readOnly = modIni.getString("Details", "Read-only", modIni.getString("Filesystem", "Read-only", std::string()));
+            std::replace(readOnly.begin(), readOnly.end(), '\\', '/');
+            std::string_view iterator = readOnly;
+
+            while (!iterator.empty())
+            {
+                size_t index = iterator.find(',');
+                if (index == std::string_view::npos)
+                {
+                    mod.readOnly.emplace(XXH3_64bits(iterator.data(), iterator.size()));
+                    break;
+                }
+
+                mod.readOnly.emplace(XXH3_64bits(iterator.data(), index));
+                iterator.remove_prefix(index + 1);
+            }
         }
         else // HMM
         {
@@ -435,8 +455,6 @@ PPC_FUNC(sub_82E0B500)
             {
                 if (mod.merge)
                 {
-                    // TODO: Check for read only.
-
                     if (arFilePath.empty())
                         arFilePath = arFilePathU8;
 
