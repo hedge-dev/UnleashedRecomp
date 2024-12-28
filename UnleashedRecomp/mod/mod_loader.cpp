@@ -285,23 +285,26 @@ PPC_FUNC(sub_82E0B500)
                 stream.seekg(0, std::ios::end);
                 size_t arFileSize = stream.tellg();
 
-                void* arFileData = __HH_ALLOC(arFileSize);
-                guest_stack_var<std::pair<be<uint32_t>, be<uint32_t>>> arFileDataHolder;
-                arFileDataHolder->first = g_memory.MapVirtual(arFileData);
-                GuestToHostFunction<void>(sub_8241F200, &arFileDataHolder->second, arFileData);
-
+                void* arFileData = g_userHeap.Alloc(arFileSize);
                 stream.seekg(0, std::ios::beg);
                 stream.read(reinterpret_cast<char*>(arFileData), arFileSize);
                 stream.close();
 
+                auto arFileDataHolder = reinterpret_cast<be<uint32_t>*>(g_userHeap.Alloc(sizeof(uint32_t) * 2));
+                arFileDataHolder[0] = g_memory.MapVirtual(arFileData);
+                arFileDataHolder[1] = NULL;
+
                 ctx.r3 = r3;
                 ctx.r4 = r4;
                 ctx.r5 = r5;
-                ctx.r6.u32 = g_memory.MapVirtual(arFileDataHolder.get());
+                ctx.r6.u32 = g_memory.MapVirtual(arFileDataHolder);
                 ctx.r7.u32 = uint32_t(arFileSize);
                 ctx.r8 = r8;
 
                 __imp__sub_82E0B500(ctx, base);
+
+                g_userHeap.Free(arFileDataHolder);
+                g_userHeap.Free(arFileData);
 
                 return true;
             }
