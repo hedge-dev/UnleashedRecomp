@@ -18,7 +18,7 @@ struct Mod
     ModType type{};
     std::vector<std::filesystem::path> includeDirs;
     bool merge = false;
-    ankerl::unordered_dense::set<XXH64_hash_t> readOnly;
+    ankerl::unordered_dense::set<std::filesystem::path> readOnly;
 };
 
 static std::vector<Mod> g_mods;
@@ -41,16 +41,16 @@ std::filesystem::path ModLoader::RedirectPath(std::string_view path)
 
     std::string pathStr(path);
     std::replace(pathStr.begin(), pathStr.end(), '\\', '/');
-    hash = XXH3_64bits(pathStr.data(), pathStr.size());
+    std::filesystem::path fsPath(std::move(pathStr));
 
     for (auto& mod : g_mods)
     {
-        if (mod.type == ModType::UMM && mod.merge && !mod.readOnly.contains(hash))
+        if (mod.type == ModType::UMM && mod.merge && !mod.readOnly.contains(fsPath))
             continue;
 
         for (auto& includeDir : mod.includeDirs)
         {
-            std::filesystem::path modPath = includeDir / pathStr;
+            std::filesystem::path modPath = includeDir / fsPath;
             if (std::filesystem::exists(modPath))
                 return s_pathCache.emplace(hash, modPath).first->second;
         }
@@ -107,19 +107,19 @@ void ModLoader::Init()
 
             std::string readOnly = modIni.getString("Details", "Read-only", modIni.getString("Filesystem", "Read-only", std::string()));
             std::replace(readOnly.begin(), readOnly.end(), '\\', '/');
-            std::string_view iterator = readOnly;
+            std::string_view readOnlySplit = readOnly;
 
-            while (!iterator.empty())
+            while (!readOnlySplit.empty())
             {
-                size_t index = iterator.find(',');
+                size_t index = readOnlySplit.find(',');
                 if (index == std::string_view::npos)
                 {
-                    mod.readOnly.emplace(XXH3_64bits(iterator.data(), iterator.size()));
+                    mod.readOnly.emplace(readOnlySplit);
                     break;
                 }
 
-                mod.readOnly.emplace(XXH3_64bits(iterator.data(), index));
-                iterator.remove_prefix(index + 1);
+                mod.readOnly.emplace(readOnlySplit.substr(0, index));
+                readOnlySplit.remove_prefix(index + 1);
             }
         }
         else // HMM
@@ -200,26 +200,6 @@ PPC_FUNC(sub_82E0D3E8)
             }
         };
 
-    auto loadFile = [&]<typename TFunction>(const std::filesystem::path& filePath, const TFunction& function)
-        {
-            std::ifstream stream(filePath, std::ios::binary);
-            if (stream.good())
-            {
-                stream.seekg(0, std::ios::end);
-                size_t arlFileSize = stream.tellg();
-                stream.seekg(0, std::ios::beg);
-                s_fileData.resize(arlFileSize);
-                stream.read(reinterpret_cast<char*>(s_fileData.data()), arlFileSize);
-                stream.close();
-
-                function(s_fileData.data(), arlFileSize);
-
-                return true;
-            }
-
-            return false;
-        };
-
     std::u8string_view arlFilePathU8(reinterpret_cast<const char8_t*>(base + PPC_LOAD_U32(ctx.r4.u32)));
     std::filesystem::path arlFilePath;
     std::filesystem::path arFilePath;
@@ -229,6 +209,29 @@ PPC_FUNC(sub_82E0D3E8)
     {
         for (auto& includeDir : mod.includeDirs)
         {
+            auto loadFile = [&]<typename TFunction>(const std::filesystem::path& filePath, const TFunction& function)
+            {
+                if (mod.type == ModType::UMM && mod.readOnly.contains(filePath))
+                    return false;
+
+                std::ifstream stream(includeDir / filePath, std::ios::binary);
+                if (stream.good())
+                {
+                    stream.seekg(0, std::ios::end);
+                    size_t arlFileSize = stream.tellg();
+                    stream.seekg(0, std::ios::beg);
+                    s_fileData.resize(arlFileSize);
+                    stream.read(reinterpret_cast<char*>(s_fileData.data()), arlFileSize);
+                    stream.close();
+
+                    function(s_fileData.data(), arlFileSize);
+
+                    return true;
+                }
+
+                return false;
+            };
+
             if (mod.type == ModType::UMM)
             {
                 if (mod.merge)
@@ -239,7 +242,7 @@ PPC_FUNC(sub_82E0D3E8)
                         arlFilePath += ".arl";
                     }
 
-                    if (!loadFile(includeDir / arlFilePath, parseArlFileData))
+                    if (!loadFile(arlFilePath, parseArlFileData))
                     {
                         if (arFilePath.empty())
                         {
@@ -247,12 +250,11 @@ PPC_FUNC(sub_82E0D3E8)
                             arFilePath += ".ar";
                         }
 
-                        if (!loadFile(includeDir / arFilePath, parseArFileData))
+                        if (!loadFile(arFilePath, parseArFileData))
                         {
                             for (uint32_t i = 0; ; i++)
                             {
-                                s_tempPath = includeDir;
-                                s_tempPath /= arFilePath;
+                                s_tempPath = arFilePath;
                                 s_tempPath += fmt::format(".{:02}", i);
 
                                 if (!loadFile(s_tempPath, parseArFileData))
@@ -274,7 +276,7 @@ PPC_FUNC(sub_82E0D3E8)
                     appendArlFilePath += arlFilePath.filename();
                 }
 
-                loadFile(includeDir / appendArlFilePath, parseArlFileData);
+                loadFile(appendArlFilePath, parseArlFileData);
             }
         }
     }
@@ -366,84 +368,6 @@ PPC_FUNC(sub_82E0B500)
     thread_local std::filesystem::path s_tempFilePath;
     s_tempFilePath.clear();
 
-    auto loadArchive = [&](const std::filesystem::path& arFilePath)
-        {
-            std::ifstream stream(arFilePath, std::ios::binary);
-            if (stream.good())
-            {
-                stream.seekg(0, std::ios::end);
-                size_t arFileSize = stream.tellg();
-
-                void* arFileData = g_userHeap.Alloc(arFileSize);
-                stream.seekg(0, std::ios::beg);
-                stream.read(reinterpret_cast<char*>(arFileData), arFileSize);
-                stream.close();
-
-                auto arFileDataHolder = reinterpret_cast<be<uint32_t>*>(g_userHeap.Alloc(sizeof(uint32_t) * 2));
-                arFileDataHolder[0] = g_memory.MapVirtual(arFileData);
-                arFileDataHolder[1] = NULL;
-
-                ctx.r3 = r3;
-                ctx.r4 = r4;
-                ctx.r5 = r5;
-                ctx.r6.u32 = g_memory.MapVirtual(arFileDataHolder);
-                ctx.r7.u32 = uint32_t(arFileSize);
-                ctx.r8 = r8;
-
-                __imp__sub_82E0B500(ctx, base);
-
-                g_userHeap.Free(arFileDataHolder);
-                g_userHeap.Free(arFileData);
-
-                return true;
-            }
-
-            return false;
-        };
-
-    auto loadArchives = [&](const std::filesystem::path& arFilePath, bool allowNoArl)
-        {
-            s_tempFilePath = arFilePath;
-            s_tempFilePath += "l";
-
-            std::ifstream stream(s_tempFilePath, std::ios::binary);
-            if (stream.good())
-            {
-                // TODO: Should cache this instead of re-opening the file.
-                uint32_t splitCount{};
-                stream.seekg(4, std::ios::beg);
-                stream.read(reinterpret_cast<char*>(&splitCount), sizeof(splitCount));
-                stream.close();
-
-                if (splitCount == 0)
-                {
-                    loadArchive(arFilePath);
-                }
-                else
-                {
-                    for (uint32_t i = 0; i < splitCount; i++)
-                    {
-                        s_tempFilePath = arFilePath;
-                        s_tempFilePath += fmt::format(".{:02}", i);
-                        loadArchive(s_tempFilePath);
-                    }
-                }
-            }
-            else if (allowNoArl)
-            {
-                if (!loadArchive(arFilePath))
-                {
-                    for (uint32_t i = 0; ; i++)
-                    {
-                        s_tempFilePath = arFilePath;
-                        s_tempFilePath += fmt::format(".{:02}", i);
-                        if (!loadArchive(s_tempFilePath))
-                            break;
-                    }
-                }
-            }
-        };
-
     std::filesystem::path arFilePath;
     std::filesystem::path appendArFilePath;
 
@@ -451,6 +375,90 @@ PPC_FUNC(sub_82E0B500)
     {
         for (auto& includeDir : mod.includeDirs)
         {
+            auto loadArchive = [&](const std::filesystem::path& arFilePath)
+                {
+                    if (mod.type == ModType::UMM && mod.readOnly.contains(arFilePath))
+                        return false;
+
+                    std::ifstream stream(includeDir / arFilePath, std::ios::binary);
+                    if (stream.good())
+                    {
+                        stream.seekg(0, std::ios::end);
+                        size_t arFileSize = stream.tellg();
+
+                        void* arFileData = g_userHeap.Alloc(arFileSize);
+                        stream.seekg(0, std::ios::beg);
+                        stream.read(reinterpret_cast<char*>(arFileData), arFileSize);
+                        stream.close();
+
+                        auto arFileDataHolder = reinterpret_cast<be<uint32_t>*>(g_userHeap.Alloc(sizeof(uint32_t) * 2));
+                        arFileDataHolder[0] = g_memory.MapVirtual(arFileData);
+                        arFileDataHolder[1] = NULL;
+
+                        ctx.r3 = r3;
+                        ctx.r4 = r4;
+                        ctx.r5 = r5;
+                        ctx.r6.u32 = g_memory.MapVirtual(arFileDataHolder);
+                        ctx.r7.u32 = uint32_t(arFileSize);
+                        ctx.r8 = r8;
+
+                        __imp__sub_82E0B500(ctx, base);
+
+                        g_userHeap.Free(arFileDataHolder);
+                        g_userHeap.Free(arFileData);
+
+                        return true;
+                    }
+
+                    return false;
+                };
+
+            auto loadArchives = [&](const std::filesystem::path& arFilePath)
+                {
+                    s_tempFilePath = arFilePath;
+                    s_tempFilePath += "l";
+
+                    if (mod.type == ModType::UMM && mod.readOnly.contains(s_tempFilePath))
+                        return;
+
+                    std::ifstream stream(includeDir / s_tempFilePath, std::ios::binary);
+                    if (stream.good())
+                    {
+                        // TODO: Should cache this instead of re-opening the file.
+                        uint32_t splitCount{};
+                        stream.seekg(4, std::ios::beg);
+                        stream.read(reinterpret_cast<char*>(&splitCount), sizeof(splitCount));
+                        stream.close();
+
+                        if (splitCount == 0)
+                        {
+                            loadArchive(arFilePath);
+                        }
+                        else
+                        {
+                            for (uint32_t i = 0; i < splitCount; i++)
+                            {
+                                s_tempFilePath = arFilePath;
+                                s_tempFilePath += fmt::format(".{:02}", i);
+                                loadArchive(s_tempFilePath);
+                            }
+                        }
+                    }
+                    else if (mod.type == ModType::UMM)
+                    {
+                        if (!loadArchive(arFilePath))
+                        {
+                            for (uint32_t i = 0; ; i++)
+                            {
+                                s_tempFilePath = arFilePath;
+                                s_tempFilePath += fmt::format(".{:02}", i);
+                                if (!loadArchive(s_tempFilePath))
+                                    break;
+                            }
+                        }
+                    }
+                };
+
             if (mod.type == ModType::UMM)
             {
                 if (mod.merge)
@@ -458,7 +466,7 @@ PPC_FUNC(sub_82E0B500)
                     if (arFilePath.empty())
                         arFilePath = arFilePathU8;
 
-                    loadArchives(includeDir / arFilePath, true);
+                    loadArchives(arFilePath);
                 }
             }
             else if (mod.type == ModType::HMM)
@@ -473,7 +481,7 @@ PPC_FUNC(sub_82E0B500)
                     appendArFilePath += arFilePath.filename();
                 }
 
-                loadArchives(includeDir / appendArFilePath, false);
+                loadArchives(appendArFilePath);
             }
         }
     }
