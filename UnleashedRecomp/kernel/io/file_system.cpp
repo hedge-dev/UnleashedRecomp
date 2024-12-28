@@ -35,15 +35,23 @@ struct FindHandle : KernelObject
         if (index != std::string_view::npos)
             pathNoPrefix.remove_prefix(index + 2);
 
-        for (size_t i = 0; ; i++)
-        {
-            auto* includeDirs = ModLoader::GetIncludeDirectories(i);
-            if (includeDirs == nullptr)
-                break;
+        // Force add a work folder to let the game see the files in mods,
+        // if by some rare chance the user has no DLC or update files.
+        if (pathNoPrefix.empty())
+            searchResult.emplace(u8"work", std::make_pair(0, true));
 
-            // TODO: Should cache what we find here to save on future lookups.
-            for (auto& includeDir : *includeDirs)
-                addDirectory(includeDir / pathNoPrefix);
+        // Look for only work folder in mod folders, AR files cause issues.
+        if (pathNoPrefix.starts_with("work"))
+        {
+            for (size_t i = 0; ; i++)
+            {
+                auto* includeDirs = ModLoader::GetIncludeDirectories(i);
+                if (includeDirs == nullptr)
+                    break;
+
+                for (auto& includeDir : *includeDirs)
+                    addDirectory(includeDir / pathNoPrefix);
+            }
         }
 
         addDirectory(std::u8string_view((const char8_t*)FileSystem::TransformPath(path)));

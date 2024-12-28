@@ -17,6 +17,8 @@ struct Mod
 {
     ModType type{};
     std::vector<std::filesystem::path> includeDirs;
+    bool merge = false;
+    ankerl::unordered_dense::set<std::filesystem::path> readOnly;
 };
 
 static std::vector<Mod> g_mods;
@@ -26,30 +28,32 @@ std::filesystem::path ModLoader::RedirectPath(std::string_view path)
     if (g_mods.empty())
         return {};
 
-    thread_local xxHashMap<std::filesystem::path> pathCache;
+    thread_local xxHashMap<std::filesystem::path> s_pathCache;
 
     size_t sepIndex = path.find(":\\");
     if (sepIndex != std::string_view::npos)
         path.remove_prefix(sepIndex + 2);
 
     XXH64_hash_t hash = XXH3_64bits(path.data(), path.size());
-    auto findResult = pathCache.find(hash);
-    if (findResult != pathCache.end())
+    auto findResult = s_pathCache.find(hash);
+    if (findResult != s_pathCache.end())
         return findResult->second;
 
     for (auto& mod : g_mods)
     {
-        // TODO: Need to ignore UMM merge archives here.
+        // TODO: Check for read only.
+        if (mod.type == ModType::UMM && mod.merge)
+            continue;
 
         for (auto& includeDir : mod.includeDirs)
         {
             std::filesystem::path modPath = includeDir / path;
             if (std::filesystem::exists(modPath))
-                return pathCache.emplace(hash, modPath).first->second;
+                return s_pathCache.emplace(hash, modPath).first->second;
         }
     }
 
-    return pathCache.emplace(hash, std::filesystem::path{}).first->second;
+    return s_pathCache.emplace(hash, std::filesystem::path{}).first->second;
 }
 
 std::vector<std::filesystem::path>* ModLoader::GetIncludeDirectories(size_t modIndex)
@@ -96,6 +100,7 @@ void ModLoader::Init()
         {
             mod.type = ModType::UMM;
             mod.includeDirs.emplace_back(std::move(modDirectoryPath));
+            mod.merge = modIni.getBool("Details", "Merge", modIni.getBool("Filesystem", "Merge", false));
         }
         else // HMM
         {
@@ -125,13 +130,10 @@ PPC_FUNC(sub_82E0D3E8)
         return;
     }
 
-    const char* arlFilePathU8 = reinterpret_cast<const char*>(base + PPC_LOAD_U32(ctx.r4.u32));
-    std::filesystem::path appendArlFilePath;
-
-    thread_local ankerl::unordered_dense::set<std::string> fileNames;
-    thread_local std::vector<uint8_t> arlFileData;
-    fileNames.clear();
-    arlFileData.clear();
+    thread_local ankerl::unordered_dense::set<std::string> s_arlFileNames;
+    thread_local std::vector<uint8_t> s_arlFileData;
+    s_arlFileNames.clear();
+    s_arlFileData.clear();
 
     auto parseArlFileData = [&](const uint8_t* arlFileData, size_t arlFileSize)
         {
@@ -150,7 +152,7 @@ PPC_FUNC(sub_82E0D3E8)
                 uint8_t fileNameSize = *arlFileNames;
                 ++arlFileNames;
 
-                fileNames.emplace(reinterpret_cast<const char*>(arlFileNames), fileNameSize);
+                s_arlFileNames.emplace(reinterpret_cast<const char*>(arlFileNames), fileNameSize);
 
                 arlFileNames += fileNameSize;
             }
@@ -166,33 +168,54 @@ PPC_FUNC(sub_82E0D3E8)
                 stream.seekg(0, std::ios::end);
                 size_t arlFileSize = stream.tellg();
                 stream.seekg(0, std::ios::beg);
-                arlFileData.resize(arlFileSize);
-                stream.read(reinterpret_cast<char*>(arlFileData.data()), arlFileSize);
+                s_arlFileData.resize(arlFileSize);
+                stream.read(reinterpret_cast<char*>(s_arlFileData.data()), arlFileSize);
                 stream.close();
 
-                parseArlFileData(arlFileData.data(), arlFileSize);
+                parseArlFileData(s_arlFileData.data(), arlFileSize);
             }
         };
 
+    std::u8string_view arlFilePathU8(reinterpret_cast<const char8_t*>(base + PPC_LOAD_U32(ctx.r4.u32)));
+    std::filesystem::path arlFilePath;
+    std::filesystem::path appendArlFilePath;
+
     for (auto& mod : g_mods)
     {
-        // TODO: Handle UMM merge archives!
         for (auto& includeDir : mod.includeDirs)
         {
-            if (appendArlFilePath.empty())
+            if (mod.type == ModType::UMM)
             {
-                std::filesystem::path arlFilePath(std::u8string_view((const char8_t*)arlFilePathU8));
-                appendArlFilePath = arlFilePath.parent_path();
-                appendArlFilePath /= "+";
-                appendArlFilePath += arlFilePath.filename();
-                appendArlFilePath += ".arl";
-            }
+                if (mod.merge)
+                {
+                    // TODO: Merge archives without ARLs
+                    if (arlFilePath.empty())
+                    {
+                        arlFilePath = arlFilePathU8;
+                        arlFilePath += ".arl";
+                    }
 
-            parseArlFile(includeDir / appendArlFilePath);
+                    parseArlFile(includeDir / arlFilePath);
+                }
+            }
+            else if (mod.type == ModType::HMM)
+            {
+                if (appendArlFilePath.empty())
+                {
+                    if (arlFilePath.empty())
+                        arlFilePath = arlFilePathU8;
+
+                    appendArlFilePath = arlFilePath.parent_path();
+                    appendArlFilePath /= "+";
+                    appendArlFilePath += arlFilePath.filename();
+                }
+
+                parseArlFile(includeDir / appendArlFilePath);
+            }
         }
     }
 
-    if (fileNames.empty())
+    if (s_arlFileNames.empty())
     {
         __imp__sub_82E0D3E8(ctx, base);
         return;
@@ -201,7 +224,7 @@ PPC_FUNC(sub_82E0D3E8)
     size_t arlHeaderSize = parseArlFileData(base + ctx.r5.u32, ctx.r6.u32);
     size_t arlFileSize = arlHeaderSize;
 
-    for (auto& fileName : fileNames)
+    for (auto& fileName : s_arlFileNames)
     {
         arlFileSize += 1;
         arlFileSize += fileName.size();
@@ -211,7 +234,7 @@ PPC_FUNC(sub_82E0D3E8)
     memcpy(newArlFileData, base + ctx.r5.u32, arlHeaderSize);
 
     uint8_t* arlFileNames = newArlFileData + arlHeaderSize;
-    for (auto& fileName : fileNames)
+    for (auto& fileName : s_arlFileNames)
     {
         *arlFileNames = uint8_t(fileName.size());
         ++arlFileNames;
@@ -254,7 +277,7 @@ PPC_FUNC(sub_82E0B500)
     auto r5 = ctx.r5; // Name
     auto r6 = ctx.r6; // Data
     auto r7 = ctx.r7; // Size
-    auto r8 = ctx.r8; // Unknown
+    auto r8 = ctx.r8; // Callback data
 
     std::u8string_view arFilePathU8(reinterpret_cast<const char8_t*>(base + PPC_LOAD_U32(ctx.r5.u32)));
     size_t index = arFilePathU8.find(u8".ar.00");
@@ -265,17 +288,19 @@ PPC_FUNC(sub_82E0B500)
     else
     {
         index = arFilePathU8.find(u8".ar");
-        if (index != (arFilePathU8.size() - 3))
+
+        if (index != (arFilePathU8.size() - 3) ||
+            arFilePathU8.starts_with(u8"tg-") ||
+            arFilePathU8.starts_with(u8"gia-") ||
+            arFilePathU8.starts_with(u8"gi-texture-"))
         {
             __imp__sub_82E0B500(ctx, base);
             return;
         }
     }
 
-    std::filesystem::path appendArFilePath;
-
-    thread_local std::filesystem::path tempFilePath;
-    tempFilePath.clear();
+    thread_local std::filesystem::path s_tempFilePath;
+    s_tempFilePath.clear();
 
     auto loadArchive = [&](const std::filesystem::path& arFilePath)
         {
@@ -314,10 +339,10 @@ PPC_FUNC(sub_82E0B500)
 
     auto loadArchives = [&](const std::filesystem::path& arFilePath, bool allowNoArl)
         {
-            tempFilePath = arFilePath;
-            tempFilePath += "l";
+            s_tempFilePath = arFilePath;
+            s_tempFilePath += "l";
 
-            std::ifstream stream(tempFilePath, std::ios::binary);
+            std::ifstream stream(s_tempFilePath, std::ios::binary);
             if (stream.good())
             {
                 // TODO: Should cache this instead of re-opening the file.
@@ -334,9 +359,9 @@ PPC_FUNC(sub_82E0B500)
                 {
                     for (uint32_t i = 0; i < splitCount; i++)
                     {
-                        tempFilePath = arFilePath;
-                        tempFilePath += fmt::format(".{:02}", i);
-                        loadArchive(tempFilePath);
+                        s_tempFilePath = arFilePath;
+                        s_tempFilePath += fmt::format(".{:02}", i);
+                        loadArchive(s_tempFilePath);
                     }
                 }
             }
@@ -346,29 +371,48 @@ PPC_FUNC(sub_82E0B500)
                 {
                     for (uint32_t i = 0; ; i++)
                     {
-                        tempFilePath = arFilePath;
-                        tempFilePath += fmt::format(".{:02}", i);
-                        if (!loadArchive(tempFilePath))
+                        s_tempFilePath = arFilePath;
+                        s_tempFilePath += fmt::format(".{:02}", i);
+                        if (!loadArchive(s_tempFilePath))
                             break;
                     }
                 }
             }
         };
 
+    std::filesystem::path arFilePath;
+    std::filesystem::path appendArFilePath;
+
     for (auto& mod : g_mods)
     {
-        // TODO: Need to check for UMM merge archives here.
         for (auto& includeDir : mod.includeDirs)
         {
-            if (appendArFilePath.empty())
+            if (mod.type == ModType::UMM)
             {
-                std::filesystem::path arFilePath(arFilePathU8);
-                appendArFilePath = arFilePath.parent_path();
-                appendArFilePath /= "+";
-                appendArFilePath += arFilePath.filename();
-            }
+                if (mod.merge)
+                {
+                    // TODO: Check for read only.
 
-            loadArchives(includeDir / appendArFilePath, false);
+                    if (arFilePath.empty())
+                        arFilePath = arFilePathU8;
+
+                    loadArchives(includeDir / arFilePath, true);
+                }
+            }
+            else if (mod.type == ModType::HMM)
+            {
+                if (appendArFilePath.empty())
+                {
+                    if (arFilePath.empty())
+                        arFilePath = arFilePathU8;
+
+                    appendArFilePath = arFilePath.parent_path();
+                    appendArFilePath /= "+";
+                    appendArFilePath += arFilePath.filename();
+                }
+
+                loadArchives(includeDir / appendArFilePath, false);
+            }
         }
     }
 
