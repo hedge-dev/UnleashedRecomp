@@ -130,19 +130,11 @@ PPC_FUNC(sub_82E0D3E8)
         return;
     }
 
-    thread_local ankerl::unordered_dense::set<std::string> s_arlFileNames;
+    thread_local ankerl::unordered_dense::set<std::string> s_fileNames;
     thread_local std::vector<uint8_t> s_fileData;
-    thread_local std::filesystem::path s_tempFilePath;
-    thread_local std::filesystem::path s_arlFilePath;
-    thread_local std::filesystem::path s_appendArlFilePath;
-    thread_local std::filesystem::path s_arFilePath;
-
-    s_arlFileNames.clear();
+    thread_local std::filesystem::path s_tempPath;
+    s_fileNames.clear();
     s_fileData.clear();
-    s_tempFilePath.clear();
-    s_arlFilePath.clear();
-    s_appendArlFilePath.clear();
-    s_arFilePath.clear();
 
     auto parseArlFileData = [&](const uint8_t* arlFileData, size_t arlFileSize)
         {
@@ -161,7 +153,7 @@ PPC_FUNC(sub_82E0D3E8)
                 uint8_t fileNameSize = *arlFileNames;
                 ++arlFileNames;
 
-                s_arlFileNames.emplace(reinterpret_cast<const char*>(arlFileNames), fileNameSize);
+                s_fileNames.emplace(reinterpret_cast<const char*>(arlFileNames), fileNameSize);
 
                 arlFileNames += fileNameSize;
             }
@@ -183,7 +175,7 @@ PPC_FUNC(sub_82E0D3E8)
             for (size_t i = 16; i < arFileSize; )
             {
                 auto entry = reinterpret_cast<const ArEntry*>(arFileData + i);
-                s_arlFileNames.emplace(reinterpret_cast<const char*>(entry + 1));
+                s_fileNames.emplace(reinterpret_cast<const char*>(entry + 1));
                 i += entry->entrySize;
             }
         };
@@ -209,6 +201,9 @@ PPC_FUNC(sub_82E0D3E8)
         };
 
     std::u8string_view arlFilePathU8(reinterpret_cast<const char8_t*>(base + PPC_LOAD_U32(ctx.r4.u32)));
+    std::filesystem::path arlFilePath;
+    std::filesystem::path arFilePath;
+    std::filesystem::path appendArlFilePath;
 
     for (auto& mod : g_mods)
     {
@@ -218,29 +213,29 @@ PPC_FUNC(sub_82E0D3E8)
             {
                 if (mod.merge)
                 {
-                    if (s_arlFilePath.empty())
+                    if (arlFilePath.empty())
                     {
-                        s_arlFilePath = arlFilePathU8;
-                        s_arlFilePath += ".arl";
+                        arlFilePath = arlFilePathU8;
+                        arlFilePath += ".arl";
                     }
 
-                    if (!loadFile(includeDir / s_arlFilePath, parseArlFileData))
+                    if (!loadFile(includeDir / arlFilePath, parseArlFileData))
                     {
-                        if (s_arFilePath.empty())
+                        if (arFilePath.empty())
                         {
-                            s_arFilePath = arlFilePathU8;
-                            s_arFilePath += ".ar";
+                            arFilePath = arlFilePathU8;
+                            arFilePath += ".ar";
                         }
 
-                        if (!loadFile(includeDir / s_arFilePath, parseArFileData))
+                        if (!loadFile(includeDir / arFilePath, parseArFileData))
                         {
                             for (uint32_t i = 0; ; i++)
                             {
-                                s_tempFilePath = includeDir;
-                                s_tempFilePath /= s_arFilePath;
-                                s_tempFilePath += fmt::format(".{:02}", i);
+                                s_tempPath = includeDir;
+                                s_tempPath /= arFilePath;
+                                s_tempPath += fmt::format(".{:02}", i);
 
-                                if (!loadFile(s_tempFilePath, parseArFileData))
+                                if (!loadFile(s_tempPath, parseArFileData))
                                     break;
                             }
                         }
@@ -249,22 +244,22 @@ PPC_FUNC(sub_82E0D3E8)
             }
             else if (mod.type == ModType::HMM)
             {
-                if (s_appendArlFilePath.empty())
+                if (appendArlFilePath.empty())
                 {
-                    if (s_arlFilePath.empty())
-                        s_arlFilePath = arlFilePathU8;
+                    if (arlFilePath.empty())
+                        arlFilePath = arlFilePathU8;
 
-                    s_appendArlFilePath = s_arlFilePath.parent_path();
-                    s_appendArlFilePath /= "+";
-                    s_appendArlFilePath += s_arlFilePath.filename();
+                    appendArlFilePath = arlFilePath.parent_path();
+                    appendArlFilePath /= "+";
+                    appendArlFilePath += arlFilePath.filename();
                 }
 
-                loadFile(includeDir / s_appendArlFilePath, parseArlFileData);
+                loadFile(includeDir / appendArlFilePath, parseArlFileData);
             }
         }
     }
 
-    if (s_arlFileNames.empty())
+    if (s_fileNames.empty())
     {
         __imp__sub_82E0D3E8(ctx, base);
         return;
@@ -273,7 +268,7 @@ PPC_FUNC(sub_82E0D3E8)
     size_t arlHeaderSize = parseArlFileData(base + ctx.r5.u32, ctx.r6.u32);
     size_t arlFileSize = arlHeaderSize;
 
-    for (auto& fileName : s_arlFileNames)
+    for (auto& fileName : s_fileNames)
     {
         arlFileSize += 1;
         arlFileSize += fileName.size();
@@ -283,7 +278,7 @@ PPC_FUNC(sub_82E0D3E8)
     memcpy(newArlFileData, base + ctx.r5.u32, arlHeaderSize);
 
     uint8_t* arlFileNames = newArlFileData + arlHeaderSize;
-    for (auto& fileName : s_arlFileNames)
+    for (auto& fileName : s_fileNames)
     {
         *arlFileNames = uint8_t(fileName.size());
         ++arlFileNames;
@@ -349,12 +344,7 @@ PPC_FUNC(sub_82E0B500)
     }
 
     thread_local std::filesystem::path s_tempFilePath;
-    thread_local std::filesystem::path s_arFilePath;
-    thread_local std::filesystem::path s_appendArFilePath;
-
     s_tempFilePath.clear();
-    s_arFilePath.clear();
-    s_appendArFilePath.clear();
 
     auto loadArchive = [&](const std::filesystem::path& arFilePath)
         {
@@ -434,6 +424,9 @@ PPC_FUNC(sub_82E0B500)
             }
         };
 
+    std::filesystem::path arFilePath;
+    std::filesystem::path appendArFilePath;
+
     for (auto& mod : g_mods)
     {
         for (auto& includeDir : mod.includeDirs)
@@ -444,25 +437,25 @@ PPC_FUNC(sub_82E0B500)
                 {
                     // TODO: Check for read only.
 
-                    if (s_arFilePath.empty())
-                        s_arFilePath = arFilePathU8;
+                    if (arFilePath.empty())
+                        arFilePath = arFilePathU8;
 
-                    loadArchives(includeDir / s_arFilePath, true);
+                    loadArchives(includeDir / arFilePath, true);
                 }
             }
             else if (mod.type == ModType::HMM)
             {
-                if (s_appendArFilePath.empty())
+                if (appendArFilePath.empty())
                 {
-                    if (s_arFilePath.empty())
-                        s_arFilePath = arFilePathU8;
+                    if (arFilePath.empty())
+                        arFilePath = arFilePathU8;
 
-                    s_appendArFilePath = s_arFilePath.parent_path();
-                    s_appendArFilePath /= "+";
-                    s_appendArFilePath += s_arFilePath.filename();
+                    appendArFilePath = arFilePath.parent_path();
+                    appendArFilePath /= "+";
+                    appendArFilePath += arFilePath.filename();
                 }
 
-                loadArchives(includeDir / s_appendArFilePath, false);
+                loadArchives(includeDir / appendArFilePath, false);
             }
         }
     }
