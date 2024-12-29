@@ -19,6 +19,11 @@ public:
     void* Commit(size_t offset, size_t size);
     void* Reserve(size_t offset, size_t size);
 
+    bool IsInMemoryRange(const void* host) const noexcept
+    {
+        return host >= base && host < (base + size);
+    }
+
     void* Translate(size_t offset) const noexcept
     {
         if (offset)
@@ -27,12 +32,12 @@ public:
         return base + offset;
     }
 
-    uint32_t MapVirtual(void* host) const noexcept
+    uint32_t MapVirtual(const void* host) const noexcept
     {
         if (host)
-            assert(host >= base && host < (base + size));
+            assert(IsInMemoryRange(host));
 
-        return static_cast<uint32_t>(static_cast<char*>(host) - base);
+        return static_cast<uint32_t>(static_cast<const char*>(host) - base);
     }
 };
 

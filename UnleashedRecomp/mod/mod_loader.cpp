@@ -145,6 +145,66 @@ void ModLoader::Init()
     }
 }
 
+static constexpr uint32_t LZX_SIGNATURE = 0xFF512EE;
+
+static std::span<uint8_t> decompressLzx(PPCContext& ctx, uint8_t* base, const uint8_t* compressedData, size_t compressedDataSize, be<uint32_t>* scratchSpace)
+{
+    assert(g_memory.IsInMemoryRange(compressedData));
+
+    bool shouldFreeScratchSpace = false;
+    if (scratchSpace == nullptr)
+    {
+        scratchSpace = reinterpret_cast<be<uint32_t>*>(g_userHeap.Alloc(sizeof(uint32_t) * 2));
+        shouldFreeScratchSpace = true;
+    }
+
+    // Initialize decompressor
+    ctx.r3.u32 = 1;
+    ctx.r4.u32 = uint32_t((compressedData + 0xC) - base);
+    ctx.r5.u32 = *reinterpret_cast<const be<uint32_t>*>(compressedData + 0x8);
+    ctx.r6.u32 = uint32_t(reinterpret_cast<uint8_t*>(scratchSpace) - base);
+    sub_831CE1A0(ctx, base);
+
+    uint64_t decompressedDataSize = *reinterpret_cast<const be<uint64_t>*>(compressedData + 0x18);
+    uint8_t* decompressedData = reinterpret_cast<uint8_t*>(g_userHeap.Alloc(decompressedDataSize));
+
+    uint32_t blockSize = *reinterpret_cast<const be<uint32_t>*>(compressedData + 0x28);
+    size_t decompressedDataOffset = 0;
+    size_t compressedDataOffset = 0x30;
+
+    while (decompressedDataOffset < decompressedDataSize)
+    {
+        size_t decompressedBlockSize = decompressedDataSize - decompressedDataOffset;
+
+        if (decompressedBlockSize > blockSize)
+            decompressedBlockSize = blockSize;
+
+        *(scratchSpace + 1) = decompressedBlockSize;
+
+        uint32_t compressedBlockSize = *reinterpret_cast<const be<uint32_t>*>(compressedData + compressedDataOffset);
+
+        // Decompress
+        ctx.r3.u32 = *scratchSpace;
+        ctx.r4.u32 = uint32_t((decompressedData + decompressedDataOffset) - base);
+        ctx.r5.u32 = uint32_t(reinterpret_cast<uint8_t*>(scratchSpace + 1) - base);
+        ctx.r6.u32 = uint32_t((compressedData + compressedDataOffset + 0x4) - base);
+        ctx.r7.u32 = compressedBlockSize;
+        sub_831CE0D0(ctx, base);
+
+        decompressedDataOffset += *(scratchSpace + 1);
+        compressedDataOffset += 0x4 + compressedBlockSize;
+    }
+
+    // Deinitialize decompressor
+    ctx.r3.u32 = *scratchSpace;
+    sub_831CE150(ctx, base);
+
+    if (shouldFreeScratchSpace)
+        g_userHeap.Free(scratchSpace);
+
+    return { decompressedData, decompressedDataSize };
+}
+
 // Hedgehog::Database::CDatabaseLoader::ReadArchiveList
 PPC_FUNC_IMPL(__imp__sub_82E0D3E8);
 PPC_FUNC(sub_82E0D3E8)
@@ -210,6 +270,11 @@ PPC_FUNC(sub_82E0D3E8)
     std::filesystem::path arFilePath;
     std::filesystem::path appendArlFilePath;
 
+    auto r3 = ctx.r3;
+    auto r4 = ctx.r4;
+    auto r5 = ctx.r5;
+    auto r6 = ctx.r6;
+
     for (auto& mod : g_mods)
     {
         for (auto& includeDir : mod.includeDirs)
@@ -222,14 +287,34 @@ PPC_FUNC(sub_82E0D3E8)
                 std::ifstream stream(includeDir / filePath, std::ios::binary);
                 if (stream.good())
                 {
+                    be<uint32_t> signature{};
+                    stream.read(reinterpret_cast<char*>(&signature), sizeof(signature));
+
                     stream.seekg(0, std::ios::end);
                     size_t arlFileSize = stream.tellg();
                     stream.seekg(0, std::ios::beg);
-                    s_fileData.resize(arlFileSize);
-                    stream.read(reinterpret_cast<char*>(s_fileData.data()), arlFileSize);
-                    stream.close();
 
-                    function(s_fileData.data(), arlFileSize);
+                    if (signature == LZX_SIGNATURE)
+                    {
+                        void* compressedFileData = g_userHeap.Alloc(arlFileSize);
+                        stream.read(reinterpret_cast<char*>(compressedFileData), arlFileSize);
+
+                        auto fileData = decompressLzx(ctx, base, reinterpret_cast<uint8_t*>(compressedFileData), arlFileSize, nullptr);
+
+                        g_userHeap.Free(compressedFileData);
+
+                        function(fileData.data(), fileData.size());
+
+                        g_userHeap.Free(fileData.data());
+                    }
+                    else
+                    {
+                        s_fileData.resize(arlFileSize);
+                        stream.read(reinterpret_cast<char*>(s_fileData.data()), arlFileSize);
+                        stream.close();
+
+                        function(s_fileData.data(), arlFileSize);
+                    }
 
                     return true;
                 }
@@ -285,6 +370,11 @@ PPC_FUNC(sub_82E0D3E8)
             }
         }
     }
+
+    ctx.r3 = r3;
+    ctx.r4 = r4;
+    ctx.r5 = r5;
+    ctx.r6 = r6;
 
     if (s_fileNames.empty())
     {
@@ -397,6 +487,17 @@ PPC_FUNC(sub_82E0B500)
                         stream.close();
 
                         auto arFileDataHolder = reinterpret_cast<be<uint32_t>*>(g_userHeap.Alloc(sizeof(uint32_t) * 2));
+
+                        if (*reinterpret_cast<be<uint32_t>*>(arFileData) == LZX_SIGNATURE)
+                        {
+                            auto fileData = decompressLzx(ctx, base, reinterpret_cast<uint8_t*>(arFileData), arFileSize, arFileDataHolder);
+                            
+                            g_userHeap.Free(arFileData);
+
+                            arFileData = fileData.data();
+                            arFileSize = fileData.size();
+                        }
+
                         arFileDataHolder[0] = g_memory.MapVirtual(arFileData);
                         arFileDataHolder[1] = NULL;
 
@@ -430,10 +531,33 @@ PPC_FUNC(sub_82E0B500)
                     if (stream.good())
                     {
                         // TODO: Should cache this instead of re-opening the file.
+                        be<uint32_t> signature{};
                         uint32_t splitCount{};
-                        stream.seekg(4, std::ios::beg);
-                        stream.read(reinterpret_cast<char*>(&splitCount), sizeof(splitCount));
-                        stream.close();
+                        stream.read(reinterpret_cast<char*>(&signature), sizeof(signature));
+
+                        if (signature == LZX_SIGNATURE)
+                        {
+                            stream.seekg(0, std::ios::end);
+                            size_t arlFileSize = stream.tellg();
+                            stream.seekg(0, std::ios::beg);
+
+                            void* compressedFileData = g_userHeap.Alloc(arlFileSize);
+                            stream.read(reinterpret_cast<char*>(compressedFileData), arlFileSize);
+                            stream.close();
+
+                            auto fileData = decompressLzx(ctx, base, reinterpret_cast<uint8_t*>(compressedFileData), arlFileSize, nullptr);
+
+                            g_userHeap.Free(compressedFileData);
+
+                            splitCount = *reinterpret_cast<uint32_t*>(fileData.data() + 0x4);
+
+                            g_userHeap.Free(fileData.data());
+                        }
+                        else
+                        {
+                            stream.read(reinterpret_cast<char*>(&splitCount), sizeof(splitCount));
+                            stream.close(); 
+                        }
 
                         if (splitCount == 0)
                         {
