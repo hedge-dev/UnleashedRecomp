@@ -364,6 +364,7 @@ PPC_FUNC(sub_82E0D3E8)
                     appendArlFilePath = arlFilePath.parent_path();
                     appendArlFilePath /= "+";
                     appendArlFilePath += arlFilePath.filename();
+                    appendArlFilePath += ".arl";
                 }
 
                 loadFile(appendArlFilePath, parseArlFileData);
