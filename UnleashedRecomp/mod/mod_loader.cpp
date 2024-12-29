@@ -43,9 +43,14 @@ std::filesystem::path ModLoader::RedirectPath(std::string_view path)
     std::replace(pathStr.begin(), pathStr.end(), '\\', '/');
     std::filesystem::path fsPath(std::move(pathStr));
 
+    bool canBeMerged = 
+        path.find(".arl") == (path.size() - 4) ||
+        path.find(".ar.") == (path.size() - 6) ||
+        path.find(".ar") == (path.size() - 3);
+
     for (auto& mod : g_mods)
     {
-        if (mod.type == ModType::UMM && mod.merge && !mod.readOnly.contains(fsPath))
+        if (mod.type == ModType::UMM && mod.merge && canBeMerged && !mod.readOnly.contains(fsPath))
             continue;
 
         for (auto& includeDir : mod.includeDirs)
