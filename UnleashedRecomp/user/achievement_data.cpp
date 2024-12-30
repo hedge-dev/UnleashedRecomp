@@ -104,10 +104,15 @@ bool AchievementData::VerifyChecksum()
 
 void AchievementData::Load()
 {
-    auto dataPath = GetDataPath();
+    auto dataPath = GetDataPath(true);
 
     if (!std::filesystem::exists(dataPath))
-        return;
+    {
+        // Try loading base achievement data as fallback.
+        dataPath = GetDataPath(false);
+        if (!std::filesystem::exists(dataPath))
+            return;
+    }
 
     std::ifstream file(dataPath, std::ios::binary);
 
@@ -160,7 +165,7 @@ void AchievementData::Load()
 
 void AchievementData::Save()
 {
-    std::ofstream file(GetDataPath(), std::ios::binary);
+    std::ofstream file(GetDataPath(true), std::ios::binary);
 
     if (!file)
     {

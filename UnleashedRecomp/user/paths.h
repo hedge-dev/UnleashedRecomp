@@ -50,10 +50,20 @@ inline std::filesystem::path GetUserPath()
     return userPath;
 }
 
-inline std::filesystem::path GetSavePath()
+inline std::filesystem::path GetSavePath(bool checkForMods)
 {
-    if (!ModLoader::s_saveFilePath.empty())
+    if (checkForMods && !ModLoader::s_saveFilePath.empty())
         return ModLoader::s_saveFilePath.parent_path();
     else
         return GetUserPath() / "save";
+}
+
+// Returned file name may not necessarily be
+// equal to SYS-DATA as mods can assign anything.
+inline std::filesystem::path GetSaveFilePath(bool checkForMods)
+{
+    if (checkForMods && !ModLoader::s_saveFilePath.empty())
+        return ModLoader::s_saveFilePath;
+    else
+        return GetSavePath(false) / "SYS-DATA";
 }

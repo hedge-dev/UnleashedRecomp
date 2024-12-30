@@ -45,9 +45,9 @@ public:
 
     static inline Data Data{ ACH_SIGNATURE, ACH_VERSION };
 
-    static std::filesystem::path GetDataPath()
+    static std::filesystem::path GetDataPath(bool checkForMods)
     {
-        return GetSavePath() / "ACH-DATA";
+        return GetSavePath(checkForMods) / "ACH-DATA";
     }
 
     static time_t GetTimestamp(uint16_t id);
