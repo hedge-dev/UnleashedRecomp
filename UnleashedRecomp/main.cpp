@@ -182,8 +182,8 @@ int main(int argc, char *argv[])
 
     KiSystemStartup();
 
-    const char *modulePath = FileSystem::TransformPath(GAME_XEX_PATH);
-    uint32_t entry = LdrLoadModule(std::u8string_view((const char8_t*)(modulePath)));
+    auto modulePath = FileSystem::ResolvePath(GAME_XEX_PATH, false);
+    uint32_t entry = LdrLoadModule(modulePath);
 
     if (!runInstallerWizard)
         Video::CreateHostDevice(sdlVideoDriver);

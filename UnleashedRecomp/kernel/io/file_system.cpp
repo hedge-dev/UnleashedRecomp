@@ -54,7 +54,7 @@ struct FindHandle : KernelObject
             }
         }
 
-        addDirectory(std::u8string_view((const char8_t*)FileSystem::TransformPath(path)));
+        addDirectory(FileSystem::ResolvePath(path, false));
 
         iterator = searchResult.begin();
     }
@@ -75,15 +75,6 @@ struct FindHandle : KernelObject
     }
 };
 
-static std::filesystem::path TransformOrRedirectPath(const char* path)
-{
-    std::filesystem::path redirectedPath = ModLoader::RedirectPath(path);
-    if (redirectedPath.empty())
-        redirectedPath = std::u8string_view((const char8_t*)FileSystem::TransformPath(path));
-
-    return redirectedPath;
-}
-
 SWA_API FileHandle* XCreateFileA
 (
     const char* lpFileName,
@@ -98,7 +89,7 @@ SWA_API FileHandle* XCreateFileA
     assert(((dwShareMode & ~(FILE_SHARE_READ | FILE_SHARE_WRITE)) == 0) && "Unknown share mode bits.");
     assert(((dwCreationDisposition & ~(CREATE_NEW | CREATE_ALWAYS)) == 0) && "Unknown creation disposition bits.");
 
-    std::filesystem::path filePath = TransformOrRedirectPath(lpFileName);
+    std::filesystem::path filePath = FileSystem::ResolvePath(lpFileName, true);
     std::fstream fileStream;
     std::ios::openmode fileOpenMode = std::ios::binary;
     if (dwDesiredAccess & (GENERIC_READ | FILE_READ_DATA))
@@ -343,7 +334,7 @@ uint32_t XReadFileEx(FileHandle* hFile, void* lpBuffer, uint32_t nNumberOfBytesT
 
 uint32_t XGetFileAttributesA(const char* lpFileName)
 {
-    std::filesystem::path filePath = TransformOrRedirectPath(lpFileName);
+    std::filesystem::path filePath = FileSystem::ResolvePath(lpFileName, true);
     if (std::filesystem::is_directory(filePath))
         return FILE_ATTRIBUTE_DIRECTORY;
     else if (std::filesystem::is_regular_file(filePath))
@@ -366,8 +357,15 @@ uint32_t XWriteFile(FileHandle* hFile, const void* lpBuffer, uint32_t nNumberOfB
     return TRUE;
 }
 
-const char* FileSystem::TransformPath(const std::string_view& path)
+std::filesystem::path FileSystem::ResolvePath(const std::string_view& path, bool checkForMods)
 {
+    if (checkForMods)
+    {
+        std::filesystem::path resolvedPath = ModLoader::ResolvePath(path);
+        if (!resolvedPath.empty())
+            return resolvedPath;
+    }
+
     thread_local std::string builtPath;
     builtPath.clear();
 
@@ -393,12 +391,7 @@ const char* FileSystem::TransformPath(const std::string_view& path)
 
     std::replace(builtPath.begin(), builtPath.end(), '\\', '/');
 
-    return builtPath.c_str();
-}
-
-SWA_API const char* XExpandFilePathA(const char* path)
-{
-    return FileSystem::TransformPath(path);
+    return std::u8string_view((const char8_t*)builtPath.c_str());
 }
 
 GUEST_FUNCTION_HOOK(sub_82BD4668, XCreateFileA);

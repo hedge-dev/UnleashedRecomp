@@ -23,7 +23,7 @@ struct Mod
 
 static std::vector<Mod> g_mods;
 
-std::filesystem::path ModLoader::RedirectPath(std::string_view path)
+std::filesystem::path ModLoader::ResolvePath(std::string_view path)
 {
     if (g_mods.empty())
         return {};
