@@ -81,8 +81,6 @@ void KiSystemStartup()
         }
     }
 
-    ModLoader::Init();
-
     XAudioInitializeSystem();
 }
 
@@ -177,6 +175,8 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
+
+    ModLoader::Init();
 
     AchievementData::Load();
 

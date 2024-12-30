@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mod/mod_loader.h>
+
 #define USER_DIRECTORY "SWA"
 
 #ifndef GAME_INSTALL_DIRECTORY
@@ -50,5 +52,8 @@ inline std::filesystem::path GetUserPath()
 
 inline std::filesystem::path GetSavePath()
 {
-    return GetUserPath() / "save";
+    if (!ModLoader::s_saveFilePath.empty())
+        return ModLoader::s_saveFilePath.parent_path();
+    else
+        return GetUserPath() / "save";
 }

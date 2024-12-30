@@ -28,11 +28,29 @@ std::filesystem::path ModLoader::RedirectPath(std::string_view path)
     if (g_mods.empty())
         return {};
 
-    thread_local xxHashMap<std::filesystem::path> s_pathCache;
+    std::string_view root;
 
     size_t sepIndex = path.find(":\\");
     if (sepIndex != std::string_view::npos)
+    {
+        root = path.substr(0, sepIndex);
         path.remove_prefix(sepIndex + 2);
+    }
+
+    if (root == "save")
+    {
+        if (!ModLoader::s_saveFilePath.empty())
+        {
+            if (path == "SYS-DATA")
+                return ModLoader::s_saveFilePath;
+            else
+                return ModLoader::s_saveFilePath.parent_path() / path;
+        }
+
+        return {};
+    }
+
+    thread_local xxHashMap<std::filesystem::path> s_pathCache;
 
     XXH64_hash_t hash = XXH3_64bits(path.data(), path.size());
     auto findResult = s_pathCache.find(hash);
@@ -75,6 +93,13 @@ void ModLoader::Init()
     if (!configIni.read("cpkredir.ini"))
         return;
 
+    if (configIni.getBool("CPKREDIR", "EnableSaveFileRedirection", false))
+    {
+        std::string saveFilePathU8 = configIni.getString("CPKREDIR", "SaveFileFallback", std::string());
+        if (!saveFilePathU8.empty())
+            ModLoader::s_saveFilePath = std::u8string_view((const char8_t*)saveFilePathU8.c_str());
+    }
+
     std::string modsDbIniFilePathU8 = configIni.getString("CPKREDIR", "ModsDbIni", "");
     if (modsDbIniFilePathU8.empty())
         return;
@@ -82,6 +107,8 @@ void ModLoader::Init()
     IniFile modsDbIni;
     if (!modsDbIni.read(std::u8string_view((const char8_t*)modsDbIniFilePathU8.c_str())))
         return;
+
+    bool foundModSaveFilePath = false;
 
     size_t activeModCount = modsDbIni.get<size_t>("Main", "ActiveModCount", 0);
     for (size_t i = 0; i < activeModCount; ++i)
@@ -101,13 +128,14 @@ void ModLoader::Init()
             continue;
 
         auto modDirectoryPath = modIniFilePath.parent_path();
+        std::string modSaveFilePathU8;
 
         Mod mod;
 
         if (modIni.contains("Details") || modIni.contains("Filesystem")) // UMM
         {
             mod.type = ModType::UMM;
-            mod.includeDirs.emplace_back(std::move(modDirectoryPath));
+            mod.includeDirs.emplace_back(modDirectoryPath);
             mod.merge = modIni.getBool("Details", "Merge", modIni.getBool("Filesystem", "Merge", false));
 
             std::string readOnly = modIni.getString("Details", "Read-only", modIni.getString("Filesystem", "Read-only", std::string()));
@@ -126,6 +154,9 @@ void ModLoader::Init()
                 mod.readOnly.emplace(readOnlySplit.substr(0, index));
                 readOnlySplit.remove_prefix(index + 1);
             }
+
+            if (!foundModSaveFilePath)
+                modSaveFilePathU8 = modIni.getString("Details", "Save", modIni.getString("Filesystem", "Save", std::string()));
         }
         else // HMM
         {
@@ -138,10 +169,19 @@ void ModLoader::Init()
                 if (!includeDirU8.empty())
                     mod.includeDirs.emplace_back(modDirectoryPath / std::u8string_view((const char8_t*)includeDirU8.c_str()));
             }
+
+            if (!foundModSaveFilePath)
+                modSaveFilePathU8 = modIni.getString("Main", "SaveFile", std::string());
         }
 
         if (!mod.includeDirs.empty())
             g_mods.emplace_back(std::move(mod));
+
+        if (!modSaveFilePathU8.empty())
+        {
+            ModLoader::s_saveFilePath = modDirectoryPath / std::u8string_view((const char8_t*)modSaveFilePathU8.c_str());
+            foundModSaveFilePath = true;
+        }
     }
 }
 
