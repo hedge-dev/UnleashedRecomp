@@ -43,6 +43,9 @@ struct FindHandle : KernelObject
         // Look for only work folder in mod folders, AR files cause issues.
         if (pathNoPrefix.starts_with("work"))
         {
+            std::string pathStr(pathNoPrefix);
+            std::replace(pathStr.begin(), pathStr.end(), '\\', '/');
+
             for (size_t i = 0; ; i++)
             {
                 auto* includeDirs = ModLoader::GetIncludeDirectories(i);
@@ -50,7 +53,7 @@ struct FindHandle : KernelObject
                     break;
 
                 for (auto& includeDir : *includeDirs)
-                    addDirectory(includeDir / pathNoPrefix);
+                    addDirectory(includeDir / pathStr);
             }
         }
 
