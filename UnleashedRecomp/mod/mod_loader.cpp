@@ -98,6 +98,8 @@ void ModLoader::Init()
         std::string saveFilePathU8 = configIni.getString("CPKREDIR", "SaveFileFallback", std::string());
         if (!saveFilePathU8.empty())
             ModLoader::s_saveFilePath = std::u8string_view((const char8_t*)saveFilePathU8.c_str());
+        else
+            ModLoader::s_saveFilePath = "mlsave/SYS-DATA";
     }
 
     std::string modsDbIniFilePathU8 = configIni.getString("CPKREDIR", "ModsDbIni", "");
