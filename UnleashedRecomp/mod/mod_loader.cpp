@@ -671,3 +671,48 @@ PPC_FUNC(sub_82E0B500)
 
     __imp__sub_82E0B500(ctx, base);
 }
+
+// CriAuObjLoc::AttachCueSheet
+PPC_FUNC_IMPL(__imp__sub_8314A310);
+PPC_FUNC(sub_8314A310)
+{
+    // allocator: 0x4
+    // capacity: 0x24
+    // count: 0x28
+    // data: 0x2C
+    uint32_t capacity = PPC_LOAD_U32(ctx.r3.u32 + 0x24);
+    if (capacity == PPC_LOAD_U32(ctx.r3.u32 + 0x28))
+    {
+        auto r3 = ctx.r3;
+        auto r4 = ctx.r4;
+        auto r5 = ctx.r5;
+
+        // Allocate
+        ctx.r3.u32 = PPC_LOAD_U32(r3.u32 + 0x4);
+        ctx.r4.u32 = (capacity * 2) * sizeof(uint32_t);
+        ctx.r5.u32 = 0x82195248; // AuObjCueSheet
+        ctx.r6.u32 = 0x4;
+        sub_83167FD8(ctx, base);
+
+        // Copy
+        uint32_t oldData = PPC_LOAD_U32(r3.u32 + 0x2C);
+        uint32_t newData = ctx.r3.u32;
+
+        memcpy(base + newData, base + oldData, capacity * sizeof(uint32_t));
+        memset(base + newData + (capacity * sizeof(uint32_t)), 0, capacity * sizeof(uint32_t));
+
+        PPC_STORE_U32(r3.u32 + 0x24, capacity * 2);
+        PPC_STORE_U32(r3.u32 + 0x2C, newData);
+
+        // Deallocate
+        ctx.r3.u32 = PPC_LOAD_U32(r3.u32 + 0x4);
+        ctx.r4.u32 = oldData;
+        sub_83168100(ctx, base);
+
+        ctx.r3 = r3;
+        ctx.r4 = r4;
+        ctx.r5 = r5;
+    }
+
+    __imp__sub_8314A310(ctx, base);
+}
