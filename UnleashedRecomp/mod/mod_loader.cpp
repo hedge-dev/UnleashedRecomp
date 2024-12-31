@@ -329,6 +329,7 @@ PPC_FUNC(sub_82E0D3E8)
             {
                 void* compressedFileData = g_userHeap.Alloc(arlFileSize);
                 stream.read(reinterpret_cast<char*>(compressedFileData), arlFileSize);
+                stream.close();
 
                 auto fileData = decompressLzx(ctx, base, reinterpret_cast<uint8_t*>(compressedFileData), arlFileSize, nullptr);
 
