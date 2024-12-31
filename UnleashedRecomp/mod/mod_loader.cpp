@@ -93,9 +93,12 @@ void ModLoader::Init()
     if (!configIni.read("cpkredir.ini"))
         return;
 
+    if (!configIni.getBool("CPKREDIR", "Enabled", true))
+        return;
+
     if (configIni.getBool("CPKREDIR", "EnableSaveFileRedirection", false))
     {
-        std::string saveFilePathU8 = configIni.getString("CPKREDIR", "SaveFileFallback", std::string());
+        std::string saveFilePathU8 = configIni.getString("CPKREDIR", "SaveFileFallback", "");
         if (!saveFilePathU8.empty())
             ModLoader::s_saveFilePath = std::u8string_view((const char8_t*)saveFilePathU8.c_str());
         else
@@ -181,6 +184,7 @@ void ModLoader::Init()
 
         if (!modSaveFilePathU8.empty())
         {
+            std::replace(modSaveFilePathU8.begin(), modSaveFilePathU8.end(), '\\', '/');
             ModLoader::s_saveFilePath = modDirectoryPath / std::u8string_view((const char8_t*)modSaveFilePathU8.c_str());
             foundModSaveFilePath = true;
         }
