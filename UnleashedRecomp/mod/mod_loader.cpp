@@ -441,12 +441,14 @@ PPC_FUNC(sub_82E0D3E8)
                     if (appendArlFilePath.empty())
                     {
                         if (arlFilePath.empty())
+                        {
                             arlFilePath = arlFilePathU8;
+                            arlFilePath += ".arl";
+                        }
 
                         appendArlFilePath = arlFilePath.parent_path();
                         appendArlFilePath /= "+";
                         appendArlFilePath += arlFilePath.filename();
-                        appendArlFilePath += ".arl";
                     }
 
                     loadUncachedFile(appendArlFilePath, true);
