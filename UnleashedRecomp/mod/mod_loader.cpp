@@ -50,11 +50,11 @@ std::filesystem::path ModLoader::ResolvePath(std::string_view path)
         return {};
     }
 
-    thread_local xxHashMap<std::filesystem::path> s_pathCache;
+    thread_local xxHashMap<std::filesystem::path> s_cache;
 
     XXH64_hash_t hash = XXH3_64bits(path.data(), path.size());
-    auto findResult = s_pathCache.find(hash);
-    if (findResult != s_pathCache.end())
+    auto findResult = s_cache.find(hash);
+    if (findResult != s_cache.end())
         return findResult->second;
 
     std::string pathStr(path);
@@ -75,11 +75,11 @@ std::filesystem::path ModLoader::ResolvePath(std::string_view path)
         {
             std::filesystem::path modPath = includeDir / fsPath;
             if (std::filesystem::exists(modPath))
-                return s_pathCache.emplace(hash, modPath).first->second;
+                return s_cache.emplace(hash, modPath).first->second;
         }
     }
 
-    return s_pathCache.emplace(hash, std::filesystem::path{}).first->second;
+    return s_cache.emplace(hash, std::filesystem::path{}).first->second;
 }
 
 std::vector<std::filesystem::path>* ModLoader::GetIncludeDirectories(size_t modIndex)
@@ -262,10 +262,7 @@ PPC_FUNC(sub_82E0D3E8)
     }
 
     thread_local ankerl::unordered_dense::set<std::string> s_fileNames;
-    thread_local std::vector<uint8_t> s_fileData;
-    thread_local std::filesystem::path s_tempPath;
     s_fileNames.clear();
-    s_fileData.clear();
 
     auto parseArlFileData = [&](const uint8_t* arlFileData, size_t arlFileSize)
         {
@@ -311,111 +308,152 @@ PPC_FUNC(sub_82E0D3E8)
             }
         };
 
-    std::u8string_view arlFilePathU8(reinterpret_cast<const char8_t*>(base + PPC_LOAD_U32(ctx.r4.u32)));
-    std::filesystem::path arlFilePath;
-    std::filesystem::path arFilePath;
-    std::filesystem::path appendArlFilePath;
-
     auto r3 = ctx.r3;
     auto r4 = ctx.r4;
     auto r5 = ctx.r5;
     auto r6 = ctx.r6;
 
-    for (auto& mod : g_mods)
+    auto loadFile = [&]<typename TFunction>(const std::filesystem::path& filePath, const TFunction& function)
     {
-        for (auto& includeDir : mod.includeDirs)
+        std::ifstream stream(filePath, std::ios::binary);
+        if (stream.good())
         {
-            auto loadFile = [&]<typename TFunction>(const std::filesystem::path& filePath, const TFunction& function)
+            be<uint32_t> signature{};
+            stream.read(reinterpret_cast<char*>(&signature), sizeof(signature));
+
+            stream.seekg(0, std::ios::end);
+            size_t arlFileSize = stream.tellg();
+            stream.seekg(0, std::ios::beg);
+
+            if (signature == LZX_SIGNATURE)
             {
-                if (mod.type == ModType::UMM && mod.readOnly.contains(filePath))
-                    return false;
+                void* compressedFileData = g_userHeap.Alloc(arlFileSize);
+                stream.read(reinterpret_cast<char*>(compressedFileData), arlFileSize);
 
-                std::ifstream stream(includeDir / filePath, std::ios::binary);
-                if (stream.good())
+                auto fileData = decompressLzx(ctx, base, reinterpret_cast<uint8_t*>(compressedFileData), arlFileSize, nullptr);
+
+                g_userHeap.Free(compressedFileData);
+
+                function(fileData.data(), fileData.size());
+
+                g_userHeap.Free(fileData.data());
+            }
+            else
+            {
+                thread_local std::vector<uint8_t> s_fileData;
+
+                s_fileData.resize(arlFileSize);
+                stream.read(reinterpret_cast<char*>(s_fileData.data()), arlFileSize);
+                stream.close();
+
+                function(s_fileData.data(), arlFileSize);
+            }
+
+            return true;
+        }
+
+        return false;
+    };
+
+    thread_local xxHashMap<std::vector<std::pair<std::filesystem::path, bool>>> s_cache;
+
+    std::u8string_view arlFilePathU8(reinterpret_cast<const char8_t*>(base + PPC_LOAD_U32(ctx.r4.u32)));
+    XXH64_hash_t hash = XXH3_64bits(arlFilePathU8.data(), arlFilePathU8.size());
+    auto findResult = s_cache.find(hash);
+
+    if (findResult != s_cache.end())
+    {
+        for (const auto& [arlFilePath, isArchiveList] : findResult->second)
+        {
+            if (isArchiveList)
+                loadFile(arlFilePath, parseArlFileData);
+            else
+                loadFile(arlFilePath, parseArFileData);
+        }
+    }
+    else
+    {
+        std::vector<std::pair<std::filesystem::path, bool>> arlFilePaths;
+        std::filesystem::path arlFilePath;
+        std::filesystem::path arFilePath;
+        std::filesystem::path appendArlFilePath;
+
+        for (auto& mod : g_mods)
+        {
+            for (auto& includeDir : mod.includeDirs)
+            {
+                auto loadUncachedFile = [&](const std::filesystem::path& filePath, bool isArchiveList)
                 {
-                    be<uint32_t> signature{};
-                    stream.read(reinterpret_cast<char*>(&signature), sizeof(signature));
+                    if (mod.type == ModType::UMM && mod.readOnly.contains(filePath))
+                        return false;
 
-                    stream.seekg(0, std::ios::end);
-                    size_t arlFileSize = stream.tellg();
-                    stream.seekg(0, std::ios::beg);
+                    std::filesystem::path combinedFilePath = includeDir / filePath;
 
-                    if (signature == LZX_SIGNATURE)
-                    {
-                        void* compressedFileData = g_userHeap.Alloc(arlFileSize);
-                        stream.read(reinterpret_cast<char*>(compressedFileData), arlFileSize);
-
-                        auto fileData = decompressLzx(ctx, base, reinterpret_cast<uint8_t*>(compressedFileData), arlFileSize, nullptr);
-
-                        g_userHeap.Free(compressedFileData);
-
-                        function(fileData.data(), fileData.size());
-
-                        g_userHeap.Free(fileData.data());
-                    }
+                    bool success;
+                    if (isArchiveList)
+                        success = loadFile(combinedFilePath, parseArlFileData);
                     else
-                    {
-                        s_fileData.resize(arlFileSize);
-                        stream.read(reinterpret_cast<char*>(s_fileData.data()), arlFileSize);
-                        stream.close();
+                        success = loadFile(combinedFilePath, parseArFileData);
 
-                        function(s_fileData.data(), arlFileSize);
-                    }
+                    if (success)
+                        arlFilePaths.emplace_back(std::move(combinedFilePath), isArchiveList);
 
-                    return true;
-                }
+                    return success;
+                };
 
-                return false;
-            };
-
-            if (mod.type == ModType::UMM)
-            {
-                if (mod.merge)
+                if (mod.type == ModType::UMM)
                 {
-                    if (arlFilePath.empty())
+                    if (mod.merge)
                     {
-                        arlFilePath = arlFilePathU8;
-                        arlFilePath += ".arl";
-                    }
-
-                    if (!loadFile(arlFilePath, parseArlFileData))
-                    {
-                        if (arFilePath.empty())
+                        if (arlFilePath.empty())
                         {
-                            arFilePath = arlFilePathU8;
-                            arFilePath += ".ar";
+                            arlFilePath = arlFilePathU8;
+                            arlFilePath += ".arl";
                         }
 
-                        if (!loadFile(arFilePath, parseArFileData))
+                        if (!loadUncachedFile(arlFilePath, true))
                         {
-                            for (uint32_t i = 0; ; i++)
+                            if (arFilePath.empty())
                             {
-                                s_tempPath = arFilePath;
-                                s_tempPath += fmt::format(".{:02}", i);
+                                arFilePath = arlFilePathU8;
+                                arFilePath += ".ar";
+                            }
 
-                                if (!loadFile(s_tempPath, parseArFileData))
-                                    break;
+                            if (!loadUncachedFile(arFilePath, false))
+                            {
+                                thread_local std::filesystem::path s_tempPath;
+
+                                for (uint32_t i = 0; ; i++)
+                                {
+                                    s_tempPath = arFilePath;
+                                    s_tempPath += fmt::format(".{:02}", i);
+
+                                    if (!loadUncachedFile(s_tempPath, false))
+                                        break;
+                                }
                             }
                         }
                     }
                 }
-            }
-            else if (mod.type == ModType::HMM)
-            {
-                if (appendArlFilePath.empty())
+                else if (mod.type == ModType::HMM)
                 {
-                    if (arlFilePath.empty())
-                        arlFilePath = arlFilePathU8;
+                    if (appendArlFilePath.empty())
+                    {
+                        if (arlFilePath.empty())
+                            arlFilePath = arlFilePathU8;
 
-                    appendArlFilePath = arlFilePath.parent_path();
-                    appendArlFilePath /= "+";
-                    appendArlFilePath += arlFilePath.filename();
-                    appendArlFilePath += ".arl";
+                        appendArlFilePath = arlFilePath.parent_path();
+                        appendArlFilePath /= "+";
+                        appendArlFilePath += arlFilePath.filename();
+                        appendArlFilePath += ".arl";
+                    }
+
+                    loadUncachedFile(appendArlFilePath, true);
                 }
-
-                loadFile(appendArlFilePath, parseArlFileData);
             }
         }
+
+        s_cache.emplace(hash, std::move(arlFilePaths));
     }
 
     ctx.r3 = r3;
@@ -480,13 +518,6 @@ PPC_FUNC(sub_82E0B500)
         return;
     }
 
-    auto r3 = ctx.r3; // Callback
-    auto r4 = ctx.r4; // Database
-    auto r5 = ctx.r5; // Name
-    auto r6 = ctx.r6; // Data
-    auto r7 = ctx.r7; // Size
-    auto r8 = ctx.r8; // Callback data
-
     std::u8string_view arFilePathU8(reinterpret_cast<const char8_t*>(base + PPC_LOAD_U32(ctx.r5.u32)));
     size_t index = arFilePathU8.find(u8".ar.00");
     if (index == (arFilePathU8.size() - 6))
@@ -507,159 +538,188 @@ PPC_FUNC(sub_82E0B500)
         }
     }
 
-    thread_local std::filesystem::path s_tempFilePath;
-    s_tempFilePath.clear();
+    auto r3 = ctx.r3; // Callback
+    auto r4 = ctx.r4; // Database
+    auto r5 = ctx.r5; // Name
+    auto r6 = ctx.r6; // Data
+    auto r7 = ctx.r7; // Size
+    auto r8 = ctx.r8; // Callback data
 
-    std::filesystem::path arFilePath;
-    std::filesystem::path appendArFilePath;
-
-    for (auto& mod : g_mods)
-    {
-        for (auto& includeDir : mod.includeDirs)
+    auto loadArchive = [&](const std::filesystem::path& arFilePath)
         {
-            auto loadArchive = [&](const std::filesystem::path& arFilePath)
-                {
-                    if (mod.type == ModType::UMM && mod.readOnly.contains(arFilePath))
-                        return false;
-
-                    std::ifstream stream(includeDir / arFilePath, std::ios::binary);
-                    if (stream.good())
-                    {
-                        stream.seekg(0, std::ios::end);
-                        size_t arFileSize = stream.tellg();
-
-                        void* arFileData = g_userHeap.Alloc(arFileSize);
-                        stream.seekg(0, std::ios::beg);
-                        stream.read(reinterpret_cast<char*>(arFileData), arFileSize);
-                        stream.close();
-
-                        auto arFileDataHolder = reinterpret_cast<be<uint32_t>*>(g_userHeap.Alloc(sizeof(uint32_t) * 2));
-
-                        if (*reinterpret_cast<be<uint32_t>*>(arFileData) == LZX_SIGNATURE)
-                        {
-                            auto fileData = decompressLzx(ctx, base, reinterpret_cast<uint8_t*>(arFileData), arFileSize, arFileDataHolder);
-                            
-                            g_userHeap.Free(arFileData);
-
-                            arFileData = fileData.data();
-                            arFileSize = fileData.size();
-                        }
-
-                        arFileDataHolder[0] = g_memory.MapVirtual(arFileData);
-                        arFileDataHolder[1] = NULL;
-
-                        ctx.r3 = r3;
-                        ctx.r4 = r4;
-                        ctx.r5 = r5;
-                        ctx.r6.u32 = g_memory.MapVirtual(arFileDataHolder);
-                        ctx.r7.u32 = uint32_t(arFileSize);
-                        ctx.r8 = r8;
-
-                        __imp__sub_82E0B500(ctx, base);
-
-                        g_userHeap.Free(arFileDataHolder);
-                        g_userHeap.Free(arFileData);
-
-                        return true;
-                    }
-
-                    return false;
-                };
-
-            auto loadArchives = [&](const std::filesystem::path& arFilePath)
-                {
-                    s_tempFilePath = arFilePath;
-                    s_tempFilePath += "l";
-
-                    if (mod.type == ModType::UMM && mod.readOnly.contains(s_tempFilePath))
-                        return;
-
-                    std::ifstream stream(includeDir / s_tempFilePath, std::ios::binary);
-                    if (stream.good())
-                    {
-                        // TODO: Should cache this instead of re-opening the file.
-                        be<uint32_t> signature{};
-                        uint32_t splitCount{};
-                        stream.read(reinterpret_cast<char*>(&signature), sizeof(signature));
-
-                        if (signature == LZX_SIGNATURE)
-                        {
-                            stream.seekg(0, std::ios::end);
-                            size_t arlFileSize = stream.tellg();
-                            stream.seekg(0, std::ios::beg);
-
-                            void* compressedFileData = g_userHeap.Alloc(arlFileSize);
-                            stream.read(reinterpret_cast<char*>(compressedFileData), arlFileSize);
-                            stream.close();
-
-                            auto fileData = decompressLzx(ctx, base, reinterpret_cast<uint8_t*>(compressedFileData), arlFileSize, nullptr);
-
-                            g_userHeap.Free(compressedFileData);
-
-                            splitCount = *reinterpret_cast<uint32_t*>(fileData.data() + 0x4);
-
-                            g_userHeap.Free(fileData.data());
-                        }
-                        else
-                        {
-                            stream.read(reinterpret_cast<char*>(&splitCount), sizeof(splitCount));
-                            stream.close(); 
-                        }
-
-                        if (splitCount == 0)
-                        {
-                            loadArchive(arFilePath);
-                        }
-                        else
-                        {
-                            for (uint32_t i = 0; i < splitCount; i++)
-                            {
-                                s_tempFilePath = arFilePath;
-                                s_tempFilePath += fmt::format(".{:02}", i);
-                                loadArchive(s_tempFilePath);
-                            }
-                        }
-                    }
-                    else if (mod.type == ModType::UMM)
-                    {
-                        if (!loadArchive(arFilePath))
-                        {
-                            for (uint32_t i = 0; ; i++)
-                            {
-                                s_tempFilePath = arFilePath;
-                                s_tempFilePath += fmt::format(".{:02}", i);
-                                if (!loadArchive(s_tempFilePath))
-                                    break;
-                            }
-                        }
-                    }
-                };
-
-            if (mod.type == ModType::UMM)
+            std::ifstream stream(arFilePath, std::ios::binary);
+            if (stream.good())
             {
-                if (mod.merge)
-                {
-                    if (arFilePath.empty())
-                        arFilePath = arFilePathU8;
+                stream.seekg(0, std::ios::end);
+                size_t arFileSize = stream.tellg();
 
-                    loadArchives(arFilePath);
+                void* arFileData = g_userHeap.Alloc(arFileSize);
+                stream.seekg(0, std::ios::beg);
+                stream.read(reinterpret_cast<char*>(arFileData), arFileSize);
+                stream.close();
+
+                auto arFileDataHolder = reinterpret_cast<be<uint32_t>*>(g_userHeap.Alloc(sizeof(uint32_t) * 2));
+
+                if (*reinterpret_cast<be<uint32_t>*>(arFileData) == LZX_SIGNATURE)
+                {
+                    auto fileData = decompressLzx(ctx, base, reinterpret_cast<uint8_t*>(arFileData), arFileSize, arFileDataHolder);
+
+                    g_userHeap.Free(arFileData);
+
+                    arFileData = fileData.data();
+                    arFileSize = fileData.size();
                 }
+
+                arFileDataHolder[0] = g_memory.MapVirtual(arFileData);
+                arFileDataHolder[1] = NULL;
+
+                ctx.r3 = r3;
+                ctx.r4 = r4;
+                ctx.r5 = r5;
+                ctx.r6.u32 = g_memory.MapVirtual(arFileDataHolder);
+                ctx.r7.u32 = uint32_t(arFileSize);
+                ctx.r8 = r8;
+
+                __imp__sub_82E0B500(ctx, base);
+
+                g_userHeap.Free(arFileDataHolder);
+                g_userHeap.Free(arFileData);
+
+                return true;
             }
-            else if (mod.type == ModType::HMM)
+
+            return false;
+        };
+
+    thread_local xxHashMap<std::vector<std::filesystem::path>> s_cache;
+
+    XXH64_hash_t hash = XXH3_64bits(arFilePathU8.data(), arFilePathU8.size());
+    auto findResult = s_cache.find(hash);
+    if (findResult != s_cache.end())
+    {
+        for (const auto& arFilePath : findResult->second)
+            loadArchive(arFilePath);
+    }
+    else
+    {
+        std::vector<std::filesystem::path> arFilePaths;
+        std::filesystem::path arFilePath;
+        std::filesystem::path appendArFilePath;
+
+        for (auto& mod : g_mods)
+        {
+            for (auto& includeDir : mod.includeDirs)
             {
-                if (appendArFilePath.empty())
+                auto loadUncachedArchive = [&](const std::filesystem::path& arFilePath)
+                    {
+                        if (mod.type == ModType::UMM && mod.readOnly.contains(arFilePath))
+                            return false;
+
+                        std::filesystem::path combinedFilePath = includeDir / arFilePath;
+                        bool success = loadArchive(combinedFilePath);
+                        if (success)
+                            arFilePaths.emplace_back(std::move(combinedFilePath));
+
+                        return success;
+                    };
+
+                auto loadArchives = [&](const std::filesystem::path& arFilePath)
+                    {
+                        thread_local std::filesystem::path s_tempPath;
+                        s_tempPath = arFilePath;
+                        s_tempPath += "l";
+
+                        if (mod.type == ModType::UMM && mod.readOnly.contains(s_tempPath))
+                            return;
+
+                        std::ifstream stream(includeDir / s_tempPath, std::ios::binary);
+                        if (stream.good())
+                        {
+                            be<uint32_t> signature{};
+                            uint32_t splitCount{};
+                            stream.read(reinterpret_cast<char*>(&signature), sizeof(signature));
+
+                            if (signature == LZX_SIGNATURE)
+                            {
+                                stream.seekg(0, std::ios::end);
+                                size_t arlFileSize = stream.tellg();
+                                stream.seekg(0, std::ios::beg);
+
+                                void* compressedFileData = g_userHeap.Alloc(arlFileSize);
+                                stream.read(reinterpret_cast<char*>(compressedFileData), arlFileSize);
+                                stream.close();
+
+                                auto fileData = decompressLzx(ctx, base, reinterpret_cast<uint8_t*>(compressedFileData), arlFileSize, nullptr);
+
+                                g_userHeap.Free(compressedFileData);
+
+                                splitCount = *reinterpret_cast<uint32_t*>(fileData.data() + 0x4);
+
+                                g_userHeap.Free(fileData.data());
+                            }
+                            else
+                            {
+                                stream.read(reinterpret_cast<char*>(&splitCount), sizeof(splitCount));
+                                stream.close();
+                            }
+
+                            if (splitCount == 0)
+                            {
+                                loadUncachedArchive(arFilePath);
+                            }
+                            else
+                            {
+                                for (uint32_t i = 0; i < splitCount; i++)
+                                {
+                                    s_tempPath = arFilePath;
+                                    s_tempPath += fmt::format(".{:02}", i);
+                                    loadUncachedArchive(s_tempPath);
+                                }
+                            }
+                        }
+                        else if (mod.type == ModType::UMM)
+                        {
+                            if (!loadUncachedArchive(arFilePath))
+                            {
+                                for (uint32_t i = 0; ; i++)
+                                {
+                                    s_tempPath = arFilePath;
+                                    s_tempPath += fmt::format(".{:02}", i);
+                                    if (!loadUncachedArchive(s_tempPath))
+                                        break;
+                                }
+                            }
+                        }
+                    };
+
+                if (mod.type == ModType::UMM)
                 {
-                    if (arFilePath.empty())
-                        arFilePath = arFilePathU8;
+                    if (mod.merge)
+                    {
+                        if (arFilePath.empty())
+                            arFilePath = arFilePathU8;
 
-                    appendArFilePath = arFilePath.parent_path();
-                    appendArFilePath /= "+";
-                    appendArFilePath += arFilePath.filename();
+                        loadArchives(arFilePath);
+                    }
                 }
+                else if (mod.type == ModType::HMM)
+                {
+                    if (appendArFilePath.empty())
+                    {
+                        if (arFilePath.empty())
+                            arFilePath = arFilePathU8;
 
-                loadArchives(appendArFilePath);
+                        appendArFilePath = arFilePath.parent_path();
+                        appendArFilePath /= "+";
+                        appendArFilePath += arFilePath.filename();
+                    }
+
+                    loadArchives(appendArFilePath);
+                }
             }
         }
+
+        s_cache.emplace(hash, std::move(arFilePaths));
     }
 
     ctx.r3 = r3;
