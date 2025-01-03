@@ -239,6 +239,56 @@ enum
 
 static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
 {
+    // ui_boss_gauge
+    { HashStr("ui_boss_gauge/gauge_bg"), ALIGN_TOP_RIGHT },
+    { HashStr("ui_boss_gauge/gauge_2"), ALIGN_TOP_RIGHT },
+    { HashStr("ui_boss_gauge/gauge_1"), ALIGN_TOP_RIGHT },
+    { HashStr("ui_boss_gauge/gauge_breakpoint"), ALIGN_TOP_RIGHT },
+
+    // ui_exstage
+    { HashStr("ui_exstage/shield/L_gauge"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_exstage/shield/L_gauge_effect"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_exstage/shield/L_gauge_effect_2"), ALIGN_BOTTOM_LEFT },   
+    { HashStr("ui_exstage/energy/R_gauge"), ALIGN_BOTTOM_RIGHT },
+    { HashStr("ui_exstage/energy/R_gauge_effect"), ALIGN_BOTTOM_RIGHT },
+    { HashStr("ui_exstage/energy/R_gauge_effect_2"), ALIGN_BOTTOM_RIGHT }, 
+    { HashStr("ui_exstage/hit/hit_counter_bg"), ALIGN_RIGHT },
+    { HashStr("ui_exstage/hit/hit_counter_num"), ALIGN_RIGHT },
+
+    // ui_gate
+    { HashStr("ui_gate/header/status_title/title_bg/center"), EXTEND_LEFT },
+    { HashStr("ui_gate/header/status_title/title_bg/center/h_light"), EXTEND_LEFT }, 
+    
+    // ui_general
+    { HashStr("ui_general/bg"), STRETCH },
+
+    // ui_itemresult
+    { HashStr("ui_itemresult/main/iresult_title/title_bg/center"), EXTEND_LEFT },
+    { HashStr("ui_itemresult/main/iresult_title/title_bg/center/h_light"), EXTEND_LEFT },
+
+    // ui_mediaroom
+    { HashStr("ui_mediaroom/header/bg/img_1"), EXTEND_LEFT },
+    { HashStr("ui_mediaroom/header/bg/img_10"), EXTEND_RIGHT },
+    { HashStr("ui_mediaroom/header/frame/img_1"), EXTEND_LEFT },
+    { HashStr("ui_mediaroom/header/frame/img_5"), EXTEND_RIGHT },
+    
+    // ui_missionscreen
+    { HashStr("ui_missionscreen/player_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_missionscreen/time_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_missionscreen/score_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_missionscreen/item_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_missionscreen/laptime_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_missionscreen/lap_count"), ALIGN_TOP_RIGHT },
+
+    // ui_misson
+    { HashStr("ui_misson/bg"), STRETCH },
+    { HashStr("ui_misson/header/misson_title_B/title_bg/center"), EXTEND_LEFT },
+    { HashStr("ui_misson/header/misson_title_B/title_bg/center/h_light"), EXTEND_LEFT },
+
+    // ui_pause
+    { HashStr("ui_pause/header/status_title/title_bg/center"), EXTEND_LEFT },
+    { HashStr("ui_pause/header/status_title/title_bg/center/h_light"), EXTEND_LEFT },
+
     // ui_playscreen
     { HashStr("ui_playscreen/player_count"), ALIGN_TOP_LEFT },
     { HashStr("ui_playscreen/time_count"), ALIGN_TOP_LEFT },
@@ -253,9 +303,107 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_playscreen/add/medal_get_s"), ALIGN_BOTTOM_RIGHT },
     { HashStr("ui_playscreen/add/medal_get_m"), ALIGN_BOTTOM_RIGHT },
 
-    // ui_pause
-    { HashStr("ui_pause/header/status_title/title_bg/center"), EXTEND_LEFT },
-    { HashStr("ui_pause/header/status_title/title_bg/center/h_light"), EXTEND_LEFT },
+    // ui_playscreen_ev
+    { HashStr("ui_playscreen_ev/player_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_playscreen_ev/score_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_playscreen_ev/ring_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_playscreen_ev/ring_get"), ALIGN_TOP_LEFT },
+    { HashStr("ui_playscreen_ev/exp_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_playscreen_ev/add/u_info"), ALIGN_BOTTOM_RIGHT },
+    { HashStr("ui_playscreen_ev/add/medal_get_s"), ALIGN_BOTTOM_RIGHT },
+    { HashStr("ui_playscreen_ev/add/medal_get_m"), ALIGN_BOTTOM_RIGHT },  
+    { HashStr("ui_playscreen_ev/gauge/unleash_bg"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/life_bg"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/unleash_body"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/unleash_bar_1"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/unleash_gauge"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/unleash_gauge_effect_2"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/unleash_gauge_effect"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/unleash_bar_2"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/life"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield_position"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_01"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_02"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_03"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_04"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_05"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_06"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_07"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_08"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_09"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_10"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_11"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_12"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_13"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_14"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_15"), ALIGN_BOTTOM_LEFT },
+
+    // ui_playscreen_ev_hit
+    { HashStr("ui_playscreen_ev_hit/hit_counter_bg"), ALIGN_RIGHT },
+    { HashStr("ui_playscreen_ev_hit/hit_counter_num"), ALIGN_RIGHT },
+    { HashStr("ui_playscreen_ev_hit/hit_counter_txt_1"), ALIGN_RIGHT },
+    { HashStr("ui_playscreen_ev_hit/hit_counter_txt_2"), ALIGN_RIGHT },
+    { HashStr("ui_playscreen_ev_hit/chance_attack"), ALIGN_RIGHT },
+
+    // ui_playscreen_su
+    { HashStr("ui_playscreen_su/su_sonic_gauge"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_su/gaia_gauge"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_su/footer"), ALIGN_BOTTOM_RIGHT },
+
+    // ui_result
+    { HashStr("ui_result/main/result_title/title_bg/center"), EXTEND_LEFT },
+    { HashStr("ui_result/main/result_title/title_bg/center/h_light"), EXTEND_LEFT },
+    { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1"), EXTEND_RIGHT },
+    { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/h_light"), EXTEND_RIGHT },
+    { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/right"), STRETCH },
+    { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/right/h_light"), STRETCH },
+    { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1"), EXTEND_RIGHT },
+    { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1/h_light"), EXTEND_RIGHT },
+    { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1/right"), STRETCH },
+    { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1/right/h_light"), STRETCH },
+    { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1"), EXTEND_RIGHT },
+    { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1/h_light"), EXTEND_RIGHT },
+    { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1/right"), STRETCH },
+    { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1/right/h_light"), STRETCH },
+    { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1"), EXTEND_RIGHT },
+    { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1/h_light"), EXTEND_RIGHT },
+    { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1/right"), STRETCH },
+    { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1/right/h_light"), STRETCH },
+    { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1"), EXTEND_RIGHT },
+    { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1/h_light"), EXTEND_RIGHT },
+    { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1/right"), STRETCH },
+    { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1/right/h_light"), STRETCH },
+    { HashStr("ui_result/main/result_num_6/num_bg/position_6/center"), EXTEND_LEFT },
+    { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/h_light"), EXTEND_LEFT },
+    { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/left"), STRETCH },
+    { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/left/h_light"), STRETCH }, 
+    
+    // ui_result_ex
+    { HashStr("ui_result_ex/main/result_title/title_bg/center"), EXTEND_LEFT },
+    { HashStr("ui_result_ex/main/result_title/title_bg/center/h_light"), EXTEND_LEFT },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1"), EXTEND_RIGHT },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1/h_light"), EXTEND_RIGHT },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1/right"), STRETCH },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1/right/h_light"), STRETCH },
+    { HashStr("ui_result_ex/main/number/result_num_2/position_2/center_1"), EXTEND_RIGHT },
+    { HashStr("ui_result_ex/main/number/result_num_2/position_2/center_1/h_light"), EXTEND_RIGHT },
+    { HashStr("ui_result_ex/main/number/result_num_2/position_2/center_1/right"), STRETCH },
+    { HashStr("ui_result_ex/main/number/result_num_2/position_2/center_1/right/h_light"), STRETCH },
+    { HashStr("ui_result_ex/main/number/result_num_3/position_3/center_1"), EXTEND_RIGHT },
+    { HashStr("ui_result_ex/main/number/result_num_3/position_3/center_1/h_light"), EXTEND_RIGHT },
+    { HashStr("ui_result_ex/main/number/result_num_3/position_3/center_1/right"), STRETCH },
+    { HashStr("ui_result_ex/main/number/result_num_3/position_3/center_1/right/h_light"), STRETCH },
+    { HashStr("ui_result_ex/main/number/result_num_4/position_4/center_1"), EXTEND_RIGHT },
+    { HashStr("ui_result_ex/main/number/result_num_4/position_4/center_1/h_light"), EXTEND_RIGHT },
+    { HashStr("ui_result_ex/main/number/result_num_4/position_4/center_1/right"), STRETCH },
+    { HashStr("ui_result_ex/main/number/result_num_4/position_4/center_1/right/h_light"), STRETCH },
+    { HashStr("ui_result_ex/main/number/result_num_6/position_6/center"), EXTEND_LEFT },
+    { HashStr("ui_result_ex/main/number/result_num_6/position_6/center/h_light"), EXTEND_LEFT },
+    { HashStr("ui_result_ex/main/number/result_num_6/position_6/center/left"), STRETCH },
+    { HashStr("ui_result_ex/main/number/result_num_6/position_6/center/left/h_light"), STRETCH },
+
+    // ui_saveicon
+    { HashStr("ui_saveicon/icon"), ALIGN_BOTTOM_RIGHT },
 
     // ui_status
     { HashStr("ui_status/header/status_title/title_bg/center"), EXTEND_LEFT },
@@ -265,11 +413,11 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/left"), STRETCH },
     { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/left/h_light"), STRETCH },
 
-    // ui_mediaroom
-    { HashStr("ui_mediaroom/header/bg/img_1"), EXTEND_LEFT },
-    { HashStr("ui_mediaroom/header/bg/img_10"), EXTEND_RIGHT },
-    { HashStr("ui_mediaroom/header/frame/img_1"), EXTEND_LEFT },
-    { HashStr("ui_mediaroom/header/frame/img_5"), EXTEND_RIGHT },
+    // ui_townscreen
+    { HashStr("ui_townscreen/time"), ALIGN_TOP_RIGHT },
+    { HashStr("ui_townscreen/time_effect"), ALIGN_TOP_RIGHT },
+    { HashStr("ui_townscreen/info"), ALIGN_TOP_LEFT },
+    { HashStr("ui_townscreen/cam"), ALIGN_TOP_RIGHT },
 };
 
 static std::optional<uint32_t> FindFlags(uint32_t data)
@@ -401,11 +549,11 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
 
         if (aspectRatio > ORIGINAL_ASPECT_RATIO)
         {
-            if ((flags & EXTEND_LEFT) != 0 && (position[0] <= 0.0f) && (position[0] <= centerX))
+            if ((flags & EXTEND_LEFT) != 0 && (position[0] <= centerX))
             {
                 position[0] = 0.0f;
             }
-            else if ((flags & EXTEND_RIGHT) != 0 && (position[0] >= 1280.0f) && (position[0] >= centerX))
+            else if ((flags & EXTEND_RIGHT) != 0 && (position[0] >= centerX))
             {
                 position[0] = 1280.0f;
             }
@@ -413,7 +561,6 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             {
                 position[0] = position[0] * scaleX + offsetX;
             }
-
         }
         else
         {
