@@ -154,6 +154,7 @@ set(SWA_PATCHES_CXX_SOURCES
     "patches/ui/frontend_listener.cpp"
     "patches/audio_patches.cpp"
     "patches/camera_patches.cpp"
+    "patches/csd_patches.cpp"
     "patches/fps_patches.cpp"
     "patches/inspire_patches.cpp"
     "patches/misc_patches.cpp"
