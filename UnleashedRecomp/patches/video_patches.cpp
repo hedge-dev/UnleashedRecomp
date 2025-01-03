@@ -262,15 +262,19 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_exstage/hit/hit_counter_num"), ALIGN_RIGHT },
 
     // ui_gate
-    { HashStr("ui_gate/header/status_title/title_bg/center"), EXTEND_LEFT },
-    { HashStr("ui_gate/header/status_title/title_bg/center/h_light"), EXTEND_LEFT }, 
+    { HashStr("ui_gate/header/status_title"), UNSTRETCH_LEFT },
+    { HashStr("ui_gate/header/status_title/title_bg/center"), STRETCH_HORIZONTAL },
+    { HashStr("ui_gate/header/status_title/title_bg/center/h_light"), STRETCH_HORIZONTAL },
+    { HashStr("ui_gate/header/status_title/title_txt_12"), UNSTRETCH_RIGHT },
     
     // ui_general
     { HashStr("ui_general/bg"), STRETCH },
 
     // ui_itemresult
-    { HashStr("ui_itemresult/main/iresult_title/title_bg/center"), EXTEND_LEFT },
-    { HashStr("ui_itemresult/main/iresult_title/title_bg/center/h_light"), EXTEND_LEFT },
+    { HashStr("ui_itemresult/main/iresult_title"), UNSTRETCH_LEFT },
+    { HashStr("ui_itemresult/main/iresult_title/title_bg/center"), STRETCH_HORIZONTAL },
+    { HashStr("ui_itemresult/main/iresult_title/title_bg/center/h_light"), STRETCH_HORIZONTAL },
+    { HashStr("ui_itemresult/main/iresult_title/title_txt_S"), UNSTRETCH_RIGHT },
 
     // ui_mediaroom
     { HashStr("ui_mediaroom/header/bg/img_1"), EXTEND_LEFT },
@@ -288,17 +292,17 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
 
     // ui_misson
     { HashStr("ui_misson/bg"), STRETCH },
-    { HashStr("ui_misson/header/misson_title_B/title_bg/center"), EXTEND_LEFT },
-    { HashStr("ui_misson/header/misson_title_B/title_bg/center/h_light"), EXTEND_LEFT },
+
+    { HashStr("ui_misson/header/misson_title_B"), UNSTRETCH_LEFT },
+    { HashStr("ui_misson/header/misson_title_B/title_bg/center"), STRETCH_HORIZONTAL },
+    { HashStr("ui_misson/header/misson_title_B/title_bg/center/h_light"), STRETCH_HORIZONTAL },
+    { HashStr("ui_misson/header/misson_title_B/title_txt_13"), UNSTRETCH_RIGHT },
 
     // ui_pause
-    { HashStr("ui_pause/header/status_title"), STRETCH_HORIZONTAL },
-    { HashStr("ui_pause/header/status_title/title_bg/right"), UNSTRETCH_LEFT },
-    { HashStr("ui_pause/header/status_title/title_bg/right/h_light"), UNSTRETCH_LEFT },
+    { HashStr("ui_pause/header/status_title"), UNSTRETCH_LEFT },
+    { HashStr("ui_pause/header/status_title/title_bg/center"), STRETCH_HORIZONTAL },
+    { HashStr("ui_pause/header/status_title/title_bg/center/h_light"), STRETCH_HORIZONTAL },
     { HashStr("ui_pause/header/status_title/title_txt_11"), UNSTRETCH_RIGHT },
-    { HashStr("ui_pause/header/status_title/title_brilliance1"), UNSTRETCH_LEFT },
-    { HashStr("ui_pause/header/status_title/title_brilliance2"), UNSTRETCH_LEFT },
-    { HashStr("ui_pause/header/status_title/title_brilliance3"), UNSTRETCH_LEFT },
 
     // ui_playscreen
     { HashStr("ui_playscreen/player_count"), ALIGN_TOP_LEFT },
@@ -362,8 +366,11 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_playscreen_su/footer"), ALIGN_BOTTOM_RIGHT },
 
     // ui_result
-    { HashStr("ui_result/main/result_title/title_bg/center"), EXTEND_LEFT },
-    { HashStr("ui_result/main/result_title/title_bg/center/h_light"), EXTEND_LEFT },
+    { HashStr("ui_result/main/result_title"), UNSTRETCH_LEFT },
+    { HashStr("ui_result/main/result_title/title_bg/center"), STRETCH_HORIZONTAL },
+    { HashStr("ui_result/main/result_title/title_bg/center/h_light"), STRETCH_HORIZONTAL },
+    { HashStr("ui_result/main/result_title/title_txt_S"), UNSTRETCH_RIGHT },
+
     { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1"), EXTEND_RIGHT },
     { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/h_light"), EXTEND_RIGHT },
     { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/right"), STRETCH },
@@ -390,8 +397,11 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/left/h_light"), STRETCH }, 
     
     // ui_result_ex
-    { HashStr("ui_result_ex/main/result_title/title_bg/center"), EXTEND_LEFT },
-    { HashStr("ui_result_ex/main/result_title/title_bg/center/h_light"), EXTEND_LEFT },
+    { HashStr("ui_result_ex/main/result_title"), UNSTRETCH_LEFT },
+    { HashStr("ui_result_ex/main/result_title/title_bg/center"), STRETCH_HORIZONTAL },
+    { HashStr("ui_result_ex/main/result_title/title_bg/center/h_light"), STRETCH_HORIZONTAL },
+    { HashStr("ui_result_ex/main/result_title/title_txt_S"), UNSTRETCH_RIGHT },
+
     { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1"), EXTEND_RIGHT },
     { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1/h_light"), EXTEND_RIGHT },
     { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1/right"), STRETCH },
@@ -417,8 +427,11 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_saveicon/icon"), ALIGN_BOTTOM_RIGHT },
 
     // ui_status
-    { HashStr("ui_status/header/status_title/title_bg/center"), EXTEND_LEFT },
-    { HashStr("ui_status/header/status_title/title_bg/center/h_light"), EXTEND_LEFT },
+    { HashStr("ui_status/header/status_title"), UNSTRETCH_LEFT },
+    { HashStr("ui_status/header/status_title/title_bg/center"), STRETCH_HORIZONTAL },
+    { HashStr("ui_status/header/status_title/title_bg/center/h_light"), STRETCH_HORIZONTAL },
+    { HashStr("ui_status/header/status_title/title_txt_6"), UNSTRETCH_RIGHT },
+
     { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center"), EXTEND_LEFT },
     { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/h_light"), EXTEND_LEFT },
     { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/left"), STRETCH },
