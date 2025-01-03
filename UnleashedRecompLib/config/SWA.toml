@@ -590,3 +590,8 @@ jump_address = 0x82B723BC
 name = "DisableDLCIconMidAsmHook"
 address = 0x825756B0
 jump_address_on_true = 0x825756E0
+
+[[midasm_hook]]
+name = "MakeCsdProjectMidAsmHook"
+address = 0x825E4120
+registers = ["r3", "r29"]
