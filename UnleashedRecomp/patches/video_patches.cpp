@@ -133,11 +133,18 @@ namespace Chao::CSD
     };
 }
 
+static Mutex g_pathMutex;
 static std::map<const void*, XXH64_hash_t> g_paths;
+
+static XXH64_hash_t HashStr(const std::string_view& value)
+{
+    return XXH3_64bits(value.data(), value.size());
+}
 
 static void EmplacePath(const void* key, const std::string_view& value)
 {
-    g_paths.emplace(key, XXH3_64bits(value.data(), value.size()));
+    std::lock_guard lock(g_pathMutex);
+    g_paths.emplace(key, HashStr(value));
 }
 
 static void TraverseCast(Chao::CSD::Scene* scene, uint32_t castNodeIndex, Chao::CSD::CastNode* castNode, uint32_t castIndex, const std::string& parentPath)
@@ -160,6 +167,10 @@ static void TraverseCast(Chao::CSD::Scene* scene, uint32_t castNodeIndex, Chao::
     }
 
     EmplacePath(&castNode->pCasts[castIndex], path);
+
+    if (castNode->RootCastIndex == castIndex)
+        EmplacePath(castNode, path);
+
     path += "/";
 
     TraverseCast(scene, castNodeIndex, castNode, castNode->pCastLinks[castIndex].ChildCastIndex, path);
@@ -201,4 +212,191 @@ void MakeCsdProjectMidAsmHook(PPCRegister& r3, PPCRegister& r29)
     auto csdProject = reinterpret_cast<Chao::CSD::CProject*>(base + PPC_LOAD_U32(PPC_LOAD_U32(r3.u32 + 16) + 4));
     auto name = reinterpret_cast<const char*>(base + PPC_LOAD_U32(r29.u32));
     TraverseSceneNode(csdProject->m_pResource->pRootNode, name);
+}
+
+enum
+{
+    ALIGN_CENTER = 0 << 0,
+
+    ALIGN_TOP = 1 << 0,
+    ALIGN_LEFT = 1 << 1,
+    ALIGN_BOTTOM = 1 << 2,
+    ALIGN_RIGHT = 1 << 3,
+
+    ALIGN_TOP_LEFT = ALIGN_TOP | ALIGN_LEFT,
+    ALIGN_TOP_RIGHT = ALIGN_TOP | ALIGN_RIGHT,
+    ALIGN_BOTTOM_LEFT = ALIGN_BOTTOM | ALIGN_LEFT,
+    ALIGN_BOTTOM_RIGHT = ALIGN_BOTTOM | ALIGN_RIGHT,
+
+    STRETCH_HORIZONTAL = 1 << 4,
+    STRETCH_VERTICAL = 1 << 5,
+
+    STRETCH = STRETCH_HORIZONTAL | STRETCH_VERTICAL,
+};
+
+static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
+{
+    // ui_playscreen
+    { HashStr("ui_playscreen/player_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_playscreen/time_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_playscreen/score_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_playscreen/exp_count"), ALIGN_TOP_LEFT },
+    { HashStr("ui_playscreen/so_speed_gauge"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen/so_ringenagy_gauge"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen/gauge_frame"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen/ring_count"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen/add/speed_count"), ALIGN_RIGHT },
+    { HashStr("ui_playscreen/add/u_info"), ALIGN_BOTTOM_RIGHT },
+    { HashStr("ui_playscreen/add/medal_get_s"), ALIGN_BOTTOM_RIGHT },
+    { HashStr("ui_playscreen/add/medal_get_m"), ALIGN_BOTTOM_RIGHT },
+};
+
+static std::optional<uint32_t> FindFlags(uint32_t data)
+{
+    XXH64_hash_t path;
+    {
+        std::lock_guard lock(g_pathMutex);
+
+        auto findResult = g_paths.find(g_memory.Translate(data));
+        if (findResult == g_paths.end())
+            return {};
+
+        path = findResult->second;
+    }
+
+    auto findResult = g_flags.find(path);
+    if (findResult != g_flags.end())
+        return findResult->second;
+
+    return {};
+}
+
+static std::optional<uint32_t> g_sceneFlags;
+
+void RenderCsdSceneMidAsmHook(PPCRegister& r30)
+{
+    g_sceneFlags = FindFlags(r30.u32);
+}
+
+static std::optional<uint32_t> g_castNodeFlags;
+
+void RenderCsdCastNodeMidAsmHook(PPCRegister& r10, PPCRegister& r27)
+{
+    g_castNodeFlags = FindFlags(r10.u32 + r27.u32);
+}
+
+static std::optional<uint32_t> g_castFlags;
+
+void RenderCsdCastMidAsmHook(PPCRegister& r4)
+{
+    g_castFlags = FindFlags(r4.u32);
+}
+
+static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t stride)
+{
+    uint32_t flags = 0;
+
+    if (g_castFlags.has_value())
+    {
+        flags = g_castFlags.value();
+    }
+    else if (g_castNodeFlags.has_value())
+    {
+        flags = g_castNodeFlags.value();
+    }
+    else if (g_sceneFlags.has_value())
+    {
+        flags = g_sceneFlags.value();
+    }
+    else
+    {
+        float minX = 1280.0f;
+        float minY = 720.0f;
+        float maxX = 0.0f;
+        float maxY = 0.0f;
+
+        for (size_t i = 0; i < ctx.r5.u32; i++)
+        {
+            auto position = reinterpret_cast<be<float>*>(base + ctx.r4.u32 + i * stride);
+            minX = std::min<float>(position[0], minX);
+            minY = std::min<float>(position[1], minY);
+            maxX = std::max<float>(position[0], maxX);
+            maxY = std::max<float>(position[1], maxY);
+        }
+
+        if (minX < 0.001f && maxX > 1279.999f)
+            flags |= STRETCH_HORIZONTAL;
+
+        if (minY < 0.001f && maxY > 719.999f)
+            flags |= STRETCH_VERTICAL;
+    }
+
+    uint32_t size = ctx.r5.u32 * stride;
+    ctx.r1.u32 -= size;
+
+    uint8_t* stack = base + ctx.r1.u32;
+    memcpy(stack, base + ctx.r4.u32, size);
+
+    constexpr float ORIGINAL_ASPECT_RATIO = 1280.0f / 720.0f;
+    float aspectRatio = float(GameWindow::s_width) / GameWindow::s_height;
+
+    float scaleX = 1.0f;
+    float scaleY = 1.0f;
+    float offsetX = 0.0f;
+    float offsetY = 0.0f;
+
+    if ((flags & STRETCH_HORIZONTAL) == 0)
+    {
+        scaleX = ORIGINAL_ASPECT_RATIO / aspectRatio;
+
+        if ((flags & ALIGN_LEFT) == 0)
+        {
+            offsetX = (1.0f - scaleX) * 1280.0f;
+
+            if ((flags & ALIGN_RIGHT) == 0)
+                offsetX *= 0.5f;
+        }
+    }
+
+    if ((flags & STRETCH_VERTICAL) == 0)
+    {
+        scaleY = aspectRatio / ORIGINAL_ASPECT_RATIO;
+
+        if ((flags & ALIGN_TOP) == 0)
+        {
+            offsetY = (1.0f - scaleY) * 720.0f;
+
+            if ((flags & ALIGN_BOTTOM) == 0)
+                offsetY *= 0.5f;
+        }
+    }
+
+    for (size_t i = 0; i < ctx.r5.u32; i++)
+    {
+        auto position = reinterpret_cast<be<float>*>(stack + i * stride);
+
+        if (aspectRatio > ORIGINAL_ASPECT_RATIO)
+            position[0] = position[0] * scaleX + offsetX;
+        else
+            position[1] = position[1] * scaleY + offsetY;
+    }
+
+    ctx.r4.u32 = ctx.r1.u32;
+    original(ctx, base);
+
+    ctx.r1.u32 += size;
+}
+
+// SWA::CCsdPlatformMirage::Draw
+PPC_FUNC_IMPL(__imp__sub_825E2E70);
+PPC_FUNC(sub_825E2E70)
+{
+    Draw(ctx, base, __imp__sub_825E2E70, 0x14);
+}
+
+// SWA::CCsdPlatformMirage::DrawNoTex
+PPC_FUNC_IMPL(__imp__sub_825E2E88);
+PPC_FUNC(sub_825E2E88)
+{
+    Draw(ctx, base, __imp__sub_825E2E88, 0xC);
 }
