@@ -276,6 +276,12 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_itemresult/main/iresult_title/title_bg/center/h_light"), STRETCH_HORIZONTAL },
     { HashStr("ui_itemresult/main/iresult_title/title_txt_S"), UNSTRETCH_RIGHT },
 
+    // ui_lcursor
+    { HashStr("ui_lcursor/cursor"), UNSTRETCH_CENTER },  
+    
+    // ui_lcursor_enemy
+    { HashStr("ui_lcursor/cursor"), UNSTRETCH_CENTER },
+
     // ui_mediaroom
     { HashStr("ui_mediaroom/header/bg/img_1"), EXTEND_LEFT },
     { HashStr("ui_mediaroom/header/bg/img_10"), EXTEND_RIGHT },
@@ -313,6 +319,7 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_playscreen/so_ringenagy_gauge"), ALIGN_BOTTOM_LEFT },
     { HashStr("ui_playscreen/gauge_frame"), ALIGN_BOTTOM_LEFT },
     { HashStr("ui_playscreen/ring_count"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen/ring_get"), ALIGN_BOTTOM_LEFT },
     { HashStr("ui_playscreen/add/speed_count"), ALIGN_RIGHT },
     { HashStr("ui_playscreen/add/u_info"), ALIGN_BOTTOM_RIGHT },
     { HashStr("ui_playscreen/add/medal_get_s"), ALIGN_BOTTOM_RIGHT },
@@ -442,6 +449,29 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_townscreen/time_effect"), ALIGN_TOP_RIGHT },
     { HashStr("ui_townscreen/info"), ALIGN_TOP_LEFT },
     { HashStr("ui_townscreen/cam"), ALIGN_TOP_RIGHT },
+
+    // ui_worldmap
+    { HashStr("ui_worldmap/contents/guide/cts_guide_1_hiscore"), ALIGN_RIGHT },
+    { HashStr("ui_worldmap/contents/guide/cts_guide_2_besttime"), ALIGN_RIGHT },
+    { HashStr("ui_worldmap/contents/guide/cts_guide_3_rank"), ALIGN_RIGHT },
+    { HashStr("ui_worldmap/contents/guide/cts_guide_4_misson"), ALIGN_RIGHT },
+    { HashStr("ui_worldmap/contents/guide/cts_guide_5_medal"), ALIGN_RIGHT },
+    { HashStr("ui_worldmap/contents/guide/cts_guide_bg"), ALIGN_RIGHT },
+    { HashStr("ui_worldmap/contents/guide/cts_guide_icon"), ALIGN_RIGHT },
+    { HashStr("ui_worldmap/contents/guide/cts_guide_ss"), ALIGN_RIGHT },
+    { HashStr("ui_worldmap/contents/guide/cts_guide_txt"), ALIGN_RIGHT },
+    { HashStr("ui_worldmap/contents/guide/cts_guide_window"), ALIGN_RIGHT },
+    { HashStr("ui_worldmap/contents/info/bg/cts_info_bg"), ALIGN_TOP_LEFT },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1"), ALIGN_TOP_LEFT },
+    { HashStr("ui_worldmap/contents/info/img/info_img_1"), ALIGN_TOP_LEFT },
+    { HashStr("ui_worldmap/contents/info/img/info_img_2"), ALIGN_TOP_LEFT },
+    { HashStr("ui_worldmap/contents/info/img/info_img_3"), ALIGN_TOP_LEFT },
+    { HashStr("ui_worldmap/contents/info/img/info_img_4"), ALIGN_TOP_LEFT },
+    { HashStr("ui_worldmap/contents/stage/cts_stage_scroll_bar"), ALIGN_LEFT },
+    { HashStr("ui_worldmap/contents/stage/cts_stage_scroll_bg"), ALIGN_LEFT },
+    { HashStr("ui_worldmap/contents/stage/cts_stage_select"), ALIGN_LEFT },
+    { HashStr("ui_worldmap/contents/stage/cts_stage_window"), ALIGN_LEFT },
+    { HashStr("ui_worldmap/header/worldmap_header_img"), ALIGN_TOP_LEFT },
 };
 
 static std::optional<uint32_t> FindFlags(uint32_t data)
@@ -547,7 +577,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     {
         scaleX = ORIGINAL_ASPECT_RATIO / aspectRatio;
 
-        if ((flags & (ALIGN_LEFT | UNSTRETCH_LEFT | UNSTRETCH_RIGHT)) == 0)
+        if ((flags & (ALIGN_LEFT | UNSTRETCH_LEFT | UNSTRETCH_RIGHT | UNSTRETCH_CENTER)) == 0)
         {
             offsetX = (1.0f - scaleX) * 1280.0f;
 
@@ -560,7 +590,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     {
         scaleY = aspectRatio / ORIGINAL_ASPECT_RATIO;
 
-        if ((flags & (ALIGN_TOP | UNSTRETCH_TOP | UNSTRETCH_BOTTOM)) == 0)
+        if ((flags & (ALIGN_TOP | UNSTRETCH_TOP | UNSTRETCH_BOTTOM | UNSTRETCH_CENTER)) == 0)
         {
             offsetY = (1.0f - scaleY) * 720.0f;
 
@@ -598,7 +628,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     {
         auto position = reinterpret_cast<be<float>*>(stack + i * stride);
 
-        if (aspectRatio > ORIGINAL_ASPECT_RATIO)
+        if (aspectRatio >= ORIGINAL_ASPECT_RATIO)
         {
             if ((flags & EXTEND_LEFT) != 0 && (position[0] <= centerX))
             {
