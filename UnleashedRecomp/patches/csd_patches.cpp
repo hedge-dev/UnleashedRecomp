@@ -585,25 +585,31 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     {
         auto position = reinterpret_cast<be<float>*>(stack + i * stride);
 
+        float x = position[0];
+        float y = position[1];
+
         if (aspectRatio >= ORIGINAL_ASPECT_RATIO)
         {
-            if ((flags & EXTEND_LEFT) != 0 && (position[0] <= centerX))
+            if ((flags & EXTEND_LEFT) != 0 && (x <= centerX))
             {
-                position[0] = 0.0f;
+                x = 0.0f;
             }
-            else if ((flags & EXTEND_RIGHT) != 0 && (position[0] >= centerX))
+            else if ((flags & EXTEND_RIGHT) != 0 && (x >= centerX))
             {
-                position[0] = 1280.0f;
+                x = 1280.0f;
             }
             else 
             {
-                position[0] = (position[0] - pivotX) * scaleX + offsetX;
+                x = (x - pivotX) * scaleX + offsetX;
             }
         }
         else
         {
-            position[1] = (position[1] - pivotY) * scaleY + offsetY;
+            y = (y - pivotY) * scaleY + offsetY;
         }
+
+        position[0] = round(x / 1280.0f * GameWindow::s_width) / GameWindow::s_width * 1280.0f;
+        position[1] = round(y / 720.0f * GameWindow::s_height) / GameWindow::s_height * 720.0f;
     }
 
     ctx.r4.u32 = ctx.r1.u32;
