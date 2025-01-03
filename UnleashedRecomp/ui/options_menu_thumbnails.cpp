@@ -117,7 +117,6 @@ void LoadThumbnails()
     g_xboxColorCorrectionThumbnails[false] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_false);
     g_xboxColorCorrectionThumbnails[true] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_true);
 
-    g_configThumbnails[&Config::MovieScaleMode] = LOAD_ZSTD_TEXTURE(g_movie_scale_mode);
     g_configThumbnails[&Config::UIScaleMode] = LOAD_ZSTD_TEXTURE(g_ui_scale_mode);
 }
 

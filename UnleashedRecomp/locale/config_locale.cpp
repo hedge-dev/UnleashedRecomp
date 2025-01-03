@@ -275,23 +275,6 @@ CONFIG_DEFINE_LOCALE(XboxColorCorrection)
     { ELanguage::English, { "Xbox Color Correction", "Use the warm tint from the Xbox version of the game." } }
 };
 
-CONFIG_DEFINE_LOCALE(MovieScaleMode)
-{
-    { ELanguage::English, { "Movie Scale Mode", "Change how the movie player scales to the display." } }
-};
-
-CONFIG_DEFINE_ENUM_LOCALE(EMovieScaleMode)
-{
-    {
-        ELanguage::English,
-        {
-            { EMovieScaleMode::Stretch, { "STRETCH", "Stretch: the movie will stretch to the display." } },
-            { EMovieScaleMode::Fit,     { "FIT", "Fit: the movie will maintain its aspect ratio and fit to the display." } },
-            { EMovieScaleMode::Fill,    { "FILL", "Fill: the movie will scale past the bounds of the display if it doesn't match the aspect ratio." } },
-        }
-    }
-};
-
 CONFIG_DEFINE_LOCALE(UIScaleMode)
 {
     { ELanguage::English, { "UI Scale Mode", "Change how the UI scales to the display." } }

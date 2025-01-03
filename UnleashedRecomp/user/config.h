@@ -252,20 +252,6 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EMotionBlur)
     { "Enhanced", EMotionBlur::Enhanced }
 };
 
-enum class EMovieScaleMode : uint32_t
-{
-    Stretch,
-    Fit,
-    Fill
-};
-
-CONFIG_DEFINE_ENUM_TEMPLATE(EMovieScaleMode)
-{
-    { "Stretch", EMovieScaleMode::Stretch },
-    { "Fit",     EMovieScaleMode::Fit },
-    { "Fill",    EMovieScaleMode::Fill }
-};
-
 enum class EUIScaleMode : uint32_t
 {
     Stretch,
@@ -662,7 +648,6 @@ public:
     CONFIG_DEFINE_ENUM("Video", EDepthOfFieldQuality, DepthOfFieldQuality, EDepthOfFieldQuality::Auto);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EMotionBlur, MotionBlur, EMotionBlur::Original);
     CONFIG_DEFINE_LOCALISED("Video", bool, XboxColorCorrection, false);
-    CONFIG_DEFINE_ENUM_LOCALISED("Video", EMovieScaleMode, MovieScaleMode, EMovieScaleMode::Fit);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EUIScaleMode, UIScaleMode, EUIScaleMode::Edge);
 
     // TODO: remove these once the exports are implemented.
