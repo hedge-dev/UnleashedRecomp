@@ -38,6 +38,8 @@
 #ifdef SWA_D3D12
 #include "shader/copy_vs.hlsl.dxil.h"
 #include "shader/csd_filter_ps.hlsl.dxil.h"
+#include "shader/csd_no_tex_vs.hlsl.dxil.h"
+#include "shader/csd_vs.hlsl.dxil.h"
 #include "shader/enhanced_motion_blur_ps.hlsl.dxil.h"
 #include "shader/gamma_correction_ps.hlsl.dxil.h"
 #include "shader/gaussian_blur_3x3.hlsl.dxil.h"
@@ -55,6 +57,8 @@
 
 #include "shader/copy_vs.hlsl.spirv.h"
 #include "shader/csd_filter_ps.hlsl.spirv.h"
+#include "shader/csd_no_tex_vs.hlsl.spirv.h"
+#include "shader/csd_vs.hlsl.spirv.h"
 #include "shader/enhanced_motion_blur_ps.hlsl.spirv.h"
 #include "shader/gamma_correction_ps.hlsl.spirv.h"
 #include "shader/gaussian_blur_3x3.hlsl.spirv.h"
@@ -4160,7 +4164,13 @@ static GuestShader* CreateShader(const be<uint32_t>* function, ResourceType reso
         if (findResult->guestShader == nullptr)
         {
             shader = g_userHeap.AllocPhysical<GuestShader>(resourceType);
-            shader->shaderCacheEntry = findResult;
+
+            if (hash == 0xB1086A4947A797DE)
+                shader->shader = CREATE_SHADER(csd_no_tex_vs);
+            else if (hash == 0xB4CAFC034A37C8A8)
+                shader->shader = CREATE_SHADER(csd_vs);
+            else
+                shader->shaderCacheEntry = findResult;
 
             findResult->guestShader = shader;
         }

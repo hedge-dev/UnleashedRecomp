@@ -217,6 +217,10 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     // ui_lcursor_enemy
     { HashStr("ui_lcursor/cursor"), UNSTRETCH_CENTER },
 
+    // ui_loading
+    { HashStr("ui_loading/bg_1"), STRETCH },
+    { HashStr("ui_loading/bg_2"), STRETCH },
+
     // ui_mediaroom
     { HashStr("ui_mediaroom/header/bg/img_1"), EXTEND_LEFT },
     { HashStr("ui_mediaroom/header/bg/img_10"), EXTEND_RIGHT },
@@ -399,6 +403,8 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_townscreen/cam"), ALIGN_TOP_RIGHT },
 
     // ui_worldmap
+    { HashStr("ui_worldmap/contents/active_parts/cts_parts_flag"), UNSTRETCH_CENTER },
+    { HashStr("ui_worldmap/contents/active_parts/cts_parts_sun_moon"), UNSTRETCH_CENTER },
     { HashStr("ui_worldmap/contents/guide/cts_guide_1_hiscore"), ALIGN_RIGHT },
     { HashStr("ui_worldmap/contents/guide/cts_guide_2_besttime"), ALIGN_RIGHT },
     { HashStr("ui_worldmap/contents/guide/cts_guide_3_rank"), ALIGN_RIGHT },
