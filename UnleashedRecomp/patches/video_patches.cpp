@@ -84,7 +84,7 @@ namespace Chao::CSD
     struct CastNode
     {
         be<uint32_t> CastCount;
-        xpointer<Cast> pCasts;
+        xpointer<xpointer<Cast>> pCasts;
         be<uint32_t> RootCastIndex;
         xpointer<CastLink> pCastLinks;
     };
@@ -166,7 +166,7 @@ static void TraverseCast(Chao::CSD::Scene* scene, uint32_t castNodeIndex, Chao::
         }
     }
 
-    EmplacePath(&castNode->pCasts[castIndex], path);
+    EmplacePath(castNode->pCasts[castIndex].get(), path);
 
     if (castNode->RootCastIndex == castIndex)
         EmplacePath(castNode, path);
@@ -232,6 +232,8 @@ enum
     STRETCH_VERTICAL = 1 << 5,
 
     STRETCH = STRETCH_HORIZONTAL | STRETCH_VERTICAL,
+
+    EXTEND_LEFT = 1 << 6,
 };
 
 static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
@@ -249,6 +251,18 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_playscreen/add/u_info"), ALIGN_BOTTOM_RIGHT },
     { HashStr("ui_playscreen/add/medal_get_s"), ALIGN_BOTTOM_RIGHT },
     { HashStr("ui_playscreen/add/medal_get_m"), ALIGN_BOTTOM_RIGHT },
+
+    // ui_pause
+    { HashStr("ui_pause/header/status_title/title_bg/center"), EXTEND_LEFT },
+    { HashStr("ui_pause/header/status_title/title_bg/center/h_light"), EXTEND_LEFT },
+
+    // ui_status
+    { HashStr("ui_status/header/status_title/title_bg/center"), EXTEND_LEFT },
+    { HashStr("ui_status/header/status_title/title_bg/center/h_light"), EXTEND_LEFT },
+    { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center"), EXTEND_LEFT },
+    { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/h_light"), EXTEND_LEFT },
+    { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/left"), STRETCH },
+    { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/left/h_light"), STRETCH },
 };
 
 static std::optional<uint32_t> FindFlags(uint32_t data)
@@ -294,6 +308,23 @@ void RenderCsdCastMidAsmHook(PPCRegister& r4)
 
 static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t stride)
 {
+    float minX = 1280.0f;
+    float minY = 720.0f;
+    float maxX = 0.0f;
+    float maxY = 0.0f;
+
+    for (size_t i = 0; i < ctx.r5.u32; i++)
+    {
+        auto position = reinterpret_cast<be<float>*>(base + ctx.r4.u32 + i * stride);
+        minX = std::min<float>(position[0], minX);
+        minY = std::min<float>(position[1], minY);
+        maxX = std::max<float>(position[0], maxX);
+        maxY = std::max<float>(position[1], maxY);
+    }
+
+    float centerX = (minX + maxX) / 2.0f;
+    float centerY = (minY + maxY) / 2.0f;
+
     uint32_t flags = 0;
 
     if (g_castFlags.has_value())
@@ -310,20 +341,6 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     }
     else
     {
-        float minX = 1280.0f;
-        float minY = 720.0f;
-        float maxX = 0.0f;
-        float maxY = 0.0f;
-
-        for (size_t i = 0; i < ctx.r5.u32; i++)
-        {
-            auto position = reinterpret_cast<be<float>*>(base + ctx.r4.u32 + i * stride);
-            minX = std::min<float>(position[0], minX);
-            minY = std::min<float>(position[1], minY);
-            maxX = std::max<float>(position[0], maxX);
-            maxY = std::max<float>(position[1], maxY);
-        }
-
         if (minX < 0.001f && maxX > 1279.999f)
             flags |= STRETCH_HORIZONTAL;
 
@@ -376,9 +393,21 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         auto position = reinterpret_cast<be<float>*>(stack + i * stride);
 
         if (aspectRatio > ORIGINAL_ASPECT_RATIO)
-            position[0] = position[0] * scaleX + offsetX;
+        {
+            if ((flags & EXTEND_LEFT) != 0 && (position[0] <= 0.0f) && (position[0] <= centerX))
+            {
+                position[0] = 0.0f;
+            }
+            else
+            {
+                position[0] = position[0] * scaleX + offsetX;
+            }
+
+        }
         else
+        {
             position[1] = position[1] * scaleY + offsetY;
+        }
     }
 
     ctx.r4.u32 = ctx.r1.u32;
