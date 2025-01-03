@@ -234,6 +234,7 @@ enum
     STRETCH = STRETCH_HORIZONTAL | STRETCH_VERTICAL,
 
     EXTEND_LEFT = 1 << 6,
+    EXTEND_RIGHT = 1 << 7,
 };
 
 static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
@@ -263,6 +264,12 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/h_light"), EXTEND_LEFT },
     { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/left"), STRETCH },
     { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/left/h_light"), STRETCH },
+
+    // ui_mediaroom
+    { HashStr("ui_mediaroom/header/bg/img_1"), EXTEND_LEFT },
+    { HashStr("ui_mediaroom/header/bg/img_10"), EXTEND_RIGHT },
+    { HashStr("ui_mediaroom/header/frame/img_1"), EXTEND_LEFT },
+    { HashStr("ui_mediaroom/header/frame/img_5"), EXTEND_RIGHT },
 };
 
 static std::optional<uint32_t> FindFlags(uint32_t data)
@@ -341,10 +348,10 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     }
     else
     {
-        if (minX < 0.001f && maxX > 1279.999f)
+        if (minX < 0.01f && maxX > 1279.99f)
             flags |= STRETCH_HORIZONTAL;
 
-        if (minY < 0.001f && maxY > 719.999f)
+        if (minY < 0.01f && maxY > 719.99f)
             flags |= STRETCH_VERTICAL;
     }
 
@@ -397,6 +404,10 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             if ((flags & EXTEND_LEFT) != 0 && (position[0] <= 0.0f) && (position[0] <= centerX))
             {
                 position[0] = 0.0f;
+            }
+            else if ((flags & EXTEND_RIGHT) != 0 && (position[0] >= 1280.0f) && (position[0] >= centerX))
+            {
+                position[0] = 1280.0f;
             }
             else
             {
