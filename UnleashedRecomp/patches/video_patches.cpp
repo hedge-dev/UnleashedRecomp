@@ -235,6 +235,12 @@ enum
 
     EXTEND_LEFT = 1 << 6,
     EXTEND_RIGHT = 1 << 7,
+
+    UNSTRETCH_TOP = 1 << 8,
+    UNSTRETCH_LEFT = 1 << 9,
+    UNSTRETCH_BOTTOM = 1 << 10,
+    UNSTRETCH_RIGHT = 1 << 11,
+    UNSTRETCH_CENTER = 1 << 12,
 };
 
 static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
@@ -286,8 +292,13 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_misson/header/misson_title_B/title_bg/center/h_light"), EXTEND_LEFT },
 
     // ui_pause
-    { HashStr("ui_pause/header/status_title/title_bg/center"), EXTEND_LEFT },
-    { HashStr("ui_pause/header/status_title/title_bg/center/h_light"), EXTEND_LEFT },
+    { HashStr("ui_pause/header/status_title"), STRETCH_HORIZONTAL },
+    { HashStr("ui_pause/header/status_title/title_bg/right"), UNSTRETCH_LEFT },
+    { HashStr("ui_pause/header/status_title/title_bg/right/h_light"), UNSTRETCH_LEFT },
+    { HashStr("ui_pause/header/status_title/title_txt_11"), UNSTRETCH_RIGHT },
+    { HashStr("ui_pause/header/status_title/title_brilliance1"), UNSTRETCH_LEFT },
+    { HashStr("ui_pause/header/status_title/title_brilliance2"), UNSTRETCH_LEFT },
+    { HashStr("ui_pause/header/status_title/title_brilliance3"), UNSTRETCH_LEFT },
 
     // ui_playscreen
     { HashStr("ui_playscreen/player_count"), ALIGN_TOP_LEFT },
@@ -516,12 +527,14 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     float scaleY = 1.0f;
     float offsetX = 0.0f;
     float offsetY = 0.0f;
+    float pivotX = 0.0f;
+    float pivotY = 0.0f;
 
     if ((flags & STRETCH_HORIZONTAL) == 0)
     {
         scaleX = ORIGINAL_ASPECT_RATIO / aspectRatio;
 
-        if ((flags & ALIGN_LEFT) == 0)
+        if ((flags & (ALIGN_LEFT | UNSTRETCH_LEFT | UNSTRETCH_RIGHT)) == 0)
         {
             offsetX = (1.0f - scaleX) * 1280.0f;
 
@@ -534,7 +547,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     {
         scaleY = aspectRatio / ORIGINAL_ASPECT_RATIO;
 
-        if ((flags & ALIGN_TOP) == 0)
+        if ((flags & (ALIGN_TOP | UNSTRETCH_TOP | UNSTRETCH_BOTTOM)) == 0)
         {
             offsetY = (1.0f - scaleY) * 720.0f;
 
@@ -542,6 +555,31 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
                 offsetY *= 0.5f;
         }
     }
+
+    if ((flags & UNSTRETCH_LEFT) != 0)
+    {
+        pivotX = minX;
+    }
+    else if ((flags & UNSTRETCH_RIGHT) != 0)
+    {
+        pivotX = maxX;
+    }
+    else if ((flags & UNSTRETCH_TOP) != 0)
+    {
+        pivotY = minY;
+    }
+    else if ((flags & UNSTRETCH_BOTTOM) != 0)
+    {
+        pivotY = maxY;
+    }
+    else if ((flags & UNSTRETCH_CENTER) != 0)
+    {
+        pivotX = centerX;
+        pivotY = centerY;
+    }
+
+    offsetX += pivotX;
+    offsetY += pivotY;
 
     for (size_t i = 0; i < ctx.r5.u32; i++)
     {
@@ -557,14 +595,14 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             {
                 position[0] = 1280.0f;
             }
-            else
+            else 
             {
-                position[0] = position[0] * scaleX + offsetX;
+                position[0] = (position[0] - pivotX) * scaleX + offsetX;
             }
         }
         else
         {
-            position[1] = position[1] * scaleY + offsetY;
+            position[1] = (position[1] - pivotY) * scaleY + offsetY;
         }
     }
 
