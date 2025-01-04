@@ -20,6 +20,7 @@ struct Video
     static void Present();
     static void StartPipelinePrecompilation();
     static void WaitForGPU();
+    static struct GuestSurface* GetBackBuffer();
 };
 
 struct GuestSamplerState

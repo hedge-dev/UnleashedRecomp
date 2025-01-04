@@ -1334,6 +1334,8 @@ static void CreateImGuiBackend()
 #endif
 }
 
+static constexpr float ORIGINAL_ASPECT_RATIO = 16.0f / 9.0f;
+
 static void CheckSwapChain()
 {
     g_swapChain->setVsyncEnabled(Config::VSync);
@@ -1349,6 +1351,18 @@ static void CheckSwapChain()
 
     if (g_swapChainValid)
         g_swapChainValid = g_swapChain->acquireTexture(g_acquireSemaphores[g_frame].get(), &g_backBufferIndex);
+
+    float aspectRatio = float(GameWindow::s_width) / GameWindow::s_height;
+    if (aspectRatio >= ORIGINAL_ASPECT_RATIO)
+    {
+        g_backBuffer->width = GameWindow::s_width * 720 / GameWindow::s_height;
+        g_backBuffer->height = 720;
+    }
+    else
+    {
+        g_backBuffer->width = 1280;
+        g_backBuffer->height = GameWindow::s_height * 1280 / GameWindow::s_width;
+    }
 }
 
 static void BeginCommandList()
@@ -2423,6 +2437,11 @@ static GuestSurface* GetBackBuffer()
     return g_backBuffer;
 }
 
+GuestSurface* Video::GetBackBuffer()
+{
+    return g_backBuffer;
+}
+
 static RenderFormat ConvertFormat(uint32_t format)
 {
     switch (format)
@@ -2591,13 +2610,13 @@ static void FlushViewport()
 
         if (renderingToBackBuffer)
         {
-            uint32_t width = g_swapChain->getWidth();
-            uint32_t height = g_swapChain->getHeight();
+            float width = g_swapChain->getWidth();
+            float height = g_swapChain->getHeight();
 
-            viewport.x *= width / 1280.0f;
-            viewport.y *= height / 720.0f;    
-            viewport.width *= width / 1280.0f;
-            viewport.height *= height / 720.0f;
+            viewport.x *= width / g_backBuffer->width;
+            viewport.y *= height / g_backBuffer->height;
+            viewport.width *= width / g_backBuffer->width;
+            viewport.height *= height / g_backBuffer->height;
         }
 
         if (viewport.minDepth > viewport.maxDepth)
@@ -2621,10 +2640,10 @@ static void FlushViewport()
             uint32_t width = g_swapChain->getWidth();
             uint32_t height = g_swapChain->getHeight();
 
-            scissorRect.left = scissorRect.left * width / 1280;
-            scissorRect.top = scissorRect.top * height / 720;
-            scissorRect.right = scissorRect.right * width / 1280;
-            scissorRect.bottom = scissorRect.bottom * height / 720;
+            scissorRect.left = scissorRect.left * width / g_backBuffer->width;
+            scissorRect.top = scissorRect.top * height / g_backBuffer->height;
+            scissorRect.right = scissorRect.right * width / g_backBuffer->width;
+            scissorRect.bottom = scissorRect.bottom * height / g_backBuffer->height;
         }
 
         commandList->setScissors(scissorRect);
