@@ -152,7 +152,7 @@ void MakeCsdProjectMidAsmHook(PPCRegister& r3, PPCRegister& r29)
     TraverseSceneNode(csdProject->m_pResource->pRootNode, name);
 }
 
-static constexpr float ORIGINAL_ASPECT_RATIO = 16.0f / 9.0f;
+static constexpr float ORIGINAL_ASPECT_RATIO = 4.0f / 3.0f;
 
 static float g_offsetX;
 static float g_offsetY;
@@ -167,8 +167,8 @@ static void ComputeOffsets(float width, float height)
     }
     else
     {
-        g_offsetX = 0.0f;
-        g_offsetY = 0.5f * (1280.0f / aspectRatio - 720.0f);
+        g_offsetX = 0.5f * (960.0f - 1280.0f); // width is locked to 960 in video.cpp
+        g_offsetY = 0.5f * (960.0f / aspectRatio - 720.0f);
     }
 }
 

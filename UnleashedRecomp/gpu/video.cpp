@@ -1334,7 +1334,7 @@ static void CreateImGuiBackend()
 #endif
 }
 
-static constexpr float ORIGINAL_ASPECT_RATIO = 16.0f / 9.0f;
+static constexpr float ORIGINAL_ASPECT_RATIO = 4.0 / 3.0f;
 
 static void CheckSwapChain()
 {
@@ -1360,8 +1360,8 @@ static void CheckSwapChain()
     }
     else
     {
-        g_backBuffer->width = 1280;
-        g_backBuffer->height = GameWindow::s_height * 1280 / GameWindow::s_width;
+        g_backBuffer->width = 960;
+        g_backBuffer->height = GameWindow::s_height * 960 / GameWindow::s_width;
     }
 }
 
