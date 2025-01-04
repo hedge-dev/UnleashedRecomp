@@ -156,6 +156,7 @@ static constexpr float ORIGINAL_ASPECT_RATIO = 4.0f / 3.0f;
 
 static float g_offsetX;
 static float g_offsetY;
+static float g_scale;
 
 static void ComputeOffsets(float width, float height)
 {
@@ -170,6 +171,9 @@ static void ComputeOffsets(float width, float height)
         g_offsetX = 0.5f * (960.0f - 1280.0f); // width is locked to 960 in video.cpp
         g_offsetY = 0.5f * (960.0f / aspectRatio - 720.0f);
     }
+
+    aspectRatio = std::clamp(aspectRatio, ORIGINAL_ASPECT_RATIO, 16.0f / 9.0f);
+    g_scale = ((aspectRatio * 720.0f) / 1280.0f) / sqrt((aspectRatio * 720.0f) / 1280.0f);
 }
 
 static class SDLEventListenerForCSD : public SDLEventListener
@@ -226,6 +230,8 @@ enum
     STRETCH_VERTICAL = 1 << 5,
 
     STRETCH = STRETCH_HORIZONTAL | STRETCH_VERTICAL,
+
+    SCALE = 1 << 6
 };
 
 static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
@@ -275,19 +281,19 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_pause/bg"), STRETCH },
 
     // ui_playscreen
-    { HashStr("ui_playscreen/player_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_playscreen/time_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_playscreen/score_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_playscreen/exp_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_playscreen/so_speed_gauge"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen/so_ringenagy_gauge"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen/gauge_frame"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen/ring_count"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen/ring_get"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen/add/speed_count"), ALIGN_RIGHT },
-    { HashStr("ui_playscreen/add/u_info"), ALIGN_BOTTOM_RIGHT },
-    { HashStr("ui_playscreen/add/medal_get_s"), ALIGN_BOTTOM_RIGHT },
-    { HashStr("ui_playscreen/add/medal_get_m"), ALIGN_BOTTOM_RIGHT },
+    { HashStr("ui_playscreen/player_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_playscreen/time_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_playscreen/score_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_playscreen/exp_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_playscreen/so_speed_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen/so_ringenagy_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen/gauge_frame"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen/ring_count"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen/ring_get"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen/add/speed_count"), ALIGN_RIGHT | SCALE },
+    { HashStr("ui_playscreen/add/u_info"), ALIGN_BOTTOM_RIGHT | SCALE },
+    { HashStr("ui_playscreen/add/medal_get_s"), ALIGN_BOTTOM_RIGHT | SCALE },
+    { HashStr("ui_playscreen/add/medal_get_m"), ALIGN_BOTTOM_RIGHT | SCALE },
 
     // ui_playscreen_ev
     { HashStr("ui_playscreen_ev/player_count"), ALIGN_TOP_LEFT },
@@ -462,6 +468,16 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             offsetX = g_offsetX * 2.0f;
         else if ((flags & ALIGN_LEFT) == 0)
             offsetX = g_offsetX;
+
+        if ((flags & SCALE) != 0)
+        {
+            scaleX = g_scale;
+
+            if ((flags & ALIGN_RIGHT) != 0)
+                offsetX += 1280.0f * (1.0f - scaleX);
+            else if ((flags & ALIGN_LEFT) == 0)
+                offsetX += 640.0f * (1.0f - scaleX);
+        }
     }
 
     if ((flags & STRETCH_VERTICAL) != 0)
@@ -474,6 +490,16 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             offsetY = g_offsetY * 2.0f;
         else if ((flags & ALIGN_TOP) == 0)
             offsetY = g_offsetY;
+
+        if ((flags & SCALE) != 0)
+        {
+            scaleY = g_scale;
+
+            if ((flags & ALIGN_BOTTOM) != 0)
+                offsetY += 720.0f * (1.0f - scaleY);
+            else if ((flags & ALIGN_TOP) == 0)
+                offsetY += 360.0f * (1.0f - scaleY);
+        }
     }
 
     for (size_t i = 0; i < ctx.r5.u32; i++)
