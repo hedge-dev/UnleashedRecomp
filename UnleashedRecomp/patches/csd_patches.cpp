@@ -230,6 +230,9 @@ enum
 
 static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
 {
+    // ui_balloon
+    { HashStr("ui_balloon/window/bg"), STRETCH },
+
     // ui_boss_gauge
     { HashStr("ui_boss_gauge/gauge_bg"), ALIGN_TOP_RIGHT },
     { HashStr("ui_boss_gauge/gauge_2"), ALIGN_TOP_RIGHT },
@@ -245,6 +248,9 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_exstage/energy/R_gauge_effect_2"), ALIGN_BOTTOM_RIGHT }, 
     { HashStr("ui_exstage/hit/hit_counter_bg"), ALIGN_RIGHT },
     { HashStr("ui_exstage/hit/hit_counter_num"), ALIGN_RIGHT },
+
+    // ui_gate
+    { HashStr("ui_gate/window/window_bg"), STRETCH },
 
     // ui_general
     { HashStr("ui_general/bg"), STRETCH },
@@ -263,6 +269,10 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
 
     // ui_misson
     { HashStr("ui_misson/bg"), STRETCH },
+    { HashStr("ui_misson/window/bg_B2/position/bg"), STRETCH },
+
+    // ui_pause
+    { HashStr("ui_pause/bg"), STRETCH },
 
     // ui_playscreen
     { HashStr("ui_playscreen/player_count"), ALIGN_TOP_LEFT },
@@ -334,10 +344,19 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_prov_playscreen/info_2"), ALIGN_TOP_LEFT },
     { HashStr("ui_prov_playscreen/ring_get_effect"), ALIGN_BOTTOM_LEFT },
 
-    // ui_saveicon
-    { HashStr("ui_saveicon/icon"), ALIGN_BOTTOM_RIGHT },
+    // ui_start
+    { HashStr("ui_start/Clear/position/bg/bg_1"), STRETCH },
+    { HashStr("ui_start/Clear/position/bg/bg_2"), STRETCH },   
+    { HashStr("ui_start/Start/img/bg/bg_1"), STRETCH },
+    { HashStr("ui_start/Start/img/bg/bg_2"), STRETCH },
+
+    // ui_status
+    { HashStr("ui_status/logo/logo/bg_position/c_1"), STRETCH_HORIZONTAL },
+    { HashStr("ui_status/logo/logo/bg_position/c_2"), STRETCH_HORIZONTAL },
+    { HashStr("ui_status/window/bg"), STRETCH },
 
     // ui_title
+    { HashStr("ui_title/bg/bg"), STRETCH },
     { HashStr("ui_title/bg/headr"), ALIGN_TOP | STRETCH_HORIZONTAL },
     { HashStr("ui_title/bg/footer"), ALIGN_BOTTOM | STRETCH_HORIZONTAL },
     { HashStr("ui_title/bg/position"), ALIGN_BOTTOM },
@@ -349,6 +368,7 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_townscreen/cam"), ALIGN_TOP_RIGHT },
 
     // ui_worldmap
+    { HashStr("ui_worldmap/contents/choices/cts_choices_bg"), STRETCH },
     { HashStr("ui_worldmap/contents/info/bg/cts_info_bg"), ALIGN_TOP_LEFT },
     { HashStr("ui_worldmap/contents/info/bg/info_bg_1"), ALIGN_TOP_LEFT },
     { HashStr("ui_worldmap/contents/info/img/info_img_1"), ALIGN_TOP_LEFT },
