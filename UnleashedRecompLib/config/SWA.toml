@@ -610,3 +610,13 @@ registers = ["r10", "r27"]
 name = "RenderCsdCastMidAsmHook"
 address = 0x830C6A98
 registers = ["r4"]
+
+[[midasm_hook]]
+name = "ComputeScreenPositionMidAsmHook"
+address = 0x82923204
+registers = ["f1", "f2"]
+
+[[midasm_hook]]
+name = "ComputeScreenPositionMidAsmHook"
+address = 0x82AD7914
+registers = ["f1", "f2"]

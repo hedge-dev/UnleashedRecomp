@@ -170,9 +170,6 @@ static void ComputeOffsets(float width, float height)
         g_offsetX = 0.0f;
         g_offsetY = 0.5f * (1280.0f / aspectRatio - 720.0f);
     }
-
-    *reinterpret_cast<be<float>*>(g_memory.Translate(0x8339C5D0)) = g_offsetX / 1280.0f;
-    *reinterpret_cast<be<float>*>(g_memory.Translate(0x8339C5D4)) = g_offsetY / 720.0f;
 }
 
 static class SDLEventListenerForCSD : public SDLEventListener
@@ -180,17 +177,35 @@ static class SDLEventListenerForCSD : public SDLEventListener
 public:
     void OnSDLEvent(SDL_Event* event) override
     {
-        if (!App::s_isInit || event->type != SDL_WINDOWEVENT || event->window.event != SDL_WINDOWEVENT_RESIZED)
-            return;
-
-        ComputeOffsets(event->window.data1, event->window.data2);
+        if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED)
+            ComputeOffsets(event->window.data1, event->window.data2);
     }
 } g_sdlEventListenerForCSD;
 
 // Chao::CSD::SetOffsets
+PPC_FUNC_IMPL(__imp__sub_830C0A78);
 PPC_FUNC(sub_830C0A78)
 {
+    __imp__sub_830C0A78(ctx, base);
+
     ComputeOffsets(GameWindow::s_width, GameWindow::s_height);
+}
+
+// SWA::CGameDocument::ComputeScreenPosition
+PPC_FUNC_IMPL(__imp__sub_8250FC70);
+PPC_FUNC(sub_8250FC70)
+{
+    __imp__sub_8250FC70(ctx, base);
+
+    auto position = reinterpret_cast<be<float>*>(base + ctx.r3.u32);
+    position[0] = position[0] - g_offsetX;
+    position[1] = position[1] - g_offsetY;
+}
+
+void ComputeScreenPositionMidAsmHook(PPCRegister& f1, PPCRegister& f2)
+{
+    f1.f64 -= g_offsetX;
+    f2.f64 -= g_offsetY;
 }
 
 enum
@@ -419,27 +434,25 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
 
     if ((flags & STRETCH_HORIZONTAL) != 0)
     {
-        offsetX = -g_offsetX;
         scaleX = backBuffer->width / 1280.0f;
     }
     else
     {
-        if ((flags & ALIGN_LEFT) != 0)
-            offsetX = -g_offsetX;
-        else if ((flags & ALIGN_RIGHT) != 0)
+        if ((flags & ALIGN_RIGHT) != 0)
+            offsetX = g_offsetX * 2.0f;
+        else if ((flags & ALIGN_LEFT) == 0)
             offsetX = g_offsetX;
     }
 
     if ((flags & STRETCH_VERTICAL) != 0)
     {
-        offsetY = -g_offsetY;
         scaleY = backBuffer->height / 720.0f;
     }
     else
     {
-        if ((flags & ALIGN_TOP) != 0)
-            offsetY = -g_offsetY;
-        else if ((flags & ALIGN_BOTTOM) != 0)
+        if ((flags & ALIGN_BOTTOM) != 0)
+            offsetY = g_offsetY * 2.0f;
+        else if ((flags & ALIGN_TOP) == 0)
             offsetY = g_offsetY;
     }
 
@@ -447,8 +460,8 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     {
         auto position = reinterpret_cast<be<float>*>(stack + i * stride);
 
-        float x = (position[0] + offsetX) * scaleX;
-        float y = (position[1] + offsetY) * scaleY;
+        float x = offsetX + position[0] * scaleX;
+        float y = offsetY + position[1] * scaleY;
 
         position[0] = round(x / backBuffer->width * GameWindow::s_width) / GameWindow::s_width * backBuffer->width;
         position[1] = round(y / backBuffer->height * GameWindow::s_height) / GameWindow::s_height * backBuffer->height;
@@ -473,16 +486,34 @@ PPC_FUNC(sub_825E2E88)
     Draw(ctx, base, __imp__sub_825E2E88, 0xC);
 }
 
+// Hedgehog::MirageDebug::SetScissorRect
+PPC_FUNC_IMPL(__imp__sub_82E16C70);
+PPC_FUNC(sub_82E16C70)
+{
+    auto backBuffer = Video::GetBackBuffer();
+    auto scissorRect = reinterpret_cast<GuestRect*>(base + ctx.r4.u32);
+
+    scissorRect->left = scissorRect->left + g_offsetX;
+    scissorRect->top = scissorRect->top + g_offsetY;
+    scissorRect->right = scissorRect->right + g_offsetX;
+    scissorRect->bottom = scissorRect->bottom + g_offsetY;
+
+    __imp__sub_82E16C70(ctx, base);
+}
+
 // Hedgehog::MirageDebug::CPrimitive2D::Draw
 PPC_FUNC_IMPL(__imp__sub_830D1EF0);
 PPC_FUNC(sub_830D1EF0)
 {
-    ctx.r1.u32 -= 8;
-    auto stack = reinterpret_cast<be<uint32_t>*>(base + ctx.r1.u32);
-    auto backBuffer = Video::GetBackBuffer();
-    stack[0] = backBuffer->width;
-    stack[1] = backBuffer->height;
-    ctx.r5.u32 = ctx.r1.u32;
     __imp__sub_830D1EF0(ctx, base);
-    ctx.r1.u32 += 8;
+
+    auto backBuffer = Video::GetBackBuffer();
+    auto position = reinterpret_cast<be<float>*>(base + ctx.r4.u32);
+
+    for (size_t i = 0; i < 4; i++)
+    {
+        position[0] = position[0] * 1280.0f / backBuffer->width;
+        position[1] = position[1] * 720.0f / backBuffer->height;
+        position += 7;
+    }
 }
