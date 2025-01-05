@@ -19,19 +19,18 @@ void CameraFieldOfViewMidAsmHook(PPCRegister& r31, PPCRegister& f31)
 {
     auto camera = (SWA::CCamera*)g_memory.Translate(r31.u32);
 
-    // Interpolate to the original 4:3 field of view for narrow aspect ratios.
-    if (camera->m_HorzAspectRatio < ORIGINAL_WIDESCREEN_ASPECT_RATIO)
+    // Replicate the original incorrect field of view formula if requested.
+    if (Config::AspectRatio == EAspectRatio::OriginalSquare)
     {
-        float factor = std::clamp((camera->m_HorzAspectRatio - ORIGINAL_ASPECT_RATIO) / (ORIGINAL_WIDESCREEN_ASPECT_RATIO - ORIGINAL_ASPECT_RATIO), 0.0f, 1.0f);
-        factor = ORIGINAL_ASPECT_RATIO + (1.0f - ORIGINAL_ASPECT_RATIO) * factor;
-
-        f31.f64 *= factor;
-
-        // For tall aspect ratios, use proper VERT+.
-        if (camera->m_HorzAspectRatio < ORIGINAL_ASPECT_RATIO)
+        if (abs(camera->m_HorzAspectRatio - ORIGINAL_ASPECT_RATIO) < 0.001f)
         {
-            f31.f64 = 2.0 * atan(tan(0.5 * f31.f64) / camera->m_HorzAspectRatio * ORIGINAL_ASPECT_RATIO);
+            f31.f64 *= ORIGINAL_ASPECT_RATIO;
         }
+    }
+    // Use proper VERT+ otherwise for narrow aspect ratios.
+    else if (camera->m_HorzAspectRatio < ORIGINAL_WIDESCREEN_ASPECT_RATIO)
+    {
+        f31.f64 = 2.0 * atan(tan(0.5 * f31.f64) / camera->m_HorzAspectRatio * ORIGINAL_WIDESCREEN_ASPECT_RATIO);
     }
 }
 
