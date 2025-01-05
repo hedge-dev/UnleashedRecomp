@@ -100,10 +100,13 @@ inline float Scale(float size)
 {
     auto& io = ImGui::GetIO();
 
-    if (io.DisplaySize.x > io.DisplaySize.y)
-        return size * std::max(1.0f, io.DisplaySize.y / 720.0f);
+    constexpr float ORIGINAL_ASPECT_RATIO = 4.0f / 3.0f;
+    float aspectRatio = io.DisplaySize.x / io.DisplaySize.y;
+
+    if (aspectRatio >= ORIGINAL_ASPECT_RATIO)
+        return size * (io.DisplaySize.y / 720.0f);
     else
-        return size * std::max(1.0f, io.DisplaySize.x / 1280.0f);
+        return size * (io.DisplaySize.x / 960.0f);
 }
 
 // Not aspect ratio aware. Will stretch.

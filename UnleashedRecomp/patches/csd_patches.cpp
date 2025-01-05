@@ -153,10 +153,13 @@ void MakeCsdProjectMidAsmHook(PPCRegister& r3, PPCRegister& r29)
 }
 
 static constexpr float ORIGINAL_ASPECT_RATIO = 4.0f / 3.0f;
+static constexpr float ORIGINAL_WIDESCREEN_ASPECT_RATIO = 16.0f / 9.0f;
 
 static float g_offsetX;
 static float g_offsetY;
 static float g_scale;
+
+static float g_worldMapOffset;
 
 static void ComputeOffsets(float width, float height)
 {
@@ -172,8 +175,9 @@ static void ComputeOffsets(float width, float height)
         g_offsetY = 0.5f * (960.0f / aspectRatio - 720.0f);
     }
 
-    aspectRatio = std::clamp(aspectRatio, ORIGINAL_ASPECT_RATIO, 16.0f / 9.0f);
+    aspectRatio = std::clamp(aspectRatio, ORIGINAL_ASPECT_RATIO, ORIGINAL_WIDESCREEN_ASPECT_RATIO);
     g_scale = ((aspectRatio * 720.0f) / 1280.0f) / sqrt((aspectRatio * 720.0f) / 1280.0f);
+    g_worldMapOffset = std::clamp((aspectRatio - ORIGINAL_ASPECT_RATIO) / (ORIGINAL_WIDESCREEN_ASPECT_RATIO - ORIGINAL_ASPECT_RATIO), 0.0f, 1.0f);
 }
 
 static class SDLEventListenerForCSD : public SDLEventListener
@@ -212,6 +216,57 @@ void ComputeScreenPositionMidAsmHook(PPCRegister& f1, PPCRegister& f2)
     f2.f64 -= g_offsetY;
 }
 
+void WorldMapInfoMidAsmHook(PPCRegister& r4)
+{
+    // Prevent the game from snapping "cts_parts_sun_moon"
+    // to "cts_guide_icon" automatically, we will do this ourselves.
+    r4.u32 = 0x8200A621;
+}
+
+// SWA::CTitleStateWorldMap::Update
+PPC_FUNC_IMPL(__imp__sub_8258B558);
+PPC_FUNC(sub_8258B558)
+{
+    auto r3 = ctx.r3;
+    __imp__sub_8258B558(ctx, base);
+
+    uint32_t worldMapSimpleInfo = PPC_LOAD_U32(r3.u32 + 0x70);
+
+    auto setPosition = [&](uint32_t rcPtr, float offsetX = 0.0f, float offsetY = 0.0f)
+        {
+            uint32_t scene = PPC_LOAD_U32(rcPtr + 0x4);
+            if (scene != NULL)
+            {
+                scene = PPC_LOAD_U32(scene + 0x4);
+                if (scene != NULL)
+                {
+                    ctx.r3.u32 = scene;
+                    ctx.f1.f64 = offsetX + g_worldMapOffset * 140.0f;
+                    ctx.f2.f64 = offsetY;
+                    sub_830BB3D0(ctx, base);
+                }
+            }
+        };
+
+    setPosition(worldMapSimpleInfo + 0x2C, 299.0f, -178.0f);
+    setPosition(worldMapSimpleInfo + 0x34);
+    setPosition(worldMapSimpleInfo + 0x4C);
+
+    for (uint32_t it = PPC_LOAD_U32(worldMapSimpleInfo + 0x20); it != PPC_LOAD_U32(worldMapSimpleInfo + 0x24); it += 8)
+        setPosition(it);
+
+    uint32_t menuTextBox = PPC_LOAD_U32(worldMapSimpleInfo + 0x5C);
+    if (menuTextBox != NULL)
+    {
+        uint32_t textBox = PPC_LOAD_U32(menuTextBox + 0x4);
+        if (textBox != NULL)
+        {
+            float value = 708.0f + g_worldMapOffset * 140.0f;
+            PPC_STORE_U32(textBox + 0x38, reinterpret_cast<uint32_t&>(value));
+        }
+    }
+}
+
 enum
 {
     ALIGN_CENTER = 0 << 0,
@@ -231,7 +286,9 @@ enum
 
     STRETCH = STRETCH_HORIZONTAL | STRETCH_VERTICAL,
 
-    SCALE = 1 << 6
+    SCALE = 1 << 6,
+
+    WORLD_MAP = 1 << 7
 };
 
 static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
@@ -375,16 +432,16 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
 
     // ui_worldmap
     { HashStr("ui_worldmap/contents/choices/cts_choices_bg"), STRETCH },
-    { HashStr("ui_worldmap/contents/info/bg/cts_info_bg"), ALIGN_TOP_LEFT },
-    { HashStr("ui_worldmap/contents/info/bg/info_bg_1"), ALIGN_TOP_LEFT },
-    { HashStr("ui_worldmap/contents/info/img/info_img_1"), ALIGN_TOP_LEFT },
-    { HashStr("ui_worldmap/contents/info/img/info_img_2"), ALIGN_TOP_LEFT },
-    { HashStr("ui_worldmap/contents/info/img/info_img_3"), ALIGN_TOP_LEFT },
-    { HashStr("ui_worldmap/contents/info/img/info_img_4"), ALIGN_TOP_LEFT },
+    { HashStr("ui_worldmap/contents/info/bg/cts_info_bg"), ALIGN_TOP_LEFT | WORLD_MAP },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1"), ALIGN_TOP_LEFT | WORLD_MAP },
+    { HashStr("ui_worldmap/contents/info/img/info_img_1"), ALIGN_TOP_LEFT | WORLD_MAP },
+    { HashStr("ui_worldmap/contents/info/img/info_img_2"), ALIGN_TOP_LEFT | WORLD_MAP },
+    { HashStr("ui_worldmap/contents/info/img/info_img_3"), ALIGN_TOP_LEFT | WORLD_MAP },
+    { HashStr("ui_worldmap/contents/info/img/info_img_4"), ALIGN_TOP_LEFT | WORLD_MAP },
     { HashStr("ui_worldmap/footer/worldmap_footer_bg"), ALIGN_BOTTOM },
     { HashStr("ui_worldmap/footer/worldmap_footer_img_A"), ALIGN_BOTTOM },
     { HashStr("ui_worldmap/header/worldmap_header_bg"), ALIGN_TOP },
-    { HashStr("ui_worldmap/header/worldmap_header_img"), ALIGN_TOP_LEFT },
+    { HashStr("ui_worldmap/header/worldmap_header_img"), ALIGN_TOP_LEFT | WORLD_MAP },
 };
 
 static std::optional<uint32_t> FindFlags(uint32_t data)
@@ -477,6 +534,12 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
                 offsetX += 1280.0f * (1.0f - scaleX);
             else if ((flags & ALIGN_LEFT) == 0)
                 offsetX += 640.0f * (1.0f - scaleX);
+        }
+
+        if ((flags & WORLD_MAP) != 0)
+        {
+            if ((flags & ALIGN_LEFT) != 0)
+                offsetX += (1.0f - g_worldMapOffset) * -20.0f;
         }
     }
 

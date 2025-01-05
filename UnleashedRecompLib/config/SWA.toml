@@ -620,3 +620,8 @@ registers = ["f1", "f2"]
 name = "ComputeScreenPositionMidAsmHook"
 address = 0x82AD7914
 registers = ["f1", "f2"]
+
+[[midasm_hook]]
+name = "WorldMapInfoMidAsmHook"
+address = 0x8257AF34
+registers = ["r4"]
