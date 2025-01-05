@@ -1,14 +1,20 @@
 #include <ui/options_menu_thumbnails.h>
 #include <decompressor.h>
+#include <hid/hid_detail.h>
 
 // TODO (Hyper): lower the resolution of these textures once final.
 #include <res/images/options_menu/thumbnails/achievement_notifications.dds.h>
 #include <res/images/options_menu/thumbnails/allow_background_input.dds.h>
-#include <res/images/options_menu/thumbnails/antialiasing.dds.h>
+#include <res/images/options_menu/thumbnails/allow_dpad_movement.dds.h>
+#include <res/images/options_menu/thumbnails/antialiasing_none.dds.h>
+#include <res/images/options_menu/thumbnails/antialiasing_2x.dds.h>
+#include <res/images/options_menu/thumbnails/antialiasing_4x.dds.h>
+#include <res/images/options_menu/thumbnails/antialiasing_8x.dds.h>
 #include <res/images/options_menu/thumbnails/aspect_ratio.dds.h>
 #include <res/images/options_menu/thumbnails/battle_theme.dds.h>
 #include <res/images/options_menu/thumbnails/brightness.dds.h>
-#include <res/images/options_menu/thumbnails/control_tutorial.dds.h>
+#include <res/images/options_menu/thumbnails/control_tutorial_xb.dds.h>
+#include <res/images/options_menu/thumbnails/control_tutorial_ps.dds.h>
 #include <res/images/options_menu/thumbnails/controller_icons.dds.h>
 #include <res/images/options_menu/thumbnails/default.dds.h>
 #include <res/images/options_menu/thumbnails/effects_volume.dds.h>
@@ -55,6 +61,7 @@ static std::unordered_map<std::string_view, std::unique_ptr<GuestTexture>> g_nam
 static std::unordered_map<const IConfigDef*, std::unique_ptr<GuestTexture>> g_configThumbnails;
 
 static VALUE_THUMBNAIL_MAP(ETimeOfDayTransition) g_timeOfDayTransitionThumbnails;
+static VALUE_THUMBNAIL_MAP(EAntiAliasing) g_msaaAntiAliasingThumbnails;
 static VALUE_THUMBNAIL_MAP(bool) g_transparencyAntiAliasingThumbnails;
 static VALUE_THUMBNAIL_MAP(EShadowResolution) g_shadowResolutionThumbnails;
 static VALUE_THUMBNAIL_MAP(EGITextureFiltering) g_giTextureFilteringThumbnails;
@@ -66,12 +73,13 @@ void LoadThumbnails()
 {
     g_namedThumbnails["Default"] = LOAD_ZSTD_TEXTURE(g_default);
     g_namedThumbnails["WindowSize"] = LOAD_ZSTD_TEXTURE(g_window_size);
+    g_namedThumbnails["ControlTutorialXB"] = LOAD_ZSTD_TEXTURE(g_control_tutorial_xb);
+    g_namedThumbnails["ControlTutorialPS"] = LOAD_ZSTD_TEXTURE(g_control_tutorial_ps);
 
     g_configThumbnails[&Config::Language] = LOAD_ZSTD_TEXTURE(g_language);
     g_configThumbnails[&Config::VoiceLanguage] = LOAD_ZSTD_TEXTURE(g_voice_language);
     g_configThumbnails[&Config::Subtitles] = LOAD_ZSTD_TEXTURE(g_subtitles);
     g_configThumbnails[&Config::Hints] = LOAD_ZSTD_TEXTURE(g_hints);
-    g_configThumbnails[&Config::ControlTutorial] = LOAD_ZSTD_TEXTURE(g_control_tutorial);
     g_configThumbnails[&Config::AchievementNotifications] = LOAD_ZSTD_TEXTURE(g_achievement_notifications);
 
     g_timeOfDayTransitionThumbnails[ETimeOfDayTransition::Xbox] = LOAD_ZSTD_TEXTURE(g_time_of_day_transition_xbox);
@@ -95,7 +103,11 @@ void LoadThumbnails()
     g_configThumbnails[&Config::VSync] = LOAD_ZSTD_TEXTURE(g_vsync);
     g_configThumbnails[&Config::FPS] = LOAD_ZSTD_TEXTURE(g_fps);
     g_configThumbnails[&Config::Brightness] = LOAD_ZSTD_TEXTURE(g_brightness);
-    g_configThumbnails[&Config::AntiAliasing] = LOAD_ZSTD_TEXTURE(g_antialiasing);
+
+    g_msaaAntiAliasingThumbnails[EAntiAliasing::None] = LOAD_ZSTD_TEXTURE(g_antialiasing_none);
+    g_msaaAntiAliasingThumbnails[EAntiAliasing::MSAA2x] = LOAD_ZSTD_TEXTURE(g_antialiasing_2x);
+    g_msaaAntiAliasingThumbnails[EAntiAliasing::MSAA4x] = LOAD_ZSTD_TEXTURE(g_antialiasing_4x);
+    g_msaaAntiAliasingThumbnails[EAntiAliasing::MSAA8x] = LOAD_ZSTD_TEXTURE(g_antialiasing_8x);
 
     g_transparencyAntiAliasingThumbnails[false] = LOAD_ZSTD_TEXTURE(g_transparency_antialiasing_false);
     g_transparencyAntiAliasingThumbnails[true] = LOAD_ZSTD_TEXTURE(g_transparency_antialiasing_true);
@@ -157,9 +169,22 @@ GuestTexture* GetThumbnail(const IConfigDef* cfg)
     {
         auto texture = g_namedThumbnails["Default"].get();
 
+        if (cfg == &Config::ControlTutorial)
+        {
+            bool isPlayStation = Config::ControllerIcons == EControllerIcons::PlayStation;
+
+            if (Config::ControllerIcons == EControllerIcons::Auto)
+                isPlayStation = hid::detail::g_inputDeviceController == hid::detail::EInputDevice::PlayStation;
+
+            texture = isPlayStation ? g_namedThumbnails["ControlTutorialPS"].get() : g_namedThumbnails["ControlTutorialXB"].get();
+        }
         if (cfg == &Config::TimeOfDayTransition)
         {
             TryGetValueThumbnail<ETimeOfDayTransition>(cfg, &g_timeOfDayTransitionThumbnails, &texture);
+        }
+        else if (cfg == &Config::AntiAliasing)
+        {
+            TryGetValueThumbnail<EAntiAliasing>(cfg, &g_msaaAntiAliasingThumbnails, &texture);
         }
         else if (cfg == &Config::TransparencyAntiAliasing)
         {
