@@ -91,16 +91,14 @@ registers = ["r11"]
 
 [[midasm_hook]]
 name = "CameraAspectRatioMidAsmHook"
-address = 0x82468E84
-registers = ["r31"]
-jump_address_on_true = 0x82468E88
-jump_address_on_false = 0x82468EE0
+address = 0x82468E78
+registers = ["r30", "r31"]
 
 [[midasm_hook]]
-name = "CameraBoostAspectRatioMidAsmHook"
-address = 0x8246BDA0
-registers = ["r31", "f0", "f10", "f12"]
-jump_address_on_true = 0x8246BDAC
+name = "CameraFieldOfViewMidAsmHook"
+address = 0x82468EDC
+registers = ["r31", "f31"]
+jump_address = 0x82468EE0
 
 [[midasm_hook]]
 name = "ResetScoreOnRestartMidAsmHook"
