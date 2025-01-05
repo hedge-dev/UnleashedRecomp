@@ -152,11 +152,11 @@ void MakeCsdProjectMidAsmHook(PPCRegister& r3, PPCRegister& r29)
     TraverseSceneNode(csdProject->m_pResource->pRootNode, name);
 }
 
-static constexpr float ORIGINAL_ASPECT_RATIO = 4.0f / 3.0f;
-static constexpr float ORIGINAL_WIDESCREEN_ASPECT_RATIO = 16.0f / 9.0f;
-static constexpr float INV_WIDESCREEN_ASPECT_RATIO = 1.0f / ORIGINAL_WIDESCREEN_ASPECT_RATIO;
-static constexpr float INV_WIDESCREEN_SCALE = 1280.0f / 960.0f;
-static constexpr float SQUARE_SCALE = 960.0f / 1280.0f;
+static constexpr float NARROW_ASPECT_RATIO = 4.0f / 3.0f;
+static constexpr float WIDE_ASPECT_RATIO = 16.0f / 9.0f;
+static constexpr float STEAM_DECK_ASPECT_RATIO = 16.0f / 10.0f;
+static constexpr float INV_WIDE_ASPECT_RATIO = 1.0f / WIDE_ASPECT_RATIO;
+static constexpr float INV_WIDE_SCALE = 1280.0f / 960.0f;
 
 static float g_offsetX;
 static float g_offsetY;
@@ -169,16 +169,19 @@ static void ComputeOffsets(float width, float height)
     float aspectRatio = width / height;
     g_scale = 1.0f;
 
-    if (aspectRatio >= ORIGINAL_ASPECT_RATIO)
+    if (aspectRatio >= NARROW_ASPECT_RATIO)
     {
         // height is locked to 720 in this case 
         g_offsetX = 0.5f * (aspectRatio * 720.0f - 1280.0f);
         g_offsetY = 0.0f;
 
-        // narrow resolutions will zoom the UI in, but we 
-        // want the gameplay UI to retain the same scale
-        if (aspectRatio < ORIGINAL_WIDESCREEN_ASPECT_RATIO)
-            g_scale = aspectRatio / ORIGINAL_WIDESCREEN_ASPECT_RATIO;
+        // narrow resolutions will zoom the UI in, but we want the gameplay
+        // UI to retain the same scale at Steam Deck's aspect ratio
+        if (aspectRatio < WIDE_ASPECT_RATIO)
+        {
+            float factor = std::clamp((aspectRatio - NARROW_ASPECT_RATIO) / (STEAM_DECK_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
+            g_scale = 1.0f + factor * (aspectRatio / WIDE_ASPECT_RATIO - 1.0f);
+        }
     }
     else
     {
@@ -187,18 +190,18 @@ static void ComputeOffsets(float width, float height)
         g_offsetY = 0.5f * (960.0f / aspectRatio - 720.0f);
 
         // scale to 16:9 as the aspect ratio becomes 9:16
-        float factor = std::clamp((aspectRatio - INV_WIDESCREEN_ASPECT_RATIO) / (ORIGINAL_ASPECT_RATIO - INV_WIDESCREEN_ASPECT_RATIO), 0.0f, 1.0f);
-        g_scale = INV_WIDESCREEN_SCALE + factor * (SQUARE_SCALE - INV_WIDESCREEN_SCALE);
+        float factor = std::clamp((aspectRatio - INV_WIDE_ASPECT_RATIO) / (NARROW_ASPECT_RATIO - INV_WIDE_ASPECT_RATIO), 0.0f, 1.0f);
+        g_scale = INV_WIDE_SCALE + factor * (1.0f - INV_WIDE_SCALE);
     } 
 
     // use original 4:3 scaling if requested
-    if (Config::AspectRatio == EAspectRatio::OriginalSquare)
+    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
     {
-        aspectRatio = std::clamp(aspectRatio, ORIGINAL_ASPECT_RATIO, ORIGINAL_WIDESCREEN_ASPECT_RATIO);
+        aspectRatio = std::clamp(aspectRatio, NARROW_ASPECT_RATIO, WIDE_ASPECT_RATIO);
         g_scale = ((aspectRatio * 720.0f) / 1280.0f) / sqrt((aspectRatio * 720.0f) / 1280.0f);
     }
 
-    g_worldMapOffset = std::clamp((aspectRatio - ORIGINAL_ASPECT_RATIO) / (ORIGINAL_WIDESCREEN_ASPECT_RATIO - ORIGINAL_ASPECT_RATIO), 0.0f, 1.0f);
+    g_worldMapOffset = std::clamp((aspectRatio - NARROW_ASPECT_RATIO) / (WIDE_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
 }
 
 static class SDLEventListenerForCSD : public SDLEventListener

@@ -188,7 +188,8 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
     {
         ELanguage::English,
         {
-            { EAspectRatio::Auto, { "AUTO", "Auto: the aspect ratio will dynamically adjust to the window size." } }
+            { EAspectRatio::Auto, { "AUTO", "Auto: the aspect ratio will dynamically adjust to the window size." } },
+            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "" } }
         }
     }
 };

@@ -20,7 +20,7 @@ void CameraFieldOfViewMidAsmHook(PPCRegister& r31, PPCRegister& f31)
     auto camera = (SWA::CCamera*)g_memory.Translate(r31.u32);
 
     // Replicate the original incorrect field of view formula if requested.
-    if (Config::AspectRatio == EAspectRatio::OriginalSquare)
+    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
     {
         if (abs(camera->m_HorzAspectRatio - ORIGINAL_ASPECT_RATIO) < 0.001f)
         {

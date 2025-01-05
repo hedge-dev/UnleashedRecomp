@@ -148,17 +148,17 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EWindowState)
 enum class EAspectRatio : uint32_t
 {
     Auto,
-    Widescreen,
-    Square,
-    OriginalSquare
+    Wide,
+    Narrow,
+    OriginalNarrow
 };
 
 CONFIG_DEFINE_ENUM_TEMPLATE(EAspectRatio)
 {
     { "Auto", EAspectRatio::Auto },
-    { "16:9", EAspectRatio::Widescreen },
-    { "4:3",  EAspectRatio::Square },
-    { "Original 4:3",  EAspectRatio::OriginalSquare },
+    { "16:9", EAspectRatio::Wide },
+    { "4:3",  EAspectRatio::Narrow },
+    { "Original 4:3",  EAspectRatio::OriginalNarrow },
 };
 
 enum class ETripleBuffering : uint32_t
