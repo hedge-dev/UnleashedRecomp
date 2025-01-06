@@ -339,47 +339,60 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
 {
     // ui_balloon
     { HashStr("ui_balloon/window/bg"), STRETCH },
+    { HashStr("ui_balloon/window/footer"), ALIGN_BOTTOM },
 
     // ui_boss_gauge
-    { HashStr("ui_boss_gauge/gauge_bg"), ALIGN_TOP_RIGHT },
-    { HashStr("ui_boss_gauge/gauge_2"), ALIGN_TOP_RIGHT },
-    { HashStr("ui_boss_gauge/gauge_1"), ALIGN_TOP_RIGHT },
-    { HashStr("ui_boss_gauge/gauge_breakpoint"), ALIGN_TOP_RIGHT },
+    { HashStr("ui_boss_gauge/gauge_bg"), ALIGN_TOP_RIGHT | SCALE },
+    { HashStr("ui_boss_gauge/gauge_2"), ALIGN_TOP_RIGHT | SCALE },
+    { HashStr("ui_boss_gauge/gauge_1"), ALIGN_TOP_RIGHT | SCALE },
+    { HashStr("ui_boss_gauge/gauge_breakpoint"), ALIGN_TOP_RIGHT | SCALE },
 
     // ui_exstage
-    { HashStr("ui_exstage/shield/L_gauge"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_exstage/shield/L_gauge_effect"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_exstage/shield/L_gauge_effect_2"), ALIGN_BOTTOM_LEFT },   
-    { HashStr("ui_exstage/energy/R_gauge"), ALIGN_BOTTOM_RIGHT },
-    { HashStr("ui_exstage/energy/R_gauge_effect"), ALIGN_BOTTOM_RIGHT },
-    { HashStr("ui_exstage/energy/R_gauge_effect_2"), ALIGN_BOTTOM_RIGHT }, 
-    { HashStr("ui_exstage/hit/hit_counter_bg"), ALIGN_RIGHT },
-    { HashStr("ui_exstage/hit/hit_counter_num"), ALIGN_RIGHT },
+    { HashStr("ui_exstage/shield/L_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_exstage/shield/L_gauge_effect"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_exstage/shield/L_gauge_effect_2"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_exstage/energy/R_gauge"), ALIGN_BOTTOM_RIGHT | SCALE },
+    { HashStr("ui_exstage/energy/R_gauge_effect"), ALIGN_BOTTOM_RIGHT | SCALE },
+    { HashStr("ui_exstage/energy/R_gauge_effect_2"), ALIGN_BOTTOM_RIGHT | SCALE },
+    { HashStr("ui_exstage/hit/hit_counter_bg"), ALIGN_RIGHT | SCALE },
+    { HashStr("ui_exstage/hit/hit_counter_num"), ALIGN_RIGHT | SCALE },
 
     // ui_gate
+    { HashStr("ui_gate/footer/status_footer"), ALIGN_BOTTOM },
+    { HashStr("ui_gate/header/status_title"), ALIGN_TOP },
     { HashStr("ui_gate/window/window_bg"), STRETCH },
 
     // ui_general
     { HashStr("ui_general/bg"), STRETCH },
+    { HashStr("ui_general/footer"), ALIGN_BOTTOM },
+
+    // ui_itemresult
+    { HashStr("ui_itemresult/footer/result_footer"), ALIGN_BOTTOM },
+    { HashStr("ui_itemresult/main/iresult_title"), ALIGN_TOP },
 
     // ui_loading
     { HashStr("ui_loading/bg_1"), STRETCH },
     { HashStr("ui_loading/bg_2"), STRETCH },
 
     // ui_missionscreen
-    { HashStr("ui_missionscreen/player_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_missionscreen/time_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_missionscreen/score_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_missionscreen/item_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_missionscreen/laptime_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_missionscreen/lap_count"), ALIGN_TOP_RIGHT },
+    { HashStr("ui_missionscreen/player_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_missionscreen/time_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_missionscreen/score_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_missionscreen/item_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_missionscreen/laptime_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_missionscreen/lap_count"), ALIGN_TOP_RIGHT | SCALE },
 
     // ui_misson
     { HashStr("ui_misson/bg"), STRETCH },
+    { HashStr("ui_misson/footer/footer_B"), ALIGN_BOTTOM },
+    { HashStr("ui_misson/header/misson_title_B"), ALIGN_TOP },
     { HashStr("ui_misson/window/bg_B2/position/bg"), STRETCH },
 
     // ui_pause
     { HashStr("ui_pause/bg"), STRETCH },
+    { HashStr("ui_pause/footer/footer_A"), ALIGN_BOTTOM },
+    { HashStr("ui_pause/footer/footer_B"), ALIGN_BOTTOM },
+    { HashStr("ui_pause/header/status_title"), ALIGN_TOP },
 
     // ui_playscreen
     { HashStr("ui_playscreen/player_count"), ALIGN_TOP_LEFT | SCALE },
@@ -397,59 +410,72 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_playscreen/add/medal_get_m"), ALIGN_BOTTOM_RIGHT | SCALE },
 
     // ui_playscreen_ev
-    { HashStr("ui_playscreen_ev/player_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_playscreen_ev/score_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_playscreen_ev/ring_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_playscreen_ev/ring_get"), ALIGN_TOP_LEFT },
-    { HashStr("ui_playscreen_ev/exp_count"), ALIGN_TOP_LEFT },
-    { HashStr("ui_playscreen_ev/add/u_info"), ALIGN_BOTTOM_RIGHT },
-    { HashStr("ui_playscreen_ev/add/medal_get_s"), ALIGN_BOTTOM_RIGHT },
-    { HashStr("ui_playscreen_ev/add/medal_get_m"), ALIGN_BOTTOM_RIGHT },  
-    { HashStr("ui_playscreen_ev/gauge/unleash_bg"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/life_bg"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/unleash_body"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/unleash_bar_1"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/unleash_gauge"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/unleash_gauge_effect_2"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/unleash_gauge_effect"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/unleash_bar_2"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/life"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield_position"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_01"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_02"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_03"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_04"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_05"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_06"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_07"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_08"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_09"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_10"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_11"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_12"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_13"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_14"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_15"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_playscreen_ev/player_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/score_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/ring_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/ring_get"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/exp_count"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/add/u_info"), ALIGN_BOTTOM_RIGHT | SCALE },
+    { HashStr("ui_playscreen_ev/add/medal_get_s"), ALIGN_BOTTOM_RIGHT | SCALE },
+    { HashStr("ui_playscreen_ev/add/medal_get_m"), ALIGN_BOTTOM_RIGHT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/unleash_bg"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/life_bg"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/unleash_body"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/unleash_bar_1"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/unleash_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/unleash_gauge_effect_2"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/unleash_gauge_effect"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/unleash_bar_2"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/life"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield_position"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_01"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_02"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_03"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_04"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_05"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_06"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_07"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_08"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_09"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_10"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_11"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_12"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_13"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_14"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_15"), ALIGN_BOTTOM_LEFT | SCALE },
 
     // ui_playscreen_ev_hit
-    { HashStr("ui_playscreen_ev_hit/hit_counter_bg"), ALIGN_RIGHT },
-    { HashStr("ui_playscreen_ev_hit/hit_counter_num"), ALIGN_RIGHT },
-    { HashStr("ui_playscreen_ev_hit/hit_counter_txt_1"), ALIGN_RIGHT },
-    { HashStr("ui_playscreen_ev_hit/hit_counter_txt_2"), ALIGN_RIGHT },
-    { HashStr("ui_playscreen_ev_hit/chance_attack"), ALIGN_RIGHT },
+    { HashStr("ui_playscreen_ev_hit/hit_counter_bg"), ALIGN_RIGHT | SCALE },
+    { HashStr("ui_playscreen_ev_hit/hit_counter_num"), ALIGN_RIGHT | SCALE },
+    { HashStr("ui_playscreen_ev_hit/hit_counter_txt_1"), ALIGN_RIGHT | SCALE },
+    { HashStr("ui_playscreen_ev_hit/hit_counter_txt_2"), ALIGN_RIGHT | SCALE },
+    { HashStr("ui_playscreen_ev_hit/chance_attack"), ALIGN_RIGHT | SCALE },
 
     // ui_playscreen_su
-    { HashStr("ui_playscreen_su/su_sonic_gauge"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_su/gaia_gauge"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_playscreen_su/footer"), ALIGN_BOTTOM_RIGHT },
+    { HashStr("ui_playscreen_su/su_sonic_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_su/gaia_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_su/footer"), ALIGN_BOTTOM_RIGHT | SCALE },
 
     // ui_prov_playscreen
-    { HashStr("ui_prov_playscreen/so_speed_gauge"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_prov_playscreen/so_ringenagy_gauge"), ALIGN_BOTTOM_LEFT },
-    { HashStr("ui_prov_playscreen/bg"), ALIGN_TOP_LEFT },
-    { HashStr("ui_prov_playscreen/info_1"), ALIGN_TOP_LEFT },
-    { HashStr("ui_prov_playscreen/info_2"), ALIGN_TOP_LEFT },
-    { HashStr("ui_prov_playscreen/ring_get_effect"), ALIGN_BOTTOM_LEFT },
+    { HashStr("ui_prov_playscreen/so_speed_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_prov_playscreen/so_ringenagy_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_prov_playscreen/bg"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_prov_playscreen/info_1"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_prov_playscreen/info_2"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_prov_playscreen/ring_get_effect"), ALIGN_BOTTOM_LEFT | SCALE },
+
+    // ui_result
+    { HashStr("ui_result/footer/result_footer"), ALIGN_BOTTOM },
+    { HashStr("ui_result/main/result_title"), ALIGN_TOP },
+
+    // ui_result_ex
+    { HashStr("ui_result_ex/footer/result_footer"), ALIGN_BOTTOM },
+    { HashStr("ui_result_ex/main/result_title"), ALIGN_TOP },
+
+    // ui_shop
+    { HashStr("ui_shop/footer/shop_footer"), ALIGN_BOTTOM },
+    { HashStr("ui_shop/header/ring"), ALIGN_TOP },
+    { HashStr("ui_shop/header/shop_nametag"), ALIGN_TOP },
 
     // ui_start
     { HashStr("ui_start/Clear/position/bg/bg_1"), STRETCH },
@@ -458,6 +484,8 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_start/Start/img/bg/bg_2"), STRETCH },
 
     // ui_status
+    { HashStr("ui_status/footer/status_footer"), ALIGN_BOTTOM },
+    { HashStr("ui_status/header/status_title"), ALIGN_TOP },
     { HashStr("ui_status/logo/logo/bg_position/c_1"), STRETCH_HORIZONTAL },
     { HashStr("ui_status/logo/logo/bg_position/c_2"), STRETCH_HORIZONTAL },
     { HashStr("ui_status/window/bg"), STRETCH },
@@ -469,10 +497,11 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
     { HashStr("ui_title/bg/position"), ALIGN_BOTTOM },
 
     // ui_townscreen
-    { HashStr("ui_townscreen/time"), ALIGN_TOP_RIGHT },
-    { HashStr("ui_townscreen/time_effect"), ALIGN_TOP_RIGHT },
-    { HashStr("ui_townscreen/info"), ALIGN_TOP_LEFT },
-    { HashStr("ui_townscreen/cam"), ALIGN_TOP_RIGHT },
+    { HashStr("ui_townscreen/time"), ALIGN_TOP_RIGHT | SCALE },
+    { HashStr("ui_townscreen/time_effect"), ALIGN_TOP_RIGHT | SCALE },
+    { HashStr("ui_townscreen/info"), ALIGN_TOP_LEFT | SCALE },
+    { HashStr("ui_townscreen/cam"), ALIGN_TOP_RIGHT | SCALE },
+    { HashStr("ui_townscreen/footer"), ALIGN_BOTTOM },
 
     // ui_worldmap
     { HashStr("ui_worldmap/contents/choices/cts_choices_bg"), STRETCH },
