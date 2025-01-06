@@ -152,6 +152,26 @@ void MakeCsdProjectMidAsmHook(PPCRegister& r3, PPCRegister& r29)
     TraverseSceneNode(csdProject->m_pResource->pRootNode, name);
 }
 
+// Chao::CSD::CMemoryAlloc::Free
+PPC_FUNC_IMPL(__imp__sub_825E2E60);
+PPC_FUNC(sub_825E2E60)
+{
+    if (ctx.r4.u32 != NULL && PPC_LOAD_U32(ctx.r4.u32) == 0x4E594946 && PPC_LOAD_U32(ctx.r4.u32 + 0x20) == 0x6E43504A) // NYIF, nCPJ
+    {
+        uint32_t fileSize = PPC_LOAD_U32(ctx.r4.u32 + 0x14);
+
+        std::lock_guard lock(g_pathMutex);
+        const uint8_t* key = base + ctx.r4.u32;
+
+        auto lower = g_paths.lower_bound(key);
+        auto upper = g_paths.lower_bound(key + fileSize);
+
+        g_paths.erase(lower, upper);
+    }
+
+    __imp__sub_825E2E60(ctx, base);
+}
+
 static constexpr float NARROW_ASPECT_RATIO = 4.0f / 3.0f;
 static constexpr float WIDE_ASPECT_RATIO = 16.0f / 9.0f;
 static constexpr float STEAM_DECK_ASPECT_RATIO = 16.0f / 10.0f;
