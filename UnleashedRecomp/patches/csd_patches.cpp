@@ -378,7 +378,10 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
 
     // ui_gate
     { HashStr("ui_gate/footer/status_footer"), { ALIGN_BOTTOM } },
-    { HashStr("ui_gate/header/status_title"), { ALIGN_TOP } },
+    { HashStr("ui_gate/header/status_title"), { ALIGN_TOP | OFFSET_SCALE_LEFT, 652.0f } },
+    { HashStr("ui_gate/header/status_title/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
+    { HashStr("ui_gate/header/status_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT} },
+    { HashStr("ui_gate/header/status_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
     { HashStr("ui_gate/window/window_bg"), { STRETCH } },
 
     // ui_general
@@ -388,6 +391,10 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     // ui_itemresult
     { HashStr("ui_itemresult/footer/result_footer"), { ALIGN_BOTTOM } },
     { HashStr("ui_itemresult/main/iresult_title"), { ALIGN_TOP } },
+    { HashStr("ui_itemresult/main/iresult_title"), { ALIGN_TOP | OFFSET_SCALE_LEFT, 688.0f } },
+    { HashStr("ui_itemresult/main/iresult_title/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
+    { HashStr("ui_itemresult/main/iresult_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT} },
+    { HashStr("ui_itemresult/main/iresult_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
 
     // ui_loading
     { HashStr("ui_loading/bg_1"), { STRETCH } },
@@ -488,7 +495,46 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
 
     // ui_result
     { HashStr("ui_result/footer/result_footer"), { ALIGN_BOTTOM } },
-    { HashStr("ui_result/main/result_title"), { ALIGN_TOP } },
+    { HashStr("ui_result/main/result_title"), { ALIGN_TOP | OFFSET_SCALE_LEFT, 688.0f } },
+    { HashStr("ui_result/main/result_title/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
+    { HashStr("ui_result/main/result_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT} },
+    { HashStr("ui_result/main/result_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
+    { HashStr("ui_result/main/result_num_1"), { OFFSET_SCALE_RIGHT, 669.0f } },
+    { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1"), { EXTEND_RIGHT } },
+    { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/h_light"), { EXTEND_RIGHT } },
+    { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/left"), { STORE_LEFT_CORNER } },
+    { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/right"), { SKIP } },
+    { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/right/h_light"), { SKIP } },  
+    { HashStr("ui_result/main/result_num_2"), { OFFSET_SCALE_RIGHT, 669.0f } },
+    { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1"), { EXTEND_RIGHT } },
+    { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1/h_light"), { EXTEND_RIGHT } },
+    { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1/left"), { STORE_LEFT_CORNER } },
+    { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1/right"), { SKIP } },
+    { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1/right/h_light"), { SKIP } },   
+    { HashStr("ui_result/main/result_num_3"), { OFFSET_SCALE_RIGHT, 669.0f } },
+    { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1"), { EXTEND_RIGHT } },
+    { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1/h_light"), { EXTEND_RIGHT } },
+    { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1/left"), { STORE_LEFT_CORNER } },
+    { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1/right"), { SKIP } },
+    { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1/right/h_light"), { SKIP } },  
+    { HashStr("ui_result/main/result_num_4"), { OFFSET_SCALE_RIGHT, 669.0f } },
+    { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1"), { EXTEND_RIGHT } },
+    { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1/h_light"), { EXTEND_RIGHT } },
+    { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1/left"), { STORE_LEFT_CORNER } },
+    { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1/right"), { SKIP } },
+    { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1/right/h_light"), { SKIP } },   
+    { HashStr("ui_result/main/result_num_5"), { OFFSET_SCALE_RIGHT, 669.0f } },
+    { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1"), { EXTEND_RIGHT } },
+    { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1/h_light"), { EXTEND_RIGHT } },
+    { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1/left"), { STORE_LEFT_CORNER } },
+    { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1/right"), { SKIP } },
+    { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1/right/h_light"), { SKIP } }, 
+    { HashStr("ui_result/main/result_num_6"), { OFFSET_SCALE_LEFT, 1094.0f } },
+    { HashStr("ui_result/main/result_num_6/num_bg/position_6/center"), { EXTEND_LEFT } },
+    { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/h_light"), { EXTEND_LEFT } },
+    { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/right"), { STORE_RIGHT_CORNER } },
+    { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/left"), { SKIP } },
+    { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/left/h_light"), { SKIP } },
 
     // ui_result_ex
     { HashStr("ui_result_ex/footer/result_footer"), { ALIGN_BOTTOM } },
@@ -595,7 +641,10 @@ PPC_FUNC(sub_830C6A00)
         g_cornerExtract = true;
         __imp__sub_830C6A00(ctx, base);
         g_cornerExtract = false;
-
+#if 1
+        if (g_sceneModifier->cornerMax == 0.0f)
+            fmt::println("Corner: {}", g_corner);
+#endif
         ctx.r3 = r3;
         ctx.r4 = r4;
         ctx.r5 = r5;
@@ -722,6 +771,8 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     {
         if ((g_sceneModifier->flags & OFFSET_SCALE_LEFT) != 0)
             offsetX *= g_corner / g_sceneModifier->cornerMax;
+        else if ((g_sceneModifier->flags & OFFSET_SCALE_RIGHT) != 0)
+            offsetX = 1280.0f - (1280.0f - offsetX) * (1280.0f - g_corner) / (1280.0f - g_sceneModifier->cornerMax);
     }
 
     for (size_t i = 0; i < ctx.r5.u32; i++)
