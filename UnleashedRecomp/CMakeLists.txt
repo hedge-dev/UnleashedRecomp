@@ -164,6 +164,13 @@ set(SWA_PATCHES_CXX_SOURCES
 )
 
 set(SWA_UI_CXX_SOURCES
+    "ui/reddog/windows/counter_window.cpp"
+    "ui/reddog/windows/exports_window.cpp"
+    "ui/reddog/windows/view_window.cpp"
+    "ui/reddog/windows/window_list.cpp"
+    "ui/reddog/reddog_controls.cpp"
+    "ui/reddog/reddog_manager.cpp"
+    "ui/reddog/reddog_window.cpp"
     "ui/achievement_menu.cpp"
     "ui/achievement_overlay.cpp"
     "ui/installer_wizard.cpp"
@@ -453,6 +460,22 @@ BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/co
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/common/kbm.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/common/kbm.dds" ARRAY_NAME "g_kbm" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/common/select_fade.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/common/select_fade.dds" ARRAY_NAME "g_select_fade" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/common/select_fill.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/common/select_fill.dds" ARRAY_NAME "g_select_fill" COMPRESSION_TYPE "zstd")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/button_close_1.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/button_close_1.dds" ARRAY_NAME "g_button_close_1")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/button_close_2.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/button_close_2.dds" ARRAY_NAME "g_button_close_2")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/button_minimum_1.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/button_minimum_1.dds" ARRAY_NAME "g_button_minimum_1")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/button_minimum_2.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/button_minimum_2.dds" ARRAY_NAME "g_button_minimum_2")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/button_pin_1.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/button_pin_1.dds" ARRAY_NAME "g_button_pin_1")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/button_pin_2.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/button_pin_2.dds" ARRAY_NAME "g_button_pin_2")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/checkbox_1.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/checkbox_1.dds" ARRAY_NAME "g_checkbox_1")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/checkbox_2.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/checkbox_2.dds" ARRAY_NAME "g_checkbox_2")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/debug_icon.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/debug_icon.dds" ARRAY_NAME "g_debug_icon")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/common_icon.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/common_icon.dds" ARRAY_NAME "g_common_icon")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/mouse_cursor.bmp" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/mouse_cursor.bmp" ARRAY_NAME "g_mouse_cursor")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/mouse_cursor_h.bmp" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/mouse_cursor_h.bmp" ARRAY_NAME "g_mouse_cursor_h")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/mouse_cursor_slant_l.bmp" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/mouse_cursor_slant_l.bmp" ARRAY_NAME "g_mouse_cursor_slant_l")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/mouse_cursor_slant_r.bmp" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/mouse_cursor_slant_r.bmp" ARRAY_NAME "g_mouse_cursor_slant_r")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/mouse_cursor_v.bmp" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/mouse_cursor_v.bmp" ARRAY_NAME "g_mouse_cursor_v")
+BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/reddog/title_bar.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/reddog/title_bar.dds" ARRAY_NAME "g_title_bar")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/arrow_circle.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/arrow_circle.dds" ARRAY_NAME "g_arrow_circle" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_001.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_001.dds" ARRAY_NAME "g_install_001" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_002.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_002.dds" ARRAY_NAME "g_install_002" COMPRESSION_TYPE "zstd")

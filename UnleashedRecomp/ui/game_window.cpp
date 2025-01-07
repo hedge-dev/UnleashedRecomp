@@ -12,6 +12,11 @@
 #pragma comment(lib, "dwmapi.lib")
 #endif
 
+#include <res/images/reddog/mouse_cursor.bmp.h>
+#include <res/images/reddog/mouse_cursor_h.bmp.h>
+#include <res/images/reddog/mouse_cursor_slant_l.bmp.h>
+#include <res/images/reddog/mouse_cursor_slant_r.bmp.h>
+#include <res/images/reddog/mouse_cursor_v.bmp.h>
 #include <res/images/game_icon.bmp.h>
 #include <res/images/game_icon_night.bmp.h>
 
@@ -105,7 +110,7 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
                     GameWindow::s_isFocused = true;
 
                     if (GameWindow::IsFullscreen())
-                        SDL_ShowCursor(GameWindow::s_isFullscreenCursorVisible ? SDL_ENABLE : SDL_DISABLE);
+                        SDL_ShowCursor(GameWindow::s_isCursorVisible ? SDL_ENABLE : SDL_DISABLE);
 
                     break;
                 }
@@ -146,7 +151,7 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
         if (event->type == SDL_CONTROLLERBUTTONDOWN || event->type == SDL_CONTROLLERBUTTONUP || event->type == SDL_CONTROLLERAXISMOTION)
         {
             // Hide mouse cursor when controller input is detected.
-            SDL_ShowCursor(SDL_DISABLE);
+            SDL_ShowCursor(GameWindow::s_isCursorVisible ? SDL_ENABLE : SDL_DISABLE);
         }
         else if (event->type == SDL_MOUSEMOTION)
         {
@@ -264,23 +269,23 @@ void GameWindow::Update()
         s_isChangingDisplay = false;
 }
 
-SDL_Surface* GameWindow::GetIconSurface(void* pIconBmp, size_t iconSize)
+SDL_Surface* GameWindow::CreateSurface(void* pBitmapData, size_t bitmapSize)
 {
-    auto rw = SDL_RWFromMem(pIconBmp, iconSize);
+    auto rw = SDL_RWFromMem(pBitmapData, bitmapSize);
     auto surface = SDL_LoadBMP_RW(rw, 1);
 
     if (!surface)
-        LOGF_ERROR("Failed to load icon: {}", SDL_GetError());
+        LOGF_ERROR("Failed to create surface: {}", SDL_GetError());
 
     return surface;
 }
 
 void GameWindow::SetIcon(void* pIconBmp, size_t iconSize)
 {
-    if (auto icon = GetIconSurface(pIconBmp, iconSize))
+    if (auto surface = CreateSurface(pIconBmp, iconSize))
     {
-        SDL_SetWindowIcon(s_pWindow, icon);
-        SDL_FreeSurface(icon);
+        SDL_SetWindowIcon(s_pWindow, surface);
+        SDL_FreeSurface(surface);
     }
 }
 
@@ -293,6 +298,69 @@ void GameWindow::SetIcon(bool isNight)
     else
     {
         SetIcon(g_game_icon, sizeof(g_game_icon));
+    }
+}
+
+void GameWindow::SetCursor(ECursorType cursorType)
+{
+    if (s_currentCursor == cursorType)
+        return;
+
+    s_currentCursor = cursorType;
+
+    uint8_t* pBitmapData;
+    size_t bitmapSize;
+    int x, y;
+
+    switch (cursorType)
+    {
+        case ECursorType::DebugDefault:
+            pBitmapData = g_mouse_cursor;
+            bitmapSize = sizeof(g_mouse_cursor);
+            x = 0;
+            y = 0;
+            break;
+
+        case ECursorType::DebugHorizontal:
+            pBitmapData = g_mouse_cursor_h;
+            bitmapSize = sizeof(g_mouse_cursor_h);
+            x = 15;
+            y = 15;
+            break;
+
+        case ECursorType::DebugVertical:
+            pBitmapData = g_mouse_cursor_v;
+            bitmapSize = sizeof(g_mouse_cursor_v);
+            x = 15;
+            y = 15;
+            break;
+
+        case ECursorType::DebugLeftDiagonal:
+            pBitmapData = g_mouse_cursor_slant_l;
+            bitmapSize = sizeof(g_mouse_cursor_slant_l);
+            x = 16;
+            y = 15;
+            break;
+
+        case ECursorType::DebugRightDiagonal:
+            pBitmapData = g_mouse_cursor_slant_r;
+            bitmapSize = sizeof(g_mouse_cursor_slant_r);
+            x = 16;
+            y = 15;
+            break;
+
+        default:
+            SDL_SetCursor(SDL_GetDefaultCursor());
+            return;
+    }
+
+    if (auto surface = CreateSurface(pBitmapData, bitmapSize))
+    {
+        if (auto cursor = SDL_CreateColorCursor(surface, x, y))
+        {
+            SDL_SetCursor(cursor);
+            SDL_FreeSurface(surface);
+        }
     }
 }
 
@@ -338,7 +406,7 @@ bool GameWindow::SetFullscreen(bool isEnabled)
     if (isEnabled)
     {
         SDL_SetWindowFullscreen(s_pWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
-        SDL_ShowCursor(s_isFullscreenCursorVisible ? SDL_ENABLE : SDL_DISABLE);
+        SDL_ShowCursor(s_isCursorVisible ? SDL_ENABLE : SDL_DISABLE);
     }
     else
     {
@@ -352,13 +420,13 @@ bool GameWindow::SetFullscreen(bool isEnabled)
     return isEnabled;
 }
     
-void GameWindow::SetFullscreenCursorVisibility(bool isVisible)
+void GameWindow::SetCursorVisibility(bool isVisible)
 {
-    s_isFullscreenCursorVisible = isVisible;
+    s_isCursorVisible = isVisible;
 
     if (IsFullscreen())
     {
-        SDL_ShowCursor(s_isFullscreenCursorVisible ? SDL_ENABLE : SDL_DISABLE);
+        SDL_ShowCursor(s_isCursorVisible ? SDL_ENABLE : SDL_DISABLE);
     }
     else
     {

@@ -17,6 +17,7 @@
 #include <res/font/im_font_atlas.dds.h>
 #include <shader/shader_cache.h>
 #include <SWA.h>
+#include <ui/reddog/reddog_manager.h>
 #include <ui/achievement_menu.h>
 #include <ui/achievement_overlay.h>
 #include <ui/button_guide.h>
@@ -1186,9 +1187,16 @@ static void CreateImGuiBackend()
     AchievementMenu::Init();
     AchievementOverlay::Init();
     ButtonGuide::Init();
+    InstallerWizard::Init();
     MessageWindow::Init();
     OptionsMenu::Init();
-    InstallerWizard::Init();
+
+#if !_DEBUG
+    if (Config::Debug)
+#endif
+    {
+        Reddog::Manager::Init();
+    }
 
     ImGui_ImplSDL2_InitForOther(GameWindow::s_pWindow);
 
@@ -1943,82 +1951,58 @@ static double g_applicationValues[PROFILER_VALUE_COUNT];
 static Profiler g_presentProfiler;
 static Profiler g_renderDirectorProfiler;
 
-static bool g_profilerVisible;
-static bool g_profilerWasToggled;
-
-static void DrawProfiler()
+void Video::DrawCounter()
 {
-    bool toggleProfiler = SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_F1] != 0;
+    g_applicationValues[g_profilerValueIndex] = App::s_deltaTime * 1000.0;
 
-    if (!g_profilerWasToggled && toggleProfiler)
-        g_profilerVisible = !g_profilerVisible;
+    const double applicationAvg = std::accumulate(g_applicationValues, g_applicationValues + PROFILER_VALUE_COUNT, 0.0) / PROFILER_VALUE_COUNT;
+    double presentAvg = g_presentProfiler.UpdateAndReturnAverage();
+    double renderDirectorAvg = g_renderDirectorProfiler.UpdateAndReturnAverage();
 
-    g_profilerWasToggled = toggleProfiler;
-
-    if (!g_profilerVisible)
-        return;
-
-    ImFont* font = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
-    float defaultScale = font->Scale;
-    font->Scale = ImGui::GetDefaultFont()->FontSize / font->FontSize;
-    ImGui::PushFont(font);
-
-    if (ImGui::Begin("Profiler", &g_profilerVisible))
+    if (ImPlot::BeginPlot("Frame Time"))
     {
-        g_applicationValues[g_profilerValueIndex] = App::s_deltaTime * 1000.0;
-
-        const double applicationAvg = std::accumulate(g_applicationValues, g_applicationValues + PROFILER_VALUE_COUNT, 0.0) / PROFILER_VALUE_COUNT;
-        double presentAvg = g_presentProfiler.UpdateAndReturnAverage();
-        double renderDirectorAvg = g_renderDirectorProfiler.UpdateAndReturnAverage();
-
-        if (ImPlot::BeginPlot("Frame Time"))
-        {
-            ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 20.0);
-            ImPlot::SetupAxis(ImAxis_Y1, "ms", ImPlotAxisFlags_None);
-            ImPlot::PlotLine<double>("Application", g_applicationValues, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
-            ImPlot::PlotLine<double>("Present", g_presentProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
-            ImPlot::PlotLine<double>("Render Director", g_renderDirectorProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
-            ImPlot::EndPlot();
-        }
-
-        g_profilerValueIndex = (g_profilerValueIndex + 1) % PROFILER_VALUE_COUNT;
-
-        ImGui::Text("Current Application: %g ms (%g FPS)", App::s_deltaTime * 1000.0, 1.0 / App::s_deltaTime);
-        ImGui::Text("Current Present: %g ms (%g FPS)", g_presentProfiler.value.load(), 1000.0 / g_presentProfiler.value.load());
-        ImGui::Text("Current Render Director: %g ms (%g FPS)", g_renderDirectorProfiler.value.load(), 1000.0 / g_renderDirectorProfiler.value.load());
-        ImGui::NewLine();
-
-        ImGui::Text("Average Application: %g ms (%g FPS)", applicationAvg, 1000.0 / applicationAvg);
-        ImGui::Text("Average Present: %g ms (%g FPS)", presentAvg, 1000.0 / presentAvg);
-        ImGui::Text("Average Render Director: %g ms (%g FPS)", renderDirectorAvg, 1000.0 / renderDirectorAvg);
-        ImGui::NewLine();
-
-        O1HeapDiagnostics diagnostics, physicalDiagnostics;
-        {
-            std::lock_guard lock(g_userHeap.mutex);
-            diagnostics = o1heapGetDiagnostics(g_userHeap.heap);
-        }
-        {
-            std::lock_guard lock(g_userHeap.physicalMutex);
-            physicalDiagnostics = o1heapGetDiagnostics(g_userHeap.physicalHeap);
-        }
-
-        ImGui::Text("Heap Allocated: %d MB", int32_t(diagnostics.allocated / (1024 * 1024)));
-        ImGui::Text("Physical Heap Allocated: %d MB", int32_t(physicalDiagnostics.allocated / (1024 * 1024)));
-        ImGui::NewLine();
-
-        ImGui::Text("Present Wait: %s", g_capabilities.presentWait ? "Supported" : "Unsupported");
-        ImGui::Text("Triangle Fan: %s", g_capabilities.triangleFan ? "Supported" : "Unsupported");
-        ImGui::NewLine();
-
-        const char* sdlVideoDriver = SDL_GetCurrentVideoDriver();
-        if (sdlVideoDriver != nullptr)
-            ImGui::Text("SDL Video Driver: %s", sdlVideoDriver);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 20.0);
+        ImPlot::SetupAxis(ImAxis_Y1, "ms", ImPlotAxisFlags_None);
+        ImPlot::PlotLine<double>("Application", g_applicationValues, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
+        ImPlot::PlotLine<double>("Present", g_presentProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
+        ImPlot::PlotLine<double>("Render Director", g_renderDirectorProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
+        ImPlot::EndPlot();
     }
-    ImGui::End();
 
-    ImGui::PopFont();
-    font->Scale = defaultScale;
+    g_profilerValueIndex = (g_profilerValueIndex + 1) % PROFILER_VALUE_COUNT;
+
+    ImGui::Text("Current Application: %g ms (%g FPS)", App::s_deltaTime * 1000.0, 1.0 / App::s_deltaTime);
+    ImGui::Text("Current Present: %g ms (%g FPS)", g_presentProfiler.value.load(), 1000.0 / g_presentProfiler.value.load());
+    ImGui::Text("Current Render Director: %g ms (%g FPS)", g_renderDirectorProfiler.value.load(), 1000.0 / g_renderDirectorProfiler.value.load());
+    ImGui::NewLine();
+
+    ImGui::Text("Average Application: %g ms (%g FPS)", applicationAvg, 1000.0 / applicationAvg);
+    ImGui::Text("Average Present: %g ms (%g FPS)", presentAvg, 1000.0 / presentAvg);
+    ImGui::Text("Average Render Director: %g ms (%g FPS)", renderDirectorAvg, 1000.0 / renderDirectorAvg);
+    ImGui::NewLine();
+
+    O1HeapDiagnostics diagnostics, physicalDiagnostics;
+    {
+        std::lock_guard lock(g_userHeap.mutex);
+        diagnostics = o1heapGetDiagnostics(g_userHeap.heap);
+    }
+    {
+        std::lock_guard lock(g_userHeap.physicalMutex);
+        physicalDiagnostics = o1heapGetDiagnostics(g_userHeap.physicalHeap);
+    }
+
+    ImGui::Text("Heap Allocated: %d MB", int32_t(diagnostics.allocated / (1024 * 1024)));
+    ImGui::Text("Physical Heap Allocated: %d MB", int32_t(physicalDiagnostics.allocated / (1024 * 1024)));
+    ImGui::NewLine();
+
+    auto capabilities = g_device->getCapabilities();
+    ImGui::Text("Present Wait: %s", capabilities.presentWait ? "Supported" : "Unsupported");
+    ImGui::Text("Triangle Fan: %s", capabilities.triangleFan ? "Supported" : "Unsupported");
+    ImGui::NewLine();
+
+    const char* sdlVideoDriver = SDL_GetCurrentVideoDriver();
+    if (sdlVideoDriver != nullptr)
+        ImGui::Text("SDL Video Driver: %s", sdlVideoDriver);
 }
 
 static void DrawImGui()
@@ -2052,7 +2036,12 @@ static void DrawImGui()
     ButtonGuide::Draw();
     Fader::Draw();
 
-    DrawProfiler();
+#if !_DEBUG
+    if (Config::Debug)
+#endif
+    {
+        Reddog::Manager::Draw();
+    }
 
     ImGui::Render();
 

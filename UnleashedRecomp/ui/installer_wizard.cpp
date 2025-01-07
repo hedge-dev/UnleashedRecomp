@@ -1557,7 +1557,7 @@ bool InstallerWizard::Run(std::filesystem::path installPath, bool skipGame)
         g_currentPage = g_firstPage;
     }
 
-    GameWindow::SetFullscreenCursorVisibility(true);
+    GameWindow::SetCursorVisibility(true);
     s_isVisible = true;
 
     while (s_isVisible)
@@ -1569,7 +1569,7 @@ bool InstallerWizard::Run(std::filesystem::path installPath, bool skipGame)
         Video::Present();
     }
 
-    GameWindow::SetFullscreenCursorVisibility(false);
+    GameWindow::SetCursorVisibility(false);
     NFD_Quit();
 
     InstallerWizard::Shutdown();
