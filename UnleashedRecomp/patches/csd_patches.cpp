@@ -181,8 +181,8 @@ static constexpr float TALL_SCALE = 1280.0f / 960.0f;
 static float g_offsetX;
 static float g_offsetY;
 static float g_scale;
-
 static float g_worldMapOffset;
+static bool g_ultrawide;
 
 static float ComputeScale(float aspectRatio)
 {
@@ -223,6 +223,7 @@ static void ComputeOffsets(float width, float height)
     } 
 
     g_worldMapOffset = std::clamp((aspectRatio - NARROW_ASPECT_RATIO) / (WIDE_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
+    g_ultrawide = aspectRatio > WIDE_ASPECT_RATIO;
 }
 
 static class SDLEventListenerForCSD : public SDLEventListener
@@ -333,192 +334,253 @@ enum
 
     SCALE = 1 << 6,
 
-    WORLD_MAP = 1 << 7
+    WORLD_MAP = 1 << 7,
+
+    EXTEND_LEFT = 1 << 8,
+    EXTEND_RIGHT = 1 << 9,
+
+    STORE_LEFT_CORNER = 1 << 10,
+    STORE_RIGHT_CORNER = 1 << 11,
+
+    SKIP = 1 << 12,
+
+    OFFSET_SCALE_LEFT = 1 << 13,
+    OFFSET_SCALE_RIGHT = 1 << 14
 };
 
-static const ankerl::unordered_dense::map<XXH64_hash_t, uint32_t> g_flags =
+struct CsdModifier
+{
+    uint32_t flags{};
+    float cornerMax{};
+};
+
+static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers =
 {
     // ui_balloon
-    { HashStr("ui_balloon/window/bg"), STRETCH },
-    { HashStr("ui_balloon/window/footer"), ALIGN_BOTTOM },
+    { HashStr("ui_balloon/window/bg"), { STRETCH } },
+    { HashStr("ui_balloon/window/footer"), { ALIGN_BOTTOM } },
 
     // ui_boss_gauge
-    { HashStr("ui_boss_gauge/gauge_bg"), ALIGN_TOP_RIGHT | SCALE },
-    { HashStr("ui_boss_gauge/gauge_2"), ALIGN_TOP_RIGHT | SCALE },
-    { HashStr("ui_boss_gauge/gauge_1"), ALIGN_TOP_RIGHT | SCALE },
-    { HashStr("ui_boss_gauge/gauge_breakpoint"), ALIGN_TOP_RIGHT | SCALE },
+    { HashStr("ui_boss_gauge/gauge_bg"), { ALIGN_TOP_RIGHT | SCALE } },
+    { HashStr("ui_boss_gauge/gauge_2"), { ALIGN_TOP_RIGHT | SCALE } },
+    { HashStr("ui_boss_gauge/gauge_1"), { ALIGN_TOP_RIGHT | SCALE } },
+    { HashStr("ui_boss_gauge/gauge_breakpoint"), { ALIGN_TOP_RIGHT | SCALE } },
 
     // ui_exstage
-    { HashStr("ui_exstage/shield/L_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_exstage/shield/L_gauge_effect"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_exstage/shield/L_gauge_effect_2"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_exstage/energy/R_gauge"), ALIGN_BOTTOM_RIGHT | SCALE },
-    { HashStr("ui_exstage/energy/R_gauge_effect"), ALIGN_BOTTOM_RIGHT | SCALE },
-    { HashStr("ui_exstage/energy/R_gauge_effect_2"), ALIGN_BOTTOM_RIGHT | SCALE },
-    { HashStr("ui_exstage/hit/hit_counter_bg"), ALIGN_RIGHT | SCALE },
-    { HashStr("ui_exstage/hit/hit_counter_num"), ALIGN_RIGHT | SCALE },
+    { HashStr("ui_exstage/shield/L_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_exstage/shield/L_gauge_effect"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_exstage/shield/L_gauge_effect_2"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_exstage/energy/R_gauge"), { ALIGN_BOTTOM_RIGHT | SCALE } },
+    { HashStr("ui_exstage/energy/R_gauge_effect"), { ALIGN_BOTTOM_RIGHT | SCALE } },
+    { HashStr("ui_exstage/energy/R_gauge_effect_2"), { ALIGN_BOTTOM_RIGHT | SCALE } },
+    { HashStr("ui_exstage/hit/hit_counter_bg"), { ALIGN_RIGHT | SCALE } },
+    { HashStr("ui_exstage/hit/hit_counter_num"), { ALIGN_RIGHT | SCALE } },
 
     // ui_gate
-    { HashStr("ui_gate/footer/status_footer"), ALIGN_BOTTOM },
-    { HashStr("ui_gate/header/status_title"), ALIGN_TOP },
-    { HashStr("ui_gate/window/window_bg"), STRETCH },
+    { HashStr("ui_gate/footer/status_footer"), { ALIGN_BOTTOM } },
+    { HashStr("ui_gate/header/status_title"), { ALIGN_TOP } },
+    { HashStr("ui_gate/window/window_bg"), { STRETCH } },
 
     // ui_general
-    { HashStr("ui_general/bg"), STRETCH },
-    { HashStr("ui_general/footer"), ALIGN_BOTTOM },
+    { HashStr("ui_general/bg"), { STRETCH } },
+    { HashStr("ui_general/footer"), { ALIGN_BOTTOM } },
 
     // ui_itemresult
-    { HashStr("ui_itemresult/footer/result_footer"), ALIGN_BOTTOM },
-    { HashStr("ui_itemresult/main/iresult_title"), ALIGN_TOP },
+    { HashStr("ui_itemresult/footer/result_footer"), { ALIGN_BOTTOM } },
+    { HashStr("ui_itemresult/main/iresult_title"), { ALIGN_TOP } },
 
     // ui_loading
-    { HashStr("ui_loading/bg_1"), STRETCH },
-    { HashStr("ui_loading/bg_2"), STRETCH },
+    { HashStr("ui_loading/bg_1"), { STRETCH } },
+    { HashStr("ui_loading/bg_2"), { STRETCH } },
 
     // ui_missionscreen
-    { HashStr("ui_missionscreen/player_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_missionscreen/time_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_missionscreen/score_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_missionscreen/item_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_missionscreen/laptime_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_missionscreen/lap_count"), ALIGN_TOP_RIGHT | SCALE },
+    { HashStr("ui_missionscreen/player_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_missionscreen/time_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_missionscreen/score_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_missionscreen/item_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_missionscreen/laptime_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_missionscreen/lap_count"), { ALIGN_TOP_RIGHT | SCALE } },
 
     // ui_misson
-    { HashStr("ui_misson/bg"), STRETCH },
-    { HashStr("ui_misson/footer/footer_B"), ALIGN_BOTTOM },
-    { HashStr("ui_misson/header/misson_title_B"), ALIGN_TOP },
-    { HashStr("ui_misson/window/bg_B2/position/bg"), STRETCH },
+    { HashStr("ui_misson/bg"), { STRETCH } },
+    { HashStr("ui_misson/footer/footer_B"), { ALIGN_BOTTOM } },
+    { HashStr("ui_misson/header/misson_title_B"), { ALIGN_TOP } },
+    { HashStr("ui_misson/window/bg_B2/position/bg"), { STRETCH } },
 
     // ui_pause
-    { HashStr("ui_pause/bg"), STRETCH },
-    { HashStr("ui_pause/footer/footer_A"), ALIGN_BOTTOM },
-    { HashStr("ui_pause/footer/footer_B"), ALIGN_BOTTOM },
-    { HashStr("ui_pause/header/status_title"), ALIGN_TOP },
+    { HashStr("ui_pause/bg"), { STRETCH } },
+    { HashStr("ui_pause/footer/footer_A"), { ALIGN_BOTTOM } },
+    { HashStr("ui_pause/footer/footer_B"), { ALIGN_BOTTOM } },
+    { HashStr("ui_pause/header/status_title"), { ALIGN_TOP | OFFSET_SCALE_LEFT, 585.0f } },
+    { HashStr("ui_pause/header/status_title/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
+    { HashStr("ui_pause/header/status_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT} },
+    { HashStr("ui_pause/header/status_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
 
     // ui_playscreen
-    { HashStr("ui_playscreen/player_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_playscreen/time_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_playscreen/score_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_playscreen/exp_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_playscreen/so_speed_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen/so_ringenagy_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen/gauge_frame"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen/ring_count"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen/ring_get"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen/add/speed_count"), ALIGN_RIGHT | SCALE },
-    { HashStr("ui_playscreen/add/u_info"), ALIGN_BOTTOM_RIGHT | SCALE },
-    { HashStr("ui_playscreen/add/medal_get_s"), ALIGN_BOTTOM_RIGHT | SCALE },
-    { HashStr("ui_playscreen/add/medal_get_m"), ALIGN_BOTTOM_RIGHT | SCALE },
+    { HashStr("ui_playscreen/player_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_playscreen/time_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_playscreen/score_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_playscreen/exp_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_playscreen/so_speed_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen/so_ringenagy_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen/gauge_frame"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen/ring_count"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen/ring_get"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen/add/speed_count"), { ALIGN_RIGHT | SCALE } },
+    { HashStr("ui_playscreen/add/u_info"), { ALIGN_BOTTOM_RIGHT | SCALE } },
+    { HashStr("ui_playscreen/add/medal_get_s"), { ALIGN_BOTTOM_RIGHT | SCALE } },
+    { HashStr("ui_playscreen/add/medal_get_m"), { ALIGN_BOTTOM_RIGHT | SCALE } },
 
     // ui_playscreen_ev
-    { HashStr("ui_playscreen_ev/player_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/score_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/ring_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/ring_get"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/exp_count"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/add/u_info"), ALIGN_BOTTOM_RIGHT | SCALE },
-    { HashStr("ui_playscreen_ev/add/medal_get_s"), ALIGN_BOTTOM_RIGHT | SCALE },
-    { HashStr("ui_playscreen_ev/add/medal_get_m"), ALIGN_BOTTOM_RIGHT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/unleash_bg"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/life_bg"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/unleash_body"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/unleash_bar_1"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/unleash_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/unleash_gauge_effect_2"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/unleash_gauge_effect"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/unleash_bar_2"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/life"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield_position"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_01"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_02"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_03"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_04"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_05"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_06"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_07"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_08"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_09"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_10"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_11"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_12"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_13"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_14"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_ev/gauge/shield/shield_15"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_playscreen_ev/player_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/score_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/ring_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/ring_get"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/exp_count"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/add/u_info"), { ALIGN_BOTTOM_RIGHT | SCALE } },
+    { HashStr("ui_playscreen_ev/add/medal_get_s"), { ALIGN_BOTTOM_RIGHT | SCALE } },
+    { HashStr("ui_playscreen_ev/add/medal_get_m"), { ALIGN_BOTTOM_RIGHT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/unleash_bg"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/life_bg"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/unleash_body"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/unleash_bar_1"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/unleash_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/unleash_gauge_effect_2"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/unleash_gauge_effect"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/unleash_bar_2"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/life"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield_position"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_01"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_02"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_03"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_04"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_05"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_06"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_07"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_08"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_09"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_10"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_11"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_12"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_13"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_14"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_ev/gauge/shield/shield_15"), { ALIGN_BOTTOM_LEFT | SCALE } },
 
     // ui_playscreen_ev_hit
-    { HashStr("ui_playscreen_ev_hit/hit_counter_bg"), ALIGN_RIGHT | SCALE },
-    { HashStr("ui_playscreen_ev_hit/hit_counter_num"), ALIGN_RIGHT | SCALE },
-    { HashStr("ui_playscreen_ev_hit/hit_counter_txt_1"), ALIGN_RIGHT | SCALE },
-    { HashStr("ui_playscreen_ev_hit/hit_counter_txt_2"), ALIGN_RIGHT | SCALE },
-    { HashStr("ui_playscreen_ev_hit/chance_attack"), ALIGN_RIGHT | SCALE },
+    { HashStr("ui_playscreen_ev_hit/hit_counter_bg"), { ALIGN_RIGHT | SCALE } },
+    { HashStr("ui_playscreen_ev_hit/hit_counter_num"), { ALIGN_RIGHT | SCALE } },
+    { HashStr("ui_playscreen_ev_hit/hit_counter_txt_1"), { ALIGN_RIGHT | SCALE } },
+    { HashStr("ui_playscreen_ev_hit/hit_counter_txt_2"), { ALIGN_RIGHT | SCALE } },
+    { HashStr("ui_playscreen_ev_hit/chance_attack"), { ALIGN_RIGHT | SCALE } },
 
     // ui_playscreen_su
-    { HashStr("ui_playscreen_su/su_sonic_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_su/gaia_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_playscreen_su/footer"), ALIGN_BOTTOM_RIGHT | SCALE },
+    { HashStr("ui_playscreen_su/su_sonic_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_su/gaia_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_su/footer"), { ALIGN_BOTTOM_RIGHT | SCALE } },
 
     // ui_prov_playscreen
-    { HashStr("ui_prov_playscreen/so_speed_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_prov_playscreen/so_ringenagy_gauge"), ALIGN_BOTTOM_LEFT | SCALE },
-    { HashStr("ui_prov_playscreen/bg"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_prov_playscreen/info_1"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_prov_playscreen/info_2"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_prov_playscreen/ring_get_effect"), ALIGN_BOTTOM_LEFT | SCALE },
+    { HashStr("ui_prov_playscreen/so_speed_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_prov_playscreen/so_ringenagy_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_prov_playscreen/bg"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_prov_playscreen/info_1"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_prov_playscreen/info_2"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_prov_playscreen/ring_get_effect"), { ALIGN_BOTTOM_LEFT | SCALE } },
 
     // ui_result
-    { HashStr("ui_result/footer/result_footer"), ALIGN_BOTTOM },
-    { HashStr("ui_result/main/result_title"), ALIGN_TOP },
+    { HashStr("ui_result/footer/result_footer"), { ALIGN_BOTTOM } },
+    { HashStr("ui_result/main/result_title"), { ALIGN_TOP } },
 
     // ui_result_ex
-    { HashStr("ui_result_ex/footer/result_footer"), ALIGN_BOTTOM },
-    { HashStr("ui_result_ex/main/result_title"), ALIGN_TOP },
+    { HashStr("ui_result_ex/footer/result_footer"), { ALIGN_BOTTOM } },
+    { HashStr("ui_result_ex/main/result_title"), { ALIGN_TOP } },
 
     // ui_shop
-    { HashStr("ui_shop/footer/shop_footer"), ALIGN_BOTTOM },
-    { HashStr("ui_shop/header/ring"), ALIGN_TOP },
-    { HashStr("ui_shop/header/shop_nametag"), ALIGN_TOP },
+    { HashStr("ui_shop/footer/shop_footer"), { ALIGN_BOTTOM } },
+    { HashStr("ui_shop/header/ring"), { ALIGN_TOP } },
+    { HashStr("ui_shop/header/shop_nametag"), { ALIGN_TOP } },
 
     // ui_start
-    { HashStr("ui_start/Clear/position/bg/bg_1"), STRETCH },
-    { HashStr("ui_start/Clear/position/bg/bg_2"), STRETCH },   
-    { HashStr("ui_start/Start/img/bg/bg_1"), STRETCH },
-    { HashStr("ui_start/Start/img/bg/bg_2"), STRETCH },
+    { HashStr("ui_start/Clear/position/bg/bg_1"), { STRETCH } },
+    { HashStr("ui_start/Clear/position/bg/bg_2"), { STRETCH } },
+    { HashStr("ui_start/Start/img/bg/bg_1"), { STRETCH } },
+    { HashStr("ui_start/Start/img/bg/bg_2"), { STRETCH } },
 
     // ui_status
-    { HashStr("ui_status/footer/status_footer"), ALIGN_BOTTOM },
-    { HashStr("ui_status/header/status_title"), ALIGN_TOP },
-    { HashStr("ui_status/logo/logo/bg_position/c_1"), STRETCH_HORIZONTAL },
-    { HashStr("ui_status/logo/logo/bg_position/c_2"), STRETCH_HORIZONTAL },
-    { HashStr("ui_status/window/bg"), STRETCH },
+    { HashStr("ui_status/footer/status_footer"), { ALIGN_BOTTOM } },
+    { HashStr("ui_status/header/status_title"), { ALIGN_TOP | OFFSET_SCALE_LEFT, 617.0f } },
+    { HashStr("ui_status/header/status_title/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
+    { HashStr("ui_status/header/status_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT } },
+    { HashStr("ui_status/header/status_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
+    { HashStr("ui_status/logo/logo/bg_position/c_1"), { STRETCH_HORIZONTAL } },
+    { HashStr("ui_status/logo/logo/bg_position/c_2"), { STRETCH_HORIZONTAL } },
+    { HashStr("ui_status/main/progless/bg/prgs_bg_1"), { OFFSET_SCALE_LEFT, 714.0f } },
+    { HashStr("ui_status/main/progless/bg/prgs_bg_1/position/center/right"), { STORE_RIGHT_CORNER } },
+    { HashStr("ui_status/main/progless/prgs/prgs_bar_1"), { OFFSET_SCALE_LEFT, 586.0f } },
+    { HashStr("ui_status/main/progless/prgs/prgs_bar_1/position/bg/center/right"), { STORE_RIGHT_CORNER } },
+    { HashStr("ui_status/main/tag/bg/tag_bg_1"), { OFFSET_SCALE_LEFT, 413.0f } },
+    { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center"), { EXTEND_LEFT } },
+    { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/h_light"), { EXTEND_LEFT } },
+    { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/right"), { STORE_RIGHT_CORNER } },
+    { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/left"), { SKIP } },
+    { HashStr("ui_status/main/tag/bg/tag_bg_1/total_1_bg/center/left/h_light"), { SKIP } },
+    { HashStr("ui_status/main/tag/txt/tag_txt_1"), { OFFSET_SCALE_LEFT, 352.0f } },
+    { HashStr("ui_status/main/tag/txt/tag_txt_1/position/img"), { STORE_RIGHT_CORNER } },
+    { HashStr("ui_status/window/bg"), { STRETCH } },
 
     // ui_title
-    { HashStr("ui_title/bg/bg"), STRETCH },
-    { HashStr("ui_title/bg/headr"), ALIGN_TOP | STRETCH_HORIZONTAL },
-    { HashStr("ui_title/bg/footer"), ALIGN_BOTTOM | STRETCH_HORIZONTAL },
-    { HashStr("ui_title/bg/position"), ALIGN_BOTTOM },
+    { HashStr("ui_title/bg/bg"), { STRETCH } },
+    { HashStr("ui_title/bg/headr"), { ALIGN_TOP | STRETCH_HORIZONTAL } },
+    { HashStr("ui_title/bg/footer"), { ALIGN_BOTTOM | STRETCH_HORIZONTAL } },
+    { HashStr("ui_title/bg/position"), { ALIGN_BOTTOM } },
 
     // ui_townscreen
-    { HashStr("ui_townscreen/time"), ALIGN_TOP_RIGHT | SCALE },
-    { HashStr("ui_townscreen/time_effect"), ALIGN_TOP_RIGHT | SCALE },
-    { HashStr("ui_townscreen/info"), ALIGN_TOP_LEFT | SCALE },
-    { HashStr("ui_townscreen/cam"), ALIGN_TOP_RIGHT | SCALE },
-    { HashStr("ui_townscreen/footer"), ALIGN_BOTTOM },
+    { HashStr("ui_townscreen/time"), { ALIGN_TOP_RIGHT | SCALE } },
+    { HashStr("ui_townscreen/time_effect"), { ALIGN_TOP_RIGHT | SCALE } },
+    { HashStr("ui_townscreen/info"), { ALIGN_TOP_LEFT | SCALE } },
+    { HashStr("ui_townscreen/cam"), { ALIGN_TOP_RIGHT | SCALE } },
+    { HashStr("ui_townscreen/footer"), { ALIGN_BOTTOM } },
 
     // ui_worldmap
-    { HashStr("ui_worldmap/contents/choices/cts_choices_bg"), STRETCH },
-    { HashStr("ui_worldmap/contents/info/bg/cts_info_bg"), ALIGN_TOP_LEFT | WORLD_MAP },
-    { HashStr("ui_worldmap/contents/info/bg/info_bg_1"), ALIGN_TOP_LEFT | WORLD_MAP },
-    { HashStr("ui_worldmap/contents/info/img/info_img_1"), ALIGN_TOP_LEFT | WORLD_MAP },
-    { HashStr("ui_worldmap/contents/info/img/info_img_2"), ALIGN_TOP_LEFT | WORLD_MAP },
-    { HashStr("ui_worldmap/contents/info/img/info_img_3"), ALIGN_TOP_LEFT | WORLD_MAP },
-    { HashStr("ui_worldmap/contents/info/img/info_img_4"), ALIGN_TOP_LEFT | WORLD_MAP },
-    { HashStr("ui_worldmap/footer/worldmap_footer_bg"), ALIGN_BOTTOM },
-    { HashStr("ui_worldmap/footer/worldmap_footer_img_A"), ALIGN_BOTTOM },
-    { HashStr("ui_worldmap/header/worldmap_header_bg"), ALIGN_TOP },
-    { HashStr("ui_worldmap/header/worldmap_header_img"), ALIGN_TOP_LEFT | WORLD_MAP },
+    { HashStr("ui_worldmap/contents/choices/cts_choices_bg"), { STRETCH } },
+    { HashStr("ui_worldmap/contents/info/bg/cts_info_bg"), { ALIGN_TOP_LEFT | WORLD_MAP } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1"), { ALIGN_TOP_LEFT | WORLD_MAP } },
+    { HashStr("ui_worldmap/contents/info/img/info_img_1"), { ALIGN_TOP_LEFT | WORLD_MAP } },
+    { HashStr("ui_worldmap/contents/info/img/info_img_2"), { ALIGN_TOP_LEFT | WORLD_MAP } },
+    { HashStr("ui_worldmap/contents/info/img/info_img_3"), { ALIGN_TOP_LEFT | WORLD_MAP } },
+    { HashStr("ui_worldmap/contents/info/img/info_img_4"), { ALIGN_TOP_LEFT | WORLD_MAP } },
+    { HashStr("ui_worldmap/footer/worldmap_footer_bg"), { ALIGN_BOTTOM } },
+    { HashStr("ui_worldmap/footer/worldmap_footer_img_A"), { ALIGN_BOTTOM } },
+    { HashStr("ui_worldmap/header/worldmap_header_bg"), { ALIGN_TOP } },
+    { HashStr("ui_worldmap/header/worldmap_header_img"), { ALIGN_TOP_LEFT | WORLD_MAP } }
 };
 
-static std::optional<uint32_t> FindFlags(uint32_t data)
+// Reserve space in managed scene class to store the corner in. 
+// Scenes can be duplicated, so we can't rely on storing them by YNCP scene pointer.
+static constexpr float UNINITIALIZED_CORNER = FLT_MAX;
+
+struct SceneEx
+{
+    float corner = UNINITIALIZED_CORNER;
+    float cornerNew{};
+    uint64_t frame{};
+};
+
+static SceneEx* g_sceneEx = nullptr;
+
+void SceneByteSizeMidAsmHook(PPCRegister& r4)
+{
+    r4.u32 += sizeof(SceneEx);
+}
+
+// Chao::CSD::CScene::CScene
+PPC_FUNC_IMPL(__imp__sub_830BE7F8);
+PPC_FUNC(sub_830BE7F8)
+{
+    new (base + ctx.r3.u32 + 0xE0) SceneEx();
+    __imp__sub_830BE7F8(ctx, base);
+}
+
+static std::optional<CsdModifier> FindModifier(uint32_t data)
 {
     XXH64_hash_t path;
     {
@@ -531,50 +593,74 @@ static std::optional<uint32_t> FindFlags(uint32_t data)
         path = findResult->second;
     }
 
-    auto findResult = g_flags.find(path);
-    if (findResult != g_flags.end())
+    auto findResult = g_modifiers.find(path);
+    if (findResult != g_modifiers.end())
         return findResult->second;
 
     return {};
 }
 
-static std::optional<uint32_t> g_sceneFlags;
+static std::optional<CsdModifier> g_sceneModifier;
 
-void RenderCsdSceneMidAsmHook(PPCRegister& r30)
+// Chao::CSD::CScene::Render
+PPC_FUNC_IMPL(__imp__sub_830BC640);
+PPC_FUNC(sub_830BC640)
 {
-    g_sceneFlags = FindFlags(r30.u32);
+    g_sceneModifier = FindModifier(PPC_LOAD_U32(ctx.r3.u32 + 0xC));
+    g_sceneEx = reinterpret_cast<SceneEx*>(base + ctx.r3.u32 + 0xE0);
+
+    if (g_sceneModifier.has_value() && ((g_sceneEx->frame + 1) != App::s_frame || g_sceneEx->corner == UNINITIALIZED_CORNER))
+        g_sceneEx->corner = (g_sceneModifier->flags & OFFSET_SCALE_LEFT) != 0 ? -100000.0f : 100000.0f;
+
+    __imp__sub_830BC640(ctx, base);
+
+#if 1
+    if (g_sceneModifier.has_value() && (g_sceneModifier->flags & (OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT)) != 0 && g_sceneModifier->cornerMax == 0.0f)
+        fmt::println("Corner: {}", g_sceneEx->cornerNew);
+#endif
+
+    g_sceneEx->corner = g_sceneEx->cornerNew;
+    g_sceneEx->frame = App::s_frame;
+
+    g_sceneEx = nullptr;
 }
 
-static std::optional<uint32_t> g_castNodeFlags;
+static std::optional<CsdModifier> g_castNodeModifier;
 
 void RenderCsdCastNodeMidAsmHook(PPCRegister& r10, PPCRegister& r27)
 {
-    g_castNodeFlags = FindFlags(r10.u32 + r27.u32);
+    g_castNodeModifier = FindModifier(r10.u32 + r27.u32);
 }
 
-static std::optional<uint32_t> g_castFlags;
+static std::optional<CsdModifier> g_castModifier;
 
 void RenderCsdCastMidAsmHook(PPCRegister& r4)
 {
-    g_castFlags = FindFlags(r4.u32);
+    g_castModifier = FindModifier(r4.u32);
 }
 
 static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t stride)
 {
-    uint32_t flags = 0;
+    CsdModifier modifier{};
 
-    if (g_castFlags.has_value())
+    if (g_castModifier.has_value())
     {
-        flags = g_castFlags.value();
+        modifier = g_castModifier.value();
     }
-    else if (g_castNodeFlags.has_value())
+    else if (g_castNodeModifier.has_value())
     {
-        flags = g_castNodeFlags.value();
+        modifier = g_castNodeModifier.value();
     }
-    else if (g_sceneFlags.has_value())
+    else if (g_sceneModifier.has_value())
     {
-        flags = g_sceneFlags.value();
+        modifier = g_sceneModifier.value();
     }
+
+    if ((modifier.flags & SKIP) != 0)
+        return;
+
+    if (Config::UIScaleMode == EUIScaleMode::Centre && (modifier.flags & SCALE) != 0)
+        modifier.flags &= ~(ALIGN_TOP | ALIGN_LEFT | ALIGN_BOTTOM | ALIGN_RIGHT);
 
     auto backBuffer = Video::GetBackBuffer();
 
@@ -589,53 +675,68 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     float scaleX = 1.0f;
     float scaleY = 1.0f;
 
-    if ((flags & STRETCH_HORIZONTAL) != 0)
+    if ((modifier.flags & STRETCH_HORIZONTAL) != 0)
     {
         scaleX = backBuffer->width / 1280.0f;
     }
     else
     {
-        if ((flags & ALIGN_RIGHT) != 0)
+        if ((modifier.flags & ALIGN_RIGHT) != 0)
             offsetX = g_offsetX * 2.0f;
-        else if ((flags & ALIGN_LEFT) == 0)
+        else if ((modifier.flags & ALIGN_LEFT) == 0)
             offsetX = g_offsetX;
 
-        if ((flags & SCALE) != 0)
+        if ((modifier.flags & SCALE) != 0)
         {
             scaleX = g_scale;
 
-            if ((flags & ALIGN_RIGHT) != 0)
+            if ((modifier.flags & ALIGN_RIGHT) != 0)
                 offsetX += 1280.0f * (1.0f - scaleX);
-            else if ((flags & ALIGN_LEFT) == 0)
+            else if ((modifier.flags & ALIGN_LEFT) == 0)
                 offsetX += 640.0f * (1.0f - scaleX);
         }
 
-        if ((flags & WORLD_MAP) != 0)
+        if ((modifier.flags & WORLD_MAP) != 0)
         {
-            if ((flags & ALIGN_LEFT) != 0)
+            if ((modifier.flags & ALIGN_LEFT) != 0)
                 offsetX += (1.0f - g_worldMapOffset) * -20.0f;
         }
     }
 
-    if ((flags & STRETCH_VERTICAL) != 0)
+    if ((modifier.flags & STRETCH_VERTICAL) != 0)
     {
         scaleY = backBuffer->height / 720.0f;
     }
     else
     {
-        if ((flags & ALIGN_BOTTOM) != 0)
+        if ((modifier.flags & ALIGN_BOTTOM) != 0)
             offsetY = g_offsetY * 2.0f;
-        else if ((flags & ALIGN_TOP) == 0)
+        else if ((modifier.flags & ALIGN_TOP) == 0)
             offsetY = g_offsetY;
 
-        if ((flags & SCALE) != 0)
+        if ((modifier.flags & SCALE) != 0)
         {
             scaleY = g_scale;
 
-            if ((flags & ALIGN_BOTTOM) != 0)
+            if ((modifier.flags & ALIGN_BOTTOM) != 0)
                 offsetY += 720.0f * (1.0f - scaleY);
-            else if ((flags & ALIGN_TOP) == 0)
+            else if ((modifier.flags & ALIGN_TOP) == 0)
                 offsetY += 360.0f * (1.0f - scaleY);
+        }
+    }
+
+    if (g_sceneEx != nullptr && g_sceneModifier.has_value())
+    {
+        if ((modifier.flags & (STORE_LEFT_CORNER | STORE_RIGHT_CORNER)) != 0)
+        {
+            uint32_t vertexIndex = ((modifier.flags & STORE_LEFT_CORNER) != 0) ? 0 : 3;
+            g_sceneEx->cornerNew = *reinterpret_cast<be<float>*>(stack + vertexIndex * stride);
+        }
+
+        if (g_ultrawide)
+        {
+            if ((g_sceneModifier->flags & OFFSET_SCALE_LEFT) != 0)
+                offsetX *= g_sceneEx->corner / g_sceneModifier->cornerMax;
         }
     }
 
@@ -645,6 +746,15 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
 
         float x = offsetX + position[0] * scaleX;
         float y = offsetY + position[1] * scaleY;
+
+        if ((modifier.flags & EXTEND_LEFT) != 0 && (i == 0 || i == 1))
+        {
+            x = std::min(x, 0.0f);
+        }
+        else if ((modifier.flags & EXTEND_RIGHT) != 0 && (i == 2 || i == 3))
+        {
+            x = std::max(x, float(backBuffer->width));
+        }
 
         position[0] = round(x / backBuffer->width * GameWindow::s_width) / GameWindow::s_width * backBuffer->width;
         position[1] = round(y / backBuffer->height * GameWindow::s_height) / GameWindow::s_height * backBuffer->height;

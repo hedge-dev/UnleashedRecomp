@@ -595,11 +595,6 @@ address = 0x825E4120
 registers = ["r3", "r29"]
 
 [[midasm_hook]]
-name = "RenderCsdSceneMidAsmHook"
-address = 0x830C6A34
-registers = ["r30"]
-
-[[midasm_hook]]
 name = "RenderCsdCastNodeMidAsmHook"
 address = 0x830C6A58
 registers = ["r10", "r27"]
@@ -622,4 +617,14 @@ registers = ["f1", "f2"]
 [[midasm_hook]]
 name = "WorldMapInfoMidAsmHook"
 address = 0x8257AF34
+registers = ["r4"]
+
+[[midasm_hook]]
+name = "SceneByteSizeMidAsmHook"
+address = 0x830BEAE8
+registers = ["r4"]
+
+[[midasm_hook]]
+name = "SceneByteSizeMidAsmHook"
+address = 0x830BEBF4
 registers = ["r4"]

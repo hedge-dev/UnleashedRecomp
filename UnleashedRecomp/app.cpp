@@ -70,5 +70,7 @@ PPC_FUNC(sub_822C1130)
     InspirePatches::Update();
 
     __imp__sub_822C1130(ctx, base);
+
+    ++App::s_frame;
 }
 
