@@ -618,13 +618,3 @@ registers = ["f1", "f2"]
 name = "WorldMapInfoMidAsmHook"
 address = 0x8257AF34
 registers = ["r4"]
-
-[[midasm_hook]]
-name = "SceneByteSizeMidAsmHook"
-address = 0x830BEAE8
-registers = ["r4"]
-
-[[midasm_hook]]
-name = "SceneByteSizeMidAsmHook"
-address = 0x830BEBF4
-registers = ["r4"]

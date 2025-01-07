@@ -554,28 +554,6 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_worldmap/header/worldmap_header_img"), { ALIGN_TOP_LEFT | WORLD_MAP } }
 };
 
-static constexpr float UNINITIALIZED_CORNER = FLT_MAX;
-
-struct SceneEx
-{
-    float corner{};
-};
-
-static SceneEx* g_sceneEx = nullptr;
-
-void SceneByteSizeMidAsmHook(PPCRegister& r4)
-{
-    r4.u32 += sizeof(SceneEx);
-}
-
-// Chao::CSD::CScene::CScene
-PPC_FUNC_IMPL(__imp__sub_830BE7F8);
-PPC_FUNC(sub_830BE7F8)
-{
-    new (base + ctx.r3.u32 + 0xE0) SceneEx();
-    __imp__sub_830BE7F8(ctx, base);
-}
-
 static std::optional<CsdModifier> FindModifier(uint32_t data)
 {
     XXH64_hash_t path;
@@ -597,30 +575,15 @@ static std::optional<CsdModifier> FindModifier(uint32_t data)
 }
 
 static std::optional<CsdModifier> g_sceneModifier;
-
-// Chao::CSD::CScene::Render
-PPC_FUNC_IMPL(__imp__sub_830BC640);
-PPC_FUNC(sub_830BC640)
-{
-    g_sceneModifier = FindModifier(PPC_LOAD_U32(ctx.r3.u32 + 0xC));
-    g_sceneEx = reinterpret_cast<SceneEx*>(base + ctx.r3.u32 + 0xE0);
-
-    __imp__sub_830BC640(ctx, base);
-
-#if 1
-    if (g_sceneModifier.has_value() && (g_sceneModifier->flags & (OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT)) != 0 && g_sceneModifier->cornerMax == 0.0f)
-        fmt::println("Corner: {}", g_sceneEx->corner);
-#endif
-
-    g_sceneEx = nullptr;
-}
-
-static bool g_extractCorner;
+static float g_corner;
+static bool g_cornerExtract;
 
 // Chao::CSD::Scene::Render
 PPC_FUNC_IMPL(__imp__sub_830C6A00);
 PPC_FUNC(sub_830C6A00)
 {
+    g_sceneModifier = FindModifier(ctx.r3.u32);
+
     if (g_sceneModifier.has_value() && (g_sceneModifier->flags & (OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT)) != 0)
     {
         auto r3 = ctx.r3;
@@ -629,9 +592,9 @@ PPC_FUNC(sub_830C6A00)
         auto r6 = ctx.r6;
 
         // Queue draw calls, but don't actually draw anything. We just want to extract the corner.
-        g_extractCorner = true;
+        g_cornerExtract = true;
         __imp__sub_830C6A00(ctx, base);
-        g_extractCorner = false;
+        g_cornerExtract = false;
 
         ctx.r3 = r3;
         ctx.r4 = r4;
@@ -678,12 +641,12 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         return;
     }
 
-    if (g_extractCorner)
+    if (g_cornerExtract)
     {
         if ((modifier.flags & (STORE_LEFT_CORNER | STORE_RIGHT_CORNER)) != 0)
         {
             uint32_t vertexIndex = ((modifier.flags & STORE_LEFT_CORNER) != 0) ? 0 : 3;
-            g_sceneEx->corner = *reinterpret_cast<be<float>*>(base + ctx.r4.u32 + vertexIndex * stride);
+            g_corner = *reinterpret_cast<be<float>*>(base + ctx.r4.u32 + vertexIndex * stride);
         }
 
         return;
@@ -755,10 +718,10 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         }
     }
 
-    if (g_ultrawide && g_sceneEx != nullptr && g_sceneModifier.has_value())
+    if (g_ultrawide && g_sceneModifier.has_value())
     {
         if ((g_sceneModifier->flags & OFFSET_SCALE_LEFT) != 0)
-            offsetX *= g_sceneEx->corner / g_sceneModifier->cornerMax;
+            offsetX *= g_corner / g_sceneModifier->cornerMax;
     }
 
     for (size_t i = 0; i < ctx.r5.u32; i++)
