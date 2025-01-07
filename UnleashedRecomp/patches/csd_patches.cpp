@@ -554,15 +554,11 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_worldmap/header/worldmap_header_img"), { ALIGN_TOP_LEFT | WORLD_MAP } }
 };
 
-// Reserve space in managed scene class to store the corner in. 
-// Scenes can be duplicated, so we can't rely on storing them by YNCP scene pointer.
 static constexpr float UNINITIALIZED_CORNER = FLT_MAX;
 
 struct SceneEx
 {
-    float corner = UNINITIALIZED_CORNER;
-    float cornerNew{};
-    uint64_t frame{};
+    float corner{};
 };
 
 static SceneEx* g_sceneEx = nullptr;
@@ -609,20 +605,41 @@ PPC_FUNC(sub_830BC640)
     g_sceneModifier = FindModifier(PPC_LOAD_U32(ctx.r3.u32 + 0xC));
     g_sceneEx = reinterpret_cast<SceneEx*>(base + ctx.r3.u32 + 0xE0);
 
-    if (g_sceneModifier.has_value() && ((g_sceneEx->frame + 1) != App::s_frame || g_sceneEx->corner == UNINITIALIZED_CORNER))
-        g_sceneEx->corner = (g_sceneModifier->flags & OFFSET_SCALE_LEFT) != 0 ? -100000.0f : 100000.0f;
-
     __imp__sub_830BC640(ctx, base);
 
 #if 1
     if (g_sceneModifier.has_value() && (g_sceneModifier->flags & (OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT)) != 0 && g_sceneModifier->cornerMax == 0.0f)
-        fmt::println("Corner: {}", g_sceneEx->cornerNew);
+        fmt::println("Corner: {}", g_sceneEx->corner);
 #endif
 
-    g_sceneEx->corner = g_sceneEx->cornerNew;
-    g_sceneEx->frame = App::s_frame;
-
     g_sceneEx = nullptr;
+}
+
+static bool g_extractCorner;
+
+// Chao::CSD::Scene::Render
+PPC_FUNC_IMPL(__imp__sub_830C6A00);
+PPC_FUNC(sub_830C6A00)
+{
+    if (g_sceneModifier.has_value() && (g_sceneModifier->flags & (OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT)) != 0)
+    {
+        auto r3 = ctx.r3;
+        auto r4 = ctx.r4;
+        auto r5 = ctx.r5;
+        auto r6 = ctx.r6;
+
+        // Queue draw calls, but don't actually draw anything. We just want to extract the corner.
+        g_extractCorner = true;
+        __imp__sub_830C6A00(ctx, base);
+        g_extractCorner = false;
+
+        ctx.r3 = r3;
+        ctx.r4 = r4;
+        ctx.r5 = r5;
+        ctx.r6 = r6;
+    }
+
+    __imp__sub_830C6A00(ctx, base);
 }
 
 static std::optional<CsdModifier> g_castNodeModifier;
@@ -657,7 +674,20 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     }
 
     if ((modifier.flags & SKIP) != 0)
+    {
         return;
+    }
+
+    if (g_extractCorner)
+    {
+        if ((modifier.flags & (STORE_LEFT_CORNER | STORE_RIGHT_CORNER)) != 0)
+        {
+            uint32_t vertexIndex = ((modifier.flags & STORE_LEFT_CORNER) != 0) ? 0 : 3;
+            g_sceneEx->corner = *reinterpret_cast<be<float>*>(base + ctx.r4.u32 + vertexIndex * stride);
+        }
+
+        return;
+    }
 
     if (Config::UIScaleMode == EUIScaleMode::Centre && (modifier.flags & SCALE) != 0)
         modifier.flags &= ~(ALIGN_TOP | ALIGN_LEFT | ALIGN_BOTTOM | ALIGN_RIGHT);
@@ -725,19 +755,10 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         }
     }
 
-    if (g_sceneEx != nullptr && g_sceneModifier.has_value())
+    if (g_ultrawide && g_sceneEx != nullptr && g_sceneModifier.has_value())
     {
-        if ((modifier.flags & (STORE_LEFT_CORNER | STORE_RIGHT_CORNER)) != 0)
-        {
-            uint32_t vertexIndex = ((modifier.flags & STORE_LEFT_CORNER) != 0) ? 0 : 3;
-            g_sceneEx->cornerNew = *reinterpret_cast<be<float>*>(stack + vertexIndex * stride);
-        }
-
-        if (g_ultrawide)
-        {
-            if ((g_sceneModifier->flags & OFFSET_SCALE_LEFT) != 0)
-                offsetX *= g_sceneEx->corner / g_sceneModifier->cornerMax;
-        }
+        if ((g_sceneModifier->flags & OFFSET_SCALE_LEFT) != 0)
+            offsetX *= g_sceneEx->corner / g_sceneModifier->cornerMax;
     }
 
     for (size_t i = 0; i < ctx.r5.u32; i++)

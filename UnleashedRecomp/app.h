@@ -9,7 +9,6 @@ public:
     static inline bool s_isMissingDLC;
     static inline bool s_isLoading;
     static inline bool s_isWerehog;
-    static inline uint64_t s_frame;
     
     static inline ELanguage s_language;
 
