@@ -6,14 +6,14 @@
 #include <ui/game_window.h>
 #include <ui/imgui_utils.h>
 
-#include <res/images/debug_menu/button_close_1.dds.h>
-#include <res/images/debug_menu/button_close_2.dds.h>
-#include <res/images/debug_menu/button_minimum_1.dds.h>
-#include <res/images/debug_menu/button_minimum_2.dds.h>
-#include <res/images/debug_menu/button_pin_1.dds.h>
-#include <res/images/debug_menu/button_pin_2.dds.h>
-#include <res/images/debug_menu/common_icon.dds.h>
-#include <res/images/debug_menu/title_bar.dds.h>
+#include <res/images/reddog/button_close_1.dds.h>
+#include <res/images/reddog/button_close_2.dds.h>
+#include <res/images/reddog/button_minimum_1.dds.h>
+#include <res/images/reddog/button_minimum_2.dds.h>
+#include <res/images/reddog/button_pin_1.dds.h>
+#include <res/images/reddog/button_pin_2.dds.h>
+#include <res/images/reddog/common_icon.dds.h>
+#include <res/images/reddog/title_bar.dds.h>
 
 constexpr float MIN_WINDOW_SIZE = 21.0f;
 
