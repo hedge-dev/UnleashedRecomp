@@ -490,6 +490,8 @@ void GameWindow::ResetDimensions()
     Config::WindowY = s_y;
     Config::WindowWidth = s_width;
     Config::WindowHeight = s_height;
+
+    SetDimensions(s_width, s_height, s_x, s_y);
 }
 
 uint32_t GameWindow::GetWindowFlags()
