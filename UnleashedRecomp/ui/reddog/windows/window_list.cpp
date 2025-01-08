@@ -1,4 +1,5 @@
 #include "window_list.h"
+#include <ui/reddog/reddog_controls.h>
 
 static WindowList g_window;
 
@@ -13,7 +14,7 @@ void WindowList::Draw()
             if ((pTrueWindow->Flags & Reddog::eWindowFlags_NoListEntry) != 0)
                 continue;
 
-            if (ImGui::Button(pTrueWindow->Name, { 190, 26 }))
+            if (Reddog::ExplicitButton(pTrueWindow->Name, Reddog::EButtonTextAlignment::Left, { 190, 32 }, 1.1f))
                 pTrueWindow->SetVisible();
         }
     }

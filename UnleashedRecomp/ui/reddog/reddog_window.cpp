@@ -59,6 +59,7 @@ void Reddog::InitWindowResources()
 void Reddog::Window::BeginStyle()
 {
     g_font->Scale = ImGui::GetDefaultFont()->FontSize / g_font->FontSize;
+
     ImGui::PushFont(g_font);
 
     UpdateStyle();
@@ -71,8 +72,8 @@ void Reddog::Window::UpdateStyle()
     style.WindowMinSize = { 0, MIN_WINDOW_SIZE };
 
     auto colBg = IsFocused
-        ? ImU32ToImVec4(ActiveColour)
-        : ImU32ToImVec4(InactiveColour);
+        ? ImGui::ColorConvertU32ToFloat4(ActiveColour)
+        : ImGui::ColorConvertU32ToFloat4(InactiveColour);
 
     auto colBlack = ImVec4(0, 0, 0, 1);
     auto colTrans = ImVec4(0, 0, 0, 0);
@@ -106,6 +107,7 @@ void Reddog::Window::UpdateStyle()
 void Reddog::Window::EndStyle()
 {
     ImGui::PopFont();
+
     g_font->Scale = g_defaultFontScale;
 
     ImGui::GetStyle() = g_defaultStyle;

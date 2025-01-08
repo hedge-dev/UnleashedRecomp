@@ -119,3 +119,56 @@ void Reddog::Separator(float upperPadding, float lowerPadding)
     ImGui::Separator();
     ImGui::Dummy(ImVec2(0.0f, lowerPadding));
 }
+
+bool Reddog::ExplicitButton(const char* label, EButtonTextAlignment textAlignment, const ImVec2& size, float fontScale)
+{
+    auto window = ImGui::GetCurrentWindow();
+
+    if (window->SkipItems)
+        return false;
+
+    auto font = ImGui::GetFont();
+    font->Scale = fontScale;
+
+    ImGui::PushFont(font);
+
+    ImVec2 textSize = ImGui::CalcTextSize(label);
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+    ImVec2 buttonMax = { pos.x + size.x, pos.y + size.y };
+
+    ImGui::InvisibleButton(label, size);
+
+    bool isHovered = ImGui::IsItemHovered();
+    bool isActive = ImGui::IsItemActive();
+
+    ImVec4 colBg = isHovered ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered) : ImGui::GetStyleColorVec4(ImGuiCol_Button);
+    ImVec4 colBorder = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+    ImVec4 colText = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+
+    window->DrawList->AddRectFilled(pos, buttonMax, ImGui::ColorConvertFloat4ToU32(colBg));
+    window->DrawList->AddRect(pos, buttonMax, ImGui::ColorConvertFloat4ToU32(colBorder));
+
+    auto colTextU32 = ImGui::ColorConvertFloat4ToU32(colText);
+    auto framePadding = ImGui::GetStyle().FramePadding;
+    auto marginX = 8.0f;
+    auto textY = (pos.y + (size.y - textSize.y) * 0.5f) - 1.0f;
+
+    switch (textAlignment)
+    {
+        case EButtonTextAlignment::Left:
+            window->DrawList->AddText({ pos.x + framePadding.x + marginX, textY }, colTextU32, label);
+            break;
+
+        case EButtonTextAlignment::Centre:
+            window->DrawList->AddText({ pos.x + (size.x - textSize.x) * 0.5f, textY }, colTextU32, label);
+            break;
+
+        case EButtonTextAlignment::Right:
+            window->DrawList->AddText({ size.x - framePadding.x - textSize.x - marginX, textY }, colTextU32, label);
+            break;
+    }
+
+    ImGui::PopFont();
+
+    return isActive;
+}
