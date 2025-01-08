@@ -1,4 +1,5 @@
 #include "view_window.h"
+#include <gpu/video.h>
 #include <kernel/memory.h>
 #include <ui/reddog/reddog_controls.h>
 #include <ui/game_window.h>
@@ -10,6 +11,7 @@ void ViewWindow::Draw()
 {
     if (Begin())
     {
+        Reddog::Checkbox("Render FPS", &Config::ShowFPS.Value);
         Reddog::Checkbox("Render HUD (F8)", (bool*)g_memory.Translate(0x8328BB26));
         Reddog::Separator();
 

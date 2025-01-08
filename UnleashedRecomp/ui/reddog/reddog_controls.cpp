@@ -128,13 +128,6 @@ bool Reddog::Checkbox(const char* label, bool* v)
     return isPressed;
 }
 
-void Reddog::Separator(float upperPadding, float lowerPadding)
-{
-    ImGui::Dummy(ImVec2(0.0f, upperPadding));
-    ImGui::Separator();
-    ImGui::Dummy(ImVec2(0.0f, lowerPadding));
-}
-
 bool Reddog::ExplicitButton(const char* label, EButtonTextAlignment textAlignment, const ImVec2& size, float fontScale)
 {
     auto window = ImGui::GetCurrentWindow();
@@ -186,4 +179,11 @@ bool Reddog::ExplicitButton(const char* label, EButtonTextAlignment textAlignmen
     ImGui::PopFont();
 
     return isActive;
+}
+
+void Reddog::Separator(float upperPadding, float lowerPadding)
+{
+    ImGui::Dummy(ImVec2(0.0f, upperPadding));
+    ImGui::Separator();
+    ImGui::Dummy(ImVec2(0.0f, lowerPadding));
 }

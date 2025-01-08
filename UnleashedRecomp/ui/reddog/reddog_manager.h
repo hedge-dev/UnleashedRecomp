@@ -9,6 +9,8 @@ namespace Reddog
     public:
         static inline bool s_isVisible = false;
 
+        static inline ImFont* s_font{ nullptr };
+
         static void Init();
         static void Draw();
 

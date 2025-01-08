@@ -1,6 +1,4 @@
 #include "reddog_window.h"
-
-#include <gpu/imgui/imgui_snapshot.h>
 #include <gpu/video.h>
 #include <ui/reddog/reddog_manager.h>
 #include <ui/game_window.h>
@@ -27,9 +25,7 @@ static std::unique_ptr<GuestTexture> g_upCommonIcon;
 static std::unique_ptr<GuestTexture> g_upTitleBar;
 static std::unique_ptr<GuestTexture> g_upWindowFrame;
 
-ImFont* g_font;
 float g_defaultFontScale;
-
 ImGuiStyle g_defaultStyle;
 
 static std::vector<Reddog::IWindow*>& Reddog::GetWindows()
@@ -40,8 +36,7 @@ static std::vector<Reddog::IWindow*>& Reddog::GetWindows()
 
 void Reddog::InitWindowResources()
 {
-    g_font = ImFontAtlasSnapshot::GetFont("micross.ttf");
-    g_defaultFontScale = g_font->Scale;
+    g_defaultFontScale = Reddog::Manager::s_font->Scale;
 
     auto& style = ImGui::GetStyle();
     g_defaultStyle = style;
@@ -58,9 +53,9 @@ void Reddog::InitWindowResources()
 
 void Reddog::Window::BeginStyle()
 {
-    g_font->Scale = ImGui::GetDefaultFont()->FontSize / g_font->FontSize;
+    Reddog::Manager::s_font->Scale = ImGui::GetDefaultFont()->FontSize / Reddog::Manager::s_font->FontSize;
 
-    ImGui::PushFont(g_font);
+    ImGui::PushFont(Reddog::Manager::s_font);
 
     UpdateStyle();
 }
@@ -108,7 +103,7 @@ void Reddog::Window::EndStyle()
 {
     ImGui::PopFont();
 
-    g_font->Scale = g_defaultFontScale;
+    Reddog::Manager::s_font->Scale = g_defaultFontScale;
 
     ImGui::GetStyle() = g_defaultStyle;
 }

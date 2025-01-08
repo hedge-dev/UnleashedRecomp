@@ -27,6 +27,7 @@
 #include <ui/options_menu.h>
 #include <ui/sdl_listener.h>
 #include <ui/game_window.h>
+#include <ui/imgui_utils.h>
 #include <user/config.h>
 #include <xxHashMap.h>
 
@@ -2003,6 +2004,25 @@ void Video::DrawCounter()
     const char* sdlVideoDriver = SDL_GetCurrentVideoDriver();
     if (sdlVideoDriver != nullptr)
         ImGui::Text("SDL Video Driver: %s", sdlVideoDriver);
+}
+
+void Video::DrawFPS(ImFont* font)
+{
+    if (!Config::ShowFPS)
+        return;
+
+    auto drawList = ImGui::GetBackgroundDrawList();
+
+    auto fmt = fmt::format("FPS: {:.2f}", 1000.0 / g_presentProfiler.value.load());
+    auto fontSize = Scale(12.0f);
+    auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, fmt.c_str());
+
+    ImVec2 min = { Scale(40), Scale(30) };
+    ImVec2 max = { min.x + std::max(Scale(75), textSize.x + Scale(10)), min.y + Scale(15) };
+    ImVec2 textPos = { min.x + Scale(2), CENTRE_TEXT_VERT(min, max, textSize) - Scale(0.5f) };
+
+    drawList->AddRectFilled(min, max, IM_COL32(0, 0, 0, 255));
+    drawList->AddText(font, fontSize, textPos, IM_COL32_WHITE, fmt.c_str());
 }
 
 static void DrawImGui()

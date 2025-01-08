@@ -596,7 +596,7 @@ public:
     CONFIG_DEFINE_LOCALISED("System", bool, ControlTutorial, true);
     CONFIG_DEFINE_LOCALISED("System", bool, AchievementNotifications, true);
     CONFIG_DEFINE_ENUM_LOCALISED("System", ETimeOfDayTransition, TimeOfDayTransition, ETimeOfDayTransition::Xbox);
-    CONFIG_DEFINE("System", bool, Debug, false);
+    CONFIG_DEFINE_HIDDEN("System", bool, Debug, false);
 
     CONFIG_DEFINE_LOCALISED("Input", bool, InvertCameraX, false);
     CONFIG_DEFINE_LOCALISED("Input", bool, InvertCameraY, false);
@@ -663,6 +663,8 @@ public:
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EMotionBlur, MotionBlur, EMotionBlur::Original);
     CONFIG_DEFINE_LOCALISED("Video", bool, XboxColorCorrection, false);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EUIScaleMode, UIScaleMode, EUIScaleMode::Edge);
+
+    CONFIG_DEFINE_HIDDEN("Debug", bool, ShowFPS, false);
 
     CONFIG_DEFINE_HIDDEN("Exports", bool, AllowCancellingUnleash, false);
     CONFIG_DEFINE_HIDDEN("Exports", bool, DisableAutoSaveWarning, false);

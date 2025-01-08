@@ -21,6 +21,7 @@ struct Video
     static void StartPipelinePrecompilation();
     static void WaitForGPU();
     static void DrawCounter();
+    static void DrawFPS(ImFont* font);
 };
 
 struct GuestSamplerState

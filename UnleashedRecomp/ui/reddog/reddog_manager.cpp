@@ -1,4 +1,5 @@
 #include "reddog_manager.h"
+#include <gpu/imgui/imgui_snapshot.h>
 #include <gpu/video.h>
 #include <ui/reddog/windows/window_list.h>
 #include <ui/reddog/reddog_controls.h>
@@ -19,6 +20,7 @@ static bool g_isWindowListVisible = false;
 
 void Reddog::Manager::Init()
 {
+    s_font = ImFontAtlasSnapshot::GetFont("micross.ttf");
     g_upDebugIcon = LoadTexture(g_debug_icon, sizeof(g_debug_icon));
 
     Reddog::InitControlsResources();
@@ -42,6 +44,8 @@ void Reddog::Manager::Draw()
     }
 
     g_isReddogToggled = isReddogToggled;
+
+    Video::DrawFPS(s_font);
 
     if (!s_isVisible)
         return;
