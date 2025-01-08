@@ -45,7 +45,11 @@ float4 main(in float4 iPosition : SV_Position, in float4 iTexCoord0 : TEXCOORD0)
     Texture2D<float4> texture = g_Texture2DDescriptorHeap[s0_Texture2DDescriptorIndex];
     SamplerState samplerState = g_SamplerDescriptorHeap[s0_SamplerDescriptorIndex];
     
-    float scale = g_ViewportSize.y / 360.0;
+    float scale;
+    if ((g_ViewportSize.x * g_ViewportSize.w) >= (16.0 / 9.0))
+        scale = g_ViewportSize.y / 360.0;
+    else
+        scale = g_ViewportSize.x / 640.0;
     
     float2 offsets[3];
     offsets[0] = g_offsets(0).xy * scale;
