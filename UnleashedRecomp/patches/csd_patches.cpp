@@ -411,7 +411,10 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     // ui_misson
     { HashStr("ui_misson/bg"), { STRETCH } },
     { HashStr("ui_misson/footer/footer_B"), { ALIGN_BOTTOM } },
-    { HashStr("ui_misson/header/misson_title_B"), { ALIGN_TOP } },
+    { HashStr("ui_misson/header/misson_title_B"), { ALIGN_TOP | OFFSET_SCALE_LEFT, 638.0f } },
+    { HashStr("ui_misson/header/misson_title_B/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
+    { HashStr("ui_misson/header/misson_title_B/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT} },
+    { HashStr("ui_misson/header/misson_title_B/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
     { HashStr("ui_misson/window/bg_B2/position/bg"), { STRETCH } },
 
     // ui_pause
@@ -829,19 +832,48 @@ PPC_FUNC(sub_82E16C70)
     __imp__sub_82E16C70(ctx, base);
 }
 
+// Store whether the primitive should be stretched in available padding space.
+static constexpr size_t PRIMITIVE_2D_PADDING_OFFSET = 0x29;
+
+// Hedgehog::MirageDebug::CPrimitive2D::CPrimitive2D
+PPC_FUNC_IMPL(__imp__sub_822D0328);
+PPC_FUNC(sub_822D0328)
+{
+    PPC_STORE_U8(ctx.r3.u32 + PRIMITIVE_2D_PADDING_OFFSET, 0x00);
+    __imp__sub_822D0328(ctx, base);
+}
+
+// Hedgehog::MirageDebug::CPrimitive2D::CPrimitive2D(const Hedgehog::MirageDebug::CPrimitive2D&)
+PPC_FUNC_IMPL(__imp__sub_830D2328);
+PPC_FUNC(sub_830D2328)
+{
+    PPC_STORE_U8(ctx.r3.u32 + PRIMITIVE_2D_PADDING_OFFSET, PPC_LOAD_U8(ctx.r4.u32 + PRIMITIVE_2D_PADDING_OFFSET));
+    __imp__sub_830D2328(ctx, base);
+}
+
+void AddPrimitive2DMidAsmHook(PPCRegister& r3)
+{
+    *(g_memory.base + r3.u32 + PRIMITIVE_2D_PADDING_OFFSET) = 0x01;
+}
+
 // Hedgehog::MirageDebug::CPrimitive2D::Draw
 PPC_FUNC_IMPL(__imp__sub_830D1EF0);
 PPC_FUNC(sub_830D1EF0)
 {
+    auto r3 = ctx.r3;
+
     __imp__sub_830D1EF0(ctx, base);
 
-    auto backBuffer = Video::GetBackBuffer();
-    auto position = reinterpret_cast<be<float>*>(base + ctx.r4.u32);
-
-    for (size_t i = 0; i < 4; i++)
+    if (!PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET))
     {
-        position[0] = position[0] * 1280.0f / backBuffer->width;
-        position[1] = position[1] * 720.0f / backBuffer->height;
-        position += 7;
+        auto backBuffer = Video::GetBackBuffer();
+        auto position = reinterpret_cast<be<float>*>(base + ctx.r4.u32);
+
+        for (size_t i = 0; i < 4; i++)
+        {
+            position[0] = position[0] * 1280.0f / backBuffer->width;
+            position[1] = position[1] * 720.0f / backBuffer->height;
+            position += 7;
+        }
     }
 }

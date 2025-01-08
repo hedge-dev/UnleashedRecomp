@@ -618,3 +618,8 @@ registers = ["f1", "f2"]
 name = "WorldMapInfoMidAsmHook"
 address = 0x8257AF34
 registers = ["r4"]
+
+[[midasm_hook]]
+name = "AddPrimitive2DMidAsmHook"
+address = 0x824DB3E4
+registers = ["r3"]
