@@ -80,8 +80,8 @@ void Reddog::Window::UpdateStyle()
 
     style.Colors[ImGuiCol_Border] = colTrans;
     style.Colors[ImGuiCol_Button] = colTrans;
-    style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.8f, 0.788f, 0.741f, 1);
-    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.722f, 0.714f, 0.667f, 1);
+    style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.67f, 0.67f, 0.67f, 1);
+    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.675f, 0.675f, 0.675f, 1);
     style.Colors[ImGuiCol_CheckMark] = colBlack;
     style.Colors[ImGuiCol_ChildBg] = colBg;
     style.Colors[ImGuiCol_FrameBg] = colBg;
@@ -213,21 +213,26 @@ void Reddog::Window::DrawFrame()
         auto centre = PIXELS_TO_UV_COORDS(32, 32, 3, 0, 26, 32);
         auto right = PIXELS_TO_UV_COORDS(32, 32, 29, 0, 3, 32);
 
-        auto col = isFocused
-            ? IM_COL32(245, 245, 245, 255)
-            : IM_COL32(246, 226, 202, 255);
+        auto colTitleBar = isFocused
+            ? IM_COL32(220, 220, 247, 255)
+            : IM_COL32(176, 176, 176, 255);
 
-        drawList->AddImage(g_upTitleBar.get(), { windowPos.x, windowPos.y }, { windowPos.x + 3, windowPos.y + height }, GET_UV_COORDS(left), col);
-        drawList->AddImage(g_upTitleBar.get(), { windowPos.x + 3, windowPos.y }, { windowPos.x + windowSize.x - 3, windowPos.y + height }, GET_UV_COORDS(centre), col);
-        drawList->AddImage(g_upTitleBar.get(), { windowPos.x + windowSize.x - 3, windowPos.y }, { windowPos.x + windowSize.x, windowPos.y + height }, GET_UV_COORDS(right), col);
+        drawList->AddImage(g_upTitleBar.get(), { windowPos.x, windowPos.y }, { windowPos.x + 3, windowPos.y + height }, GET_UV_COORDS(left), colTitleBar);
+        drawList->AddImage(g_upTitleBar.get(), { windowPos.x + 3, windowPos.y }, { windowPos.x + windowSize.x - 3, windowPos.y + height }, GET_UV_COORDS(centre), colTitleBar);
+        drawList->AddImage(g_upTitleBar.get(), { windowPos.x + windowSize.x - 3, windowPos.y }, { windowPos.x + windowSize.x, windowPos.y + height }, GET_UV_COORDS(right), colTitleBar);
 
         auto cmnSize = 16.0f;
 
         ImVec2 cmnIconMin = { windowPos.x + 9, windowPos.y + 2 };
         ImVec2 cmnIconMax = { cmnIconMin.x + cmnSize, cmnIconMin.y + cmnSize };
 
-        drawList->AddImage(g_upCommonIcon.get(), cmnIconMin, cmnIconMax, { 0, 0 }, { 1, 1 }, IM_COL32(255, 255, 255, 255));
-        drawList->AddText({ cmnIconMax.x + 5, windowPos.y + 4 }, IM_COL32(255, 255, 255, 255), Name);
+        drawList->AddImage(g_upCommonIcon.get(), cmnIconMin, cmnIconMax, { 0, 0 }, { 1, 1 }, IM_COL32_WHITE);
+
+        auto colTitleText = isFocused
+            ? IM_COL32_WHITE
+            : IM_COL32(190, 190, 190, 255);
+
+        drawList->AddText({ cmnIconMax.x + 5, windowPos.y + 4 }, colTitleText, Name);
 
         ImVec2 closeButtonMin = { windowPos.x + windowSize.x - cmnSize - 4, windowPos.y + 3 };
         ImVec2 closeButtonMax = { closeButtonMin.x + cmnSize, closeButtonMin.y + cmnSize };

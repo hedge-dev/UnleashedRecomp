@@ -54,8 +54,8 @@ namespace Reddog
         bool IsPinned{ true };
         bool IsVisible{};
         ImGuiWindow* ImWindow{ nullptr };
-        ImU32 ActiveColour{ IM_COL32(232, 231, 255, 255) };
-        ImU32 InactiveColour{ IM_COL32(193, 192, 181, 255) };
+        ImU32 ActiveColour{ IM_COL32(227, 227, 255, 255) };
+        ImU32 InactiveColour{ IM_COL32(182, 182, 182, 255) };
 
         Window()
         {
