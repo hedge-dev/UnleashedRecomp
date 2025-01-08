@@ -40,7 +40,7 @@ bool Reddog::Button(const char* label)
     if (label && label[0] != '\0')
         labelSize = ImGui::CalcTextSize(label, nullptr, true);
 
-    ImVec2 size = { BUTTON_SIZE + labelSize.x, BUTTON_SIZE };
+    ImVec2 size = { BUTTON_SIZE / 2 + labelSize.x, BUTTON_SIZE / 2 };
     ImRect rect(pos, { pos.x + size.x, pos.y + size.y });
     ImRect paddedRect({ rect.Min.x, rect.Min.y - 1 }, { rect.Max.x, rect.Max.y + 1 });
 
@@ -56,16 +56,31 @@ bool Reddog::Button(const char* label)
         ? g_upCommonButton2.get()
         : g_upCommonButton1.get();
 
-    auto left = PIXELS_TO_UV_COORDS(32, 32, 0, 0, 9, 32);
-    auto centre = PIXELS_TO_UV_COORDS(32, 32, 9, 0, 14, 32);
-    auto right = PIXELS_TO_UV_COORDS(32, 32, 23, 0, 9, 32);
+    constexpr float uvSize = 6.0f / 2.0f;
+    auto tl = PIXELS_TO_UV_COORDS(32, 32, 0, 0, 8, 8);
+    auto tc = PIXELS_TO_UV_COORDS(32, 32, 8, 0, 16, 8);
+    auto tr = PIXELS_TO_UV_COORDS(32, 32, 24, 0, 8, 8);
+    auto cl = PIXELS_TO_UV_COORDS(32, 32, 0, 8, 8, 16);
+    auto cc = PIXELS_TO_UV_COORDS(32, 32, 8, 8, 16, 16);
+    auto cr = PIXELS_TO_UV_COORDS(32, 32, 24, 8, 8, 16);
+    auto bl = PIXELS_TO_UV_COORDS(32, 32, 0, 24, 8, 8);
+    auto bc = PIXELS_TO_UV_COORDS(32, 32, 8, 24, 16, 8);
+    auto br = PIXELS_TO_UV_COORDS(32, 32, 24, 24, 8, 8);
 
-    window->DrawList->AddImage(texture, rect.Min, { rect.Min.x + 9, rect.Max.y }, GET_UV_COORDS(left));
-    window->DrawList->AddImage(texture, { rect.Min.x + 9, rect.Min.y }, { rect.Max.x - 9, rect.Max.y }, GET_UV_COORDS(centre));
-    window->DrawList->AddImage(texture, { rect.Max.x - 9, rect.Min.y }, rect.Max, GET_UV_COORDS(right));
+    window->DrawList->AddImage(texture, rect.Min, { rect.Min.x + uvSize, rect.Min.y + uvSize }, GET_UV_COORDS(tl));
+    window->DrawList->AddImage(texture, { rect.Min.x + uvSize, rect.Min.y }, { rect.Max.x - uvSize, rect.Min.y + uvSize }, GET_UV_COORDS(tc));
+    window->DrawList->AddImage(texture, { rect.Max.x - uvSize, rect.Min.y }, { rect.Max.x, rect.Min.y + uvSize }, GET_UV_COORDS(tr));
+    window->DrawList->AddImage(texture, { rect.Min.x, rect.Min.y + uvSize }, { rect.Min.x + uvSize, rect.Max.y - uvSize }, GET_UV_COORDS(cl));
+    window->DrawList->AddImage(texture, { rect.Min.x + uvSize, rect.Min.y + uvSize }, { rect.Max.x - uvSize, rect.Max.y - uvSize }, GET_UV_COORDS(cc));
+    window->DrawList->AddImage(texture, { rect.Max.x - uvSize, rect.Min.y + uvSize }, { rect.Max.x, rect.Max.y - uvSize }, GET_UV_COORDS(cr));
+    window->DrawList->AddImage(texture, { rect.Min.x, rect.Max.y - uvSize }, { rect.Min.x + uvSize, rect.Max.y }, GET_UV_COORDS(bl));
+    window->DrawList->AddImage(texture, { rect.Min.x + uvSize, rect.Max.y - uvSize }, { rect.Max.x - uvSize, rect.Max.y }, GET_UV_COORDS(bc));
+    window->DrawList->AddImage(texture, { rect.Max.x - uvSize, rect.Max.y - uvSize }, rect.Max, GET_UV_COORDS(br));
+
+    float textOffset = isHeld && isPressed ? 1.0f : 0.0f;
 
     if (label && label[0] != '\0')
-        ImGui::RenderText({ rect.Min.x + (size.x - labelSize.x) * 0.5f, rect.Min.y + (size.y - labelSize.y) * 0.5f }, label);
+        ImGui::RenderText({ textOffset + rect.Min.x + (size.x - labelSize.x) * 0.5f, textOffset + rect.Min.y + (size.y - labelSize.y) * 0.5f }, label);
 
     return isPressed;
 }

@@ -10,7 +10,7 @@ void ViewWindow::Draw()
 {
     if (Begin())
     {
-        Reddog::Checkbox("Draw HUD (F8)", (bool*)g_memory.Translate(0x8328BB26));
+        Reddog::Checkbox("Render HUD (F8)", (bool*)g_memory.Translate(0x8328BB26));
         Reddog::Separator();
 
         if (Reddog::Button("Reset Window Dimensions (F2)"))
