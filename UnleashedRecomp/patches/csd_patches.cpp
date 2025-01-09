@@ -178,11 +178,11 @@ static constexpr float STEAM_DECK_ASPECT_RATIO = 16.0f / 10.0f;
 static constexpr float TALL_ASPECT_RATIO = 1.0f / WIDE_ASPECT_RATIO;
 static constexpr float TALL_SCALE = 1280.0f / 960.0f;
 
+static float g_aspectRatio;
 static float g_offsetX;
 static float g_offsetY;
 static float g_scale;
 static float g_worldMapOffset;
-static bool g_ultrawide;
 
 static float ComputeScale(float aspectRatio)
 {
@@ -191,23 +191,23 @@ static float ComputeScale(float aspectRatio)
 
 static void ComputeOffsets(float width, float height)
 {
-    float aspectRatio = width / height;
+    g_aspectRatio = width / height;
     g_scale = 1.0f;
 
-    if (aspectRatio >= NARROW_ASPECT_RATIO)
+    if (g_aspectRatio >= NARROW_ASPECT_RATIO)
     {
         // height is locked to 720 in this case 
-        g_offsetX = 0.5f * (aspectRatio * 720.0f - 1280.0f);
+        g_offsetX = 0.5f * (g_aspectRatio * 720.0f - 1280.0f);
         g_offsetY = 0.0f;
 
         // keep same scale above Steam Deck aspect ratio
-        if (aspectRatio < WIDE_ASPECT_RATIO)
+        if (g_aspectRatio < WIDE_ASPECT_RATIO)
         {
             // interpolate to original 4:3 scale
-            float steamDeckScale = aspectRatio / WIDE_ASPECT_RATIO;
+            float steamDeckScale = g_aspectRatio / WIDE_ASPECT_RATIO;
             float narrowScale = ComputeScale(NARROW_ASPECT_RATIO);
 
-            float lerpFactor = std::clamp((aspectRatio - NARROW_ASPECT_RATIO) / (STEAM_DECK_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
+            float lerpFactor = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (STEAM_DECK_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
             g_scale = narrowScale + (steamDeckScale - narrowScale) * lerpFactor;
         }
     }
@@ -215,15 +215,14 @@ static void ComputeOffsets(float width, float height)
     {
         // width is locked to 960 in this case to have 4:3 crop
         g_offsetX = 0.5f * (960.0f - 1280.0f);
-        g_offsetY = 0.5f * (960.0f / aspectRatio - 720.0f);
+        g_offsetY = 0.5f * (960.0f / g_aspectRatio - 720.0f);
 
         // scale to 16:9 as the aspect ratio becomes 9:16
-        float factor = std::clamp((aspectRatio - TALL_ASPECT_RATIO) / (NARROW_ASPECT_RATIO - TALL_ASPECT_RATIO), 0.0f, 1.0f);
+        float factor = std::clamp((g_aspectRatio - TALL_ASPECT_RATIO) / (NARROW_ASPECT_RATIO - TALL_ASPECT_RATIO), 0.0f, 1.0f);
         g_scale = TALL_SCALE + factor * (ComputeScale(NARROW_ASPECT_RATIO) - TALL_SCALE);
     } 
 
-    g_worldMapOffset = std::clamp((aspectRatio - NARROW_ASPECT_RATIO) / (WIDE_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
-    g_ultrawide = aspectRatio > WIDE_ASPECT_RATIO;
+    g_worldMapOffset = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (WIDE_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
 }
 
 static class SDLEventListenerForCSD : public SDLEventListener
@@ -770,7 +769,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         }
     }
 
-    if (g_ultrawide && g_sceneModifier.has_value())
+    if (g_aspectRatio > WIDE_ASPECT_RATIO && g_sceneModifier.has_value())
     {
         if ((g_sceneModifier->flags & OFFSET_SCALE_LEFT) != 0)
             offsetX *= g_corner / g_sceneModifier->cornerMax;
