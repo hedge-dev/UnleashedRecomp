@@ -5,6 +5,8 @@
 #include <ui/sdl_listener.h>
 #include <gpu/video.h>
 
+#include "camera_patches.h"
+
 // These are here for now to not recompile basically all of the project.
 namespace Chao::CSD
 {
@@ -874,5 +876,68 @@ PPC_FUNC(sub_830D1EF0)
             position[1] = position[1] * 720.0f / backBuffer->height;
             position += 7;
         }
+    }
+}
+
+// Objects are pushed forward by 1m, so the coordinates need to compensate for it.
+static const double OBJ_GET_ITEM_TANGENT = tan(M_PI / 8.0);
+
+// Coordinates are in [-1, 1] range. Automatically fit and centered.
+// The tangent is calculated incorrectly in game, causing distortion.
+// This hook makes them move to the correct position regardless of FOV.
+void ObjGetItemFieldOfViewMidAsmHook(PPCRegister& r1, PPCRegister& f1)
+{
+    *reinterpret_cast<be<float>*>(g_memory.base + r1.u32 + 0x58) = tan(AdjustFieldOfView(f1.f64, g_aspectRatio) / 2.0) / OBJ_GET_ITEM_TANGENT;
+}
+
+// SWA::CObjGetItem::GetX
+PPC_FUNC(sub_82690660)
+{
+    uint32_t type = PPC_LOAD_U32(ctx.r3.u32 + 0xE8);
+    if (type >= 47) // Ring, Moon Medal, Sun Medal
+    {
+        double x;
+
+        if (type == 47) // Ring
+            x = 142.0;
+        else // Medal
+            x = 0.0; // TODO
+
+        x *= g_scale;
+
+        if (type != 47)
+            x += g_offsetX * 2.0 + (1280.0 * (1.0 - g_scale));
+
+        auto backBuffer = Video::GetBackBuffer();
+        ctx.f1.f64 = (x - (0.5 * backBuffer->width)) / (0.5 * backBuffer->height) * OBJ_GET_ITEM_TANGENT;
+    }
+    else
+    {
+        ctx.f1.f64 = 0.0;
+    }
+}
+
+// SWA::CObjGetItem::GetY
+PPC_FUNC(sub_826906A8)
+{
+    uint32_t type = PPC_LOAD_U32(ctx.r3.u32 + 0xE8);
+    if (type >= 47) // Ring, Moon Medal, Sun Medal
+    {
+        double y;
+
+        if (type == 47) // Ring
+            y = 642.0;
+        else // Medal
+            y = 0.0; // TODO
+
+        y *= g_scale;
+        y += g_offsetY * 2.0 + 720.0 * (1.0 - g_scale);
+
+        auto backBuffer = Video::GetBackBuffer();
+        ctx.f1.f64 = ((0.5 * backBuffer->height) - y) / (0.5 * backBuffer->height) * OBJ_GET_ITEM_TANGENT;
+    }
+    else
+    {
+        ctx.f1.f64 = 0.25;
     }
 }
