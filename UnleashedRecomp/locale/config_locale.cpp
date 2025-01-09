@@ -304,7 +304,6 @@ CONFIG_DEFINE_ENUM_LOCALE(EUIScaleMode)
     {
         ELanguage::English,
         {
-            { EUIScaleMode::Stretch, { "STRETCH", "Stretch: the UI will stretch to the display." } },
             { EUIScaleMode::Edge,    { "EDGE", "Edge: the UI will anchor to the edges of the display." } },
             { EUIScaleMode::Centre,  { "CENTER", "Center: the UI will anchor to the center of the display." } },
         }

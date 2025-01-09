@@ -260,14 +260,12 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EMotionBlur)
 
 enum class EUIScaleMode : uint32_t
 {
-    Stretch,
     Edge,
     Centre
 };
 
 CONFIG_DEFINE_ENUM_TEMPLATE(EUIScaleMode)
 {
-    { "Stretch", EUIScaleMode::Stretch },
     { "Edge",    EUIScaleMode::Edge },
     { "Centre",  EUIScaleMode::Centre },
     { "Center",  EUIScaleMode::Centre }
