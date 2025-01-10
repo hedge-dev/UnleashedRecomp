@@ -908,7 +908,7 @@ PPC_FUNC(sub_82690660)
         if (type == 47) // Ring
             x = 142.0;
         else // Medal
-            x = 0.0; // TODO
+            x = 1058.0;
 
         x *= g_scale;
 
@@ -934,8 +934,10 @@ PPC_FUNC(sub_826906A8)
 
         if (type == 47) // Ring
             y = 642.0;
-        else // Medal
-            y = 0.0; // TODO
+        else if (type == 48) // Moon Medal
+            y = 632.0;
+        else if (type == 49) // Sun Medal
+            y = 582.0;
 
         y *= g_scale;
         y += g_offsetY * 2.0 + 720.0 * (1.0 - g_scale);
