@@ -71,7 +71,7 @@ struct Installer
         uint64_t totalSize = 0;
     };
 
-    static bool checkGameInstall(const std::filesystem::path &baseDirectory);
+    static bool checkGameInstall(const std::filesystem::path &baseDirectory, std::filesystem::path &modulePath);
     static bool checkDLCInstall(const std::filesystem::path &baseDirectory, DLC dlc);
     static bool checkAllDLC(const std::filesystem::path &baseDirectory);
     static bool computeTotalSize(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, Journal &journal, uint64_t &totalSize);

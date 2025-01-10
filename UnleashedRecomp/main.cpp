@@ -19,8 +19,6 @@
 #include <ui/installer_wizard.h>
 #include <mod/mod_loader.h>
 
-#define GAME_XEX_PATH "game:\\default.xex"
-
 const size_t XMAIOBegin = 0x7FEA0000;
 const size_t XMAIOEnd = XMAIOBegin + 0x0000FFFF;
 
@@ -171,7 +169,8 @@ int main(int argc, char *argv[])
 
     HostStartup();
 
-    bool isGameInstalled = Installer::checkGameInstall(GAME_INSTALL_DIRECTORY);
+    std::filesystem::path modulePath;
+    bool isGameInstalled = Installer::checkGameInstall(GAME_INSTALL_DIRECTORY, modulePath);
     bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
     if (runInstallerWizard)
     {
@@ -189,7 +188,6 @@ int main(int argc, char *argv[])
 
     KiSystemStartup();
 
-    auto modulePath = FileSystem::ResolvePath(GAME_XEX_PATH, false);
     uint32_t entry = LdrLoadModule(modulePath);
 
     if (!runInstallerWizard)

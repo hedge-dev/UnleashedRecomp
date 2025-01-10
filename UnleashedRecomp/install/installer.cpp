@@ -17,6 +17,7 @@
 
 static const std::string GameDirectory = "game";
 static const std::string DLCDirectory = "dlc";
+static const std::string PatchedDirectory = "patched";
 static const std::string ApotosShamarDirectory = DLCDirectory + "/Apotos & Shamar Adventure Pack";
 static const std::string ChunnanDirectory = DLCDirectory + "/Chun-nan Adventure Pack";
 static const std::string EmpireCityAdabatDirectory = DLCDirectory + "/Empire City & Adabat Adventure Pack";
@@ -196,9 +197,10 @@ static DLC detectDLC(const std::filesystem::path &sourcePath, VirtualFileSystem 
     }
 }
 
-bool Installer::checkGameInstall(const std::filesystem::path &baseDirectory)
+bool Installer::checkGameInstall(const std::filesystem::path &baseDirectory, std::filesystem::path &modulePath)
 {
-    return std::filesystem::exists(baseDirectory / GameDirectory / GameExecutableFile);
+    modulePath = baseDirectory / PatchedDirectory / GameExecutableFile;
+    return std::filesystem::exists(modulePath);
 }
 
 bool Installer::checkDLCInstall(const std::filesystem::path &baseDirectory, DLC dlc)
@@ -452,12 +454,27 @@ bool Installer::install(const Sources &sources, const std::filesystem::path &tar
         return false;
     }
 
+    // Create the directory where the patched executable will be stored.
+    std::filesystem::path patchedDirectory = targetDirectory / PatchedDirectory;
+    if (!std::filesystem::exists(patchedDirectory) && !std::filesystem::create_directories(patchedDirectory))
+    {
+        journal.lastResult = Journal::Result::DirectoryCreationFailed;
+        journal.lastErrorMessage = "Unable to create directory at " + fromPath(patchedDirectory);
+        return false;
+    }
+
+    journal.createdDirectories.insert(patchedDirectory);
+
     // Patch the executable with the update's file.
     std::filesystem::path baseXexPath = targetDirectory / GameDirectory / GameExecutableFile;
     std::filesystem::path patchPath = targetDirectory / UpdateDirectory / UpdateExecutablePatchFile;
-    std::filesystem::path patchedXexPath = targetDirectory / GameDirectory / (GameExecutableFile + TempExtension);
+    std::filesystem::path patchedXexPath = patchedDirectory / GameExecutableFile;
     XexPatcher::Result patcherResult = XexPatcher::apply(baseXexPath, patchPath, patchedXexPath);
-    if (patcherResult != XexPatcher::Result::Success)
+    if (patcherResult == XexPatcher::Result::Success)
+    {
+        journal.createdFiles.push_back(patchedXexPath);
+    }
+    else
     {
         journal.lastResult = Journal::Result::PatchProcessFailed;
         journal.lastPatcherResult = patcherResult;
@@ -468,28 +485,6 @@ bool Installer::install(const Sources &sources, const std::filesystem::path &tar
     // Update the progress with the artificial amount attributed to the patching.
     journal.progressCounter += PatcherContribution;
     progressCallback();
-
-    // Replace the executable by renaming and deleting in a safe way.
-    std::error_code ec;
-    std::filesystem::path oldXexPath = targetDirectory / GameDirectory / (GameExecutableFile + OldExtension);
-    std::filesystem::rename(baseXexPath, oldXexPath, ec);
-    if (ec)
-    {
-        journal.lastResult = Journal::Result::PatchReplacementFailed;
-        journal.lastErrorMessage = "Failed to rename executable.";
-        return false;
-    }
-
-    std::filesystem::rename(patchedXexPath, baseXexPath, ec);
-    if (ec)
-    {
-        std::filesystem::rename(oldXexPath, baseXexPath, ec);
-        journal.lastResult = Journal::Result::PatchReplacementFailed;
-        journal.lastErrorMessage = "Failed to rename executable.";
-        return false;
-    }
-
-    std::filesystem::remove(oldXexPath);
 
     return true;
 }
