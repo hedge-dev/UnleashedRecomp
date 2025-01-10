@@ -290,6 +290,10 @@ PPC_FUNC(sub_8258B558)
                     ctx.r3.u32 = scene;
                     ctx.f1.f64 = offsetX + g_worldMapOffset * 140.0f;
                     ctx.f2.f64 = offsetY;
+
+                    if (g_worldMapOffset >= 1.0f)
+                        ctx.f1.f64 += g_offsetX;
+
                     sub_830BB3D0(ctx, base);
                 }
             }
@@ -309,6 +313,9 @@ PPC_FUNC(sub_8258B558)
         if (textBox != NULL)
         {
             float value = 708.0f + g_worldMapOffset * 140.0f;
+            if (g_worldMapOffset >= 1.0f)
+                value += g_offsetX;
+
             PPC_STORE_U32(textBox + 0x38, reinterpret_cast<uint32_t&>(value));
         }
     }
