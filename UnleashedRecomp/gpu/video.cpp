@@ -4386,7 +4386,7 @@ static void ProcSetPixelShader(const RenderCommand& cmd)
 
             default:
             {
-                size_t height = round(g_swapChain->getHeight() * Config::ResolutionScale);
+                size_t height = round(Video::s_viewportHeight * Config::ResolutionScale);
 
                 if (height > 1440)
                     shaderIndex = GAUSSIAN_BLUR_9X9;
