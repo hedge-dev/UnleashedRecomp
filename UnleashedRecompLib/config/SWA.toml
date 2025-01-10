@@ -103,11 +103,6 @@ registers = ["r31", "f0", "f10", "f12"]
 jump_address_on_true = 0x8246BDAC
 
 [[midasm_hook]]
-name = "CSDAspectRatioMidAsmHook"
-address = 0x830C0A28
-registers = ["f1", "f2"]
-
-[[midasm_hook]]
 name = "ResetScoreOnRestartMidAsmHook"
 address = 0x82304374
 
@@ -590,3 +585,8 @@ address = 0x825360C8
 registers = ["r31"]
 jump_address_on_true = 0x825360C8
 jump_address_on_false = 0x82536140
+
+[[midasm_hook]]
+name = "RemoveMoviePlayerLetterboxMidAsmHook"
+address = 0x82B723A8
+jump_address = 0x82B723BC

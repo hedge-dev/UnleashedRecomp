@@ -92,6 +92,10 @@ PixelShaderOutput main(in Interpolators In)
         Out.Color.b = ValY + ValU * 2.017;
     }
     Out.Color.a = ValA;
+    
+    if (any(In.UV < 0.0) || any(In.UV > 1.0))
+        Out.Color.rgb = 0.0;
+    
     Out.Depth = ValD;
     return Out;
 }

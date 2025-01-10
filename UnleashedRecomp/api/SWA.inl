@@ -19,3 +19,12 @@
     GuestToHostFunction<returnType>(*(be<uint32_t>*)(g_memory.Translate(*(be<uint32_t>*)(this) + (4 * virtualIndex))), __VA_ARGS__)
 
 struct swa_null_ctor {};
+
+struct Vertex
+{
+    be<float> X;
+    be<float> Y;
+    be<float> Z;
+    be<float> U;
+    be<float> V;
+};
