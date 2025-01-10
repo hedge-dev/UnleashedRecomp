@@ -1,6 +1,7 @@
 #include <api/SWA.h>
 #include <ui/game_window.h>
 #include <user/config.h>
+#include <gpu/video.h>
 #include "camera_patches.h"
 
 static constexpr float ORIGINAL_ASPECT_RATIO = 4.0f / 3.0f;
@@ -13,7 +14,7 @@ void CameraAspectRatioMidAsmHook(PPCRegister& r30, PPCRegister& r31)
     auto camera = (SWA::CCamera*)g_memory.Translate(r31.u32);
 
     // Dynamically adjust horizontal aspect ratio to window dimensions.
-    camera->m_HorzAspectRatio = float(GameWindow::s_width) / float(GameWindow::s_height);
+    camera->m_HorzAspectRatio = float(Video::s_viewportWidth) / float(Video::s_viewportHeight);
 }
 
 float AdjustFieldOfView(float fieldOfView, float aspectRatio)

@@ -2,9 +2,9 @@
 #include <api/SWA.h>
 #include <app.h>
 #include <ui/game_window.h>
-#include <ui/sdl_listener.h>
 #include <gpu/video.h>
 
+#include "aspect_ratio_patches.h"
 #include "camera_patches.h"
 
 // These are here for now to not recompile basically all of the project.
@@ -191,8 +191,11 @@ static float ComputeScale(float aspectRatio)
     return ((aspectRatio * 720.0f) / 1280.0f) / sqrt((aspectRatio * 720.0f) / 1280.0f);
 }
 
-static void ComputeOffsets(float width, float height)
+void AspectRatioPatches::ComputeOffsets()
 {
+    float width = Video::s_viewportWidth;
+    float height = Video::s_viewportHeight;
+
     g_aspectRatio = width / height;
     g_scale = 1.0f;
 
@@ -222,25 +225,6 @@ static void ComputeOffsets(float width, float height)
     } 
 
     g_worldMapOffset = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (WIDE_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
-}
-
-static class SDLEventListenerForCSD : public SDLEventListener
-{
-public:
-    void OnSDLEvent(SDL_Event* event) override
-    {
-        if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED)
-            ComputeOffsets(event->window.data1, event->window.data2);
-    }
-} g_sdlEventListenerForCSD;
-
-// Chao::CSD::SetOffsets
-PPC_FUNC_IMPL(__imp__sub_830C0A78);
-PPC_FUNC(sub_830C0A78)
-{
-    __imp__sub_830C0A78(ctx, base);
-
-    ComputeOffsets(GameWindow::s_width, GameWindow::s_height);
 }
 
 // SWA::CGameDocument::ComputeScreenPosition

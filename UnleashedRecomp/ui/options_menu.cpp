@@ -1057,8 +1057,8 @@ static void DrawInfoPanel()
                 auto resScale = round(*(float*)g_selectedItem->GetValue() * 1000) / 1000;
 
                 std::snprintf(buf, sizeof(buf), desc.c_str(),
-                    (int)((float)GameWindow::s_width * resScale),
-                    (int)((float)GameWindow::s_height * resScale));
+                    (int)((float)Video::s_viewportWidth * resScale),
+                    (int)((float)Video::s_viewportHeight * resScale));
 
                 desc = buf;
             }
