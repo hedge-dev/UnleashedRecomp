@@ -786,8 +786,8 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             x = std::max(x, float(backBuffer->width));
         }
 
-        position[0] = round(x / backBuffer->width * GameWindow::s_width) / GameWindow::s_width * backBuffer->width;
-        position[1] = round(y / backBuffer->height * GameWindow::s_height) / GameWindow::s_height * backBuffer->height;
+        position[0] = round(x / backBuffer->width * Video::s_viewportWidth) / Video::s_viewportWidth * backBuffer->width;
+        position[1] = round(y / backBuffer->height * Video::s_viewportHeight) / Video::s_viewportHeight * backBuffer->height;
     }
 
     ctx.r4.u32 = ctx.r1.u32;
