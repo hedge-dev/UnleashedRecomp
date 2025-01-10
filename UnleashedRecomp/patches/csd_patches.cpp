@@ -218,10 +218,7 @@ static void ComputeOffsets(float width, float height)
         // width is locked to 960 in this case to have 4:3 crop
         g_offsetX = 0.5f * (960.0f - 1280.0f);
         g_offsetY = 0.5f * (960.0f / g_aspectRatio - 720.0f);
-
-        // scale to 16:9 as the aspect ratio becomes 9:16
-        float factor = std::clamp((g_aspectRatio - TALL_ASPECT_RATIO) / (NARROW_ASPECT_RATIO - TALL_ASPECT_RATIO), 0.0f, 1.0f);
-        g_scale = TALL_SCALE + factor * (ComputeScale(NARROW_ASPECT_RATIO) - TALL_SCALE);
+        g_scale = ComputeScale(NARROW_ASPECT_RATIO);
     } 
 
     g_worldMapOffset = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (WIDE_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
@@ -291,7 +288,7 @@ PPC_FUNC(sub_8258B558)
                     ctx.f1.f64 = offsetX + g_worldMapOffset * 140.0f;
                     ctx.f2.f64 = offsetY;
 
-                    if (g_worldMapOffset >= 1.0f)
+                    if (Config::UIScaleMode == EUIScaleMode::Edge && g_worldMapOffset >= 1.0f)
                         ctx.f1.f64 += g_offsetX;
 
                     sub_830BB3D0(ctx, base);
@@ -313,7 +310,7 @@ PPC_FUNC(sub_8258B558)
         if (textBox != NULL)
         {
             float value = 708.0f + g_worldMapOffset * 140.0f;
-            if (g_worldMapOffset >= 1.0f)
+            if (Config::UIScaleMode == EUIScaleMode::Edge && g_worldMapOffset >= 1.0f)
                 value += g_offsetX;
 
             PPC_STORE_U32(textBox + 0x38, reinterpret_cast<uint32_t&>(value));
@@ -353,7 +350,7 @@ enum
     SKIP = 1 << 12,
 
     OFFSET_SCALE_LEFT = 1 << 13,
-    OFFSET_SCALE_RIGHT = 1 << 14
+    OFFSET_SCALE_RIGHT = 1 << 14,
 };
 
 struct CsdModifier
@@ -712,8 +709,11 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         return;
     }
 
-    if (Config::UIScaleMode == EUIScaleMode::Centre && (modifier.flags & SCALE) != 0)
-        modifier.flags &= ~(ALIGN_TOP | ALIGN_LEFT | ALIGN_BOTTOM | ALIGN_RIGHT);
+    if (Config::UIScaleMode == EUIScaleMode::Centre)
+    {
+        if (g_aspectRatio >= WIDE_ASPECT_RATIO)
+            modifier.flags &= ~(ALIGN_LEFT | ALIGN_RIGHT);
+    }
 
     auto backBuffer = Video::GetBackBuffer();
 
@@ -894,12 +894,20 @@ static const double OBJ_GET_ITEM_TANGENT = tan(M_PI / 8.0);
 // This hook makes them move to the correct position regardless of FOV.
 void ObjGetItemFieldOfViewMidAsmHook(PPCRegister& r1, PPCRegister& f1)
 {
-    *reinterpret_cast<be<float>*>(g_memory.base + r1.u32 + 0x58) = tan(AdjustFieldOfView(f1.f64, g_aspectRatio) / 2.0) / OBJ_GET_ITEM_TANGENT;
+    if (Config::AspectRatio != EAspectRatio::OriginalNarrow)
+        *reinterpret_cast<be<float>*>(g_memory.base + r1.u32 + 0x58) = tan(AdjustFieldOfView(f1.f64, g_aspectRatio) / 2.0) / OBJ_GET_ITEM_TANGENT;
 }
 
 // SWA::CObjGetItem::GetX
+PPC_FUNC_IMPL(__imp__sub_82690660);
 PPC_FUNC(sub_82690660)
 {
+    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
+    {
+        __imp__sub_82690660(ctx, base);
+        return;
+    }
+
     uint32_t type = PPC_LOAD_U32(ctx.r3.u32 + 0xE8);
     if (type >= 47) // Ring, Moon Medal, Sun Medal
     {
@@ -925,8 +933,16 @@ PPC_FUNC(sub_82690660)
 }
 
 // SWA::CObjGetItem::GetY
+PPC_FUNC_IMPL(__imp__sub_826906A8);
 PPC_FUNC(sub_826906A8)
 {
+    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
+    {
+        __imp__sub_826906A8(ctx, base);
+        ctx.f1.f64 *= 1.4;
+        return;
+    }
+
     uint32_t type = PPC_LOAD_U32(ctx.r3.u32 + 0xE8);
     if (type >= 47) // Ring, Moon Medal, Sun Medal
     {
