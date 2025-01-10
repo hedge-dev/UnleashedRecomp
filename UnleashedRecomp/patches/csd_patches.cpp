@@ -941,3 +941,9 @@ PPC_FUNC(sub_826906A8)
         ctx.f1.f64 = 0.25;
     }
 }
+
+void WorldMapProjectionMidAsmHook(PPCVRegister& v63, PPCVRegister& v62)
+{
+    v63.f32[3] *= std::max(NARROW_ASPECT_RATIO, g_aspectRatio) / WIDE_ASPECT_RATIO;
+    v62.f32[2] *= NARROW_ASPECT_RATIO / std::min(NARROW_ASPECT_RATIO, g_aspectRatio);
+}
