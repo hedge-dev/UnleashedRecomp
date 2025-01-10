@@ -105,7 +105,8 @@ static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFi
     std::filesystem::path parentPath = targetPath.parent_path();
     if (!std::filesystem::exists(parentPath))
     {
-        std::filesystem::create_directories(parentPath);
+        std::error_code ec;
+        std::filesystem::create_directories(parentPath, ec);
     }
     
     while (!parentPath.empty()) {
@@ -257,7 +258,8 @@ bool Installer::computeTotalSize(std::span<const FilePair> filePairs, const uint
 
 bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, const std::string &validationFile, bool skipHashChecks, Journal &journal, const std::function<void()> &progressCallback)
 {
-    if (!std::filesystem::exists(targetDirectory) && !std::filesystem::create_directories(targetDirectory))
+    std::error_code ec;
+    if (!std::filesystem::exists(targetDirectory) && !std::filesystem::create_directories(targetDirectory, ec))
     {
         journal.lastResult = Journal::Result::DirectoryCreationFailed;
         journal.lastErrorMessage = "Unable to create directory at " + fromPath(targetDirectory);
@@ -455,8 +457,9 @@ bool Installer::install(const Sources &sources, const std::filesystem::path &tar
     }
 
     // Create the directory where the patched executable will be stored.
+    std::error_code ec;
     std::filesystem::path patchedDirectory = targetDirectory / PatchedDirectory;
-    if (!std::filesystem::exists(patchedDirectory) && !std::filesystem::create_directories(patchedDirectory))
+    if (!std::filesystem::exists(patchedDirectory) && !std::filesystem::create_directories(patchedDirectory, ec))
     {
         journal.lastResult = Journal::Result::DirectoryCreationFailed;
         journal.lastErrorMessage = "Unable to create directory at " + fromPath(patchedDirectory);
