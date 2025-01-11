@@ -633,3 +633,18 @@ registers = ["r1", "f1"]
 name = "WorldMapProjectionMidAsmHook"
 address = 0x82574E00
 registers = ["v63", "v62"]
+
+[[midasm_hook]]
+name = "ViewRingFieldOfViewMidAsmHook"
+address = 0x825EBDF0
+registers = ["r1", "f1"]
+
+[[midasm_hook]]
+name = "ViewRingYMidAsmHook"
+address = 0x825EBF1C
+registers = ["f0"]
+
+[[midasm_hook]]
+name = "ViewRingXMidAsmHook"
+address = 0x825EBF68
+registers = ["f0", "v62"]

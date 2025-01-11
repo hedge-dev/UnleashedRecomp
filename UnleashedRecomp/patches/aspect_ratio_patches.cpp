@@ -875,24 +875,20 @@ static const double OBJ_GET_ITEM_TANGENT = tan(M_PI / 8.0);
 
 // Coordinates are in [-1, 1] range. Automatically fit and centered.
 // The tangent is calculated incorrectly in game, causing distortion.
-// This hook makes them move to the correct position regardless of FOV.
+// The hook makes them move to the correct position regardless of FOV.
+static float ComputeObjGetItemTangent(float fieldOfView, float aspectRatio)
+{
+    return tan(AdjustFieldOfView(fieldOfView, aspectRatio) / 2.0) / OBJ_GET_ITEM_TANGENT;
+}
+
 void ObjGetItemFieldOfViewMidAsmHook(PPCRegister& r1, PPCRegister& f1)
 {
     if (Config::AspectRatio != EAspectRatio::OriginalNarrow)
-        *reinterpret_cast<be<float>*>(g_memory.base + r1.u32 + 0x58) = tan(AdjustFieldOfView(f1.f64, g_aspectRatio) / 2.0) / OBJ_GET_ITEM_TANGENT;
+        *reinterpret_cast<be<float>*>(g_memory.base + r1.u32 + 0x58) = ComputeObjGetItemTangent(f1.f64, g_aspectRatio);
 }
 
-// SWA::CObjGetItem::GetX
-PPC_FUNC_IMPL(__imp__sub_82690660);
-PPC_FUNC(sub_82690660)
+static double ComputeObjGetItemX(uint32_t type)
 {
-    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
-    {
-        __imp__sub_82690660(ctx, base);
-        return;
-    }
-
-    uint32_t type = PPC_LOAD_U32(ctx.r3.u32 + 0xE8);
     if (type >= 47) // Ring, Moon Medal, Sun Medal
     {
         double x;
@@ -908,26 +904,28 @@ PPC_FUNC(sub_82690660)
             x += g_offsetX * 2.0 + (1280.0 * (1.0 - g_scale));
 
         auto backBuffer = Video::GetBackBuffer();
-        ctx.f1.f64 = (x - (0.5 * backBuffer->width)) / (0.5 * backBuffer->height) * OBJ_GET_ITEM_TANGENT;
+        return (x - (0.5 * backBuffer->width)) / (0.5 * backBuffer->height) * OBJ_GET_ITEM_TANGENT;
     }
-    else
-    {
-        ctx.f1.f64 = 0.0;
-    }
+
+    return 0.0;
 }
 
-// SWA::CObjGetItem::GetY
-PPC_FUNC_IMPL(__imp__sub_826906A8);
-PPC_FUNC(sub_826906A8)
+// SWA::CObjGetItem::GetX
+PPC_FUNC_IMPL(__imp__sub_82690660);
+PPC_FUNC(sub_82690660)
 {
     if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
     {
-        __imp__sub_826906A8(ctx, base);
-        ctx.f1.f64 *= 1.4;
+        __imp__sub_82690660(ctx, base);
         return;
     }
 
     uint32_t type = PPC_LOAD_U32(ctx.r3.u32 + 0xE8);
+    ctx.f1.f64 = ComputeObjGetItemX(type);
+}
+
+static double ComputeObjGetItemY(uint32_t type)
+{
     if (type >= 47) // Ring, Moon Medal, Sun Medal
     {
         double y;
@@ -943,16 +941,57 @@ PPC_FUNC(sub_826906A8)
         y += g_offsetY * 2.0 + 720.0 * (1.0 - g_scale);
 
         auto backBuffer = Video::GetBackBuffer();
-        ctx.f1.f64 = ((0.5 * backBuffer->height) - y) / (0.5 * backBuffer->height) * OBJ_GET_ITEM_TANGENT;
+        return ((0.5 * backBuffer->height) - y) / (0.5 * backBuffer->height) * OBJ_GET_ITEM_TANGENT;
     }
-    else
+
+    return 0.25;
+}
+
+// SWA::CObjGetItem::GetY
+PPC_FUNC_IMPL(__imp__sub_826906A8);
+PPC_FUNC(sub_826906A8)
+{
+    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
     {
-        ctx.f1.f64 = 0.25;
+        __imp__sub_826906A8(ctx, base);
+        // Game scales Y by 1.4 at 4:3 aspect ratio.
+        ctx.f1.f64 *= 1.4;
+        return;
     }
+
+    uint32_t type = PPC_LOAD_U32(ctx.r3.u32 + 0xE8);
+    ctx.f1.f64 = ComputeObjGetItemY(type);
 }
 
 void WorldMapProjectionMidAsmHook(PPCVRegister& v63, PPCVRegister& v62)
 {
     v63.f32[3] *= std::max(NARROW_ASPECT_RATIO, g_aspectRatio) / WIDE_ASPECT_RATIO;
     v62.f32[2] *= NARROW_ASPECT_RATIO / std::min(NARROW_ASPECT_RATIO, g_aspectRatio);
+}
+
+// CViewRing has the same exact incorrect math as CObjGetItem.
+void ViewRingFieldOfViewMidAsmHook(PPCRegister& r1, PPCRegister& f1)
+{
+    if (Config::AspectRatio != EAspectRatio::OriginalNarrow)
+        *reinterpret_cast<be<float>*>(g_memory.base + r1.u32 + 0x54) = ComputeObjGetItemTangent(f1.f64, g_aspectRatio);
+}
+
+void ViewRingYMidAsmHook(PPCRegister& f1)
+{
+    if (Config::AspectRatio != EAspectRatio::OriginalNarrow)
+        f1.f64 = -ComputeObjGetItemY(47); // Ring
+}
+
+void ViewRingXMidAsmHook(PPCRegister& f1, PPCVRegister& v62)
+{
+    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
+    {
+        // Game scales Y by 1.4 at 4:3 aspect ratio.
+        for (size_t i = 0; i < 4; i++)
+            v62.f32[i] *= 1.4f;
+    }
+    else
+    {
+        f1.f64 = -ComputeObjGetItemX(47); // Ring
+    }
 }
