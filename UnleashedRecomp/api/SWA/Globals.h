@@ -50,20 +50,20 @@ namespace SWA
 
         static void Init()
         {
-            ms_DrawLightFieldSamplingPoint = (bool*)g_memory.Translate(0x83367BCE);
-            ms_IgnoreLightFieldData = (bool*)g_memory.Translate(0x83367BCF);
-            ms_IsCollisionRender = (bool*)g_memory.Translate(0x833678A6);
+            ms_DrawLightFieldSamplingPoint = (bool*)MmGetHostAddress(0x83367BCE);
+            ms_IgnoreLightFieldData = (bool*)MmGetHostAddress(0x83367BCF);
+            ms_IsCollisionRender = (bool*)MmGetHostAddress(0x833678A6);
             ms_IsLoading = (bool*)MmGetHostAddress(0x83367A4C);
-            ms_IsObjectCollisionRender = (bool*)g_memory.Translate(0x83367905);
-            ms_IsRenderDebugDraw = (bool*)g_memory.Translate(0x8328BB23);
-            ms_IsRenderDebugDrawText = (bool*)g_memory.Translate(0x8328BB25);
-            ms_IsRenderDebugPositionDraw = (bool*)g_memory.Translate(0x8328BB24);
-            ms_IsRenderGameMainHud = (bool*)g_memory.Translate(0x8328BB27);
+            ms_IsObjectCollisionRender = (bool*)MmGetHostAddress(0x83367905);
+            ms_IsRenderDebugDraw = (bool*)MmGetHostAddress(0x8328BB23);
+            ms_IsRenderDebugDrawText = (bool*)MmGetHostAddress(0x8328BB25);
+            ms_IsRenderDebugPositionDraw = (bool*)MmGetHostAddress(0x8328BB24);
+            ms_IsRenderGameMainHud = (bool*)MmGetHostAddress(0x8328BB27);
             ms_IsRenderHud = (bool*)MmGetHostAddress(0x8328BB26);
-            ms_IsRenderHudPause = (bool*)g_memory.Translate(0x8328BB28);
-            ms_IsTriggerRender = (bool*)g_memory.Translate(0x83367904);
-            ms_LightFieldDebug = (bool*)g_memory.Translate(0x83367BCD);
-            ms_VisualizeLoadedLevel = (bool*)g_memory.Translate(0x833678C1);
+            ms_IsRenderHudPause = (bool*)MmGetHostAddress(0x8328BB28);
+            ms_IsTriggerRender = (bool*)MmGetHostAddress(0x83367904);
+            ms_LightFieldDebug = (bool*)MmGetHostAddress(0x83367BCD);
+            ms_VisualizeLoadedLevel = (bool*)MmGetHostAddress(0x833678C1);
         }
     };
 }
