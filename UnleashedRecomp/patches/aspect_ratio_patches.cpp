@@ -826,12 +826,13 @@ PPC_FUNC(sub_82E16C70)
 
 // Store whether the primitive should be stretched in available padding space.
 static constexpr size_t PRIMITIVE_2D_PADDING_OFFSET = 0x29;
+static constexpr size_t PRIMITIVE_2D_PADDING_SIZE = 0x3;
 
 // Hedgehog::MirageDebug::CPrimitive2D::CPrimitive2D
 PPC_FUNC_IMPL(__imp__sub_822D0328);
 PPC_FUNC(sub_822D0328)
 {
-    PPC_STORE_U8(ctx.r3.u32 + PRIMITIVE_2D_PADDING_OFFSET, 0x00);
+    memset(base + ctx.r3.u32 + PRIMITIVE_2D_PADDING_OFFSET, 0, PRIMITIVE_2D_PADDING_SIZE);
     __imp__sub_822D0328(ctx, base);
 }
 
@@ -839,7 +840,7 @@ PPC_FUNC(sub_822D0328)
 PPC_FUNC_IMPL(__imp__sub_830D2328);
 PPC_FUNC(sub_830D2328)
 {
-    PPC_STORE_U8(ctx.r3.u32 + PRIMITIVE_2D_PADDING_OFFSET, PPC_LOAD_U8(ctx.r4.u32 + PRIMITIVE_2D_PADDING_OFFSET));
+    memcpy(base + ctx.r3.u32 + PRIMITIVE_2D_PADDING_OFFSET, base + ctx.r4.u32 + PRIMITIVE_2D_PADDING_OFFSET, PRIMITIVE_2D_PADDING_SIZE);
     __imp__sub_830D2328(ctx, base);
 }
 
@@ -859,14 +860,63 @@ PPC_FUNC(sub_830D1EF0)
     if (!PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET))
     {
         auto backBuffer = Video::GetBackBuffer();
-        auto position = reinterpret_cast<be<float>*>(base + ctx.r4.u32);
+
+        struct Vertex
+        {
+            be<float> x;
+            be<float> y;
+            be<float> z;
+            be<float> w;
+            be<uint32_t> color;
+            be<float> u;
+            be<float> v;
+        };
+
+        auto vertex = reinterpret_cast<Vertex*>(base + ctx.r4.u32);
 
         for (size_t i = 0; i < 4; i++)
         {
-            position[0] = position[0] * 1280.0f / backBuffer->width;
-            position[1] = position[1] * 720.0f / backBuffer->height;
-            position += 7;
+            vertex[i].x = vertex[i].x * 1280.0f / backBuffer->width;
+            vertex[i].y = vertex[i].y * 720.0f / backBuffer->height;
         }
+
+        bool letterboxTop = PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x1);
+        bool letterboxBottom = PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x2);
+
+        if (letterboxTop || letterboxBottom)
+        {
+            float halfPixelX = 1.0f / backBuffer->width;
+            float halfPixelY = 1.0f / backBuffer->height;
+
+            if (letterboxTop)
+            {
+                vertex[0].x = -1.0f - halfPixelX;
+                vertex[0].y = 1.0f + halfPixelY;         
+                
+                vertex[1].x = 1.0f - halfPixelX;
+                vertex[1].y = 1.0f + halfPixelY;      
+                
+                vertex[2].x = -1.0f - halfPixelX;
+                // vertex[2].y untouched
+
+                vertex[3].x = 1.0f - halfPixelX;
+                // vertex[3].y untouched
+            }
+            else if (letterboxBottom)
+            {
+                vertex[0].x = -1.0f - halfPixelX;
+                // vertex[0].y untouched
+
+                vertex[1].x = 1.0f - halfPixelX;
+                // vertex[1].y untouched
+
+                vertex[2].x = -1.0f - halfPixelX;
+                vertex[2].y = -1.0f + halfPixelY;
+
+                vertex[3].x = 1.0f - halfPixelX;
+                vertex[3].y = -1.0f + halfPixelY;
+            }
+        }      
     }
 }
 
@@ -994,4 +1044,36 @@ void ViewRingXMidAsmHook(PPCRegister& f1, PPCVRegister& v62)
     {
         f1.f64 = -ComputeObjGetItemX(47); // Ring
     }
+}
+
+// SWA::Inspire::CLetterbox::Draw
+PPC_FUNC_IMPL(__imp__sub_82B8AA40);
+PPC_FUNC(sub_82B8AA40)
+{
+    bool shouldDrawLetterbox = g_aspectRatio < WIDE_ASPECT_RATIO;
+
+    PPC_STORE_U8(ctx.r3.u32, shouldDrawLetterbox);
+    if (shouldDrawLetterbox)
+    {
+        auto backBuffer = Video::GetBackBuffer();
+        uint32_t height = std::min(720u, backBuffer->height);
+
+        PPC_STORE_U32(ctx.r3.u32 + 0xC, backBuffer->width);
+        PPC_STORE_U32(ctx.r3.u32 + 0x10, height);
+        PPC_STORE_U32(ctx.r3.u32 + 0x14, (height - backBuffer->width * 9 / 16) / 2);
+    }
+
+    __imp__sub_82B8AA40(ctx, base);
+}
+
+void InspireLetterboxTopMidAsmHook(PPCRegister& r3)
+{
+    *(g_memory.base + r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x1) = 0x01; // Letterbox Top
+    *(g_memory.base + r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x2) = 0x00; // Letterbox Bottom
+}
+
+void InspireLetterboxBottomMidAsmHook(PPCRegister& r3)
+{
+    *(g_memory.base + r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x1) = 0x00; // Letterbox Top
+    *(g_memory.base + r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x2) = 0x01; // Letterbox Bottom
 }

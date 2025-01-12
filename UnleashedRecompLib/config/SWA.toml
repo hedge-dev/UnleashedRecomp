@@ -648,3 +648,13 @@ registers = ["f0"]
 name = "ViewRingXMidAsmHook"
 address = 0x825EBF68
 registers = ["f0", "v62"]
+
+[[midasm_hook]]
+name = "InspireLetterboxTopMidAsmHook"
+address = 0x82B8AB78
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "InspireLetterboxBottomMidAsmHook"
+address = 0x82B8ABAC
+registers = ["r3"]
