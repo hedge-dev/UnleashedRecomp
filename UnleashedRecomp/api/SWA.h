@@ -57,6 +57,7 @@
 #include "SWA/CSD/CsdTexListMirage.h"
 #include "SWA/CSD/GameObjectCSD.h"
 #include "SWA/Camera/Camera.h"
+#include "SWA/Globals.h"
 #include "SWA/HUD/GeneralWindow/GeneralWindow.h"
 #include "SWA/HUD/Loading/Loading.h"
 #include "SWA/HUD/Pause/HudPause.h"

@@ -3312,7 +3312,7 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
         pipeline = CreateGraphicsPipeline(pipelineState);
 
 #ifdef ASYNC_PSO_DEBUG
-        bool loading = *reinterpret_cast<bool*>(g_memory.Translate(0x83367A4C));
+        bool loading = *SWA::SGlobals::ms_IsLoading;
 
         if (loading)
             ++g_pipelinesCreatedAsynchronously;

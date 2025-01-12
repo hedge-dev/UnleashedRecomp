@@ -94,8 +94,7 @@ bool LoadingUpdateMidAsmHook(PPCRegister& r31)
     g_ppcContext->f1.f64 = deltaTime;
     g_memory.FindFunction(update)(*g_ppcContext, base);
 
-    bool loading = PPC_LOAD_U8(0x83367A4C);
-    if (loading)
+    if (*SWA::SGlobals::ms_IsLoading)
     {
         now = std::chrono::steady_clock::now();
         constexpr auto INTERVAL = 1000000000ns / 30;
@@ -104,7 +103,7 @@ bool LoadingUpdateMidAsmHook(PPCRegister& r31)
         std::this_thread::sleep_until(next);
     }
 
-    return loading;
+    return *SWA::SGlobals::ms_IsLoading;
 }
 
 // ADXM_WaitVsync

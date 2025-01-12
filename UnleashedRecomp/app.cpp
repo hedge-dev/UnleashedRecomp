@@ -1,4 +1,5 @@
 #include <app.h>
+#include <api/SWA.h>
 #include <gpu/video.h>
 #include <install/installer.h>
 #include <kernel/function.h>
@@ -32,6 +33,8 @@ PPC_FUNC(sub_824EB490)
     App::s_isInit = true;
     App::s_isMissingDLC = !Installer::checkAllDLC(GetGamePath());
     App::s_language = Config::Language;
+
+    SWA::SGlobals::Init();
 
     __imp__sub_824EB490(ctx, base);
 }
