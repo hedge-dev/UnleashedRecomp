@@ -11,15 +11,24 @@ namespace SWA::Sequence::Utility
         class CRender : public Hedgehog::Mirage::CRenderable
         {
         public:
+            struct SVertexData
+            {
+                be<float> X;
+                be<float> Y;
+                be<float> Z;
+                be<float> U;
+                be<float> V;
+            };
+
             be<uint32_t> m_ScreenWidth;
             be<uint32_t> m_ScreenHeight;
             be<float> m_MovieWidth;
             be<float> m_MovieHeight;
             SWA_INSERT_PADDING(0x74);
-            Vertex m_TopLeft;
-            Vertex m_TopRight;
-            Vertex m_BottomRight;
-            Vertex m_BottomLeft;
+            SVertexData m_TopLeft;
+            SVertexData m_TopRight;
+            SVertexData m_BottomRight;
+            SVertexData m_BottomLeft;
             bool m_MaintainAspectRatio;
             SWA_INSERT_PADDING(0x18);
             be<float> m_TimeElapsed;
