@@ -658,3 +658,8 @@ registers = ["r3"]
 name = "InspireLetterboxBottomMidAsmHook"
 address = 0x82B8ABAC
 registers = ["r3"]
+
+[[midasm_hook]]
+name = "InspireSubtitleMidAsmHook"
+address = 0x82B949B0
+registers = ["r3"]

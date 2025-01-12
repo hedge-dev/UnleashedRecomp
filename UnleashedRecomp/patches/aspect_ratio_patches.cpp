@@ -184,7 +184,7 @@ static float g_aspectRatio;
 static float g_offsetX;
 static float g_offsetY;
 static float g_scale;
-static float g_worldMapOffset;
+static float g_narrowOffsetScale;
 
 static float ComputeScale(float aspectRatio)
 {
@@ -224,7 +224,7 @@ void AspectRatioPatches::ComputeOffsets()
         g_scale = ComputeScale(NARROW_ASPECT_RATIO);
     } 
 
-    g_worldMapOffset = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (WIDE_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
+    g_narrowOffsetScale = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (WIDE_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
 }
 
 // SWA::CGameDocument::ComputeScreenPosition
@@ -269,10 +269,10 @@ PPC_FUNC(sub_8258B558)
                 if (scene != NULL)
                 {
                     ctx.r3.u32 = scene;
-                    ctx.f1.f64 = offsetX + g_worldMapOffset * 140.0f;
+                    ctx.f1.f64 = offsetX + g_narrowOffsetScale * 140.0f;
                     ctx.f2.f64 = offsetY;
 
-                    if (Config::UIScaleMode == EUIScaleMode::Edge && g_worldMapOffset >= 1.0f)
+                    if (Config::UIScaleMode == EUIScaleMode::Edge && g_narrowOffsetScale >= 1.0f)
                         ctx.f1.f64 += g_offsetX;
 
                     sub_830BB3D0(ctx, base);
@@ -293,8 +293,8 @@ PPC_FUNC(sub_8258B558)
         uint32_t textBox = PPC_LOAD_U32(menuTextBox + 0x4);
         if (textBox != NULL)
         {
-            float value = 708.0f + g_worldMapOffset * 140.0f;
-            if (Config::UIScaleMode == EUIScaleMode::Edge && g_worldMapOffset >= 1.0f)
+            float value = 708.0f + g_narrowOffsetScale * 140.0f;
+            if (Config::UIScaleMode == EUIScaleMode::Edge && g_narrowOffsetScale >= 1.0f)
                 value += g_offsetX;
 
             PPC_STORE_U32(textBox + 0x38, reinterpret_cast<uint32_t&>(value));
@@ -736,7 +736,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         if ((modifier.flags & WORLD_MAP) != 0)
         {
             if ((modifier.flags & ALIGN_LEFT) != 0)
-                offsetX += (1.0f - g_worldMapOffset) * -20.0f;
+                offsetX += (1.0f - g_narrowOffsetScale) * -20.0f;
         }
     }
 
@@ -1076,4 +1076,12 @@ void InspireLetterboxBottomMidAsmHook(PPCRegister& r3)
 {
     *(g_memory.base + r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x1) = 0x00; // Letterbox Top
     *(g_memory.base + r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x2) = 0x01; // Letterbox Bottom
+}
+
+void InspireSubtitleMidAsmHook(PPCRegister& r3)
+{
+    constexpr float NARROW_OFFSET = 485.0f;
+    constexpr float WIDE_OFFSET = 560.0f;
+
+    *reinterpret_cast<be<float>*>(g_memory.base + r3.u32 + 0x3C) = NARROW_OFFSET + (WIDE_OFFSET - NARROW_OFFSET) * g_narrowOffsetScale;
 }
