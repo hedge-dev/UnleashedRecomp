@@ -3,6 +3,7 @@
 #include <gpu/video.h>
 #include <ui/reddog/windows/window_list.h>
 #include <ui/reddog/reddog_controls.h>
+#include <ui/reddog/debug_draw.h>
 #include <ui/game_window.h>
 #include <ui/imgui_utils.h>
 
@@ -46,6 +47,9 @@ void Reddog::Manager::Draw()
     g_isReddogToggled = isReddogToggled;
 
     Video::DrawFPS(s_font);
+
+    // Render our Debug Draw
+    DebugDraw::Render(s_font);
 
     if (!s_isVisible)
         return;

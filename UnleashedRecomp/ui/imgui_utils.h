@@ -221,6 +221,17 @@ inline void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2&
     drawList->AddText(font, fontSize, pos, colour, text, nullptr);
 }
 
+inline void DrawTextWithShadow(ImDrawList* drawList, const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text, float offset = 2.0f, float radius = 1.0f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255))
+{
+    offset = Scale(offset);
+
+    SetOutline(radius);
+    drawList->AddText(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text);
+    ResetOutline();
+
+    drawList->AddText(font, fontSize, pos, colour, text, nullptr);
+}
+
 inline float CalcWidestTextSize(const ImFont* font, float fontSize, std::span<std::string> strs)
 {
     auto result = 0.0f;
