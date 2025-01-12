@@ -14,36 +14,38 @@ void ViewWindow::Draw()
     if (Begin())
     {
         Reddog::Checkbox("Render FPS", &Config::ShowFPS.Value);
+
+        Reddog::Separator();
+
+        Reddog::Checkbox("Render HUD (F8)", SWA::SGlobals::ms_IsRenderHud);
+        Reddog::Checkbox("Render Main Game HUD", SWA::SGlobals::ms_IsRenderGameMainHud);
+        Reddog::Checkbox("Render Pause HUD", SWA::SGlobals::ms_IsRenderHudPause);
+
+        Reddog::Separator();
+
         Reddog::Checkbox("Render Debug Lines", &Reddog::DebugDraw::ms_IsDrawLine);
         Reddog::Checkbox("Render Debug Text", &Reddog::DebugDraw::ms_IsDrawText);
-        Reddog::Checkbox("Render HUD (F8)", SWA::SGlobals::ms_IsRenderHud);
-        Reddog::Separator();
 
-        // Reddog::Checkbox((const char*)u8"Render Debug Draw", SWA::SGlobals::ms_IsRenderDebugDraw);
-        // Reddog::Checkbox((const char*)u8"Render Debug Position Draw", SWA::SGlobals::ms_IsRenderDebugPositionDraw);
-        // Reddog::Checkbox((const char*)u8"Render Debug Draw Text", SWA::SGlobals::ms_IsRenderDebugDrawText);
-
-        // Reddog::Separator();
-
-        // Reddog::Checkbox((const char*)g_memory.Translate(0x82031850), SWA::SGlobals::ms_IsRenderHud);
-        Reddog::Checkbox((const char*)u8"Render Main Game HUD", SWA::SGlobals::ms_IsRenderGameMainHud);
-        Reddog::Checkbox((const char*)u8"Render Pause HUD", SWA::SGlobals::ms_IsRenderHudPause);
+        // TODO (RadiantDerg): respect these in Reddog::DebugDraw, rather than duplicating them.
+        // Reddog::Checkbox("Render Debug Draw", SWA::SGlobals::ms_IsRenderDebugDraw);
+        // Reddog::Checkbox("Render Debug Draw Text", SWA::SGlobals::ms_IsRenderDebugDrawText);
+        // Reddog::Checkbox("Render Debug Position Draw", SWA::SGlobals::ms_IsRenderDebugPositionDraw);
 
         Reddog::Separator();
 
-        Reddog::Checkbox((const char*)u8"Light Field Debug", SWA::SGlobals::ms_LightFieldDebug);
-        Reddog::Checkbox((const char*)u8"Draw Light Field Sampling Point", SWA::SGlobals::ms_DrawLightFieldSamplingPoint);
-        Reddog::Checkbox((const char*)u8"Ignore Light Field Data", SWA::SGlobals::ms_IgnoreLightFieldData);
+        Reddog::Checkbox("Draw Light Field Sampling Point", SWA::SGlobals::ms_DrawLightFieldSamplingPoint);
+        Reddog::Checkbox("Ignore Light Field Data", SWA::SGlobals::ms_IgnoreLightFieldData);
+        Reddog::Checkbox("Light Field Debug", SWA::SGlobals::ms_LightFieldDebug);
 
         Reddog::Separator();
 
-        Reddog::Checkbox((const char*)u8"Visualize Loaded GI Mip Level", SWA::SGlobals::ms_VisualizeLoadedLevel);
+        Reddog::Checkbox("Visualize Loaded GI Mip Level", SWA::SGlobals::ms_VisualizeLoadedLevel);
 
         Reddog::Separator();
 
-        Reddog::Checkbox((const char*)u8"Render Stage Collision", SWA::SGlobals::ms_IsCollisionRender);
-        Reddog::Checkbox((const char*)u8"Render Event Collision", SWA::SGlobals::ms_IsTriggerRender);
-        Reddog::Checkbox((const char*)u8"Render Rigid Body Collision", SWA::SGlobals::ms_IsObjectCollisionRender);
+        Reddog::Checkbox("Render Event Collision", SWA::SGlobals::ms_IsTriggerRender);
+        Reddog::Checkbox("Render Object Collision", SWA::SGlobals::ms_IsObjectCollisionRender);
+        Reddog::Checkbox("Render Stage Collision", SWA::SGlobals::ms_IsCollisionRender);
 
         Reddog::Separator();
 
