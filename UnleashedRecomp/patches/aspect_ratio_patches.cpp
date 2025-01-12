@@ -1050,7 +1050,7 @@ void ViewRingXMidAsmHook(PPCRegister& f1, PPCVRegister& v62)
 PPC_FUNC_IMPL(__imp__sub_82B8AA40);
 PPC_FUNC(sub_82B8AA40)
 {
-    bool shouldDrawLetterbox = g_aspectRatio < WIDE_ASPECT_RATIO;
+    bool shouldDrawLetterbox = Config::CutsceneAspectRatio != ECutsceneAspectRatio::Unlocked && g_aspectRatio < WIDE_ASPECT_RATIO;
 
     PPC_STORE_U8(ctx.r3.u32, shouldDrawLetterbox);
     if (shouldDrawLetterbox)

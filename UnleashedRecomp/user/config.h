@@ -258,6 +258,18 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EMotionBlur)
     { "Enhanced", EMotionBlur::Enhanced }
 };
 
+enum class ECutsceneAspectRatio : uint32_t
+{
+    Original,
+    Unlocked
+};
+
+CONFIG_DEFINE_ENUM_TEMPLATE(ECutsceneAspectRatio)
+{
+    { "Original", ECutsceneAspectRatio::Original },
+    { "Unlocked", ECutsceneAspectRatio::Unlocked }
+};
+
 enum class EUIScaleMode : uint32_t
 {
     Edge,
@@ -661,6 +673,7 @@ public:
     CONFIG_DEFINE_ENUM("Video", EDepthOfFieldQuality, DepthOfFieldQuality, EDepthOfFieldQuality::Auto);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EMotionBlur, MotionBlur, EMotionBlur::Original);
     CONFIG_DEFINE_LOCALISED("Video", bool, XboxColorCorrection, false);
+    CONFIG_DEFINE_ENUM_LOCALISED("Video", ECutsceneAspectRatio, CutsceneAspectRatio, ECutsceneAspectRatio::Original);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EUIScaleMode, UIScaleMode, EUIScaleMode::Edge);
 
     CONFIG_DEFINE_HIDDEN("Exports", bool, AllowCancellingUnleash, false);

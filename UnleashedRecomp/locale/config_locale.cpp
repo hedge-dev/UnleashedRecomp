@@ -294,6 +294,22 @@ CONFIG_DEFINE_LOCALE(XboxColorCorrection)
     { ELanguage::English, { "Xbox Color Correction", "Use the warm tint from the Xbox version of the game." } }
 };
 
+CONFIG_DEFINE_LOCALE(CutsceneAspectRatio)
+{
+    { ELanguage::English, { "Cutscene Aspect Ratio", "" } }
+};
+
+CONFIG_DEFINE_ENUM_LOCALE(ECutsceneAspectRatio)
+{
+    {
+        ELanguage::English,
+        {
+            { ECutsceneAspectRatio::Original, { "ORIGINAL", "" } },
+            { ECutsceneAspectRatio::Unlocked, { "UNLOCKED", "" } },
+        }
+    }
+};
+
 CONFIG_DEFINE_LOCALE(UIScaleMode)
 {
     { ELanguage::English, { "UI Scale Mode", "Change how the UI scales to the display." } }
