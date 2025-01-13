@@ -5,7 +5,11 @@
 class ExportsWindow : public Reddog::Window
 {
 public:
-    using Reddog::Window::Window;
+    ExportsWindow() : Window()
+    {
+        Name = "Exports";
+        Flags = Reddog::eWindowFlags_NoResize;
+    }
 
     void Draw() override;
 };

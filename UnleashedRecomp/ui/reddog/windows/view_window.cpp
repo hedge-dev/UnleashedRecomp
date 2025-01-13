@@ -2,12 +2,12 @@
 #include <api/SWA.h>
 #include <gpu/video.h>
 #include <kernel/memory.h>
-#include <ui/reddog/reddog_controls.h>
 #include <ui/reddog/debug_draw.h>
+#include <ui/reddog/reddog_controls.h>
 #include <ui/game_window.h>
 #include <user/config.h>
 
-static ViewWindow g_window{ "View" };
+static ViewWindow g_window;
 
 void ViewWindow::Draw()
 {
@@ -46,6 +46,7 @@ void ViewWindow::Draw()
         Reddog::Checkbox("Render Event Collision", SWA::SGlobals::ms_IsTriggerRender);
         Reddog::Checkbox("Render Object Collision", SWA::SGlobals::ms_IsObjectCollisionRender);
         Reddog::Checkbox("Render Stage Collision", SWA::SGlobals::ms_IsCollisionRender);
+        ImGui::TextColored({ 1, 0, 0, 1 }, "* Requires stage restart.");
 
         Reddog::Separator();
 

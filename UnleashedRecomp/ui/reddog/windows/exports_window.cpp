@@ -2,7 +2,7 @@
 #include <ui/reddog/reddog_controls.h>
 #include <user/config.h>
 
-static ExportsWindow g_window{ "Exports" };
+static ExportsWindow g_window;
 
 void ExportsWindow::Draw()
 {

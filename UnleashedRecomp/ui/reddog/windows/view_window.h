@@ -5,7 +5,11 @@
 class ViewWindow : public Reddog::Window
 {
 public:
-    using Reddog::Window::Window;
+    ViewWindow() : Window()
+    {
+        Name = "View";
+        Flags = Reddog::eWindowFlags_NoResize;
+    }
 
     void Draw() override;
 };

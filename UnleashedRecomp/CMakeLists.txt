@@ -167,6 +167,7 @@ set(SWA_UI_CXX_SOURCES
     "ui/reddog/windows/counter_window.cpp"
     "ui/reddog/windows/exports_window.cpp"
     "ui/reddog/windows/view_window.cpp"
+    "ui/reddog/windows/welcome_window.cpp"
     "ui/reddog/windows/window_list.cpp"
     "ui/reddog/reddog_controls.cpp"
     "ui/reddog/reddog_manager.cpp"

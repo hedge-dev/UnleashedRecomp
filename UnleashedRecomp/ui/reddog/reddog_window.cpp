@@ -231,85 +231,121 @@ void Reddog::Window::DrawFrame()
 
         drawList->AddText({ cmnIconMax.x + 5, windowPos.y + 4 }, colTitleText, Name);
 
-        ImVec2 closeButtonMin = { windowPos.x + windowSize.x - cmnSize - 4, windowPos.y + 3 };
+        float controlsWidth = 0;
+        float controlsMargin = 4;
+
+        ImVec2 closeButtonMin = { windowPos.x + windowSize.x - cmnSize - controlsMargin, windowPos.y + 3 };
         ImVec2 closeButtonMax = { closeButtonMin.x + cmnSize, closeButtonMin.y + cmnSize };
 
-        ImGui::SetCursorScreenPos(closeButtonMin);
-        ImGui::InvisibleButton("##CloseButton", { cmnSize, cmnSize });
-        bool isCloseButtonActive = ImGui::IsItemActive();
-
-        if (isCloseButtonActive)
+        if (IsCloseVisible)
         {
-            drawList->AddImage(g_upButtonClose2.get(), closeButtonMin, closeButtonMax);
-            m_isCloseButtonPressed = true;
-        }
-        else
-        {
-            drawList->AddImage(g_upButtonClose1.get(), closeButtonMin, closeButtonMax);
+            controlsWidth += closeButtonMax.x - closeButtonMin.x + controlsMargin;
 
-            if (m_isCloseButtonPressed && m_pIsVisible)
+            ImGui::SetCursorScreenPos(closeButtonMin);
+            ImGui::InvisibleButton("##CloseButton", { cmnSize, cmnSize });
+            bool isCloseButtonActive = ImGui::IsItemActive();
+
+            if (isCloseButtonActive)
             {
-                *m_pIsVisible = !*m_pIsVisible;
-                m_isCloseButtonPressed = false;
+                drawList->AddImage(g_upButtonClose2.get(), closeButtonMin, closeButtonMax);
+                m_isCloseButtonPressed = true;
+            }
+            else
+            {
+                drawList->AddImage(g_upButtonClose1.get(), closeButtonMin, closeButtonMax);
+
+                if (m_isCloseButtonPressed && m_pIsVisible)
+                {
+                    *m_pIsVisible = !*m_pIsVisible;
+                    m_isCloseButtonPressed = false;
+                }
             }
         }
 
-        ImVec2 minimumButtonMin = { closeButtonMin.x - cmnSize - 4, windowPos.y + 3 };
+        ImVec2 minimumButtonMin = { closeButtonMin.x - cmnSize - controlsMargin, windowPos.y + 3 };
         ImVec2 minimumButtonMax = { minimumButtonMin.x + cmnSize, minimumButtonMin.y + cmnSize };
 
-        ImGui::SetCursorScreenPos(minimumButtonMin);
-        ImGui::InvisibleButton("##MinimumButton", { cmnSize, cmnSize });
-        bool isMinimumButtonActive = ImGui::IsItemActive();
-
-        if (isMinimumButtonActive)
+        if (IsMinimumVisible)
         {
-            drawList->AddImage(g_upButtonMinimum2.get(), minimumButtonMin, minimumButtonMax);
-            m_isMinimumButtonPressed = true;
-        }
-        else
-        {
-            drawList->AddImage(g_upButtonMinimum1.get(), minimumButtonMin, minimumButtonMax);
+            controlsWidth += minimumButtonMax.x - minimumButtonMin.x + controlsMargin;
 
-            if (m_isMinimumButtonPressed)
+            ImGui::SetCursorScreenPos(minimumButtonMin);
+            ImGui::InvisibleButton("##MinimumButton", { cmnSize, cmnSize });
+            bool isMinimumButtonActive = ImGui::IsItemActive();
+
+            if (isMinimumButtonActive)
             {
-                IsMinimum = !IsMinimum;
+                drawList->AddImage(g_upButtonMinimum2.get(), minimumButtonMin, minimumButtonMax);
+                m_isMinimumButtonPressed = true;
+            }
+            else
+            {
+                drawList->AddImage(g_upButtonMinimum1.get(), minimumButtonMin, minimumButtonMax);
 
-                if (IsMinimum)
+                if (m_isMinimumButtonPressed)
                 {
-                    m_preMinimumWindowSize = windowSize;
-                    ImGui::SetWindowSize(ImWindow, { windowSize.x, MIN_WINDOW_SIZE });
+                    SetMinimum(!IsMinimum);
+                    m_isMinimumButtonPressed = false;
                 }
-                else
-                {
-                    ImGui::SetWindowSize(ImWindow, { windowSize.x, m_preMinimumWindowSize.y });
-                }
-
-                m_isMinimumButtonPressed = false;
             }
         }
 
-        ImVec2 pinButtonMin = { minimumButtonMin.x - cmnSize - 4, windowPos.y + 3 };
+        ImVec2 pinButtonMin = { minimumButtonMin.x - cmnSize - controlsMargin, windowPos.y + 3 };
         ImVec2 pinButtonMax = { pinButtonMin.x + cmnSize, pinButtonMin.y + cmnSize };
 
-        ImGui::SetCursorScreenPos(pinButtonMin);
-        ImGui::InvisibleButton("##PinButton", { cmnSize, cmnSize });
-        bool isPinButtonActive = ImGui::IsItemActive();
-
-        if (isPinButtonActive)
+        if (IsPinVisible)
         {
-            drawList->AddImage(g_upButtonPin2.get(), pinButtonMin, pinButtonMax);
-            m_isPinButtonPressed = true;
-        }
-        else
-        {
-            drawList->AddImage(g_upButtonPin1.get(), pinButtonMin, pinButtonMax);
+            controlsWidth += pinButtonMax.x - pinButtonMin.x + controlsMargin;
 
-            if (m_isPinButtonPressed)
+            ImGui::SetCursorScreenPos(pinButtonMin);
+            ImGui::InvisibleButton("##PinButton", { cmnSize, cmnSize });
+            bool isPinButtonActive = ImGui::IsItemActive();
+
+            if (isPinButtonActive)
             {
-                IsPinned = !IsPinned;
-                m_isPinButtonPressed = false;
+                drawList->AddImage(g_upButtonPin2.get(), pinButtonMin, pinButtonMax);
+                m_isPinButtonPressed = true;
+            }
+            else
+            {
+                drawList->AddImage(g_upButtonPin1.get(), pinButtonMin, pinButtonMax);
+
+                if (m_isPinButtonPressed)
+                {
+                    IsPinned = !IsPinned;
+                    m_isPinButtonPressed = false;
+                }
             }
         }
+
+        ImVec2 titleBarMin = { windowPos.x, windowPos.y };
+        ImVec2 titleBarMax = { windowPos.x + windowSize.x - controlsWidth, windowPos.y + titleBarHeight };
+
+        if (ImGui::IsMouseHoveringRect(titleBarMin, titleBarMax, false))
+        {
+            if (IsMinimumVisible && ImGui::IsMouseDoubleClicked(0))
+                SetMinimum(!IsMinimum);
+        }
+    }
+}
+
+void Reddog::Window::SetMinimum(bool isMinimum)
+{
+    IsMinimum = isMinimum;
+
+    if (!ImWindow)
+        return;
+
+    auto windowSize = ImWindow->Size;
+
+    if (IsMinimum)
+    {
+        m_preMinimumWindowSize = windowSize;
+        ImGui::SetWindowSize(ImWindow, { windowSize.x, MIN_WINDOW_SIZE });
+    }
+    else
+    {
+        ImGui::SetWindowSize(ImWindow, { windowSize.x, m_preMinimumWindowSize.y });
     }
 }
 
@@ -338,12 +374,31 @@ bool Reddog::Window::Begin(bool* pIsVisible)
     if ((Flags & eWindowFlags_NoResize) != 0)
         flags |= ImGuiWindowFlags_NoResize;
 
+    if (m_preBegin)
+        m_preBegin();
+
     bool result = ImGui::Begin(Name, m_pIsVisible, flags);
+
+    if (m_postBegin)
+        m_postBegin();
 
     if (result && *m_pIsVisible)
     {
         ImWindow = ImGui::GetCurrentWindow();
         IsFocused = ImGui::IsWindowFocused();
+
+        if ((Flags & eWindowFlags_Centre) != 0 && !m_isSetCentre)
+        {
+            auto viewport = ImGui::GetMainViewport();
+            auto windowPos = ImGui::GetWindowPos();
+            auto pos = ImVec2((viewport->Size.x / 2) - (ImWindow->Size.x / 2), (viewport->Size.y / 2) - (ImWindow->Size.y / 2));
+
+            ImGui::SetWindowPos(pos);
+        }
+
+        // Keep centring window until it has been moved.
+        if (ImGui::IsMouseDragging(0) && ImGui::IsWindowHovered())
+            m_isSetCentre = true;
 
         if (m_isSetVisible)
         {
@@ -361,6 +416,13 @@ bool Reddog::Window::Begin(bool* pIsVisible)
 
 void Reddog::Window::End()
 {
+    if (m_preEnd)
+        m_preEnd();
+
     ImGui::End();
+
+    if (m_postEnd)
+        m_postEnd();
+
     EndStyle();
 }
