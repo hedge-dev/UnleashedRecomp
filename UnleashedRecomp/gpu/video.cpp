@@ -5115,12 +5115,12 @@ struct DatabaseDataHolderPair
 
 // Having this separate, because I don't want to lock a mutex in the render thread before
 // every single draw. Might be worth profiling to see if it actually has an impact and merge them.
-static ankerl::unordered_dense::set<XXH64_hash_t, xxHash> g_asyncPipelines;
+static xxHashMap<PipelineState> g_asyncPipelines;
 
 static void EnqueueGraphicsPipelineCompilation(const PipelineState& pipelineState, DatabaseDataHolderPair& databaseDataHolderPair, const char* name)
 {
     XXH64_hash_t hash = XXH3_64bits(&pipelineState, sizeof(pipelineState));
-    bool shouldCompile = g_asyncPipelines.emplace(hash).second;
+    bool shouldCompile = g_asyncPipelines.emplace(hash, pipelineState).second;
 
     if (shouldCompile)
     {
@@ -5743,6 +5743,8 @@ static bool CheckMadeAll(const T& modelData)
     return true;
 }
 
+static std::atomic<uint32_t> g_pendingPipelineRecompilations;
+
 static void ModelConsumerThread()
 {
 #ifdef _WIN32
@@ -5850,6 +5852,58 @@ static void ModelConsumerThread()
 
             if ((--g_compilingDataCount) == 0)
                 g_compilingDataCount.notify_all();
+        }
+
+        if (g_pendingPipelineRecompilations != 0)
+        {
+            DatabaseDataHolderPair emptyHolderPair;
+            auto asyncPipelines = g_asyncPipelines.values();
+
+            for (auto& [hash, pipelineState] : asyncPipelines)
+            {
+                bool alphaTest = (pipelineState.specConstants & (SPEC_CONSTANT_ALPHA_TEST | SPEC_CONSTANT_ALPHA_TO_COVERAGE)) != 0;
+                bool msaa = pipelineState.sampleCount != 1 || (pipelineState.renderTargetFormat == RenderFormat::R16G16B16A16_FLOAT && pipelineState.depthStencilFormat == RenderFormat::D32_FLOAT);
+
+                pipelineState.sampleCount = 1;
+                pipelineState.enableAlphaToCoverage = false;
+                pipelineState.specConstants &= ~(SPEC_CONSTANT_BICUBIC_GI_FILTER | SPEC_CONSTANT_ALPHA_TEST | SPEC_CONSTANT_ALPHA_TO_COVERAGE);
+
+                if (msaa && Config::AntiAliasing != EAntiAliasing::None)
+                {
+                    pipelineState.sampleCount = int32_t(Config::AntiAliasing.Value);
+
+                    if (alphaTest)
+                    {
+                        if (Config::TransparencyAntiAliasing)
+                        {
+                            pipelineState.enableAlphaToCoverage = true;
+                            pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TO_COVERAGE;
+                        }
+                        else
+                        {
+                            pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
+                        }
+                    }
+                }
+                else if (alphaTest)
+                {
+                    pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
+                }
+
+                if (Config::GITextureFiltering == EGITextureFiltering::Bicubic)
+                    pipelineState.specConstants |= SPEC_CONSTANT_BICUBIC_GI_FILTER;
+
+                SanitizePipelineState(pipelineState);
+                EnqueueGraphicsPipelineCompilation(pipelineState, emptyHolderPair, "Recompiled Pipeline State");
+            }
+
+            if ((--g_pendingPipelineRecompilations) == 0)
+            {
+                --g_pendingDataCount;
+
+                if ((--g_compilingDataCount) == 0)
+                    g_compilingDataCount.notify_all();
+            }
         }
 
         {
@@ -6089,6 +6143,22 @@ void VideoConfigValueChangedCallback(IConfigDef* config)
         config == &Config::ResolutionScale ||
         config == &Config::AntiAliasing ||
         config == &Config::ShadowResolution;
+
+    // Config options that require pipeline recompilation
+    bool shouldRecompile =
+        config == &Config::AntiAliasing ||
+        config == &Config::TransparencyAntiAliasing ||
+        config == &Config::GITextureFiltering;
+
+    if (shouldRecompile)
+    {
+        ++g_compilingDataCount;
+
+        if ((++g_pendingDataCount) == 1)
+            g_pendingDataCount.notify_all();
+
+        ++g_pendingPipelineRecompilations;
+    }
 }
 
 // SWA::CCsdTexListMirage::SetFilter
