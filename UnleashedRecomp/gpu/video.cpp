@@ -5342,7 +5342,10 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
 
             createGraphicsPipeline(pipelineState);
 
-            bool planarReflectionEnabled = reinterpret_cast<bool*>(g_memory.Translate(0x832FA0D8));
+            // We cannot rely on this being accurate during loading as SceneEffect.prm.xml gets loaded a bit later.
+            bool planarReflectionEnabled = *reinterpret_cast<bool*>(g_memory.Translate(0x832FA0D8));
+            bool loading = *reinterpret_cast<bool*>(g_memory.Translate(0x83367A4C));
+            bool compileNoMsaaPipeline = pipelineState.sampleCount != 1 && (loading || planarReflectionEnabled);
 
             auto noMsaaPipeline = pipelineState;
             noMsaaPipeline.sampleCount = 1;
@@ -5354,7 +5357,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
                 noMsaaPipeline.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
             }
 
-            if (planarReflectionEnabled)
+            if (compileNoMsaaPipeline)
             {
                 // Planar reflections don't use MSAA.
                 createGraphicsPipeline(noMsaaPipeline);
@@ -5375,7 +5378,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
                 mouthPipelineState.vertexShader = FindShaderCacheEntry(0x689AA3140AB9EBAA)->guestShader;
                 createGraphicsPipeline(mouthPipelineState);
 
-                if (planarReflectionEnabled)
+                if (compileNoMsaaPipeline)
                 {
                     auto noMsaaMouthPipelineState = noMsaaPipeline;
                     noMsaaMouthPipelineState.vertexShader = mouthPipelineState.vertexShader;
@@ -5478,9 +5481,7 @@ static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMa
     pipelineState.destBlendAlpha = RenderBlend::INV_SRC_ALPHA;
     pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
     pipelineState.vertexStrides[0] = isMeshShader ? 104 : 28;
-    pipelineState.renderTargetFormat = RenderFormat::R16G16B16A16_FLOAT;
     pipelineState.depthStencilFormat = RenderFormat::D32_FLOAT;
-    pipelineState.sampleCount = Config::AntiAliasing != EAntiAliasing::None ? int32_t(Config::AntiAliasing.Value) : 1;
     pipelineState.specConstants = SPEC_CONSTANT_REVERSE_Z;
 
     if (pipelineState.vertexDeclaration->hasR11G11B10Normal)
@@ -5510,34 +5511,46 @@ static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMa
             EnqueueGraphicsPipelineCompilation(pipelineStateToCreate, holderPair, shaderList->m_TypeAndName.c_str() + 3);
         };
 
-    // TODO: See if this is necessary for everything.
     RenderCullMode cullModes[] = { RenderCullMode::NONE, RenderCullMode::BACK };
+    RenderFormat renderTargetFormats[] = { RenderFormat::R16G16B16A16_FLOAT, RenderFormat::R8G8B8A8_UNORM };
 
     for (auto cullMode : cullModes)
     {
-        pipelineState.cullMode = cullMode;
-        createGraphicsPipeline(pipelineState);
-
-        bool planarReflectionEnabled = reinterpret_cast<bool*>(g_memory.Translate(0x832FA0D8));
-
-        auto noMsaaPipelineState = pipelineState;
-        noMsaaPipelineState.sampleCount = 1;
-
-        if (planarReflectionEnabled)
-            createGraphicsPipeline(noMsaaPipelineState);
-
-        if (!isMeshShader)
+        for (auto renderTargetFormat : renderTargetFormats)
         {
-            // Previous compilation was for locus particles. This one will be for quads.
-            auto quadPipelineState = pipelineState;
-            quadPipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_LIST;
-            createGraphicsPipeline(quadPipelineState);
+            pipelineState.cullMode = cullMode;
+            pipelineState.renderTargetFormat = renderTargetFormat;
 
-            if (planarReflectionEnabled)
+            if (renderTargetFormat == RenderFormat::R16G16B16A16_FLOAT)
+                pipelineState.sampleCount = Config::AntiAliasing != EAntiAliasing::None ? int32_t(Config::AntiAliasing.Value) : 1;
+            else
+                pipelineState.sampleCount = 1;
+
+            createGraphicsPipeline(pipelineState);
+
+            // Always compile no MSAA variant for particles, as the planar
+            // reflection variable isn't reliable at this time of compilation.
+            bool compileNoMsaaPipeline = pipelineState.sampleCount != 1;
+
+            auto noMsaaPipelineState = pipelineState;
+            noMsaaPipelineState.sampleCount = 1;
+
+            if (compileNoMsaaPipeline)
+                createGraphicsPipeline(noMsaaPipelineState);
+
+            if (!isMeshShader)
             {
-                auto noMsaaQuadPipelineState = noMsaaPipelineState;
-                noMsaaQuadPipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_LIST;
-                createGraphicsPipeline(noMsaaQuadPipelineState);
+                // Previous compilation was for locus particles. This one will be for quads.
+                auto quadPipelineState = pipelineState;
+                quadPipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_LIST;
+                createGraphicsPipeline(quadPipelineState);
+
+                if (compileNoMsaaPipeline)
+                {
+                    auto noMsaaQuadPipelineState = noMsaaPipelineState;
+                    noMsaaQuadPipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_LIST;
+                    createGraphicsPipeline(noMsaaQuadPipelineState);
+                }
             }
         }
     }
