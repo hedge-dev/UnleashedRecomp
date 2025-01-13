@@ -5084,10 +5084,10 @@ static void PipelineCompilerThread()
         int newThreadPriority = threadPriority;
 
         bool loading = *reinterpret_cast<bool*>(g_memory.Translate(0x83367A4C));
-        if (queueItem.precompiledPipeline)
-            newThreadPriority = THREAD_PRIORITY_IDLE;
-        else if (loading)
+        if (loading)
             newThreadPriority = THREAD_PRIORITY_HIGHEST;
+        else if (queueItem.precompiledPipeline)
+            newThreadPriority = THREAD_PRIORITY_IDLE;
         else
             newThreadPriority = THREAD_PRIORITY_LOWEST;
 
