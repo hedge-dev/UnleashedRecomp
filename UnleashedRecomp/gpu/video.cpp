@@ -5473,8 +5473,6 @@ static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMa
     pipelineState.pixelShader = reinterpret_cast<GuestShader*>(defaultFindResult->second.m_PixelShaders.begin()->second->m_spCode->m_pD3DPixelShader.get());
     pipelineState.vertexDeclaration = isMeshShader ? unoptimizedVertexDeclaration : sparkleVertexDeclaration;
     pipelineState.zWriteEnable = false;
-    pipelineState.srcBlend = RenderBlend::SRC_ALPHA;
-    pipelineState.destBlend = RenderBlend::INV_SRC_ALPHA;
     pipelineState.zFunc = RenderComparisonFunction::GREATER_EQUAL;
     pipelineState.alphaBlendEnable = true;
     pipelineState.srcBlendAlpha = RenderBlend::SRC_ALPHA;
@@ -5490,18 +5488,20 @@ static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMa
     switch (material.m_BlendMode.get())
     {
     case Hedgehog::Sparkle::CParticleMaterial::eBlendMode_Zero:
-        // TODO: What are the render states for this??
+        pipelineState.srcBlend = RenderBlend::ZERO;
+        pipelineState.destBlend = RenderBlend::ZERO;
         break;
     case Hedgehog::Sparkle::CParticleMaterial::eBlendMode_Typical:
-        // Leave default.
+        pipelineState.srcBlend = RenderBlend::SRC_ALPHA;
+        pipelineState.destBlend = RenderBlend::INV_SRC_ALPHA;
         break;
     case Hedgehog::Sparkle::CParticleMaterial::eBlendMode_Add:
+        pipelineState.srcBlend = RenderBlend::SRC_ALPHA;
         pipelineState.destBlend = RenderBlend::ONE;
         break;
-    case Hedgehog::Sparkle::CParticleMaterial::eBlendMode_Subtract:
-        // TODO: Is this correct?
+    default:
+        pipelineState.srcBlend = RenderBlend::ONE;
         pipelineState.destBlend = RenderBlend::ONE;
-        pipelineState.blendOp = RenderBlendOperation::SUBTRACT;
         break;
     }
 
@@ -5511,14 +5511,17 @@ static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMa
             EnqueueGraphicsPipelineCompilation(pipelineStateToCreate, holderPair, shaderList->m_TypeAndName.c_str() + 3);
         };
 
+    // Mesh particles can use both cull modes. Quad particles are only NONE.
     RenderCullMode cullModes[] = { RenderCullMode::NONE, RenderCullMode::BACK };
+    uint32_t cullModeCount = isMeshShader ? std::size(cullModes) : 1;
     RenderFormat renderTargetFormats[] = { RenderFormat::R16G16B16A16_FLOAT, RenderFormat::R8G8B8A8_UNORM };
 
-    for (auto cullMode : cullModes)
+    for (size_t i = 0; i < cullModeCount; i++)
     {
+        pipelineState.cullMode = cullModes[i];
+
         for (auto renderTargetFormat : renderTargetFormats)
         {
-            pipelineState.cullMode = cullMode;
             pipelineState.renderTargetFormat = renderTargetFormat;
 
             if (renderTargetFormat == RenderFormat::R16G16B16A16_FLOAT)
