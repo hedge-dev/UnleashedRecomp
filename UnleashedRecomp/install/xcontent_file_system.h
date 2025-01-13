@@ -49,11 +49,13 @@ struct XContentFileSystem : VirtualFileSystem
     std::vector<MemoryMappedFile> mappedFiles;
     uint64_t baseOffset = 0;
     std::map<std::string, File> fileMap;
+    std::string name;
 
     XContentFileSystem(const std::filesystem::path &contentPath);
     bool load(const std::string &path, uint8_t *fileData, size_t fileDataMaxByteCount) const override;
     size_t getSize(const std::string &path) const override;
     bool exists(const std::string &path) const override;
+    const std::string &getName() const override;
     bool empty() const;
 
     static std::unique_ptr<XContentFileSystem> create(const std::filesystem::path &contentPath);

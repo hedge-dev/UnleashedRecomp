@@ -21,6 +21,8 @@ ISOFileSystem::ISOFileSystem(const std::filesystem::path &isoPath)
         return;
     }
 
+    name = (const char *)(isoPath.filename().u8string().data());
+
     // Find root sector.
     const uint8_t *mappedFileData = mappedFile.data();
     uint32_t gameOffset = 0;
@@ -171,6 +173,11 @@ size_t ISOFileSystem::getSize(const std::string &path) const
 bool ISOFileSystem::exists(const std::string &path) const
 {
     return fileMap.find(path) != fileMap.end();
+}
+
+const std::string &ISOFileSystem::getName() const
+{
+    return name;
 }
 
 bool ISOFileSystem::empty() const 

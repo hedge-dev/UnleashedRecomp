@@ -1123,7 +1123,7 @@ static void InstallerStart()
     g_installerThread = std::make_unique<std::thread>(InstallerThread);
 }
 
-static bool InstallerParseSources()
+static bool InstallerParseSources(std::string &errorMessage)
 {
     std::error_code spaceErrorCode;
     std::filesystem::space_info spaceInfo = std::filesystem::space(g_installPath, spaceErrorCode);
@@ -1136,14 +1136,17 @@ static bool InstallerParseSources()
     installerInput.gameSource = g_gameSourcePath;
     installerInput.updateSource = g_updateSourcePath;
 
-    for (std::filesystem::path &path : g_dlcSourcePaths) {
+    for (std::filesystem::path &path : g_dlcSourcePaths)
+    {
         if (!path.empty())
         {
             installerInput.dlcSources.push_back(path);
         }
     }
 
-    return Installer::parseSources(installerInput, g_installerJournal, g_installerSources);
+    bool sourcesParsed = Installer::parseSources(installerInput, g_installerJournal, g_installerSources);
+    errorMessage = g_installerJournal.lastErrorMessage;
+    return sourcesParsed;
 }
 
 static void DrawNextButton()
@@ -1195,10 +1198,17 @@ static void DrawNextButton()
                 }
 
                 bool dlcInstallerMode = g_gameSourcePath.empty();
-                if (!InstallerParseSources())
+                std::string sourcesErrorMessage;
+                if (!InstallerParseSources(sourcesErrorMessage))
                 {
                     // Some of the sources that were provided to the installer are not valid. Restart the file selection process.
-                    g_currentMessagePrompt = Localise("Installer_Message_InvalidFiles");
+                    std::stringstream stringStream;
+                    stringStream << Localise("Installer_Message_InvalidFiles");
+                    if (!sourcesErrorMessage.empty()) {
+                        stringStream << std::endl << std::endl << sourcesErrorMessage;
+                    }
+
+                    g_currentMessagePrompt = stringStream.str();
                     g_currentMessagePromptConfirmation = false;
                     g_currentPage = dlcInstallerMode ? WizardPage::SelectDLC : WizardPage::SelectGameAndUpdate;
                 }

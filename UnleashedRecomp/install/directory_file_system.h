@@ -7,10 +7,12 @@
 struct DirectoryFileSystem : VirtualFileSystem
 {
     std::filesystem::path directoryPath;
+    std::string name;
 
     DirectoryFileSystem(const std::filesystem::path &directoryPath)
     {
         this->directoryPath = directoryPath;
+        name = (const char *)(directoryPath.filename().u8string().data());
     }
 
     bool load(const std::string &path, uint8_t *fileData, size_t fileDataMaxByteCount) const override
@@ -49,6 +51,11 @@ struct DirectoryFileSystem : VirtualFileSystem
         }
 
         return std::filesystem::exists(directoryPath / std::filesystem::path(std::u8string_view((const char8_t *)(path.c_str()))));
+    }
+
+    const std::string &getName() const override
+    {
+        return name;
     }
 
     static std::unique_ptr<VirtualFileSystem> create(const std::filesystem::path &directoryPath)

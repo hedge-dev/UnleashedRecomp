@@ -22,11 +22,13 @@ struct ISOFileSystem : VirtualFileSystem
 {
     MemoryMappedFile mappedFile;
     std::map<std::string, std::tuple<size_t, size_t>> fileMap;
+    std::string name;
 
     ISOFileSystem(const std::filesystem::path &isoPath);
     bool load(const std::string &path, uint8_t *fileData, size_t fileDataMaxByteCount) const override;
     size_t getSize(const std::string &path) const override;
     bool exists(const std::string &path) const override;
+    const std::string &getName() const override;
     bool empty() const;
 
     static std::unique_ptr<ISOFileSystem> create(const std::filesystem::path &isoPath);

@@ -73,14 +73,14 @@ static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFi
     if (!sourceVfs.exists(filename))
     {
         journal.lastResult = Journal::Result::FileMissing;
-        journal.lastErrorMessage = fmt::format("File {} does not exist in the file system.", filename);
+        journal.lastErrorMessage = fmt::format("File {} does not exist in {}.", filename, sourceVfs.getName());
         return false;
     }
 
     if (!sourceVfs.load(filename, fileData))
     {
         journal.lastResult = Journal::Result::FileReadFailed;
-        journal.lastErrorMessage = fmt::format("Failed to read file {} from the file system.", filename);
+        journal.lastErrorMessage = fmt::format("Failed to read file {} from {}.", filename, sourceVfs.getName());
         return false;
     }
 
@@ -96,7 +96,7 @@ static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFi
         if (!fileHashFound)
         {
             journal.lastResult = Journal::Result::FileHashFailed;
-            journal.lastErrorMessage = fmt::format("File {} from the file system did not match any of the known hashes.", filename);
+            journal.lastErrorMessage = fmt::format("File {} from {} did not match any of the known hashes.", filename, sourceVfs.getName());
             return false;
         }
     }
@@ -150,7 +150,7 @@ static DLC detectDLC(const std::filesystem::path &sourcePath, VirtualFileSystem 
     if (!sourceVfs.load(DLCValidationFile, dlcXmlBytes))
     {
         journal.lastResult = Journal::Result::FileMissing;
-        journal.lastErrorMessage = fmt::format("File {} does not exist in the file system.", DLCValidationFile);
+        journal.lastErrorMessage = fmt::format("File {} does not exist in {}.", DLCValidationFile, sourceVfs.getName());
         return DLC::Unknown;
     }
 
@@ -164,7 +164,7 @@ static DLC detectDLC(const std::filesystem::path &sourcePath, VirtualFileSystem 
     if (typeStartLocation == nullptr || typeEndLocation == nullptr)
     {
         journal.lastResult = Journal::Result::DLCParsingFailed;
-        journal.lastErrorMessage = "Failed to find DLC type for " + fromPath(sourcePath) + ".";
+        journal.lastErrorMessage = fmt::format("Failed to find DLC type for {}.", sourceVfs.getName());
         return DLC::Unknown;
     }
 
@@ -173,7 +173,7 @@ static DLC detectDLC(const std::filesystem::path &sourcePath, VirtualFileSystem 
     if (typeNumberCount != 1)
     {
         journal.lastResult = Journal::Result::UnknownDLCType;
-        journal.lastErrorMessage = "DLC type for " + fromPath(sourcePath) + " is unknown.";
+        journal.lastErrorMessage = fmt::format("DLC type for {} is unknown.", sourceVfs.getName());
         return DLC::Unknown;
     }
 
@@ -193,7 +193,7 @@ static DLC detectDLC(const std::filesystem::path &sourcePath, VirtualFileSystem 
         return DLC::EmpireCityAdabat;
     default:
         journal.lastResult = Journal::Result::UnknownDLCType;
-        journal.lastErrorMessage = "DLC type for " + fromPath(sourcePath) + " is unknown.";
+        journal.lastErrorMessage = fmt::format("DLC type for {} is unknown.", sourceVfs.getName());
         return DLC::Unknown;
     }
 }
@@ -246,7 +246,7 @@ bool Installer::computeTotalSize(std::span<const FilePair> filePairs, const uint
         if (!sourceVfs.exists(filename))
         {
             journal.lastResult = Journal::Result::FileMissing;
-            journal.lastErrorMessage = fmt::format("File {} does not exist in the file system.", filename);
+            journal.lastErrorMessage = fmt::format("File {} does not exist in {}.", filename, sourceVfs.getName());
             return false;
         }
 
@@ -300,7 +300,7 @@ bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *f
     else
     {
         journal.lastResult = Journal::Result::ValidationFileMissing;
-        journal.lastErrorMessage = fmt::format("Unable to find validation file {} in file system.", validationFile);
+        journal.lastErrorMessage = fmt::format("Unable to find validation file {} in {}.", validationFile, sourceVfs.getName());
         return false;
     }
 
@@ -317,7 +317,7 @@ bool Installer::parseContent(const std::filesystem::path &sourcePath, std::uniqu
     else
     {
         journal.lastResult = Journal::Result::VirtualFileSystemFailed;
-        journal.lastErrorMessage = "Unable to open file system at " + fromPath(sourcePath);
+        journal.lastErrorMessage = "Unable to open " + fromPath(sourcePath);
         return false;
     }
 }

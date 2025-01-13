@@ -269,6 +269,8 @@ XContentFileSystem::XContentFileSystem(const std::filesystem::path &contentPath)
         return;
     }
 
+    name = (const char *)(contentPath.filename().u8string().data());
+
     const uint8_t *rootMappedFileData = rootMappedFile.data();
     if (sizeof(XContentContainerHeader) > rootMappedFile.size())
     {
@@ -605,6 +607,11 @@ size_t XContentFileSystem::getSize(const std::string &path) const
 bool XContentFileSystem::exists(const std::string &path) const
 {
     return fileMap.find(path) != fileMap.end();
+}
+
+const std::string &XContentFileSystem::getName() const
+{
+    return name;
 }
 
 bool XContentFileSystem::empty() const
