@@ -28,3 +28,5 @@ namespace Hedgehog::Math
         be<float> W;
     };
 }
+
+#include "Vector.inl"

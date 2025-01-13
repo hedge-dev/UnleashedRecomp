@@ -9,7 +9,8 @@ namespace SWA
     {
     public:
         xpointer<void> m_pVftable;
-        SWA_INSERT_PADDING(0xC4);
+        // SWA::CCamera::MyCamera
+        SWA_INSERT_PADDING(0xC4); 
         be<float> m_VertAspectRatio;
         SWA_INSERT_PADDING(0x48);
         be<float> m_HorzAspectRatio;

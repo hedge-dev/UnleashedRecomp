@@ -29,7 +29,8 @@ namespace SWA
                 SWA_INSERT_PADDING(0x10);
             };
 
-            SWA_INSERT_PADDING(0x1C);
+            SWA_INSERT_PADDING(0x10);
+            hh::map<Hedgehog::Base::CSharedString, boost::shared_ptr<SWA::CWorld>> m_Worlds;
             boost::shared_ptr<Hedgehog::Database::CDatabase> m_spDatabase;
             SWA_INSERT_PADDING(0x88);
             Hedgehog::Base::CSharedString m_StageName;
