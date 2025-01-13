@@ -5897,13 +5897,8 @@ static void ModelConsumerThread()
                 EnqueueGraphicsPipelineCompilation(pipelineState, emptyHolderPair, "Recompiled Pipeline State");
             }
 
-            if ((--g_pendingPipelineRecompilations) == 0)
-            {
-                --g_pendingDataCount;
-
-                if ((--g_compilingDataCount) == 0)
-                    g_compilingDataCount.notify_all();
-            }
+            --g_pendingPipelineRecompilations;
+            --g_pendingDataCount;
         }
 
         {
@@ -6152,8 +6147,6 @@ void VideoConfigValueChangedCallback(IConfigDef* config)
 
     if (shouldRecompile)
     {
-        ++g_compilingDataCount;
-
         if ((++g_pendingDataCount) == 1)
             g_pendingDataCount.notify_all();
 
