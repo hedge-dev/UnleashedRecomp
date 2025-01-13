@@ -5057,10 +5057,28 @@ struct PipelineStateQueueItem
 #ifdef ASYNC_PSO_DEBUG
     std::string pipelineName;
 #endif
-    bool precompiledPipeline{};
 };
 
 static moodycamel::BlockingConcurrentQueue<PipelineStateQueueItem> g_pipelineStateQueue;
+
+static void CompilePipeline(XXH64_hash_t pipelineHash, const PipelineState& pipelineState
+#ifdef ASYNC_PSO_DEBUG
+    , const std::string& pipelineName
+#endif
+)
+{
+    auto pipeline = CreateGraphicsPipeline(pipelineState);
+#ifdef ASYNC_PSO_DEBUG
+    pipeline->setName(pipelineName);
+#endif
+
+    // Will get dropped in render thread if a different thread already managed to compile this.
+    RenderCommand cmd;
+    cmd.type = RenderCommandType::AddPipeline;
+    cmd.addPipeline.hash = pipelineHash;
+    cmd.addPipeline.pipeline = pipeline.release();
+    g_renderQueue.enqueue(cmd);
+}
 
 static void PipelineCompilerThread()
 {
@@ -5086,8 +5104,6 @@ static void PipelineCompilerThread()
         bool loading = *reinterpret_cast<bool*>(g_memory.Translate(0x83367A4C));
         if (loading)
             newThreadPriority = THREAD_PRIORITY_HIGHEST;
-        else if (queueItem.precompiledPipeline)
-            newThreadPriority = THREAD_PRIORITY_IDLE;
         else
             newThreadPriority = THREAD_PRIORITY_LOWEST;
 
@@ -5098,17 +5114,11 @@ static void PipelineCompilerThread()
         }
 #endif
 
-        auto pipeline = CreateGraphicsPipeline(queueItem.pipelineState);
+        CompilePipeline(queueItem.pipelineHash, queueItem.pipelineState
 #ifdef ASYNC_PSO_DEBUG
-        pipeline->setName(queueItem.pipelineName);
+            , queueItem.pipelineName.c_str()
 #endif
-
-        // Will get dropped in render thread if a different thread already managed to compile this.
-        RenderCommand cmd;
-        cmd.type = RenderCommandType::AddPipeline;
-        cmd.addPipeline.hash = queueItem.pipelineHash;
-        cmd.addPipeline.pipeline = pipeline.release();
-        g_renderQueue.enqueue(cmd);
+        );
 
         std::this_thread::yield();
     }
@@ -5148,18 +5158,30 @@ static void EnqueueGraphicsPipelineCompilation(const PipelineState& pipelineStat
 
     if (shouldCompile)
     {
-        if (databaseDataHolderPair.counter == nullptr && databaseDataHolderPair.holder.databaseData.get() != nullptr)
-            databaseDataHolderPair.counter = std::make_shared<DatabaseDataHolder>(std::move(databaseDataHolderPair.holder));
-
-        PipelineStateQueueItem queueItem;
-        queueItem.pipelineHash = hash;
-        queueItem.pipelineState = pipelineState;
-        queueItem.databaseDataHolder = databaseDataHolderPair.counter;
+        bool loading = *reinterpret_cast<bool*>(g_memory.Translate(0x83367A4C));
+        if (!loading && g_pendingPipelineStateCache)
+        {
+            // We can just compile here during the logos.
+            CompilePipeline(hash, pipelineState
 #ifdef ASYNC_PSO_DEBUG
-        queueItem.pipelineName = fmt::format("ASYNC {} {:X}", name, hash);
+                , fmt::format("CACHE {} {:X}", name, hash)
 #endif
-        queueItem.precompiledPipeline = g_pendingPipelineStateCache;
-        g_pipelineStateQueue.enqueue(queueItem);
+            );
+        }
+        else
+        {
+            if (databaseDataHolderPair.counter == nullptr && databaseDataHolderPair.holder.databaseData.get() != nullptr)
+                databaseDataHolderPair.counter = std::make_shared<DatabaseDataHolder>(std::move(databaseDataHolderPair.holder));
+
+            PipelineStateQueueItem queueItem;
+            queueItem.pipelineHash = hash;
+            queueItem.pipelineState = pipelineState;
+            queueItem.databaseDataHolder = databaseDataHolderPair.counter;
+#ifdef ASYNC_PSO_DEBUG
+            queueItem.pipelineName = fmt::format("ASYNC {} {:X}", name, hash);
+#endif
+            g_pipelineStateQueue.enqueue(queueItem);
+        }
     }
 }
 
