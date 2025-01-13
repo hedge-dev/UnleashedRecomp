@@ -2216,8 +2216,6 @@ void Video::Present()
     if (g_shouldPrecompilePipelines)
     {
         // This is all the model consumer thread needs to see.
-        ++g_compilingDataCount;
-
         if ((++g_pendingDataCount) == 1)
             g_pendingDataCount.notify_all();
 
@@ -4245,8 +4243,10 @@ static void ProcSetPixelShader(const RenderCommand& cmd)
 static std::thread g_renderThread([]
     {
 #ifdef _WIN32
+        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
         GuestThread::SetThreadName(GetCurrentThreadId(), "Render Thread");
 #endif
+
         RenderCommand commands[32];
 
         while (true)
@@ -4289,6 +4289,8 @@ static std::thread g_renderThread([]
                 default:                                          assert(false && "Unrecognized render command type."); break;
                 }
             }
+
+            std::this_thread::yield();
         }
     });
 
@@ -5055,6 +5057,7 @@ struct PipelineStateQueueItem
 #ifdef ASYNC_PSO_DEBUG
     std::string pipelineName;
 #endif
+    bool precompiledPipeline{};
 };
 
 static moodycamel::BlockingConcurrentQueue<PipelineStateQueueItem> g_pipelineStateQueue;
@@ -5062,8 +5065,11 @@ static moodycamel::BlockingConcurrentQueue<PipelineStateQueueItem> g_pipelineSta
 static void PipelineCompilerThread()
 {
 #ifdef _WIN32
+    int threadPriority = THREAD_PRIORITY_LOWEST;
+    SetThreadPriority(GetCurrentThread(), threadPriority);
     GuestThread::SetThreadName(GetCurrentThreadId(), "Pipeline Compiler Thread");
 #endif
+
     std::unique_ptr<GuestThreadContext> ctx;
 
     while (true)
@@ -5073,6 +5079,24 @@ static void PipelineCompilerThread()
 
         if (ctx == nullptr)
             ctx = std::make_unique<GuestThreadContext>(0);
+
+#ifdef _WIN32
+        int newThreadPriority = threadPriority;
+
+        bool loading = *reinterpret_cast<bool*>(g_memory.Translate(0x83367A4C));
+        if (queueItem.precompiledPipeline)
+            newThreadPriority = THREAD_PRIORITY_IDLE;
+        else if (loading)
+            newThreadPriority = THREAD_PRIORITY_HIGHEST;
+        else
+            newThreadPriority = THREAD_PRIORITY_LOWEST;
+
+        if (newThreadPriority != threadPriority)
+        {
+            SetThreadPriority(GetCurrentThread(), newThreadPriority);
+            threadPriority = newThreadPriority;
+        }
+#endif
 
         auto pipeline = CreateGraphicsPipeline(queueItem.pipelineState);
 #ifdef ASYNC_PSO_DEBUG
@@ -5134,6 +5158,7 @@ static void EnqueueGraphicsPipelineCompilation(const PipelineState& pipelineStat
 #ifdef ASYNC_PSO_DEBUG
         queueItem.pipelineName = fmt::format("ASYNC {} {:X}", name, hash);
 #endif
+        queueItem.precompiledPipeline = g_pendingPipelineStateCache;
         g_pipelineStateQueue.enqueue(queueItem);
     }
 }
@@ -5748,8 +5773,10 @@ static std::atomic<uint32_t> g_pendingPipelineRecompilations;
 static void ModelConsumerThread()
 {
 #ifdef _WIN32
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_IDLE);
     GuestThread::SetThreadName(GetCurrentThreadId(), "Model Consumer Thread");
 #endif
+
     std::vector<boost::shared_ptr<Hedgehog::Database::CDatabaseData>> localPendingDataQueue;
     std::unique_ptr<GuestThreadContext> ctx;
 
@@ -5849,9 +5876,6 @@ static void ModelConsumerThread()
 
             g_pendingPipelineStateCache = false;
             --g_pendingDataCount;
-
-            if ((--g_compilingDataCount) == 0)
-                g_compilingDataCount.notify_all();
         }
 
         if (g_pendingPipelineRecompilations != 0)
