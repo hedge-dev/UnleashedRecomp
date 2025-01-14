@@ -290,7 +290,7 @@ static Mutex g_debugMutex;
 #endif
 
 #ifdef PSO_CACHING
-static std::vector<PipelineState> g_pipelineStatesToCache;
+static xxHashMap<PipelineState> g_pipelineStatesToCache;
 static Mutex g_pipelineCacheMutex;
 #endif
 
@@ -3359,7 +3359,7 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
 
 #ifdef PSO_CACHING
         std::lock_guard lock(g_pipelineCacheMutex);
-        g_pipelineStatesToCache.push_back(pipelineState);
+        g_pipelineStatesToCache.emplace(hash, pipelineState);
 #endif
     }
     
@@ -3856,6 +3856,8 @@ static GuestVertexDeclaration* CreateVertexDeclarationWithoutAddRef(GuestVertexE
         ++vertexElement;
         ++vertexElementCount;
     }
+
+    vertexElement->padding = 0; // Clear the padding in D3DDECL_END() 
 
     std::lock_guard lock(g_vertexDeclarationMutex);
 
@@ -5183,6 +5185,15 @@ static void EnqueueGraphicsPipelineCompilation(const PipelineState& pipelineStat
             g_pipelineStateQueue.enqueue(queueItem);
         }
     }
+
+#ifdef PSO_CACHING_CLEANUP
+    std::lock_guard lock(g_pipelineCacheMutex);
+
+    if (shouldCompile && g_pendingPipelineStateCache)
+        g_pipelineStatesToCache.emplace(hash, pipelineState);
+    else if (!shouldCompile && !g_pendingPipelineStateCache)
+        g_pipelineStatesToCache.erase(hash);
+#endif
 }
 
 struct CompilationArgs
@@ -6065,7 +6076,7 @@ public:
             ankerl::unordered_dense::set<GuestVertexDeclaration*> vertexDeclarations;
             xxHashMap<PipelineState> pipelineStatesToCache;
 
-            for (auto& pipelineState : g_pipelineStatesToCache)
+            for (auto& [hash, pipelineState] : g_pipelineStatesToCache)
             {
                 if (pipelineState.vertexShader->shaderCacheEntry == nullptr ||
                     (pipelineState.pixelShader != nullptr && pipelineState.pixelShader->shaderCacheEntry == nullptr))
