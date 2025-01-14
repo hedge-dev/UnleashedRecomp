@@ -288,8 +288,9 @@ void MessageWindow::Draw()
 
     ImVec2 centre = { res.x / 2, res.y / 2 };
 
+    float maxWidth = Scale(640.0f);
     auto fontSize = Scale(28);
-    auto textSize = MeasureCentredParagraph(g_fntSeurat, fontSize, 5, g_text.c_str());
+    auto textSize = MeasureCentredParagraph(g_fntSeurat, fontSize, maxWidth, 5, g_text.c_str());
     auto textMarginX = Scale(37);
     auto textMarginY = Scale(45);
 
@@ -325,6 +326,7 @@ void MessageWindow::Draw()
         (
             g_fntSeurat,
             fontSize,
+            maxWidth,
             { centre.x, centre.y + Scale(3) },
             5,
             g_text.c_str(),
