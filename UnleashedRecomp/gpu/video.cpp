@@ -5187,12 +5187,19 @@ static void EnqueueGraphicsPipelineCompilation(const PipelineState& pipelineStat
     }
 
 #ifdef PSO_CACHING_CLEANUP
-    std::lock_guard lock(g_pipelineCacheMutex);
-
     if (shouldCompile && g_pendingPipelineStateCache)
+    {
+        std::lock_guard lock(g_pipelineCacheMutex);
         g_pipelineStatesToCache.emplace(hash, pipelineState);
-    else if (!shouldCompile && !g_pendingPipelineStateCache)
+    }
+#endif
+
+#ifdef PSO_CACHING
+    if (!g_pendingPipelineStateCache)
+    {
+        std::lock_guard lock(g_pipelineCacheMutex);
         g_pipelineStatesToCache.erase(hash);
+    }
 #endif
 }
 
