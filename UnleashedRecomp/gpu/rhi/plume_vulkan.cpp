@@ -1432,7 +1432,10 @@ namespace plume {
         rasterization.cullMode = toVk(desc.cullMode);
         rasterization.frontFace = VK_FRONT_FACE_CLOCKWISE;
 
-        if (desc.depthBias != 0 || desc.slopeScaledDepthBias != 0.0f) {
+        if (desc.dynamicDepthBiasEnabled) {
+            rasterization.depthBiasEnable = true;
+        }
+        else if (desc.depthBias != 0 || desc.slopeScaledDepthBias != 0.0f) {
             rasterization.depthBiasEnable = true;
             rasterization.depthBiasConstantFactor = float(desc.depthBias);
             rasterization.depthBiasSlopeFactor = desc.slopeScaledDepthBias;
@@ -1509,6 +1512,10 @@ namespace plume {
         dynamicStates.clear();
         dynamicStates.emplace_back(VK_DYNAMIC_STATE_VIEWPORT);
         dynamicStates.emplace_back(VK_DYNAMIC_STATE_SCISSOR);
+
+        if (desc.dynamicDepthBiasEnabled) {
+            dynamicStates.emplace_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
+        }
 
         VkPipelineDynamicStateCreateInfo dynamicState = {};
         dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -2848,6 +2855,10 @@ namespace plume {
         }
     }
 
+    void VulkanCommandList::setDepthBias(float depthBias, float depthBiasClamp, float slopeScaledDepthBias) {
+        vkCmdSetDepthBias(vk, depthBias, depthBiasClamp, slopeScaledDepthBias);
+    }
+
     static void clearCommonRectVector(uint32_t width, uint32_t height, const RenderRect *clearRects, uint32_t clearRectsCount, std::vector<VkClearRect> &rectVector) {
         rectVector.clear();
 
@@ -3783,6 +3794,7 @@ namespace plume {
         capabilities.displayTiming = supportedOptionalExtensions.find(VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME) != supportedOptionalExtensions.end();
         capabilities.preferHDR = memoryHeapSize > (512 * 1024 * 1024);
         capabilities.triangleFan = true;
+        capabilities.dynamicDepthBias = true;
 
         // Fill Vulkan-only capabilities.
         loadStoreOpNoneSupported = supportedOptionalExtensions.find(VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME) != supportedOptionalExtensions.end();

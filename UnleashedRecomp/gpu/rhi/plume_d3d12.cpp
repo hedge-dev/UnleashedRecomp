@@ -1815,6 +1815,11 @@ namespace plume {
         }
     }
 
+    void D3D12CommandList::setDepthBias(float depthBias, float depthBiasClamp, float slopeScaledDepthBias) {
+        assert(device->capabilities.dynamicDepthBias && "Dynamic depth bias is unsupported on this device.");
+        d3d->RSSetDepthBias(depthBias, depthBiasClamp, slopeScaledDepthBias);
+    }
+
     void D3D12CommandList::clearColor(uint32_t attachmentIndex, RenderColor colorValue, const RenderRect *clearRects, uint32_t clearRectsCount) {
         assert(targetFramebuffer != nullptr);
         assert(attachmentIndex < targetFramebuffer->colorTargets.size());
@@ -2718,6 +2723,10 @@ namespace plume {
         psoDesc.RasterizerState.DepthBias = desc.depthBias;
         psoDesc.RasterizerState.SlopeScaledDepthBias = desc.slopeScaledDepthBias;
 
+        if (desc.dynamicDepthBiasEnabled) {
+            psoDesc.Flags |= D3D12_PIPELINE_STATE_FLAG_DYNAMIC_DEPTH_BIAS;
+        }
+
         switch (desc.cullMode) {
         case RenderCullMode::NONE:
             psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
@@ -3307,6 +3316,14 @@ namespace plume {
                 triangleFanSupportOption = d3d12Options15.TriangleFanSupported;
             }
 
+            // Check if dynamic depth bias is supported.
+            bool dynamicDepthBiasOption = false;
+            D3D12_FEATURE_DATA_D3D12_OPTIONS16 d3d12Options16 = {};
+            res = deviceOption->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &d3d12Options16, sizeof(d3d12Options16));
+            if (SUCCEEDED(res)) {
+                dynamicDepthBiasOption = d3d12Options16.DynamicDepthBiasSupported;
+            }
+
             // Pick this adapter and device if it has better feature support than the current one.
             bool preferOverNothing = (adapter == nullptr) || (d3d == nullptr);
             bool preferVideoMemory = adapterDesc.DedicatedVideoMemory > description.dedicatedVideoMemory;
@@ -3328,6 +3345,7 @@ namespace plume {
                 capabilities.raytracingStateUpdate = rtStateUpdateSupportOption;
                 capabilities.sampleLocations = samplePositionsOption;
                 capabilities.triangleFan = triangleFanSupportOption;
+                capabilities.dynamicDepthBias = dynamicDepthBiasOption;
                 description.name = Utf16ToUtf8(adapterDesc.Description);
                 description.dedicatedVideoMemory = adapterDesc.DedicatedVideoMemory;
 

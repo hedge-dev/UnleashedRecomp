@@ -131,12 +131,18 @@ struct SharedConstants
     float alphaThreshold{};
 };
 
+// Depth bias values here are only used when the render device has 
+// dynamic depth bias capability enabled. Otherwise, they get unused
+// and the values get assigned in the pipeline state instead.
+
 static GuestSurface* g_renderTarget;
 static GuestSurface* g_depthStencil;
 static RenderFramebuffer* g_framebuffer;
 static RenderViewport g_viewport(0.0f, 0.0f, 1280.0f, 720.0f);
 static bool g_halfPixel = true;
 static PipelineState g_pipelineState;
+static int32_t g_depthBias;
+static float g_slopeScaledDepthBias;
 static SharedConstants g_sharedConstants;
 static RenderSamplerDesc g_samplerDescs[16];
 static bool g_scissorTestEnable = false;
@@ -150,6 +156,7 @@ struct DirtyStates
     bool renderTargetAndDepthStencil;
     bool viewport;
     bool pipelineState;
+    bool depthBias;
     bool sharedConstants;
     bool scissorRect;
     bool vertexShaderConstants;
@@ -162,6 +169,7 @@ struct DirtyStates
         : renderTargetAndDepthStencil(value)
         , viewport(value)
         , pipelineState(value)
+        , depthBias(value)
         , sharedConstants(value)
         , scissorRect(value)
         , vertexShaderConstants(value)
@@ -194,7 +202,7 @@ static constexpr bool g_vulkan = true;
 static std::unique_ptr<RenderInterface> g_interface;
 static std::unique_ptr<RenderDevice> g_device;
 
-static bool g_triangleFanSupported;
+static RenderDeviceCapabilities g_capabilities;
 
 static constexpr size_t NUM_FRAMES = 2;
 
@@ -1019,12 +1027,20 @@ static void ProcSetRenderState(const RenderCommand& cmd)
     }
     case D3DRS_SLOPESCALEDEPTHBIAS:
     {
-        SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.slopeScaledDepthBias, *reinterpret_cast<float*>(&value));
+        if (g_capabilities.dynamicDepthBias)
+            SetDirtyValue(g_dirtyStates.depthBias, g_slopeScaledDepthBias, *reinterpret_cast<float*>(&value));
+        else 
+            SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.slopeScaledDepthBias, *reinterpret_cast<float*>(&value));
+
         break;
     }
     case D3DRS_DEPTHBIAS:
     {
-        SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.depthBias, int32_t(*reinterpret_cast<float*>(&value) * (1 << 24)));
+        if (g_capabilities.dynamicDepthBias)
+            SetDirtyValue(g_dirtyStates.depthBias, g_depthBias, int32_t(*reinterpret_cast<float*>(&value) * (1 << 24)));
+        else
+            SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.depthBias, int32_t(*reinterpret_cast<float*>(&value)* (1 << 24)));
+
         break;
     }
     case D3DRS_SRCBLENDALPHA:
@@ -1430,7 +1446,7 @@ void Video::CreateHostDevice(const char *sdlVideoDriver)
 
     g_device = g_interface->createDevice();
 
-    g_triangleFanSupported = g_device->getCapabilities().triangleFan;
+    g_capabilities = g_device->getCapabilities();
 
     g_queue = g_device->createCommandQueue(RenderCommandListType::DIRECT);
 
@@ -1991,9 +2007,8 @@ static void DrawProfiler()
         ImGui::Text("Physical Heap Allocated: %d MB", int32_t(physicalDiagnostics.allocated / (1024 * 1024)));
         ImGui::NewLine();
 
-        auto capabilities = g_device->getCapabilities();
-        ImGui::Text("Present Wait: %s", capabilities.presentWait ? "Supported" : "Unsupported");
-        ImGui::Text("Triangle Fan: %s", capabilities.triangleFan ? "Supported" : "Unsupported");
+        ImGui::Text("Present Wait: %s", g_capabilities.presentWait ? "Supported" : "Unsupported");
+        ImGui::Text("Triangle Fan: %s", g_capabilities.triangleFan ? "Supported" : "Unsupported");
         ImGui::NewLine();
 
         const char* sdlVideoDriver = SDL_GetCurrentVideoDriver();
@@ -3164,6 +3179,8 @@ static void SanitizePipelineState(PipelineState& pipelineState)
         pipelineState.depthStencilFormat = RenderFormat::UNKNOWN;
     }
 
+    assert(!g_capabilities.dynamicDepthBias || (pipelineState.depthBias == 0 && pipelineState.slopeScaledDepthBias == 0.0f));
+
     if (pipelineState.slopeScaledDepthBias == 0.0f)
         pipelineState.slopeScaledDepthBias = 0.0f; // Remove sign.
 
@@ -3214,6 +3231,7 @@ static std::unique_ptr<RenderPipeline> CreateGraphicsPipeline(const PipelineStat
     desc.depthWriteEnabled = pipelineState.zWriteEnable;
     desc.depthBias = pipelineState.depthBias;
     desc.slopeScaledDepthBias = pipelineState.slopeScaledDepthBias;
+    desc.dynamicDepthBiasEnabled = g_capabilities.dynamicDepthBias;
     desc.depthClipEnabled = true;
     desc.primitiveTopology = pipelineState.primitiveTopology;
     desc.cullMode = pipelineState.cullMode;
@@ -3583,7 +3601,17 @@ static void FlushRenderStateForRenderThread()
     auto& commandList = g_commandLists[g_frame];
 
     if (g_dirtyStates.pipelineState)
+    {
         commandList->setPipeline(CreateGraphicsPipelineInRenderThread(g_pipelineState));
+
+        // D3D12 sets the depth bias values to the values in the pipeline.
+        // TODO: Put the common depth bias values to shadow pipelines to reduce redundant calls.
+        if (!g_vulkan && g_capabilities.dynamicDepthBias)
+            g_dirtyStates.depthBias |= (g_depthBias != 0) || (g_slopeScaledDepthBias != 0.0f);
+    }
+
+    if (g_dirtyStates.depthBias && g_capabilities.dynamicDepthBias)
+        commandList->setDepthBias(g_depthBias, 0.0f, g_slopeScaledDepthBias);
 
     if (g_dirtyStates.sharedConstants)
     {
@@ -3622,7 +3650,7 @@ static RenderPrimitiveTopology ConvertPrimitiveType(uint32_t primitiveType)
     case D3DPT_TRIANGLESTRIP:
         return RenderPrimitiveTopology::TRIANGLE_STRIP;
     case D3DPT_TRIANGLEFAN:
-        return g_triangleFanSupported ? RenderPrimitiveTopology::TRIANGLE_FAN : RenderPrimitiveTopology::TRIANGLE_LIST;
+        return g_capabilities.triangleFan ? RenderPrimitiveTopology::TRIANGLE_FAN : RenderPrimitiveTopology::TRIANGLE_LIST;
     default:
         assert(false && "Unknown primitive type");
         return RenderPrimitiveTopology::UNKNOWN;
@@ -3748,7 +3776,7 @@ static void ProcDrawPrimitiveUP(const RenderCommand& cmd)
 
     if (args.primitiveType == D3DPT_QUADLIST)
         indexCount = g_quadIndexData.prepare(args.primitiveCount);
-    else if (!g_triangleFanSupported && args.primitiveType == D3DPT_TRIANGLEFAN)
+    else if (!g_capabilities.triangleFan && args.primitiveType == D3DPT_TRIANGLEFAN)
         indexCount = g_triangleFanIndexData.prepare(args.primitiveCount);
 
     if (args.csdFilterState != CsdFilterState::Unknown &&
@@ -4994,7 +5022,7 @@ static const be<uint16_t> g_particleTestIndexBuffer[] =
 
 bool ParticleTestIndexBufferMidAsmHook(PPCRegister& r30)
 {
-    if (!g_triangleFanSupported)
+    if (!g_capabilities.triangleFan)
     {
         auto buffer = CreateIndexBuffer(sizeof(g_particleTestIndexBuffer), 0, D3DFMT_INDEX16);
         void* memory = LockIndexBuffer(buffer, 0, 0, 0);
@@ -5009,7 +5037,7 @@ bool ParticleTestIndexBufferMidAsmHook(PPCRegister& r30)
 
 void ParticleTestDrawIndexedPrimitiveMidAsmHook(PPCRegister& r7)
 {
-    if (!g_triangleFanSupported)
+    if (!g_capabilities.triangleFan)
         r7.u64 = std::size(g_particleTestIndexBuffer);
 }
 
@@ -5289,8 +5317,13 @@ static void CompileMeshPipeline(const Mesh& mesh, CompilationArgs& args)
         pipelineState.vertexDeclaration = mesh.vertexDeclaration;
         pipelineState.cullMode = mesh.material->m_DoubleSided ? RenderCullMode::NONE : RenderCullMode::BACK;
         pipelineState.zFunc = RenderComparisonFunction::LESS_EQUAL;
-        pipelineState.depthBias = (1 << 24) * (*reinterpret_cast<be<float>*>(g_memory.Translate(0x83302760)));
-        pipelineState.slopeScaledDepthBias = *reinterpret_cast<be<float>*>(g_memory.Translate(0x83302764));
+        
+        if (!g_capabilities.dynamicDepthBias)
+        {
+            pipelineState.depthBias = (1 << 24) * (*reinterpret_cast<be<float>*>(g_memory.Translate(0x83302760)));
+            pipelineState.slopeScaledDepthBias = *reinterpret_cast<be<float>*>(g_memory.Translate(0x83302764));
+        }
+
         pipelineState.colorWriteEnable = 0;
         pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
         pipelineState.vertexStrides[0] = mesh.vertexSize;
@@ -5941,8 +5974,14 @@ static void ModelConsumerThread()
                     pipelineState.vertexDeclaration = g_vertexDeclarations[reinterpret_cast<XXH64_hash_t>(pipelineState.vertexDeclaration)];
                 }
 
-                if (!g_triangleFanSupported && pipelineState.primitiveTopology == RenderPrimitiveTopology::TRIANGLE_FAN)
+                if (!g_capabilities.triangleFan && pipelineState.primitiveTopology == RenderPrimitiveTopology::TRIANGLE_FAN)
                     pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_LIST;
+
+                if (g_capabilities.dynamicDepthBias)
+                {
+                    pipelineState.depthBias = 0;
+                    pipelineState.slopeScaledDepthBias = 0.0f;
+                }
 
                 if (Config::GITextureFiltering == EGITextureFiltering::Bicubic)
                     pipelineState.specConstants |= SPEC_CONSTANT_BICUBIC_GI_FILTER;

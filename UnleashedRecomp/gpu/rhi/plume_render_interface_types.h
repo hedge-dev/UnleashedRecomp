@@ -1171,6 +1171,7 @@ namespace plume {
         bool depthClipEnabled = false;
         int32_t depthBias = 0;
         float slopeScaledDepthBias = 0.0f;
+        bool dynamicDepthBiasEnabled = false;
         bool depthEnabled = false;
         bool depthWriteEnabled = false;
         RenderMultisampling multisampling;
@@ -1778,6 +1779,7 @@ namespace plume {
 
         // Draw.
         bool triangleFan = false;
+        bool dynamicDepthBias = false;
     };
 
     struct RenderInterfaceCapabilities {
