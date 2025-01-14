@@ -3183,6 +3183,12 @@ static void SanitizePipelineState(PipelineState& pipelineState)
         pipelineState.blendOpAlpha = RenderBlendOperation::ADD;
     }
 
+    for (size_t i = 0; i < 16; i++)
+    {
+        if (!pipelineState.vertexDeclaration->vertexStreams[i])
+            pipelineState.vertexStrides[i] = 0;
+    }
+
     uint32_t specConstantsMask = 0;
     if (pipelineState.vertexShader->shaderCacheEntry != nullptr)
         specConstantsMask |= pipelineState.vertexShader->shaderCacheEntry->specConstantsMask;
@@ -3963,6 +3969,8 @@ static GuestVertexDeclaration* CreateVertexDeclarationWithoutAddRef(GuestVertexE
 
                 break;
             }
+
+            vertexDeclaration->vertexStreams[vertexElement->stream] = true;
 
             ++vertexElement;
         }
@@ -5220,28 +5228,42 @@ enum class MeshLayer
     Special
 };
 
-static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer layer, CompilationArgs& args)
+struct Mesh
 {
-    if (mesh->m_spMaterial.get() == nullptr || mesh->m_spMaterial->m_spShaderListData.get() == nullptr)
+    uint32_t vertexSize{};
+    uint32_t morphTargetVertexSize{};
+    GuestVertexDeclaration* vertexDeclaration{};
+    Hedgehog::Mirage::CMaterialData* material{};
+    MeshLayer layer{};
+    bool morphModel{};
+};
+
+static void CompileMeshPipeline(const Mesh& mesh, CompilationArgs& args)
+{
+    if (mesh.material == nullptr || mesh.material->m_spShaderListData.get() == nullptr)
         return;
 
-    auto& material = mesh->m_spMaterial;
-    auto& shaderList = material->m_spShaderListData;
+    auto& shaderList = mesh.material->m_spShaderListData;
 
-    bool isFur = strstr(shaderList->m_TypeAndName.c_str(), "Fur") != nullptr;
-    bool isSky = strstr(shaderList->m_TypeAndName.c_str(), "Sky") != nullptr;
-    bool isSonicMouth = strcmp(material->m_TypeAndName.c_str() + 2, "sonic_gm_mouth_duble") == 0 &&
+    bool isFur = !mesh.morphModel &&
+        strstr(shaderList->m_TypeAndName.c_str(), "Fur") != nullptr;
+
+    bool isSky = !mesh.morphModel &&
+        strstr(shaderList->m_TypeAndName.c_str(), "Sky") != nullptr;
+
+    bool isSonicMouth = !mesh.morphModel &&
+        strcmp(mesh.material->m_TypeAndName.c_str() + 2, "sonic_gm_mouth_duble") == 0 &&
         strcmp(shaderList->m_TypeAndName.c_str() + 3, "SonicSkin_dspf[b]") == 0;
 
     bool compiledOutsideMainFramebuffer = !isFur && !isSky;
 
     bool constTexCoord = true;
-    if (material->m_spTexsetData.get() != nullptr)
+    if (mesh.material->m_spTexsetData.get() != nullptr)
     {
-        for (size_t i = 1; i < material->m_spTexsetData->m_TextureList.size(); i++)
+        for (size_t i = 1; i < mesh.material->m_spTexsetData->m_TextureList.size(); i++)
         {
-            if (material->m_spTexsetData->m_TextureList[i]->m_TexcoordIndex !=
-                material->m_spTexsetData->m_TextureList[0]->m_TexcoordIndex)
+            if (mesh.material->m_spTexsetData->m_TextureList[i]->m_TexcoordIndex !=
+                mesh.material->m_spTexsetData->m_TextureList[0]->m_TexcoordIndex)
             {
                 constTexCoord = false;
                 break;
@@ -5249,14 +5271,12 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
         }
     }
 
-    auto vertexDeclaration = reinterpret_cast<GuestVertexDeclaration*>(mesh->m_VertexDeclarationPtr.m_pD3DVertexDeclaration.get());
-
     // Shadow pipeline.
-    if (compiledOutsideMainFramebuffer && (layer == MeshLayer::Opaque || layer == MeshLayer::PunchThrough))
+    if (compiledOutsideMainFramebuffer && (mesh.layer == MeshLayer::Opaque || mesh.layer == MeshLayer::PunchThrough))
     {
         PipelineState pipelineState{};
 
-        if (layer == MeshLayer::PunchThrough)
+        if (mesh.layer == MeshLayer::PunchThrough)
         {
             pipelineState.vertexShader = FindShaderCacheEntry(0xDD4FA7BB53876300)->guestShader;
             pipelineState.pixelShader = FindShaderCacheEntry(0xE2ECA594590DDE8B)->guestShader;
@@ -5266,35 +5286,49 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             pipelineState.vertexShader = FindShaderCacheEntry(0x8E4BB23465BD909E)->guestShader;
         }
 
-        pipelineState.vertexDeclaration = vertexDeclaration;
-        pipelineState.cullMode = material->m_DoubleSided ? RenderCullMode::NONE : RenderCullMode::BACK;
+        pipelineState.vertexDeclaration = mesh.vertexDeclaration;
+        pipelineState.cullMode = mesh.material->m_DoubleSided ? RenderCullMode::NONE : RenderCullMode::BACK;
         pipelineState.zFunc = RenderComparisonFunction::LESS_EQUAL;
         pipelineState.depthBias = (1 << 24) * (*reinterpret_cast<be<float>*>(g_memory.Translate(0x83302760)));
         pipelineState.slopeScaledDepthBias = *reinterpret_cast<be<float>*>(g_memory.Translate(0x83302764));
         pipelineState.colorWriteEnable = 0;
         pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
-        pipelineState.vertexStrides[0] = mesh->m_VertexSize;
+        pipelineState.vertexStrides[0] = mesh.vertexSize;
         pipelineState.depthStencilFormat = RenderFormat::D32_FLOAT;
 
-        if (layer == MeshLayer::PunchThrough)
+        if (mesh.layer == MeshLayer::PunchThrough)
             pipelineState.specConstants |= SPEC_CONSTANT_ALPHA_TEST;
 
+        const char* name = (mesh.layer == MeshLayer::PunchThrough ? "MakeShadowMapTransparent" : "MakeShadowMap");
         SanitizePipelineState(pipelineState);
-        EnqueueGraphicsPipelineCompilation(pipelineState, args.holderPair, layer == MeshLayer::PunchThrough ? "MakeShadowMapTransparent" : "MakeShadowMap");
+        EnqueueGraphicsPipelineCompilation(pipelineState, args.holderPair, name);
+
+        // Morph models have 4 targets where unused targets default to the first vertex stream.
+        if (mesh.morphModel)
+        {
+            for (size_t i = 0; i < 5; i++)
+            {
+                for (size_t j = 0; j < 4; j++)
+                    pipelineState.vertexStrides[j + 1] = i > j ? mesh.morphTargetVertexSize : mesh.vertexSize;
+
+                SanitizePipelineState(pipelineState);
+                EnqueueGraphicsPipelineCompilation(pipelineState, args.holderPair, name);
+            }
+        }
     }
 
     // Motion blur pipeline. We could normally do the player here only, but apparently Werehog enemies also have object blur.
     // TODO: Do punch through meshes get rendered?
-    if (compiledOutsideMainFramebuffer && args.hasMoreThanOneBone && layer == MeshLayer::Opaque)
+    if (!mesh.morphModel && compiledOutsideMainFramebuffer && args.hasMoreThanOneBone && mesh.layer == MeshLayer::Opaque)
     {
         PipelineState pipelineState{};
         pipelineState.vertexShader = FindShaderCacheEntry(0x4620B236DC38100C)->guestShader;
         pipelineState.pixelShader = FindShaderCacheEntry(0xBBDB735BEACC8F41)->guestShader;
-        pipelineState.vertexDeclaration = vertexDeclaration;
+        pipelineState.vertexDeclaration = mesh.vertexDeclaration;
         pipelineState.cullMode = RenderCullMode::NONE;
         pipelineState.zFunc = RenderComparisonFunction::GREATER_EQUAL;
         pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
-        pipelineState.vertexStrides[0] = mesh->m_VertexSize;
+        pipelineState.vertexStrides[0] = mesh.vertexSize;
         pipelineState.renderTargetFormat = RenderFormat::R8G8B8A8_UNORM;
         pipelineState.depthStencilFormat = RenderFormat::D32_FLOAT;
         pipelineState.specConstants = SPEC_CONSTANT_REVERSE_Z;
@@ -5322,7 +5356,8 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
     if ((defaultFindResult->second.m_SubPermutations.get() & (1 << pixelShaderSubPermutationsToCompile)) == 0) pixelShaderSubPermutationsToCompile &= ~0x1;
     if ((defaultFindResult->second.m_SubPermutations.get() & (1 << pixelShaderSubPermutationsToCompile)) == 0) pixelShaderSubPermutationsToCompile &= ~0x2;
 
-    guest_stack_var<Hedgehog::Base::CStringSymbol> noneSymbol(reinterpret_cast<const char*>(g_memory.Translate(0x8200D938)));
+    uint32_t noneStr = mesh.morphModel ? 0x820D72F0 : 0x8200D938; // "p" for morph, "none" for regular
+    guest_stack_var<Hedgehog::Base::CStringSymbol> noneSymbol(reinterpret_cast<const char*>(g_memory.Translate(noneStr)));
     auto noneFindResult = defaultFindResult->second.m_VertexShaderPermutations.find(*noneSymbol);
     if (noneFindResult == defaultFindResult->second.m_VertexShaderPermutations.end())
         return;
@@ -5333,15 +5368,17 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
     if ((noneFindResult->second->m_SubPermutations.get() & (1 << vertexShaderSubPermutationsToCompile)) == 0)
         vertexShaderSubPermutationsToCompile &= ~0x1;
 
+    auto vertexDeclaration = mesh.vertexDeclaration;
+
     // Fur requires an instanced variant of the vertex declaration.
     if (isFur)
     {
         GuestVertexElement vertexElements[64];
-        memcpy(vertexElements, vertexDeclaration->vertexElements.get(), (vertexDeclaration->vertexElementCount - 1) * sizeof(GuestVertexElement));
+        memcpy(vertexElements, mesh.vertexDeclaration->vertexElements.get(), (mesh.vertexDeclaration->vertexElementCount - 1) * sizeof(GuestVertexElement));
 
-        vertexElements[vertexDeclaration->vertexElementCount - 1] = { 1, 0, 0x2C82A1, 0, 0, 1 };
-        vertexElements[vertexDeclaration->vertexElementCount] = { 2, 0, 0x2C83A4, 0, 0, 2 };
-        vertexElements[vertexDeclaration->vertexElementCount + 1] = D3DDECL_END();
+        vertexElements[mesh.vertexDeclaration->vertexElementCount - 1] = { 1, 0, 0x2C82A1, 0, 0, 1 };
+        vertexElements[mesh.vertexDeclaration->vertexElementCount] = { 2, 0, 0x2C83A4, 0, 0, 2 };
+        vertexElements[mesh.vertexDeclaration->vertexElementCount + 1] = D3DDECL_END();
 
         vertexDeclaration = CreateVertexDeclarationWithoutAddRef(vertexElements);
     }
@@ -5361,16 +5398,16 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             pipelineState.pixelShader = reinterpret_cast<GuestShader*>(pixelShader->m_spCode->m_pD3DPixelShader.get());
             pipelineState.vertexDeclaration = vertexDeclaration;
             pipelineState.instancing = isFur;
-            pipelineState.zWriteEnable = !isSky && layer != MeshLayer::Transparent;
+            pipelineState.zWriteEnable = !isSky && mesh.layer != MeshLayer::Transparent;
             pipelineState.srcBlend = RenderBlend::SRC_ALPHA;
-            pipelineState.destBlend = material->m_Additive ? RenderBlend::ONE : RenderBlend::INV_SRC_ALPHA;
-            pipelineState.cullMode = material->m_DoubleSided ? RenderCullMode::NONE : RenderCullMode::BACK;
+            pipelineState.destBlend = mesh.material->m_Additive ? RenderBlend::ONE : RenderBlend::INV_SRC_ALPHA;
+            pipelineState.cullMode = mesh.material->m_DoubleSided ? RenderCullMode::NONE : RenderCullMode::BACK;
             pipelineState.zFunc = RenderComparisonFunction::GREATER_EQUAL; // Reverse Z
-            pipelineState.alphaBlendEnable = layer == MeshLayer::Transparent || layer == MeshLayer::Special;
+            pipelineState.alphaBlendEnable = mesh.layer == MeshLayer::Transparent || mesh.layer == MeshLayer::Special;
             pipelineState.srcBlendAlpha = RenderBlend::SRC_ALPHA;
             pipelineState.destBlendAlpha = RenderBlend::INV_SRC_ALPHA;
             pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
-            pipelineState.vertexStrides[0] = mesh->m_VertexSize;
+            pipelineState.vertexStrides[0] = mesh.vertexSize;
             pipelineState.vertexStrides[1] = isFur ? 4 : 0;
             pipelineState.vertexStrides[2] = isFur ? 4 : 0;
             pipelineState.renderTargetFormat = RenderFormat::R16G16B16A16_FLOAT;
@@ -5383,7 +5420,7 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
             if (Config::GITextureFiltering == EGITextureFiltering::Bicubic)
                 pipelineState.specConstants |= SPEC_CONSTANT_BICUBIC_GI_FILTER;
 
-            if (layer == MeshLayer::PunchThrough)
+            if (mesh.layer == MeshLayer::PunchThrough)
             {
                 if (Config::AntiAliasing != EAntiAliasing::None && Config::TransparencyAntiAliasing)
                 {
@@ -5403,6 +5440,19 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
                 {
                     SanitizePipelineState(pipelineStateToCreate);
                     EnqueueGraphicsPipelineCompilation(pipelineStateToCreate, args.holderPair, shaderList->m_TypeAndName.c_str() + 3);
+
+                    // Morph models have 4 targets where unused targets default to the first vertex stream.
+                    if (mesh.morphModel)
+                    {
+                        for (size_t i = 0; i < 5; i++)
+                        {
+                            for (size_t j = 0; j < 4; j++)
+                                pipelineStateToCreate.vertexStrides[j + 1] = i > j ? mesh.morphTargetVertexSize : mesh.vertexSize;
+
+                            SanitizePipelineState(pipelineStateToCreate);
+                            EnqueueGraphicsPipelineCompilation(pipelineStateToCreate, args.holderPair, shaderList->m_TypeAndName.c_str() + 3);
+                        }
+                    }
                 };
 
             createGraphicsPipeline(pipelineState);
@@ -5454,6 +5504,32 @@ static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer lay
     }
 }
 
+static void CompileMeshPipeline(Hedgehog::Mirage::CMeshData* mesh, MeshLayer layer, CompilationArgs& args)
+{
+    CompileMeshPipeline(Mesh
+        {
+            mesh->m_VertexSize,
+            0,
+            reinterpret_cast<GuestVertexDeclaration*>(mesh->m_VertexDeclarationPtr.m_pD3DVertexDeclaration.get()),
+            mesh->m_spMaterial.get(),
+            layer,
+            false
+        }, args);
+}
+
+static void CompileMeshPipeline(Hedgehog::Mirage::CMorphModelData* morphModel, Hedgehog::Mirage::CMeshIndexData* mesh, MeshLayer layer, CompilationArgs& args)
+{
+    CompileMeshPipeline(Mesh
+        {
+            morphModel->m_VertexSize,
+            morphModel->m_MorphTargetVertexSize,
+            reinterpret_cast<GuestVertexDeclaration*>(morphModel->m_VertexDeclarationPtr.m_pD3DVertexDeclaration.get()),
+            mesh->m_spMaterial.get(),
+            layer,
+            true
+        }, args);
+}
+
 template<typename T>
 static void CompileMeshPipelines(const T& modelData, CompilationArgs& args)
 {
@@ -5493,6 +5569,21 @@ static void CompileMeshPipelines(const T& modelData, CompilationArgs& args)
 
     for (auto& mesh : modelData.m_PunchThroughMeshes)
         CompileMeshPipeline(mesh.get(), MeshLayer::PunchThrough, args);
+
+    if constexpr (std::is_same_v<T, Hedgehog::Mirage::CModelData>)
+    {
+        for (auto& morphModel : modelData.m_MorphModels)
+        {
+            for (auto& mesh : morphModel->m_OpaqueMeshList)
+                CompileMeshPipeline(morphModel.get(), mesh.get(), MeshLayer::Opaque, args);
+
+            for (auto& mesh : morphModel->m_TransparentMeshList)
+                CompileMeshPipeline(morphModel.get(), mesh.get(), MeshLayer::Transparent, args);
+
+            for (auto& mesh : morphModel->m_PunchThroughMeshList)
+                CompileMeshPipeline(morphModel.get(), mesh.get(), MeshLayer::PunchThrough, args);
+        }
+    }
 }
 
 static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMaterial& material, DatabaseDataHolderPair& holderPair)
