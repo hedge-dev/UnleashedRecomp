@@ -262,7 +262,7 @@ void Reddog::Window::DrawFrame()
             }
         }
 
-        ImVec2 minimumButtonMin = { closeButtonMin.x - cmnSize - controlsMargin, windowPos.y + 3 };
+        ImVec2 minimumButtonMin = { windowPos.x + windowSize.x - cmnSize - controlsWidth - controlsMargin, windowPos.y + 3 };
         ImVec2 minimumButtonMax = { minimumButtonMin.x + cmnSize, minimumButtonMin.y + cmnSize };
 
         if (IsMinimumVisible)
@@ -290,7 +290,7 @@ void Reddog::Window::DrawFrame()
             }
         }
 
-        ImVec2 pinButtonMin = { minimumButtonMin.x - cmnSize - controlsMargin, windowPos.y + 3 };
+        ImVec2 pinButtonMin = { windowPos.x + windowSize.x - cmnSize - controlsWidth - controlsMargin, windowPos.y + 3 };
         ImVec2 pinButtonMax = { pinButtonMin.x + cmnSize, pinButtonMin.y + cmnSize };
 
         if (IsPinVisible)
