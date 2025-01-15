@@ -29,12 +29,16 @@ namespace SWA::Sequence::Utility
             SVertexData m_TopRight;
             SVertexData m_BottomRight;
             SVertexData m_BottomLeft;
-            bool m_MaintainAspectRatio;
+            bool m_Field1A4;
             SWA_INSERT_PADDING(0x18);
             be<float> m_TimeElapsed;
         };
 
-        SWA_INSERT_PADDING(0x18);
+        xpointer<void> m_pVftable;
+        Hedgehog::Base::CSharedString m_SceneName;
+        SWA_INSERT_PADDING(0x10);
         xpointer<CRender> m_pRender;
+        SWA_INSERT_PADDING(0x04);
+        xpointer<Hedgehog::Base::CSharedString> m_pResourceName;
     };
 }

@@ -152,6 +152,7 @@ set(SWA_PATCHES_CXX_SOURCES
     "patches/audio_patches.cpp"
     "patches/camera_patches.cpp"
     "patches/fps_patches.cpp"
+    "patches/inspire_patches.cpp"
     "patches/misc_patches.cpp"
     "patches/object_patches.cpp"
     "patches/player_patches.cpp"

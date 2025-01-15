@@ -4,5 +4,9 @@
 
 namespace SWA::Sequence::Unit
 {
-    class CPlayMovieUnit : public CUnitBase {};
+    class CPlayMovieUnit : public CUnitBase
+    {
+    public:
+        Hedgehog::Base::CSharedString m_SceneName;
+    };
 }

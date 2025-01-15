@@ -11,7 +11,7 @@ namespace SWA::Inspire
     {
     public:
         xpointer<void> m_pVftable;
-        boost::shared_ptr<CInspireTextureOverlayInfo> m_spInfo;
+        boost::shared_ptr<CTextureOverlayInfo> m_spInfo;
         xpointer<CScene> m_pScene;
         boost::shared_ptr<Hedgehog::Mirage::CTextureData> m_spTextureData;
     };

@@ -8,10 +8,10 @@ namespace SWA::Inspire
     {
     public:
         Hedgehog::Base::CSharedString m_MovieName;
-        be<float> m_StartTime;
-        be<float> m_FadeInStartTime;
-        be<float> m_FadeInEndTime;
-        be<float> m_FadeOutStartTime;
-        be<float> m_FadeOutEndTime;
+        be<float> m_Prepare;
+        be<float> m_InStart;
+        be<float> m_InEnd;
+        be<float> m_OutStart;
+        be<float> m_OutEnd;
     };
 }

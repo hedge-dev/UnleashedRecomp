@@ -4,12 +4,11 @@
 
 namespace SWA::Inspire
 {
-    class CInspireTextureOverlayInfo
+    class CTextureOverlayInfo
     {
     public:
-        Hedgehog::Base::CSharedString m_CameraName;
-        be<uint32_t> m_Unk1;
-        be<uint32_t> m_Unk2;
-        be<uint32_t> m_Unk3;
+        Hedgehog::Base::CSharedString m_Picture;
+        be<uint32_t> m_Start;
+        be<uint32_t> m_End;
     };
 }

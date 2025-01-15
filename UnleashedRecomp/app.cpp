@@ -2,10 +2,11 @@
 #include <gpu/video.h>
 #include <install/installer.h>
 #include <kernel/function.h>
-#include <ui/game_window.h>
-#include <patches/audio_patches.h>
-#include <user/config.h>
 #include <os/process.h>
+#include <patches/audio_patches.h>
+#include <patches/inspire_patches.h>
+#include <ui/game_window.h>
+#include <user/config.h>
 
 void App::Restart(std::vector<std::string> restartArgs)
 {
@@ -24,7 +25,7 @@ void App::Exit()
     std::_Exit(0);
 }
 
-// CApplication::Ctor
+// SWA::CApplication
 PPC_FUNC_IMPL(__imp__sub_824EB490);
 PPC_FUNC(sub_824EB490)
 {
@@ -37,7 +38,7 @@ PPC_FUNC(sub_824EB490)
 
 static std::thread::id g_mainThreadId = std::this_thread::get_id();
 
-// CApplication::Update
+// SWA::CApplication::Update
 PPC_FUNC_IMPL(__imp__sub_822C1130);
 PPC_FUNC(sub_822C1130)
 {
@@ -47,6 +48,7 @@ PPC_FUNC(sub_822C1130)
     if (Config::FPS >= FPS_MIN && Config::FPS < FPS_MAX)
     {
         double targetDeltaTime = 1.0 / Config::FPS;
+
         if (abs(ctx.f1.f64 - targetDeltaTime) < 0.00001)
             ctx.f1.f64 = targetDeltaTime;
     }
@@ -65,6 +67,7 @@ PPC_FUNC(sub_822C1130)
 
     GameWindow::Update();
     AudioPatches::Update(App::s_deltaTime);
+    InspirePatches::Update();
 
     __imp__sub_822C1130(ctx, base);
 }
