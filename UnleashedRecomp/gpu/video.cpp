@@ -3605,8 +3605,10 @@ static void FlushRenderStateForRenderThread()
     // We can reduce unnecessary calls by making common depth bias values part of the pipeline.
     if (g_capabilities.dynamicDepthBias && !g_vulkan)
     {
-        int32_t depthBias = g_depthBias != 0 ? COMMON_DEPTH_BIAS_VALUE : 0;
-        float slopeScaledDepthBias = g_slopeScaledDepthBias != 0.0f ? COMMON_SLOPE_SCALED_DEPTH_BIAS_VALUE : 0.0f;
+        bool useDepthBias = (g_depthBias != 0) || (g_slopeScaledDepthBias != 0.0f);
+
+        int32_t depthBias = useDepthBias ? COMMON_DEPTH_BIAS_VALUE : 0;
+        float slopeScaledDepthBias = useDepthBias ? COMMON_SLOPE_SCALED_DEPTH_BIAS_VALUE : 0.0f;
 
         SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.depthBias, depthBias);
         SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.slopeScaledDepthBias, slopeScaledDepthBias);
