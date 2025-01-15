@@ -3179,8 +3179,6 @@ static void SanitizePipelineState(PipelineState& pipelineState)
         pipelineState.depthStencilFormat = RenderFormat::UNKNOWN;
     }
 
-    assert(!g_capabilities.dynamicDepthBias || (pipelineState.depthBias == 0 && pipelineState.slopeScaledDepthBias == 0.0f));
-
     if (pipelineState.slopeScaledDepthBias == 0.0f)
         pipelineState.slopeScaledDepthBias = 0.0f; // Remove sign.
 
@@ -3587,6 +3585,9 @@ static void ProcAddPipeline(const RenderCommand& cmd)
     }
 }
 
+static constexpr int32_t COMMON_DEPTH_BIAS_VALUE = int32_t((1 << 24) * 0.002f);
+static constexpr float COMMON_SLOPE_SCALED_DEPTH_BIAS_VALUE = 1.0f;
+
 static void FlushRenderStateForRenderThread()
 {
     auto renderTarget = g_pipelineState.colorWriteEnable ? g_renderTarget : nullptr;
@@ -3600,14 +3601,24 @@ static void FlushRenderStateForRenderThread()
 
     auto& commandList = g_commandLists[g_frame];
 
+    // D3D12 resets depth bias values to the pipeline values, even if they are dynamic.
+    // We can reduce unnecessary calls by making common depth bias values part of the pipeline.
+    if (g_capabilities.dynamicDepthBias && !g_vulkan)
+    {
+        int32_t depthBias = g_depthBias != 0 ? COMMON_DEPTH_BIAS_VALUE : 0;
+        float slopeScaledDepthBias = g_slopeScaledDepthBias != 0.0f ? COMMON_SLOPE_SCALED_DEPTH_BIAS_VALUE : 0.0f;
+
+        SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.depthBias, depthBias);
+        SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.slopeScaledDepthBias, slopeScaledDepthBias);
+    }
+
     if (g_dirtyStates.pipelineState)
     {
         commandList->setPipeline(CreateGraphicsPipelineInRenderThread(g_pipelineState));
 
-        // D3D12 sets the depth bias values to the values in the pipeline.
-        // TODO: Put the common depth bias values to shadow pipelines to reduce redundant calls.
-        if (!g_vulkan && g_capabilities.dynamicDepthBias)
-            g_dirtyStates.depthBias |= (g_depthBias != 0) || (g_slopeScaledDepthBias != 0.0f);
+        // D3D12 resets the depth bias values. Check if they need to be set again.
+        if (g_capabilities.dynamicDepthBias && !g_vulkan)
+            g_dirtyStates.depthBias = (g_depthBias != g_pipelineState.depthBias) || (g_slopeScaledDepthBias != g_pipelineState.slopeScaledDepthBias);
     }
 
     if (g_dirtyStates.depthBias && g_capabilities.dynamicDepthBias)
@@ -5318,7 +5329,16 @@ static void CompileMeshPipeline(const Mesh& mesh, CompilationArgs& args)
         pipelineState.cullMode = mesh.material->m_DoubleSided ? RenderCullMode::NONE : RenderCullMode::BACK;
         pipelineState.zFunc = RenderComparisonFunction::LESS_EQUAL;
         
-        if (!g_capabilities.dynamicDepthBias)
+        if (g_capabilities.dynamicDepthBias)
+        {
+            // Put common depth bias values for reducing unnecessary calls.
+            if (!g_vulkan)
+            {
+                pipelineState.depthBias = COMMON_DEPTH_BIAS_VALUE;
+                pipelineState.slopeScaledDepthBias = COMMON_SLOPE_SCALED_DEPTH_BIAS_VALUE;
+            }
+        }
+        else 
         {
             pipelineState.depthBias = (1 << 24) * (*reinterpret_cast<be<float>*>(g_memory.Translate(0x83302760)));
             pipelineState.slopeScaledDepthBias = *reinterpret_cast<be<float>*>(g_memory.Translate(0x83302764));
@@ -5977,7 +5997,8 @@ static void ModelConsumerThread()
                 if (!g_capabilities.triangleFan && pipelineState.primitiveTopology == RenderPrimitiveTopology::TRIANGLE_FAN)
                     pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_LIST;
 
-                if (g_capabilities.dynamicDepthBias)
+                // Zero out depth bias for Vulkan, we only store common values for D3D12.
+                if (g_capabilities.dynamicDepthBias && g_vulkan)
                 {
                     pipelineState.depthBias = 0;
                     pipelineState.slopeScaledDepthBias = 0.0f;
