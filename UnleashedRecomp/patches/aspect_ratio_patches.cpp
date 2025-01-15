@@ -530,6 +530,9 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/right"), { STORE_RIGHT_CORNER } },
     { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/left"), { SKIP } },
     { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/left/h_light"), { SKIP } },
+    { HashStr("ui_result/newRecode/result_newR/position/newR_brilliance1"), { OFFSET_SCALE_RIGHT | STORE_LEFT_CORNER, 458.4f } },
+    { HashStr("ui_result/newRecode/result_newR/position/newR_brilliance2"), { OFFSET_SCALE_RIGHT | STORE_LEFT_CORNER, 458.4f } },
+    { HashStr("ui_result/newRecode/result_newR/position/newR_brilliance3"), { OFFSET_SCALE_RIGHT | STORE_LEFT_CORNER, 458.4f } },
 
     // ui_result_ex
     { HashStr("ui_result_ex/footer/result_footer"), { ALIGN_BOTTOM } },
@@ -537,7 +540,7 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_result_ex/main/result_title/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
     { HashStr("ui_result_ex/main/result_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT} },
     { HashStr("ui_result_ex/main/result_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
-    { HashStr("ui_result_ex/main/number/result_num_1"), { OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT } },
+    { HashStr("ui_result_ex/main/number/result_num_1"), { OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT, 669.0f } },
     { HashStr("ui_result_ex/main/number/result_num_1/position_1"), { OFFSET_SCALE_RIGHT, 669.0f, 0 } },
     { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1"), { EXTEND_RIGHT } },
     { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1/h_light"), { EXTEND_RIGHT } },
@@ -568,6 +571,9 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_result_ex/main/number/result_num_1/position_6/center/h_light"), { EXTEND_LEFT } },
     { HashStr("ui_result_ex/main/number/result_num_1/position_6/center/left"), { SKIP } },
     { HashStr("ui_result_ex/main/number/result_num_1/position_6/center/left/h_light"), { SKIP } },
+    { HashStr("ui_result_ex/newRecode/result_newR/position/newR_brilliance1"), { OFFSET_SCALE_RIGHT | STORE_LEFT_CORNER, 458.4f } },
+    { HashStr("ui_result_ex/newRecode/result_newR/position/newR_brilliance2"), { OFFSET_SCALE_RIGHT | STORE_LEFT_CORNER, 458.4f } },
+    { HashStr("ui_result_ex/newRecode/result_newR/position/newR_brilliance3"), { OFFSET_SCALE_RIGHT | STORE_LEFT_CORNER, 458.4f } },
 
     // ui_shop
     { HashStr("ui_shop/footer/shop_footer"), { ALIGN_BOTTOM } },
@@ -653,6 +659,8 @@ static std::optional<CsdModifier> g_sceneModifier;
 static float g_corners[8];
 static bool g_cornerExtract;
 
+#define CORNER_DEBUG
+
 // Chao::CSD::Scene::Render
 PPC_FUNC_IMPL(__imp__sub_830C6A00);
 PPC_FUNC(sub_830C6A00)
@@ -670,10 +678,18 @@ PPC_FUNC(sub_830C6A00)
         g_cornerExtract = true;
         __imp__sub_830C6A00(ctx, base);
         g_cornerExtract = false;
-#if 1
-        if (g_sceneModifier->cornerMax == 0.0f)
-            fmt::println("Corners: {} {}", g_corners[0], g_corners[1]);
+
+#ifdef CORNER_DEBUG
+        if (g_sceneModifier->cornerMax == FLT_MAX)
+        {
+            fmt::print("Corners: ");
+            for (auto corner : g_corners)
+                fmt::print("{} ", corner);
+
+            fmt::println("");
+        }
 #endif
+
         ctx.r3 = r3;
         ctx.r4 = r4;
         ctx.r5 = r5;
@@ -799,20 +815,40 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         }
     }
 
-    if (g_aspectRatio > WIDE_ASPECT_RATIO && (g_sceneModifier.has_value() || g_castNodeModifier.has_value())) 
+    if (g_aspectRatio > WIDE_ASPECT_RATIO) 
     {
         CsdModifier offsetScaleModifier{};
+        float corner = 0.0f;
 
-        if (g_castNodeModifier.has_value())
+        if (g_castModifier.has_value())
+        {
+            offsetScaleModifier = g_castModifier.value();
+
+            uint32_t vertexIndex = ((offsetScaleModifier.flags & STORE_LEFT_CORNER) != 0) ? 0 : 3;
+            corner = *reinterpret_cast<be<float>*>(base + ctx.r4.u32 + vertexIndex * stride);
+        }
+
+        if (offsetScaleModifier.cornerMax == 0.0f && g_castNodeModifier.has_value())
+        {
             offsetScaleModifier = g_castNodeModifier.value();
+            corner = g_corners[offsetScaleModifier.cornerIndex];
+        }
 
         if (offsetScaleModifier.cornerMax == 0.0f && g_sceneModifier.has_value())
+        {
             offsetScaleModifier = g_sceneModifier.value();
+            corner = g_corners[offsetScaleModifier.cornerIndex];
+        }
+
+#ifdef CORNER_DEBUG
+        if ((offsetScaleModifier.flags & (OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT)) != 0 && offsetScaleModifier.cornerMax == FLT_MAX)
+            fmt::println("Corner: {}", corner);
+#endif
 
         if ((offsetScaleModifier.flags & OFFSET_SCALE_LEFT) != 0)
-            offsetX *= g_corners[offsetScaleModifier.cornerIndex] / offsetScaleModifier.cornerMax;
+            offsetX *= corner / offsetScaleModifier.cornerMax;
         else if ((offsetScaleModifier.flags & OFFSET_SCALE_RIGHT) != 0)
-            offsetX = 1280.0f - (1280.0f - offsetX) * (1280.0f - g_corners[offsetScaleModifier.cornerIndex]) / (1280.0f - offsetScaleModifier.cornerMax);
+            offsetX = 1280.0f - (1280.0f - offsetX) * (1280.0f - corner) / (1280.0f - offsetScaleModifier.cornerMax);
     }
 
     for (size_t i = 0; i < ctx.r5.u32; i++)
