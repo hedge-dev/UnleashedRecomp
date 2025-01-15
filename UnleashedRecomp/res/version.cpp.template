@@ -1,0 +1,15 @@
+#include "version.h"
+
+// This file is auto-generated, do not modify!
+
+const char* g_buildType = "@BUILD_TYPE@";
+
+const char* g_branchName = "@BRANCH_NAME@";
+const char* g_commitHash = "@COMMIT_HASH@";
+const char* g_commitHashShort = "@COMMIT_HASH_SHORT@";
+
+const char* g_versionMilestone = "@VERSION_MILESTONE@";
+size_t g_versionMajor = @VERSION_MAJOR@;
+size_t g_versionMinor = @VERSION_MINOR@;
+size_t g_versionRevision = @VERSION_REVISION@;
+const char* g_versionString = "@VERSION_STRING@";

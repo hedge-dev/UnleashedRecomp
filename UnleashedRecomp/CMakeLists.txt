@@ -243,6 +243,7 @@ set(SWA_CXX_SOURCES
     "main.cpp"
     "misc_impl.cpp"
     "stdafx.cpp"
+    "version.cpp"
     
     ${SWA_KERNEL_CXX_SOURCES}
     ${SWA_LOCALE_CXX_SOURCES}
@@ -262,7 +263,7 @@ set(SWA_CXX_SOURCES
 if (WIN32)
     # Set up Win32 resources for application icon.
     set(ICON_PATH "${PROJECT_SOURCE_DIR}/../UnleashedRecompResources/images/game_icon.ico")
-    configure_file("res/win32/res.rc" "${CMAKE_BINARY_DIR}/res.rc" @ONLY)
+    configure_file("res/win32/res.rc.template" "${CMAKE_BINARY_DIR}/res.rc" @ONLY)
     add_executable(UnleashedRecomp ${SWA_CXX_SOURCES} "${CMAKE_BINARY_DIR}/res.rc")
 else()
     add_executable(UnleashedRecomp ${SWA_CXX_SOURCES})
@@ -416,6 +417,23 @@ endfunction()
 generate_aggregate_header(
     "${CMAKE_CURRENT_SOURCE_DIR}/api"
     "${CMAKE_CURRENT_SOURCE_DIR}/api/SWA.h"
+)
+
+# Only show build type if not Release.
+set(IS_BUILD_TYPE_IN_VER_STRING 0)
+if (NOT ${CMAKE_BUILD_TYPE} MATCHES "Release")
+    set(IS_BUILD_TYPE_IN_VER_STRING 1)
+endif()
+
+include("version.cmake")
+GenerateVersionSources(
+    OUTPUT_DIR "${PROJECT_SOURCE_DIR}"
+    VERSION_TXT "${PROJECT_SOURCE_DIR}/res/version.txt"
+    H_TEMPLATE "${PROJECT_SOURCE_DIR}/res/version.h.template"
+    CXX_TEMPLATE "${PROJECT_SOURCE_DIR}/res/version.cpp.template"
+    BUILD_TYPE ${CMAKE_BUILD_TYPE}
+    IS_BUILD_TYPE_IN_VER_STRING ${IS_BUILD_TYPE_IN_VER_STRING}
+    IS_GIT_REPO 1
 )
 
 set(RESOURCES_SOURCE_PATH "${PROJECT_SOURCE_DIR}/../UnleashedRecompResources")

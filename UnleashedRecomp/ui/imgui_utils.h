@@ -3,6 +3,7 @@
 #include <gpu/imgui/imgui_common.h>
 #include <gpu/video.h>
 #include <app.h>
+#include <version.h>
 
 #define PIXELS_TO_UV_COORDS(textureWidth, textureHeight, x, y, width, height) \
     std::make_tuple(ImVec2((float)x / (float)textureWidth, (float)y / (float)textureHeight), \
@@ -387,4 +388,15 @@ inline ImU32 ColourLerp(ImU32 c0, ImU32 c1, float t)
     result.w = a.w + (b.w - a.w) * t;
 
     return ImGui::ColorConvertFloat4ToU32(result);
+}
+
+inline void DrawVersionString(const ImFont* font, const ImU32 col = IM_COL32(255, 255, 255, 70))
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+    auto& res = ImGui::GetIO().DisplaySize;
+    auto fontSize = Scale(12);
+    auto textMargin = Scale(2);
+    auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, g_versionString);
+
+    drawList->AddText(font, fontSize, { res.x - textSize.x - textMargin, res.y - textSize.y - textMargin }, col, g_versionString);
 }

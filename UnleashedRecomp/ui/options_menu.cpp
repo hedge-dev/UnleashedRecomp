@@ -179,6 +179,8 @@ static void DrawScanlineBars()
         OUTLINE_COLOR,
         Scale(1)
     );
+
+    DrawVersionString(g_newRodinFont);
 }
 
 static float AlignToNextGrid(float value)
