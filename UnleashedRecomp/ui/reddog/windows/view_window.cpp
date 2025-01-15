@@ -23,13 +23,9 @@ void ViewWindow::Draw()
 
         Reddog::Separator();
 
-        Reddog::Checkbox("Render Debug Lines", &Reddog::DebugDraw::ms_IsDrawLine);
-        Reddog::Checkbox("Render Debug Text", &Reddog::DebugDraw::ms_IsDrawText);
-
-        // TODO (RadiantDerg): respect these in Reddog::DebugDraw, rather than duplicating them.
-        // Reddog::Checkbox("Render Debug Draw", SWA::SGlobals::ms_IsRenderDebugDraw);
-        // Reddog::Checkbox("Render Debug Draw Text", SWA::SGlobals::ms_IsRenderDebugDrawText);
-        // Reddog::Checkbox("Render Debug Position Draw", SWA::SGlobals::ms_IsRenderDebugPositionDraw);
+        Reddog::Checkbox("Render Debug Draw", SWA::SGlobals::ms_IsRenderDebugDraw);
+        Reddog::Checkbox("Render Debug Draw Text", SWA::SGlobals::ms_IsRenderDebugDrawText);
+        Reddog::Checkbox("Render Debug Position Draw", SWA::SGlobals::ms_IsRenderDebugPositionDraw);
 
         Reddog::Separator();
 

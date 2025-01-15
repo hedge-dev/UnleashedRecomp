@@ -28,12 +28,12 @@ namespace Reddog
     struct SDrawText
     {
         ImVec2 Position { 0,0 };
-        const char* Text { "" };
+        std::string Text;
         float Time { 0 };
         float Scale { 1 };
         ImU32 Colour { IM_COL32(255, 255, 255, 255) };
         SDrawTextFlags Flags { eDrawTextFlags_None };
-        ImU16 Priority { 0xFFFF };
+        ImU16 Priority { 0 };
     };
 
 
@@ -44,21 +44,23 @@ namespace Reddog
     {
     public:
         static inline bool ms_IsRendering = false;
-        static inline bool ms_IsDrawLine = false;
-        static inline bool ms_IsDrawText = false;
 
         static inline std::vector<SDrawLine> ms_LineList = {};
         static inline std::vector<SDrawText> ms_FreeTextList = {};
         static inline std::vector<SDrawText> ms_LogTextList = {};
 
-        static void DrawLine(const SDrawLine& in_Line);
+        static void DrawLine(const SDrawLine& in_rLine);
 
-        static void DrawText2D(const SDrawText& in_Text);
-        static void DrawText2D(const SDrawText& in_Text, const Vector3& in_Position);
+        static void DrawText2D(const SDrawText& in_rText);
+        static void DrawText2D(const SDrawText& in_rText, const Vector3& in_rPosition);
 
-        static void DrawTextLog(const SDrawText& in_Text);
-        static void DrawTextLog(const char* in_Text, float in_Time = 0, ImU32 in_Colour = IM_COL32(255, 255, 255, 255), ImU16 in_Priority = 0xFFFF);
+        static void DrawTextLog(const SDrawText& in_rText);
+        static void DrawTextLog(const char* in_Text, float in_Time = 0, ImU32 in_Colour = IM_COL32(255, 255, 255, 255), ImU16 in_Priority = 0);
 
         static void Render(ImFont* font);
+
+        static bool GetIsDrawDebug();
+        static bool GetIsDrawText();
+        static bool GetIsDrawPosition();
     };
 }

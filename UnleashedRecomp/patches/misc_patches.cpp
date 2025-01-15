@@ -2,7 +2,6 @@
 #include <ui/game_window.h>
 #include <user/achievement_data.h>
 #include <user/config.h>
-#include <ui/reddog/debug_draw.h>
 
 void AchievementManagerUnlockMidAsmHook(PPCRegister& id)
 {

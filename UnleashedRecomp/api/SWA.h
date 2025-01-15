@@ -103,6 +103,7 @@
 #include "SWA/System/GammaController.h"
 #include "SWA/System/InputState.h"
 #include "SWA/System/PadState.h"
+#include "SWA/System/StageManager.h"
 #include "SWA/System/World.h"
 #include "boost/smart_ptr/make_shared_object.h"
 #include "boost/smart_ptr/shared_ptr.h"

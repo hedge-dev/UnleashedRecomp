@@ -23,7 +23,7 @@ namespace Reddog
         return result;
     }
 
-    static ImVec2 GetNDCCoordinate(const Vector3& in_rVec)
+    static ImVec2 GetNDCCoordinate(const Vector3& in_rPosition)
     {
         auto& res = ImGui::GetIO().DisplaySize;
 
@@ -90,9 +90,9 @@ namespace Reddog
             if (freeText->Position >= ImVec2(0, 0) && freeText->Position <= canvasSize)
             {
                 if ((freeText->Flags & eDrawTextFlags_NoShadow) == eDrawTextFlags_NoShadow)
-                    drawList->AddText(font, fontSize * freeText->Scale, freeText->Position, freeText->Colour, freeText->Text);
+                    drawList->AddText(font, fontSize * freeText->Scale, freeText->Position, freeText->Colour, freeText->Text.c_str());
                 else
-                    DrawTextWithShadow(drawList, font, fontSize * freeText->Scale, freeText->Position, freeText->Colour, freeText->Text, 1.0f, 1.0f, IM_COL32(0, 0, 0, 128));
+                    DrawTextWithShadow(drawList, font, fontSize * freeText->Scale, freeText->Position, freeText->Colour, freeText->Text.c_str(), 1.0f, 1.0f, IM_COL32(0, 0, 0, 128));
             }
 
             // Decrement timer
@@ -134,7 +134,7 @@ namespace Reddog
             if (useColor)
                 ImGui::PushStyleColor(ImGuiCol_Text, logText->Colour);
 
-            ImGui::TextUnformatted(logText->Text);
+            ImGui::TextUnformatted(logText->Text.c_str());
 
             if (useColor)
                 ImGui::PopStyleColor();
@@ -160,35 +160,35 @@ namespace Reddog
 
     void DebugDraw::DrawLine(const SDrawLine& in_rLine)
     {
-        if (!ms_IsRendering && ms_IsDrawLine)
+        if (!ms_IsRendering && GetIsDrawDebug())
             ms_LineList.push_back(in_rLine);
     }
 
     void DebugDraw::DrawText2D(const SDrawText& in_rText)
     {
-        if (!ms_IsRendering && ms_IsDrawText)
+        if (!ms_IsRendering && GetIsDrawText())
             ms_FreeTextList.push_back(in_rText);
     }
 
-    void DebugDraw::DrawText2D(const SDrawText& in_rText, const Vector3& in_rVec)
+    void DebugDraw::DrawText2D(const SDrawText& in_rText, const Vector3& in_rPosition)
     {
-        if (!ms_IsRendering && ms_IsDrawText)
+        if (!ms_IsRendering && GetIsDrawText())
         {
             auto txt = in_rText;
-            txt.Position = GetNDCCoordinate(in_rVec);
+            txt.Position = GetNDCCoordinate(in_rPosition);
             ms_FreeTextList.push_back(txt);
         }
     }
 
     void DebugDraw::DrawTextLog(const SDrawText& in_rText)
     {
-        if (!ms_IsRendering && ms_IsDrawText)
+        if (!ms_IsRendering && GetIsDrawText())
             ms_LogTextList.push_back(in_rText);
     }
 
     void DebugDraw::DrawTextLog(const char* in_Text, float in_Time, ImU32 in_Colour, ImU16 in_Priority)
     {
-        if (!ms_IsRendering && ms_IsDrawText)
+        if (!ms_IsRendering && GetIsDrawText())
             ms_LogTextList.push_back({ ImVec2(0,0), in_Text, in_Time, 0, in_Colour, eDrawTextFlags_None, in_Priority});
     }
 
@@ -204,12 +204,12 @@ namespace Reddog
         DrawText2D({ ImVec2(Scale(50), Scale(350)), "TEST3 SCALE", 0, 5, 0xFF37C800 });
 
         DrawTextLog("TEST1 NORMAL");
-        DrawTextLog("TEST2 COLORED", 0, 0xFF37C800);
+        DrawTextLog("TEST2 COLORED", 0, 0xFF37C800);*/
 
-        auto form = fmt::format("- Stats -\nLines: {}\nTexts: {}\nLogs: {}", ms_LineList.size(), ms_FreeTextList.size(), ms_LogTextList.size());
-        SDrawText text = { ImVec2(Scale(40), Scale(75)), form.c_str(), 0, 0.75f };
-        DrawText2D(text);*/
-
+        auto stats = fmt::format("== Stats ==\nLines: {}\nTexts: {}\nLogs: {}", ms_LineList.size(), ms_FreeTextList.size(), ms_LogTextList.size());
+        SDrawText text = { ImVec2(Scale(40), Scale(75)), stats, 0, 0.75f };
+        DrawText2D(text);
+        
         ms_IsRendering = true;
 
         Exec_DrawLines(drawList, res, deltaTime);
@@ -217,5 +217,20 @@ namespace Reddog
         Exec_DrawLogText(drawList, res, deltaTime, font);
 
         ms_IsRendering = false;
+    }
+    
+    bool DebugDraw::GetIsDrawDebug()
+    {
+        return *SWA::SGlobals::ms_IsRenderDebugDraw;
+    }
+
+    bool DebugDraw::GetIsDrawText()
+    {
+        return *SWA::SGlobals::ms_IsRenderDebugDrawText;
+    }
+
+    bool DebugDraw::GetIsDrawPosition()
+    {
+        return *SWA::SGlobals::ms_IsRenderDebugPositionDraw;
     }
 }
