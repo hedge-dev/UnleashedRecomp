@@ -3687,6 +3687,22 @@ static uint32_t CheckInstancing()
     return indexCount;
 }
 
+static void UnsetInstancingStream()
+{
+    bool dirty = false;
+    uint32_t index = g_pipelineState.vertexDeclaration->indexVertexStream;
+
+    SetDirtyValue(dirty, g_vertexBufferViews[index].buffer, RenderBufferReference{});
+    SetDirtyValue(dirty, g_vertexBufferViews[index].size, 0u);
+    SetDirtyValue(dirty, g_inputSlots[index].stride, 0u);
+
+    if (dirty)
+    {
+        g_dirtyStates.vertexStreamFirst = std::min<uint8_t>(g_dirtyStates.vertexStreamFirst, index);
+        g_dirtyStates.vertexStreamLast = std::max<uint8_t>(g_dirtyStates.vertexStreamLast, index);
+    }
+}
+
 static void DrawPrimitive(GuestDevice* device, uint32_t primitiveType, uint32_t startVertex, uint32_t primitiveCount) 
 {
     LocalRenderCommandQueue queue;
@@ -3715,6 +3731,8 @@ static void ProcDrawPrimitive(const RenderCommand& cmd)
         SetDirtyValue(g_dirtyStates.indices, g_indexBufferView.buffer, vertexBufferView.buffer);
         SetDirtyValue(g_dirtyStates.indices, g_indexBufferView.size, vertexBufferView.size);
         SetDirtyValue(g_dirtyStates.indices, g_indexBufferView.format, RenderFormat::R32_UINT);
+
+        UnsetInstancingStream();
     }
 
     FlushRenderStateForRenderThread();
@@ -3746,7 +3764,10 @@ static void ProcDrawIndexedPrimitive(const RenderCommand& cmd)
 {
     const auto& args = cmd.drawIndexedPrimitive;
 
-    CheckInstancing();
+    uint32_t indexCount = CheckInstancing();
+    if (indexCount > 0)
+        UnsetInstancingStream();
+
     SetPrimitiveType(args.primitiveType);
     FlushRenderStateForRenderThread();
 
@@ -3773,7 +3794,10 @@ static void ProcDrawPrimitiveUP(const RenderCommand& cmd)
 {
     const auto& args = cmd.drawPrimitiveUP;
 
-    CheckInstancing();
+    uint32_t indexCount = CheckInstancing();
+    if (indexCount > 0)
+        UnsetInstancingStream();
+
     SetPrimitiveType(args.primitiveType);
     SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.vertexStrides[0], uint8_t(args.vertexStreamZeroStride));
 
@@ -3783,7 +3807,7 @@ static void ProcDrawPrimitiveUP(const RenderCommand& cmd)
     g_inputSlots[0].stride = args.vertexStreamZeroStride;
     g_dirtyStates.vertexStreamFirst = 0;
 
-    uint32_t indexCount = 0;
+    indexCount = 0;
 
     if (args.primitiveType == D3DPT_QUADLIST)
         indexCount = g_quadIndexData.prepare(args.primitiveCount);
@@ -5257,6 +5281,7 @@ struct CompilationArgs
     bool hasMoreThanOneBone{};
     bool velocityMapQuickStep{};
     bool objectIcon{};
+    bool instancing{};
 };
 
 enum class MeshLayer
@@ -5284,28 +5309,36 @@ static void CompileMeshPipeline(const Mesh& mesh, CompilationArgs& args)
 
     auto& shaderList = mesh.material->m_spShaderListData;
 
-    bool isFur = !mesh.morphModel &&
+    bool isFur = !mesh.morphModel && !args.instancing &&
         strstr(shaderList->m_TypeAndName.c_str(), "Fur") != nullptr;
 
-    bool isSky = !mesh.morphModel &&
+    bool isSky = !mesh.morphModel && !args.instancing &&
         strstr(shaderList->m_TypeAndName.c_str(), "Sky") != nullptr;
 
-    bool isSonicMouth = !mesh.morphModel &&
+    bool isSonicMouth = !mesh.morphModel && !args.instancing &&
         strcmp(mesh.material->m_TypeAndName.c_str() + 2, "sonic_gm_mouth_duble") == 0 &&
         strcmp(shaderList->m_TypeAndName.c_str() + 3, "SonicSkin_dspf[b]") == 0;
 
-    bool compiledOutsideMainFramebuffer = !isFur && !isSky;
+    bool compiledOutsideMainFramebuffer = !args.instancing && !isFur && !isSky;
 
-    bool constTexCoord = true;
-    if (mesh.material->m_spTexsetData.get() != nullptr)
+    bool constTexCoord;
+    if (args.instancing)
     {
-        for (size_t i = 1; i < mesh.material->m_spTexsetData->m_TextureList.size(); i++)
+        constTexCoord = false;
+    }
+    else
+    {
+        constTexCoord = true;
+        if (mesh.material->m_spTexsetData.get() != nullptr)
         {
-            if (mesh.material->m_spTexsetData->m_TextureList[i]->m_TexcoordIndex !=
-                mesh.material->m_spTexsetData->m_TextureList[0]->m_TexcoordIndex)
+            for (size_t i = 1; i < mesh.material->m_spTexsetData->m_TextureList.size(); i++)
             {
-                constTexCoord = false;
-                break;
+                if (mesh.material->m_spTexsetData->m_TextureList[i]->m_TexcoordIndex !=
+                    mesh.material->m_spTexsetData->m_TextureList[0]->m_TexcoordIndex)
+                {
+                    constTexCoord = false;
+                    break;
+                }
             }
         }
     }
@@ -5397,7 +5430,8 @@ static void CompileMeshPipeline(const Mesh& mesh, CompilationArgs& args)
         }
     }
 
-    guest_stack_var<Hedgehog::Base::CStringSymbol> defaultSymbol(reinterpret_cast<const char*>(g_memory.Translate(0x8202DDBC)));
+    uint32_t defaultStr = args.instancing ? 0x820C8734 : 0x8202DDBC; // "instancing" for instancing, "default" for regular
+    guest_stack_var<Hedgehog::Base::CStringSymbol> defaultSymbol(reinterpret_cast<const char*>(g_memory.Translate(defaultStr)));
     auto defaultFindResult = shaderList->m_PixelShaderPermutations.find(*defaultSymbol);
     if (defaultFindResult == shaderList->m_PixelShaderPermutations.end())
         return;
@@ -5422,16 +5456,28 @@ static void CompileMeshPipeline(const Mesh& mesh, CompilationArgs& args)
         vertexShaderSubPermutationsToCompile &= ~0x1;
 
     auto vertexDeclaration = mesh.vertexDeclaration;
+    bool instancing = args.instancing || isFur;
 
-    // Fur requires an instanced variant of the vertex declaration.
-    if (isFur)
+    if (instancing)
     {
         GuestVertexElement vertexElements[64];
         memcpy(vertexElements, mesh.vertexDeclaration->vertexElements.get(), (mesh.vertexDeclaration->vertexElementCount - 1) * sizeof(GuestVertexElement));
 
-        vertexElements[mesh.vertexDeclaration->vertexElementCount - 1] = { 1, 0, 0x2C82A1, 0, 0, 1 };
-        vertexElements[mesh.vertexDeclaration->vertexElementCount] = { 2, 0, 0x2C83A4, 0, 0, 2 };
-        vertexElements[mesh.vertexDeclaration->vertexElementCount + 1] = D3DDECL_END();
+        if (args.instancing)
+        {
+            vertexElements[mesh.vertexDeclaration->vertexElementCount - 1] = { 1, 0, 0x2A23B9, 0, 5, 4 };
+            vertexElements[mesh.vertexDeclaration->vertexElementCount] = { 1, 12, 0x2C2159, 0, 5, 5 };
+            vertexElements[mesh.vertexDeclaration->vertexElementCount + 1] = { 1, 16, 0x2C2159, 0, 5, 6 };
+            vertexElements[mesh.vertexDeclaration->vertexElementCount + 2] = { 1, 20, 0x182886, 0, 10, 1 };
+            vertexElements[mesh.vertexDeclaration->vertexElementCount + 3] = { 2, 0, 0x2C82A1, 0, 0, 1 };
+            vertexElements[mesh.vertexDeclaration->vertexElementCount + 4] = D3DDECL_END();
+        }
+        else if (isFur)
+        {
+            vertexElements[mesh.vertexDeclaration->vertexElementCount - 1] = { 1, 0, 0x2C82A1, 0, 0, 1 };
+            vertexElements[mesh.vertexDeclaration->vertexElementCount] = { 2, 0, 0x2C83A4, 0, 0, 2 };
+            vertexElements[mesh.vertexDeclaration->vertexElementCount + 1] = D3DDECL_END();
+        }
 
         vertexDeclaration = CreateVertexDeclarationWithoutAddRef(vertexElements);
     }
@@ -5450,7 +5496,7 @@ static void CompileMeshPipeline(const Mesh& mesh, CompilationArgs& args)
             pipelineState.vertexShader = reinterpret_cast<GuestShader*>(vertexShader->m_spCode->m_pD3DVertexShader.get());
             pipelineState.pixelShader = reinterpret_cast<GuestShader*>(pixelShader->m_spCode->m_pD3DPixelShader.get());
             pipelineState.vertexDeclaration = vertexDeclaration;
-            pipelineState.instancing = isFur;
+            pipelineState.instancing = instancing;
             pipelineState.zWriteEnable = !isSky && mesh.layer != MeshLayer::Transparent;
             pipelineState.srcBlend = RenderBlend::SRC_ALPHA;
             pipelineState.destBlend = mesh.material->m_Additive ? RenderBlend::ONE : RenderBlend::INV_SRC_ALPHA;
@@ -5461,8 +5507,18 @@ static void CompileMeshPipeline(const Mesh& mesh, CompilationArgs& args)
             pipelineState.destBlendAlpha = RenderBlend::INV_SRC_ALPHA;
             pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_STRIP;
             pipelineState.vertexStrides[0] = mesh.vertexSize;
-            pipelineState.vertexStrides[1] = isFur ? 4 : 0;
-            pipelineState.vertexStrides[2] = isFur ? 4 : 0;
+
+            if (args.instancing)
+            {
+                pipelineState.vertexStrides[1] = 24;
+                pipelineState.vertexStrides[2] = 4;
+            }
+            else if (isFur)
+            {
+                pipelineState.vertexStrides[1] = 4;
+                pipelineState.vertexStrides[2] = 4;
+            }
+
             pipelineState.renderTargetFormat = RenderFormat::R16G16B16A16_FLOAT;
             pipelineState.depthStencilFormat = RenderFormat::D32_FLOAT;
             pipelineState.sampleCount = Config::AntiAliasing != EAntiAliasing::None ? int32_t(Config::AntiAliasing.Value) : 1;
@@ -6141,6 +6197,7 @@ static void ModelConsumerThread()
                     {
                         CompilationArgs args{};
                         args.holderPair.holder.databaseData = pendingData;
+                        args.instancing = strncmp(pendingData->m_TypeAndName.c_str() + 3, "ins", 3) == 0;
                         CompileMeshPipelines(*reinterpret_cast<Hedgehog::Mirage::CTerrainModelData*>(pendingData.get()), args);
                     }
                     else if (pendingData->m_pVftable.ptr == PARTICLE_MATERIAL_VFTABLE)
