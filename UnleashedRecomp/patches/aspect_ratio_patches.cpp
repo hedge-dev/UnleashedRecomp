@@ -343,6 +343,7 @@ struct CsdModifier
 {
     uint32_t flags{};
     float cornerMax{};
+    uint32_t cornerIndex{};
 };
 
 static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers =
@@ -532,7 +533,41 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
 
     // ui_result_ex
     { HashStr("ui_result_ex/footer/result_footer"), { ALIGN_BOTTOM } },
-    { HashStr("ui_result_ex/main/result_title"), { ALIGN_TOP } },
+    { HashStr("ui_result_ex/main/result_title"), { ALIGN_TOP | OFFSET_SCALE_LEFT, 688.0f } },
+    { HashStr("ui_result_ex/main/result_title/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
+    { HashStr("ui_result_ex/main/result_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT} },
+    { HashStr("ui_result_ex/main/result_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
+    { HashStr("ui_result_ex/main/number/result_num_1"), { OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_1"), { OFFSET_SCALE_RIGHT, 669.0f, 0 } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1"), { EXTEND_RIGHT } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1/h_light"), { EXTEND_RIGHT } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1/left"), { STORE_LEFT_CORNER, 0, 0 } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1/right"), { SKIP } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_1/center_1/right/h_light"), { SKIP } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_2"), { OFFSET_SCALE_RIGHT, 669.0f, 1 } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_2/center_1"), { EXTEND_RIGHT } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_2/center_1/h_light"), { EXTEND_RIGHT } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_2/center_1/left"), { STORE_LEFT_CORNER, 0, 1 } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_2/center_1/right"), { SKIP } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_2/center_1/right/h_light"), { SKIP } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_3"), { OFFSET_SCALE_RIGHT, 669.0f, 2 } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_3/center_1"), { EXTEND_RIGHT } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_3/center_1/h_light"), { EXTEND_RIGHT } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_3/center_1/left"), { STORE_LEFT_CORNER, 0, 2 } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_3/center_1/right"), { SKIP } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_3/center_1/right/h_light"), { SKIP } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_4"), { OFFSET_SCALE_RIGHT, 669.0f, 3 } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_4/center_1"), { EXTEND_RIGHT } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_4/center_1/h_light"), { EXTEND_RIGHT } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_4/center_1/left"), { STORE_LEFT_CORNER, 0, 3 } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_4/center_1/right"), { SKIP } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_4/center_1/right/h_light"), { SKIP } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_6"), { OFFSET_SCALE_LEFT, 1094.0f, 4 } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_6/center"), { EXTEND_LEFT } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_6/center/right"), { STORE_RIGHT_CORNER, 0, 4 } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_6/center/h_light"), { EXTEND_LEFT } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_6/center/left"), { SKIP } },
+    { HashStr("ui_result_ex/main/number/result_num_1/position_6/center/left/h_light"), { SKIP } },
 
     // ui_shop
     { HashStr("ui_shop/footer/shop_footer"), { ALIGN_BOTTOM } },
@@ -615,7 +650,7 @@ static std::optional<CsdModifier> FindModifier(uint32_t data)
 }
 
 static std::optional<CsdModifier> g_sceneModifier;
-static float g_corner;
+static float g_corners[8];
 static bool g_cornerExtract;
 
 // Chao::CSD::Scene::Render
@@ -637,7 +672,7 @@ PPC_FUNC(sub_830C6A00)
         g_cornerExtract = false;
 #if 1
         if (g_sceneModifier->cornerMax == 0.0f)
-            fmt::println("Corner: {}", g_corner);
+            fmt::println("Corners: {} {}", g_corners[0], g_corners[1]);
 #endif
         ctx.r3 = r3;
         ctx.r4 = r4;
@@ -689,7 +724,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         if ((modifier.flags & (STORE_LEFT_CORNER | STORE_RIGHT_CORNER)) != 0)
         {
             uint32_t vertexIndex = ((modifier.flags & STORE_LEFT_CORNER) != 0) ? 0 : 3;
-            g_corner = *reinterpret_cast<be<float>*>(base + ctx.r4.u32 + vertexIndex * stride);
+            g_corners[modifier.cornerIndex] = *reinterpret_cast<be<float>*>(base + ctx.r4.u32 + vertexIndex * stride);
         }
 
         return;
@@ -764,12 +799,20 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         }
     }
 
-    if (g_aspectRatio > WIDE_ASPECT_RATIO && g_sceneModifier.has_value())
+    if (g_aspectRatio > WIDE_ASPECT_RATIO && (g_sceneModifier.has_value() || g_castNodeModifier.has_value())) 
     {
-        if ((g_sceneModifier->flags & OFFSET_SCALE_LEFT) != 0)
-            offsetX *= g_corner / g_sceneModifier->cornerMax;
-        else if ((g_sceneModifier->flags & OFFSET_SCALE_RIGHT) != 0)
-            offsetX = 1280.0f - (1280.0f - offsetX) * (1280.0f - g_corner) / (1280.0f - g_sceneModifier->cornerMax);
+        CsdModifier offsetScaleModifier{};
+
+        if (g_castNodeModifier.has_value())
+            offsetScaleModifier = g_castNodeModifier.value();
+
+        if (offsetScaleModifier.cornerMax == 0.0f && g_sceneModifier.has_value())
+            offsetScaleModifier = g_sceneModifier.value();
+
+        if ((offsetScaleModifier.flags & OFFSET_SCALE_LEFT) != 0)
+            offsetX *= g_corners[offsetScaleModifier.cornerIndex] / offsetScaleModifier.cornerMax;
+        else if ((offsetScaleModifier.flags & OFFSET_SCALE_RIGHT) != 0)
+            offsetX = 1280.0f - (1280.0f - offsetX) * (1280.0f - g_corners[offsetScaleModifier.cornerIndex]) / (1280.0f - offsetScaleModifier.cornerMax);
     }
 
     for (size_t i = 0; i < ctx.r5.u32; i++)
