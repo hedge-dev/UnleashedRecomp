@@ -137,6 +137,9 @@ static std::list<std::filesystem::path> g_currentPickerResults;
 static std::atomic<bool> g_currentPickerResultsReady = false;
 static std::string g_currentPickerErrorMessage;
 static std::unique_ptr<std::thread> g_currentPickerThread;
+static bool g_pickerTutorialCleared[2] = {};
+static bool g_pickerTutorialTriggered = false;
+static bool g_pickerTutorialFolderMode = false;
 static bool g_currentPickerVisible = false;
 static bool g_currentPickerFolderMode = false;
 static int g_currentMessageResult = -1;
@@ -913,8 +916,7 @@ static void PickerThreadProcess()
     g_currentPickerResultsReady = true;
 }
 
-static void ShowPicker(bool folderMode)
-{
+static void PickerStart(bool folderMode) {
     if (g_currentPickerThread != nullptr)
     {
         g_currentPickerThread->join();
@@ -925,7 +927,7 @@ static void ShowPicker(bool folderMode)
     g_currentPickerFolderMode = folderMode;
     g_currentPickerResultsReady = false;
     g_currentPickerVisible = true;
-    
+
     // Optional single thread mode for testing on systems that do not interact well with the separate thread being used for NFD.
     constexpr bool singleThreadMode = false;
     if (singleThreadMode)
@@ -934,7 +936,22 @@ static void ShowPicker(bool folderMode)
         g_currentPickerThread = std::make_unique<std::thread>(PickerThreadProcess);
 }
 
-static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
+static void PickerShow(bool folderMode)
+{
+    if (g_pickerTutorialCleared[folderMode])
+    {
+        PickerStart(folderMode);
+    }
+    else
+    {
+        g_currentMessagePrompt = Localise(folderMode ? "Installer_Message_FolderPickerTutorial" : "Installer_Message_FilePickerTutorial");
+        g_currentMessagePromptConfirmation = false;
+        g_pickerTutorialTriggered = true;
+        g_pickerTutorialFolderMode = folderMode;
+    }
+}
+
+static bool ParseSourcePaths(std::list<std::filesystem::path> &paths)
 {
     assert((g_currentPage == WizardPage::SelectGameAndUpdate) || (g_currentPage == WizardPage::SelectDLC));
 
@@ -995,6 +1012,8 @@ static void ParseSourcePaths(std::list<std::filesystem::path> &paths)
         g_currentMessagePrompt = stringStream.str();
         g_currentMessagePromptConfirmation = false;
     }
+
+    return failedPaths.empty();
 }
 
 static void DrawLanguagePicker()
@@ -1040,7 +1059,7 @@ static void DrawSourcePickers()
         DrawButton(min, max, addFilesText.c_str(), false, true, buttonPressed, ADD_BUTTON_MAX_TEXT_WIDTH);
         if (buttonPressed)
         {
-            ShowPicker(false);
+            PickerShow(false);
         }
 
         min.x += Scale(BOTTOM_X_GAP + textSize.x * squashRatio);
@@ -1053,7 +1072,7 @@ static void DrawSourcePickers()
         DrawButton(min, max, addFolderText.c_str(), false, true, buttonPressed, ADD_BUTTON_MAX_TEXT_WIDTH);
         if (buttonPressed)
         {
-            ShowPicker(true);
+            PickerShow(true);
         }
     }
 }
@@ -1344,7 +1363,18 @@ static void DrawMessagePrompt()
     }
 }
 
-static void CheckPickerResults()
+static void PickerCheckTutorial()
+{
+    if (!g_pickerTutorialTriggered || !g_currentMessagePrompt.empty())
+    {
+        return;
+    }
+
+    PickerStart(g_pickerTutorialFolderMode);
+    g_pickerTutorialTriggered = false;
+}
+
+static void PickerCheckResults()
 {
     if (!g_currentPickerResultsReady)
     {
@@ -1358,7 +1388,11 @@ static void CheckPickerResults()
         g_currentPickerErrorMessage.clear();
     }
 
-    ParseSourcePaths(g_currentPickerResults);
+    if (!g_currentPickerResults.empty() && ParseSourcePaths(g_currentPickerResults))
+    {
+        g_pickerTutorialCleared[g_pickerTutorialFolderMode] = true;
+    }
+
     g_currentPickerResultsReady = false;
     g_currentPickerVisible = false;
 }
@@ -1401,7 +1435,8 @@ void InstallerWizard::Draw()
     DrawNextButton();
     DrawBorders();
     DrawMessagePrompt();
-    CheckPickerResults();
+    PickerCheckTutorial();
+    PickerCheckResults();
 
     if (g_isDisappearing)
     {
