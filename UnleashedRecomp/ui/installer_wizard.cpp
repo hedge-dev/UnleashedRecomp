@@ -16,6 +16,7 @@
 #include <ui/game_window.h>
 #include <decompressor.h>
 
+#include <res/images/common/hedge-dev.dds.h>
 #include <res/images/installer/install_001.dds.h>
 #include <res/images/installer/install_002.dds.h>
 #include <res/images/installer/install_003.dds.h>
@@ -105,6 +106,7 @@ static std::array<std::unique_ptr<GuestTexture>, 8> g_installTextures;
 static std::unique_ptr<GuestTexture> g_milesElectricIcon;
 static std::unique_ptr<GuestTexture> g_arrowCircle;
 static std::unique_ptr<GuestTexture> g_pulseInstall;
+static std::unique_ptr<GuestTexture> g_upHedgeDev;
 static Journal g_installerJournal;
 static Installer::Sources g_installerSources;
 static uint64_t g_installerAvailableSize = 0;
@@ -306,7 +308,7 @@ public:
 
 static SDLEventListenerForInstaller g_eventListener;
 
-const char CREDITS_TEXT[] = "- Sajid (RIP)\n- imgui sega balls!";
+const char CREDITS_TEXT[] = "Skyth, Hyper, Darío, Sajid, RadiantDerg, PTKay, DeaThProj, NextinHKRY, M&M, LadyLunanova";
 
 static std::string& GetWizardText(WizardPage page)
 {
@@ -636,6 +638,7 @@ static void DrawDescriptionContainer()
 {
     auto &res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
+    auto fontSize = Scale(26.0f);
 
     ImVec2 descriptionMin = { Scale(AlignToNextGrid(CONTAINER_X)), Scale(AlignToNextGrid(CONTAINER_Y)) };
     ImVec2 descriptionMax = { Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH)), Scale(AlignToNextGrid(CONTAINER_Y + CONTAINER_HEIGHT)) };
@@ -655,10 +658,6 @@ static void DrawDescriptionContainer()
         snprintf(availableSpaceText, sizeof(availableSpaceText), (g_installerAvailableSize > 0) ? Localise("Installer_Step_AvailableSpace").c_str() : "", availableGiB);
         snprintf(descriptionText, sizeof(descriptionText), "%s%s\n%s", GetWizardText(g_currentPage).c_str(), requiredSpaceText, availableSpaceText);
     }
-    else if (g_currentPage == WizardPage::InstallSucceeded)
-    {
-        strncat(descriptionText, CREDITS_TEXT, sizeof(descriptionText) - 1);
-    }
     else if (g_currentPage == WizardPage::InstallFailed)
     {
         strncat(descriptionText, g_installerErrorMessage.c_str(), sizeof(descriptionText) - 1);
@@ -667,11 +666,11 @@ static void DrawDescriptionContainer()
     double textAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
-    auto size = Scale(26.0f);
+
     drawList->AddText
     (
         g_seuratFont,
-        size,
+        fontSize,
         { clipRectMin.x, clipRectMin.y },
         IM_COL32(255, 255, 255, 255 * textAlpha),
         descriptionText,
@@ -680,6 +679,47 @@ static void DrawDescriptionContainer()
     );
 
     drawList->PopClipRect();
+
+    if (g_currentPage == WizardPage::InstallSucceeded)
+    {
+        auto hedgeDevStr = "hedge-dev";
+        auto hedgeDevTextSize = g_seuratFont->CalcTextSizeA(fontSize, FLT_MAX, 0, hedgeDevStr);
+        auto hedgeDevTextMarginX = Scale(15);
+
+        auto imageScale = hedgeDevTextSize.x / 3;
+        auto imageMarginY = Scale(15);
+
+        ImVec2 imageMin = 
+        {
+            /* X */ Scale(CONTAINER_X) + (Scale(CONTAINER_WIDTH) / 2) - (imageScale / 2) - (hedgeDevTextSize.x / 2) - hedgeDevTextMarginX,
+            /* Y */ Scale(CONTAINER_Y) + (Scale(CONTAINER_HEIGHT) / 2) - (imageScale / 2) + imageMarginY
+        };
+
+        ImVec2 imageMax = { imageMin.x + imageScale, imageMin.y + imageScale };
+
+        drawList->AddImage(g_upHedgeDev.get(), imageMin, imageMax);
+
+        drawList->AddText
+        (
+            g_seuratFont,
+            fontSize,
+            { /* X */ imageMax.x + hedgeDevTextMarginX, /* Y */ imageMin.y + (imageScale / 2) - (hedgeDevTextSize.y / 2) },
+            IM_COL32_WHITE,
+            hedgeDevStr
+        );
+
+        auto marqueeTextSize = g_seuratFont->CalcTextSizeA(fontSize, FLT_MAX, 0, CREDITS_TEXT);
+        auto marqueeTextMarginX = Scale(5);
+        auto marqueeTextMarginY = Scale(15);
+
+        ImVec2 textPos = { descriptionMax.x, Scale(CONTAINER_Y) + Scale(CONTAINER_HEIGHT) - marqueeTextSize.y - marqueeTextMarginY };
+        ImVec2 textMin = { Scale(CONTAINER_X), textPos.y };
+        ImVec2 textMax = { Scale(CONTAINER_X) + Scale(CONTAINER_WIDTH), Scale(CONTAINER_Y) + Scale(CONTAINER_HEIGHT) };
+
+        SetMarqueeFade(textMin, textMax, Scale(32));
+        DrawTextWithMarquee(g_seuratFont, fontSize, textPos, textMin, textMax, IM_COL32_WHITE, CREDITS_TEXT, g_appearTime, 0.9, Scale(250));
+        ResetMarqueeFade();
+    }
 
     ImVec2 sideMin = { descriptionMax.x, descriptionMin.y };
     ImVec2 sideMax = { Scale(AlignToNextGrid(CONTAINER_X + CONTAINER_WIDTH + SIDE_CONTAINER_WIDTH)), descriptionMax.y };
@@ -1410,6 +1450,7 @@ static void PickerCheckResults()
 void InstallerWizard::Init()
 {
     auto &io = ImGui::GetIO();
+
     g_seuratFont = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
     g_dfsogeistdFont = ImFontAtlasSnapshot::GetFont("DFSoGeiStd-W7.otf");
     g_newRodinFont = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-DB.otf");
@@ -1424,6 +1465,7 @@ void InstallerWizard::Init()
     g_milesElectricIcon = LOAD_ZSTD_TEXTURE(g_miles_electric_icon);
     g_arrowCircle = LOAD_ZSTD_TEXTURE(g_arrow_circle);
     g_pulseInstall = LOAD_ZSTD_TEXTURE(g_pulse_install);
+    g_upHedgeDev = LOAD_ZSTD_TEXTURE(g_hedgedev);
 }
 
 void InstallerWizard::Draw()

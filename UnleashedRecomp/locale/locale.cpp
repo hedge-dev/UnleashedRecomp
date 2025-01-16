@@ -198,7 +198,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
     {
         "Installer_Page_InstallSucceeded",
         {
-            { ELanguage::English, "Installation complete.\n\nThis project is brought to you by:\n\n" }
+            { ELanguage::English, "Installation complete!\nThis project is brought to you by:" }
         }
     },
     {
