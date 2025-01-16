@@ -258,13 +258,13 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
     {
         "Installer_Message_FilePickerTutorial",
         {
-            { ELanguage::English, "Placeholder.\n\nSelect digital dumps from Xbox 360.\n\nFor picking a folder with the game's files,\nuse the 'Add Folder' option instead." },
+            { ELanguage::English, "Select a digital dump from\nyour Xbox 360.\n\nFor choosing a folder with\npre-existing game files,\nuse the \"Add Folder\"\noption instead." },
         }
     },
     {
         "Installer_Message_FolderPickerTutorial",
         {
-            { ELanguage::English, "Placeholder.\n\nSelect a folder that contain the files\nthat have been extracted from the game.\n\nFor picking digital dumps from Xbox 360,\nuse the 'Add Files' option instead." },
+            { ELanguage::English, "Select a folder that contains\nthe files that have been\nextracted from the game.\n\nFor choosing a digital dump\nfrom your Xbox 360, use the\n\"Add Files\" option instead." },
         }
     },
     {
