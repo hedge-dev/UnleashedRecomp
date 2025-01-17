@@ -30,7 +30,7 @@ public:
     static void SetIcon(bool isNight = false);
     static const char* GetTitle();
     static void SetTitle(const char* title = nullptr);
-    static void SetDarkTitleBar(bool isEnabled);
+    static void SetTitleBarColour();
     static bool IsFullscreen();
     static bool SetFullscreen(bool isEnabled);
     static void SetFullscreenCursorVisibility(bool isVisible);

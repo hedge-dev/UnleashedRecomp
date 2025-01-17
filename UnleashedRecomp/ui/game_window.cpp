@@ -1,6 +1,7 @@
 #include "game_window.h"
 #include <gpu/video.h>
 #include <os/logger.h>
+#include <os/user.h>
 #include <os/version.h>
 #include <ui/sdl_listener.h>
 #include <app.h>
@@ -238,7 +239,7 @@ void GameWindow::Init(const char* sdlVideoDriver)
     static_assert(false, "Unknown platform.");
 #endif
 
-    SetDarkTitleBar(true);
+    SetTitleBarColour();
 
     SDL_ShowWindow(s_pWindow);
 }
@@ -307,20 +308,23 @@ void GameWindow::SetTitle(const char* title)
     SDL_SetWindowTitle(s_pWindow, title ? title : GetTitle());
 }
 
-void GameWindow::SetDarkTitleBar(bool isEnabled)
+void GameWindow::SetTitleBarColour()
 {
 #if _WIN32
-    auto version = os::version::GetOSVersion();
+    if (os::user::IsDarkTheme())
+    {
+        auto version = os::version::GetOSVersion();
 
-    if (version.Major < 10 || version.Build <= 17763)
-        return;
+        if (version.Major < 10 || version.Build <= 17763)
+            return;
 
-    auto flag = version.Build >= 18985
-        ? DWMWA_USE_IMMERSIVE_DARK_MODE
-        : 19; // DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1
+        auto flag = version.Build >= 18985
+            ? DWMWA_USE_IMMERSIVE_DARK_MODE
+            : 19; // DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1
 
-    const DWORD useImmersiveDarkMode = isEnabled;
-    DwmSetWindowAttribute(s_renderWindow, flag, &useImmersiveDarkMode, sizeof(useImmersiveDarkMode));
+        const DWORD useImmersiveDarkMode = 1;
+        DwmSetWindowAttribute(s_renderWindow, flag, &useImmersiveDarkMode, sizeof(useImmersiveDarkMode));
+    }
 #endif
 }
 
