@@ -647,7 +647,7 @@ static std::optional<CsdModifier> g_sceneModifier;
 static float g_corners[8];
 static bool g_cornerExtract;
 
-#define CORNER_DEBUG
+//#define CORNER_DEBUG
 
 // Chao::CSD::Scene::Render
 PPC_FUNC_IMPL(__imp__sub_830C6A00);

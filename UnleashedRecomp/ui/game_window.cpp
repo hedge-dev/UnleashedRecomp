@@ -223,7 +223,7 @@ void GameWindow::Init(const char* sdlVideoDriver)
     SetIcon();
     SetTitle();
 
-    //SDL_SetWindowMinimumSize(s_pWindow, MIN_WIDTH, MIN_HEIGHT);
+    SDL_SetWindowMinimumSize(s_pWindow, MIN_WIDTH, MIN_HEIGHT);
 
     SDL_SysWMinfo info;
     SDL_VERSION(&info.version);
