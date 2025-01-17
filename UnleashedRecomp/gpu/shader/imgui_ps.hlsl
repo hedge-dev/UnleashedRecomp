@@ -65,10 +65,10 @@ float4 PixelAntialiasing(float2 uvTexspace)
     uvTexspace = (uvTexspace - seam) / fwidth(uvTexspace) + seam;
     uvTexspace = clamp(uvTexspace, seam - 0.5, seam + 0.5);
     
-    if (g_PushConstants.InverseDisplaySize.x < g_PushConstants.InverseDisplaySize.y)
-        uvTexspace *= min(1.0, g_PushConstants.InverseDisplaySize.y * 720.0f);
+    if ((g_PushConstants.InverseDisplaySize.y / g_PushConstants.InverseDisplaySize.x) >= (4.0 / 3.0))
+        uvTexspace *= g_PushConstants.InverseDisplaySize.y * 720.0f;
     else
-        uvTexspace *= min(1.0, g_PushConstants.InverseDisplaySize.x * 1280.0f);
+        uvTexspace *= g_PushConstants.InverseDisplaySize.x * 960.0f;
     
     return SampleLinear(uvTexspace);
 }

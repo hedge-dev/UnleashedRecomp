@@ -162,7 +162,7 @@ static void DrawScanlineBars()
     (
         g_dfsogeistdFont,
         Scale(48.0f),
-        { Scale(122.0f), Scale(56.0f) },
+        { Scale((1.0f - g_narrowOffsetScale) * -20.0f + 122.0f), Scale(56.0f) },
         IM_COL32(255, 190, 33, 255),
         Localise("Options_Header_Name").c_str(),
         4,
