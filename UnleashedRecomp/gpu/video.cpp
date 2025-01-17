@@ -28,6 +28,7 @@
 #include <ui/sdl_listener.h>
 #include <ui/game_window.h>
 #include <ui/imgui_utils.h>
+#include <patches/aspect_ratio_patches.h>
 #include <user/config.h>
 #include <xxHashMap.h>
 
@@ -40,6 +41,8 @@
 #ifdef SWA_D3D12
 #include "shader/copy_vs.hlsl.dxil.h"
 #include "shader/csd_filter_ps.hlsl.dxil.h"
+#include "shader/csd_no_tex_vs.hlsl.dxil.h"
+#include "shader/csd_vs.hlsl.dxil.h"
 #include "shader/enhanced_motion_blur_ps.hlsl.dxil.h"
 #include "shader/gamma_correction_ps.hlsl.dxil.h"
 #include "shader/gaussian_blur_3x3.hlsl.dxil.h"
@@ -57,6 +60,8 @@
 
 #include "shader/copy_vs.hlsl.spirv.h"
 #include "shader/csd_filter_ps.hlsl.spirv.h"
+#include "shader/csd_no_tex_vs.hlsl.spirv.h"
+#include "shader/csd_vs.hlsl.spirv.h"
 #include "shader/enhanced_motion_blur_ps.hlsl.spirv.h"
 #include "shader/gamma_correction_ps.hlsl.spirv.h"
 #include "shader/gaussian_blur_3x3.hlsl.spirv.h"
@@ -1165,6 +1170,7 @@ struct ImGuiPushConstants
     ImVec2 inverseDisplaySize{};
     ImVec2 origin{ 0.0f, 0.0f };
     ImVec2 scale{ 1.0f, 1.0f };
+    ImVec2 proceduralOrigin{ 0.0f, 0.0f };
     float outline{};
 };
 
@@ -1354,6 +1360,20 @@ static void CheckSwapChain()
 
     if (g_swapChainValid)
         g_swapChainValid = g_swapChain->acquireTexture(g_acquireSemaphores[g_frame].get(), &g_backBufferIndex);
+
+    if (g_needsResize)
+        Video::ComputeViewportDimensions();
+
+    if (g_aspectRatio >= NARROW_ASPECT_RATIO)
+    {
+        g_backBuffer->width = Video::s_viewportWidth * 720 / Video::s_viewportHeight;
+        g_backBuffer->height = 720;
+    }
+    else
+    {
+        g_backBuffer->width = 960;
+        g_backBuffer->height = Video::s_viewportHeight * 960 / Video::s_viewportWidth;
+    }
 }
 
 static void BeginCommandList()
@@ -1367,13 +1387,14 @@ static void BeginCommandList()
 
     if (g_swapChainValid)
     {
-        bool applyingGammaCorrection = Config::XboxColorCorrection || abs(Config::Brightness - 0.5f) > 0.001f;
+        uint32_t width = Video::s_viewportWidth;
+        uint32_t height = Video::s_viewportHeight;
 
-        if (applyingGammaCorrection)
+        bool usingIntermediaryTexture = (width != g_swapChain->getWidth()) || (height != g_swapChain->getHeight()) ||
+            Config::XboxColorCorrection || (abs(Config::Brightness - 0.5f) > 0.001f);
+
+        if (usingIntermediaryTexture)
         {
-            uint32_t width = g_swapChain->getWidth();
-            uint32_t height = g_swapChain->getHeight();
-
             if (g_intermediaryBackBufferTextureWidth != width ||
                 g_intermediaryBackBufferTextureHeight != height)
             {
@@ -1656,6 +1677,7 @@ void Video::CreateHostDevice(const char *sdlVideoDriver)
     g_backBuffer->format = BACKBUFFER_FORMAT;
     g_backBuffer->textureHolder = g_device->createTexture(RenderTextureDesc::Texture2D(1, 1, 1, BACKBUFFER_FORMAT, RenderTextureFlag::RENDER_TARGET));
 
+    Video::ComputeViewportDimensions();
     CheckSwapChain();
     BeginCommandList();
 
@@ -2048,6 +2070,8 @@ static void DrawImGui()
     ImGui::End();
 #endif
 
+    ImGui::GetIO().DisplaySize = { float(Video::s_viewportWidth), float(Video::s_viewportHeight) };
+
     AchievementMenu::Draw();
     OptionsMenu::Draw();
     AchievementOverlay::Draw();
@@ -2156,6 +2180,9 @@ static void ProcDrawImGui(const RenderCommand& cmd)
                     break;
                 case ImGuiCallback::SetOutline:
                     setPushConstants(&pushConstants.outline, &callbackData->setOutline, sizeof(callbackData->setOutline));
+                    break;
+                case ImGuiCallback::SetProceduralOrigin:
+                    setPushConstants(&pushConstants.proceduralOrigin, &callbackData->setProceduralOrigin, sizeof(callbackData->setProceduralOrigin));
                     break;
                 default:
                     assert(false && "Unknown ImGui callback type.");
@@ -2334,6 +2361,11 @@ static void ProcExecuteCommandList(const RenderCommand& cmd)
                 float gammaG;
                 float gammaB;
                 uint32_t textureDescriptorIndex;
+
+                int32_t viewportOffsetX;
+                int32_t viewportOffsetY;
+                int32_t viewportWidth;
+                int32_t viewportHeight;
             } constants;
 
             if (Config::XboxColorCorrection)
@@ -2355,6 +2387,11 @@ static void ProcExecuteCommandList(const RenderCommand& cmd)
             constants.gammaG = 1.0f / std::clamp(constants.gammaG + offset, 0.1f, 4.0f);
             constants.gammaB = 1.0f / std::clamp(constants.gammaB + offset, 0.1f, 4.0f);
             constants.textureDescriptorIndex = g_intermediaryBackBufferTextureDescriptorIndex;
+
+            constants.viewportOffsetX = (int32_t(g_swapChain->getWidth()) - int32_t(Video::s_viewportWidth)) / 2;
+            constants.viewportOffsetY = (int32_t(g_swapChain->getHeight()) - int32_t(Video::s_viewportHeight)) / 2;
+            constants.viewportWidth = Video::s_viewportWidth;
+            constants.viewportHeight = Video::s_viewportHeight;
 
             auto &framebuffer = g_backBuffer->framebuffers[swapChainTexture];
             if (!framebuffer)
@@ -2378,8 +2415,8 @@ static void ProcExecuteCommandList(const RenderCommand& cmd)
             commandList->setGraphicsDescriptorSet(g_textureDescriptorSet.get(), 0);
             SetRootDescriptor(g_uploadAllocators[g_frame].allocate<false>(&constants, sizeof(constants), 0x100), 2);
             commandList->setFramebuffer(framebuffer.get());
-            commandList->setViewports(RenderViewport(0.0f, 0.0f, g_intermediaryBackBufferTextureWidth, g_intermediaryBackBufferTextureHeight));
-            commandList->setScissors(RenderRect(0, 0, g_intermediaryBackBufferTextureWidth, g_intermediaryBackBufferTextureHeight));
+            commandList->setViewports(RenderViewport(0.0f, 0.0f, g_swapChain->getWidth(), g_swapChain->getHeight()));
+            commandList->setScissors(RenderRect(0, 0, g_swapChain->getWidth(), g_swapChain->getHeight()));
             commandList->drawInstanced(6, 1, 0, 0);
             commandList->barriers(RenderBarrierStage::GRAPHICS, RenderTextureBarrier(swapChainTexture, RenderTextureLayout::PRESENT));
         }
@@ -2426,6 +2463,61 @@ static GuestSurface* GetBackBuffer()
 {
     g_backBuffer->AddRef();
     return g_backBuffer;
+}
+
+GuestSurface* Video::GetBackBuffer()
+{
+    return g_backBuffer;
+}
+
+void Video::ComputeViewportDimensions()
+{
+    uint32_t width = g_swapChain->getWidth();
+    uint32_t height = g_swapChain->getHeight();
+    float aspectRatio = float(width) / float(height);
+
+    switch (Config::AspectRatio)
+    {
+    case EAspectRatio::Wide:
+    {
+        if (aspectRatio > WIDE_ASPECT_RATIO)
+        {
+            s_viewportWidth = height * 16 / 9;
+            s_viewportHeight = height;
+        }
+        else
+        {
+            s_viewportWidth = width;
+            s_viewportHeight = width * 9 / 16;
+        }
+
+        break;
+    }
+
+    case EAspectRatio::Narrow:
+    case EAspectRatio::OriginalNarrow:
+    {
+        if (aspectRatio > NARROW_ASPECT_RATIO)
+        {
+            s_viewportWidth = height * 4 / 3;
+            s_viewportHeight = height;
+        }
+        else
+        {
+            s_viewportWidth = width;
+            s_viewportHeight = width * 3 / 4;
+        }
+
+        break;
+    }
+
+    default:
+        s_viewportWidth = width;
+        s_viewportHeight = height;
+        break;
+    }
+
+    AspectRatioPatches::ComputeOffsets();
 }
 
 static RenderFormat ConvertFormat(uint32_t format)
@@ -2596,13 +2688,13 @@ static void FlushViewport()
 
         if (renderingToBackBuffer)
         {
-            uint32_t width = g_swapChain->getWidth();
-            uint32_t height = g_swapChain->getHeight();
+            float width = Video::s_viewportWidth;
+            float height = Video::s_viewportHeight;
 
-            viewport.x *= width / 1280.0f;
-            viewport.y *= height / 720.0f;    
-            viewport.width *= width / 1280.0f;
-            viewport.height *= height / 720.0f;
+            viewport.x *= width / g_backBuffer->width;
+            viewport.y *= height / g_backBuffer->height;
+            viewport.width *= width / g_backBuffer->width;
+            viewport.height *= height / g_backBuffer->height;
         }
 
         if (viewport.minDepth > viewport.maxDepth)
@@ -2623,13 +2715,13 @@ static void FlushViewport()
 
         if (renderingToBackBuffer)
         {
-            uint32_t width = g_swapChain->getWidth();
-            uint32_t height = g_swapChain->getHeight();
+            uint32_t width = Video::s_viewportWidth;
+            uint32_t height = Video::s_viewportHeight;
 
-            scissorRect.left = scissorRect.left * width / 1280;
-            scissorRect.top = scissorRect.top * height / 720;
-            scissorRect.right = scissorRect.right * width / 1280;
-            scissorRect.bottom = scissorRect.bottom * height / 720;
+            scissorRect.left = scissorRect.left * width / g_backBuffer->width;
+            scissorRect.top = scissorRect.top * height / g_backBuffer->height;
+            scissorRect.right = scissorRect.right * width / g_backBuffer->width;
+            scissorRect.bottom = scissorRect.bottom * height / g_backBuffer->height;
         }
 
         commandList->setScissors(scissorRect);
@@ -4169,7 +4261,13 @@ static GuestShader* CreateShader(const be<uint32_t>* function, ResourceType reso
         if (findResult->guestShader == nullptr)
         {
             shader = g_userHeap.AllocPhysical<GuestShader>(resourceType);
-            shader->shaderCacheEntry = findResult;
+
+            if (hash == 0xB1086A4947A797DE)
+                shader->shader = CREATE_SHADER(csd_no_tex_vs);
+            else if (hash == 0xB4CAFC034A37C8A8)
+                shader->shader = CREATE_SHADER(csd_vs);
+            else
+                shader->shaderCacheEntry = findResult;
 
             findResult->guestShader = shader;
         }
@@ -4298,7 +4396,7 @@ static void ProcSetPixelShader(const RenderCommand& cmd)
 
             default:
             {
-                size_t height = round(g_swapChain->getHeight() * Config::ResolutionScale);
+                size_t height = round(Video::s_viewportHeight * Config::ResolutionScale);
 
                 if (height > 1440)
                     shaderIndex = GAUSSIAN_BLUR_9X9;
@@ -4728,6 +4826,8 @@ static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataS
         texture.descriptorIndex = g_textureDescriptorAllocator.allocate();
         g_textureDescriptorSet->setTexture(texture.descriptorIndex, texture.texture, RenderTextureLayout::SHADER_READ, texture.textureView.get());
 
+        texture.width = ddsDesc.width;
+        texture.height = ddsDesc.height;
         texture.viewDimension = viewDesc.dimension;
 
         struct Slice
@@ -4938,8 +5038,10 @@ void SetShadowResolutionMidAsmHook(PPCRegister& r11)
 
 static void SetResolution(be<uint32_t>* device)
 {
-    uint32_t width = uint32_t(round(g_swapChain->getWidth() * Config::ResolutionScale));
-    uint32_t height = uint32_t(round(g_swapChain->getHeight() * Config::ResolutionScale));
+    Video::ComputeViewportDimensions();
+
+    uint32_t width = uint32_t(round(Video::s_viewportWidth * Config::ResolutionScale));
+    uint32_t height = uint32_t(round(Video::s_viewportHeight * Config::ResolutionScale));
     device[46] = width == 0 ? 880 : width;
     device[47] = height == 0 ? 720 : height;
 }
@@ -6418,10 +6520,14 @@ void VideoConfigValueChangedCallback(IConfigDef* config)
 {
     // Config options that require internal resolution resize
     g_needsResize |=
+        config == &Config::AspectRatio ||
         config == &Config::ResolutionScale ||
         config == &Config::AntiAliasing ||
         config == &Config::ShadowResolution;
 
+    if (g_needsResize)
+        Video::ComputeViewportDimensions();
+        
     // Config options that require pipeline recompilation
     bool shouldRecompile =
         config == &Config::AntiAliasing ||

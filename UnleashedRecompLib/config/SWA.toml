@@ -91,16 +91,14 @@ registers = ["r11"]
 
 [[midasm_hook]]
 name = "CameraAspectRatioMidAsmHook"
-address = 0x82468E84
-registers = ["r31"]
-jump_address_on_true = 0x82468E88
-jump_address_on_false = 0x82468EE0
+address = 0x82468E78
+registers = ["r30", "r31"]
 
 [[midasm_hook]]
-name = "CameraBoostAspectRatioMidAsmHook"
-address = 0x8246BDA0
-registers = ["r31", "f0", "f10", "f12"]
-jump_address_on_true = 0x8246BDAC
+name = "CameraFieldOfViewMidAsmHook"
+address = 0x82468EDC
+registers = ["r31", "f31"]
+jump_address = 0x82468EE0
 
 [[midasm_hook]]
 name = "ResetScoreOnRestartMidAsmHook"
@@ -590,3 +588,78 @@ jump_address = 0x82B723BC
 name = "DisableDLCIconMidAsmHook"
 address = 0x825756B0
 jump_address_on_true = 0x825756E0
+
+[[midasm_hook]]
+name = "MakeCsdProjectMidAsmHook"
+address = 0x825E4120
+registers = ["r3", "r29"]
+
+[[midasm_hook]]
+name = "RenderCsdCastNodeMidAsmHook"
+address = 0x830C6A58
+registers = ["r10", "r27"]
+
+[[midasm_hook]]
+name = "RenderCsdCastMidAsmHook"
+address = 0x830C6A98
+registers = ["r4"]
+
+[[midasm_hook]]
+name = "ComputeScreenPositionMidAsmHook"
+address = 0x82923204
+registers = ["f1", "f2"]
+
+[[midasm_hook]]
+name = "ComputeScreenPositionMidAsmHook"
+address = 0x82AD7914
+registers = ["f1", "f2"]
+
+[[midasm_hook]]
+name = "WorldMapInfoMidAsmHook"
+address = 0x8257AF34
+registers = ["r4"]
+
+[[midasm_hook]]
+name = "AddPrimitive2DMidAsmHook"
+address = 0x824DB3E4
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "ObjGetItemFieldOfViewMidAsmHook"
+address = 0x82692934
+registers = ["r1", "f1"]
+
+[[midasm_hook]]
+name = "WorldMapProjectionMidAsmHook"
+address = 0x82574E00
+registers = ["v63", "v62"]
+
+[[midasm_hook]]
+name = "ViewRingFieldOfViewMidAsmHook"
+address = 0x825EBDF0
+registers = ["r1", "f1"]
+
+[[midasm_hook]]
+name = "ViewRingYMidAsmHook"
+address = 0x825EBF1C
+registers = ["f0"]
+
+[[midasm_hook]]
+name = "ViewRingXMidAsmHook"
+address = 0x825EBF68
+registers = ["f0", "v62"]
+
+[[midasm_hook]]
+name = "InspireLetterboxTopMidAsmHook"
+address = 0x82B8AB78
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "InspireLetterboxBottomMidAsmHook"
+address = 0x82B8ABAC
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "InspireSubtitleMidAsmHook"
+address = 0x82B949B0
+registers = ["r3"]

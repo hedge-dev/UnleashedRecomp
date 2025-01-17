@@ -148,15 +148,17 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EWindowState)
 enum class EAspectRatio : uint32_t
 {
     Auto,
-    Square,
-    Widescreen
+    Wide,
+    Narrow,
+    OriginalNarrow
 };
 
 CONFIG_DEFINE_ENUM_TEMPLATE(EAspectRatio)
 {
     { "Auto", EAspectRatio::Auto },
-    { "4:3",  EAspectRatio::Square },
-    { "16:9", EAspectRatio::Widescreen }
+    { "16:9", EAspectRatio::Wide },
+    { "4:3",  EAspectRatio::Narrow },
+    { "Original 4:3",  EAspectRatio::OriginalNarrow },
 };
 
 enum class ETripleBuffering : uint32_t
@@ -256,16 +258,26 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EMotionBlur)
     { "Enhanced", EMotionBlur::Enhanced }
 };
 
+enum class ECutsceneAspectRatio : uint32_t
+{
+    Original,
+    Unlocked
+};
+
+CONFIG_DEFINE_ENUM_TEMPLATE(ECutsceneAspectRatio)
+{
+    { "Original", ECutsceneAspectRatio::Original },
+    { "Unlocked", ECutsceneAspectRatio::Unlocked }
+};
+
 enum class EUIScaleMode : uint32_t
 {
-    Stretch,
     Edge,
     Centre
 };
 
 CONFIG_DEFINE_ENUM_TEMPLATE(EUIScaleMode)
 {
-    { "Stretch", EUIScaleMode::Stretch },
     { "Edge",    EUIScaleMode::Edge },
     { "Centre",  EUIScaleMode::Centre },
     { "Center",  EUIScaleMode::Centre }
@@ -662,6 +674,7 @@ public:
     CONFIG_DEFINE_ENUM("Video", EDepthOfFieldQuality, DepthOfFieldQuality, EDepthOfFieldQuality::Auto);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EMotionBlur, MotionBlur, EMotionBlur::Original);
     CONFIG_DEFINE_LOCALISED("Video", bool, XboxColorCorrection, false);
+    CONFIG_DEFINE_ENUM_LOCALISED("Video", ECutsceneAspectRatio, CutsceneAspectRatio, ECutsceneAspectRatio::Original);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EUIScaleMode, UIScaleMode, EUIScaleMode::Edge);
 
     CONFIG_DEFINE_HIDDEN("Debug", bool, ShowFPS, false);

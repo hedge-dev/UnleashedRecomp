@@ -1,41 +1,41 @@
 #include <api/SWA.h>
 #include <ui/game_window.h>
 #include <user/config.h>
+#include <gpu/video.h>
+#include "camera_patches.h"
+#include "aspect_ratio_patches.h"
 
-constexpr float m_baseAspectRatio = 16.0f / 9.0f;
-
-bool CameraAspectRatioMidAsmHook(PPCRegister& r31)
+void CameraAspectRatioMidAsmHook(PPCRegister& r30, PPCRegister& r31)
 {
-    auto pCamera = (SWA::CCamera*)g_memory.Translate(r31.u32);
-    auto newAspectRatio = (float)GameWindow::s_width / (float)GameWindow::s_height;
+    r30.u32 = 0;
+
+    auto camera = (SWA::CCamera*)g_memory.Translate(r31.u32);
 
     // Dynamically adjust horizontal aspect ratio to window dimensions.
-    pCamera->m_HorzAspectRatio = newAspectRatio;
-
-    if (auto s_pVertAspectRatio = (be<float>*)g_memory.Translate(0x82028FE0))
-    {
-        // Dynamically adjust vertical aspect ratio for VERT+.
-        *s_pVertAspectRatio = 2.0f * atan(tan(45.0f / 2.0f) * (m_baseAspectRatio / newAspectRatio));
-    }
-
-    // Jump to 4:3 code for VERT+ adjustments if using a narrow aspect ratio.
-    return newAspectRatio < m_baseAspectRatio;
+    camera->m_HorzAspectRatio = g_aspectRatio;
 }
 
-bool CameraBoostAspectRatioMidAsmHook(PPCRegister& r31, PPCRegister& f0, PPCRegister& f10, PPCRegister& f12)
+float AdjustFieldOfView(float fieldOfView, float aspectRatio)
 {
-    auto pCamera = (SWA::CCamera*)g_memory.Translate(r31.u32);
-
-    if (GameWindow::s_width < GameWindow::s_height)
+    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
     {
-        pCamera->m_VertFieldOfView = pCamera->m_HorzFieldOfView + f10.f64;
+        // Replicate the original incorrect field of view formula if requested. 
+        fieldOfView *= NARROW_ASPECT_RATIO;
     }
-    else
+    else if (aspectRatio < WIDE_ASPECT_RATIO)
     {
-        pCamera->m_VertFieldOfView = (f12.f64 / f0.f64) + f10.f64;
+        // Use proper VERT+ otherwise for narrow aspect ratios.
+        fieldOfView = 2.0 * atan(tan(0.5 * fieldOfView) / aspectRatio * WIDE_ASPECT_RATIO);
     }
 
-    return true;
+    return fieldOfView;
+}
+
+void CameraFieldOfViewMidAsmHook(PPCRegister& r31, PPCRegister& f31)
+{
+    auto camera = (SWA::CCamera*)g_memory.Translate(r31.u32);
+
+    f31.f64 = AdjustFieldOfView(f31.f64, camera->m_HorzAspectRatio);
 }
 
 PPC_FUNC_IMPL(__imp__sub_824697B0);

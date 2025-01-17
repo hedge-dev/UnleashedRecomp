@@ -61,7 +61,7 @@ CONFIG_DEFINE_LOCALE(ControlTutorial)
 
 CONFIG_DEFINE_LOCALE(AchievementNotifications)
 {
-    { ELanguage::English, { "Achievement Notifications", "Show notifications for unlocking achievements.\n\nAchievements will still\nbe rewarded with notifications disabled." } }
+    { ELanguage::English, { "Achievement Notifications", "Show notifications for unlocking achievements.\n\nAchievements will still be rewarded with notifications disabled." } }
 };
 
 CONFIG_DEFINE_LOCALE(TimeOfDayTransition)
@@ -90,7 +90,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
     {
         ELanguage::English,
         {
-            { EControllerIcons::Auto,        { "AUTO", "Auto: the game will determine which icons\nto use based on the current input device." } },
+            { EControllerIcons::Auto,        { "AUTO", "Auto: the game will determine which icons to use based on the current input device." } },
             { EControllerIcons::Xbox,        { "XBOX", "" } },
             { EControllerIcons::PlayStation, { "PLAYSTATION", "" } }
         }
@@ -188,7 +188,8 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
     {
         ELanguage::English,
         {
-            { EAspectRatio::Auto, { "AUTO", "Auto: the aspect ratio will dynamically adjust to the window size." } }
+            { EAspectRatio::Auto, { "AUTO", "Auto: the aspect ratio will dynamically adjust to the window size." } },
+            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "" } }
         }
     }
 };
@@ -205,7 +206,7 @@ CONFIG_DEFINE_LOCALE(Fullscreen)
 
 CONFIG_DEFINE_LOCALE(VSync)
 {
-    { ELanguage::English, { "V-Sync", "Synchronize the game\nto the refresh rate of\nthe display to prevent screen tearing." } }
+    { ELanguage::English, { "V-Sync", "Synchronize the game to the refresh rate of the display to prevent screen tearing." } }
 };
 
 CONFIG_DEFINE_LOCALE(FPS)
@@ -283,7 +284,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EMotionBlur)
         {
             { EMotionBlur::Off,      { "OFF", "" } },
             { EMotionBlur::Original, { "ORIGINAL", "" } },
-            { EMotionBlur::Enhanced, { "ENHANCED", "Enhanced: uses more samples for smoother motion blur at the cost\nof performance." } }
+            { EMotionBlur::Enhanced, { "ENHANCED", "Enhanced: uses more samples for smoother motion blur at the cost of performance." } }
         }
     }
 };
@@ -291,6 +292,22 @@ CONFIG_DEFINE_ENUM_LOCALE(EMotionBlur)
 CONFIG_DEFINE_LOCALE(XboxColorCorrection)
 {
     { ELanguage::English, { "Xbox Color Correction", "Use the warm tint from the Xbox version of the game." } }
+};
+
+CONFIG_DEFINE_LOCALE(CutsceneAspectRatio)
+{
+    { ELanguage::English, { "Cutscene Aspect Ratio", "" } }
+};
+
+CONFIG_DEFINE_ENUM_LOCALE(ECutsceneAspectRatio)
+{
+    {
+        ELanguage::English,
+        {
+            { ECutsceneAspectRatio::Original, { "ORIGINAL", "" } },
+            { ECutsceneAspectRatio::Unlocked, { "UNLOCKED", "" } },
+        }
+    }
 };
 
 CONFIG_DEFINE_LOCALE(UIScaleMode)
@@ -303,7 +320,6 @@ CONFIG_DEFINE_ENUM_LOCALE(EUIScaleMode)
     {
         ELanguage::English,
         {
-            { EUIScaleMode::Stretch, { "STRETCH", "Stretch: the UI will stretch to the display." } },
             { EUIScaleMode::Edge,    { "EDGE", "Edge: the UI will anchor to the edges of the display." } },
             { EUIScaleMode::Centre,  { "CENTER", "Center: the UI will anchor to the center of the display." } },
         }

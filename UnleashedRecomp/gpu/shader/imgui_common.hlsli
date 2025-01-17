@@ -13,6 +13,7 @@ struct PushConstants
     float2 InverseDisplaySize;
     float2 Origin;
     float2 Scale;
+    float2 ProceduralOrigin;
     float Outline;
 };
 

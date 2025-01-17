@@ -42,9 +42,15 @@ static constexpr double CONTAINER_FULL_DURATION = CONTAINER_BACKGROUND_TIME + CO
 static constexpr double CONTAINER_CATEGORY_TIME = (CONTAINER_INNER_TIME + CONTAINER_BACKGROUND_TIME) / 2.0;
 static constexpr double CONTAINER_CATEGORY_DURATION = 12.0;
 
-constexpr float COMMON_PADDING_POS_Y = 118.0f;
-constexpr float COMMON_PADDING_POS_X = 30.0f;
-constexpr float INFO_CONTAINER_POS_X = 870.0f;
+static constexpr float CONTAINER_POS_Y = 118.0f;
+
+static constexpr float SETTINGS_WIDE_GRID_COUNT = 90.0f;
+static constexpr float INFO_WIDE_GRID_COUNT = 42.0f;
+static constexpr float PADDING_WIDE_GRID_COUNT = 3.0f;
+
+static constexpr float SETTINGS_NARROW_GRID_COUNT = 70.0f;
+static constexpr float INFO_NARROW_GRID_COUNT = 34.0f;
+static constexpr float PADDING_NARROW_GRID_COUNT = 1.0f;
 
 static constexpr int32_t g_categoryCount = 4;
 static int32_t g_categoryIndex;
@@ -151,12 +157,18 @@ static void DrawScanlineBars()
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
+    float optionsX;
+    if (g_aspectRatio >= WIDE_ASPECT_RATIO)
+        optionsX = g_aspectRatioOffsetX;
+    else
+        optionsX = (1.0f - g_narrowOffsetScale) * -20.0f;
+
     // Options text
     DrawTextWithOutline
     (
         g_dfsogeistdFont,
         Scale(48.0f),
-        { Scale(122.0f), Scale(56.0f) },
+        { Scale(optionsX + 122.0f), Scale(56.0f) },
         IM_COL32(255, 190, 33, 255),
         Localise("Options_Header_Name").c_str(),
         4,
@@ -187,7 +199,7 @@ static void DrawScanlineBars()
 
 static float AlignToNextGrid(float value)
 {
-    return floor(value / GRID_SIZE) * GRID_SIZE;
+    return round(value / GRID_SIZE) * GRID_SIZE;
 }
 
 static void DrawContainer(ImVec2 min, ImVec2 max)
@@ -306,8 +318,11 @@ static bool DrawCategories()
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
+    constexpr float NARROW_PADDING_GRID_COUNT = 1.5f;
+    constexpr float WIDE_PADDING_GRID_COUNT = 3.0f;
+
     float gridSize = Scale(GRID_SIZE);
-    float textPadding = gridSize * 3.0f;
+    float textPadding = gridSize * Lerp(NARROW_PADDING_GRID_COUNT, WIDE_PADDING_GRID_COUNT, g_narrowOffsetScale);
     float tabPadding = gridSize;
 
     float size = Scale(32.0f);
@@ -449,8 +464,11 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     auto clipRectMax = drawList->GetClipRectMax();
     auto& padState = SWA::CInputState::GetInstance()->GetPadState();
 
+    constexpr float OPTION_NARROW_GRID_COUNT = 36.0f;
+    constexpr float OPTION_WIDE_GRID_COUNT = 54.0f;
+
     auto gridSize = Scale(GRID_SIZE);
-    auto optionWidth = gridSize * 54.0f;
+    auto optionWidth = gridSize * floor(Lerp(OPTION_NARROW_GRID_COUNT, OPTION_WIDE_GRID_COUNT, g_narrowOffsetScale));
     auto optionHeight = gridSize * 5.5f;
     auto optionPadding = gridSize * 0.5f;
     auto valueWidth = Scale(192.0f);
@@ -917,6 +935,7 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::GITextureFiltering, true);
             DrawConfigOption(rowCount++, yOffset, &Config::MotionBlur, true);
             DrawConfigOption(rowCount++, yOffset, &Config::XboxColorCorrection, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::CutsceneAspectRatio, true);
             DrawConfigOption(rowCount++, yOffset, &Config::UIScaleMode, true);
 
             break;
@@ -998,13 +1017,11 @@ static void DrawConfigOptions()
     }
 }
 
-static void DrawSettingsPanel()
+static void DrawSettingsPanel(ImVec2 settingsMin, ImVec2 settingsMax)
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    ImVec2 settingsMin = { Scale(AlignToNextGrid(COMMON_PADDING_POS_X)), Scale(AlignToNextGrid(COMMON_PADDING_POS_Y)) };
-    ImVec2 settingsMax = { Scale(AlignToNextGrid(INFO_CONTAINER_POS_X - COMMON_PADDING_POS_X)), Scale(AlignToNextGrid(720.0f - COMMON_PADDING_POS_Y)) };
-
+    SetProceduralOrigin(settingsMin);
     DrawContainer(settingsMin, settingsMax);
 
     if (DrawCategories())
@@ -1018,31 +1035,34 @@ static void DrawSettingsPanel()
         ResetSelection();
     }
 
+    ResetProceduralOrigin();
+
     // Pop clip rect from DrawContainer
     drawList->PopClipRect();
 }
 
-static void DrawInfoPanel()
+static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    ImVec2 infoMin = { Scale(AlignToNextGrid(INFO_CONTAINER_POS_X)), Scale(AlignToNextGrid(COMMON_PADDING_POS_Y)) };
-    ImVec2 infoMax = { Scale(AlignToNextGrid(1280.0f - COMMON_PADDING_POS_X)), Scale(AlignToNextGrid(720.0f - COMMON_PADDING_POS_Y)) };
-
+    SetProceduralOrigin(infoMin);
     DrawContainer(infoMin, infoMax);
 
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
-
-    ImVec2 thumbnailMax = { clipRectMax.x, clipRectMin.y + Scale(198.0f) };
 
     if (g_selectedItem)
     {
         auto desc = g_selectedItem->GetDescription(Config::Language);
         auto thumbnail = GetThumbnail(g_selectedItem);
 
-        if (thumbnail)
-            drawList->AddImage(thumbnail, clipRectMin, thumbnailMax);
+        float aspectRatio = float(thumbnail->width) / thumbnail->height;
+        float thumbnailHeight = (clipRectMax.x - clipRectMin.x) / aspectRatio;
+
+        ImVec2 thumbnailMin = { clipRectMin.x, clipRectMin.y + Scale(GRID_SIZE / 2.0f) };
+        ImVec2 thumbnailMax = { clipRectMax.x, thumbnailMin.y + thumbnailHeight };
+
+        drawList->AddImage(thumbnail, thumbnailMin, thumbnailMax);
 
         if (g_inaccessibleReason)
         {
@@ -1057,8 +1077,8 @@ static void DrawInfoPanel()
                 auto resScale = round(*(float*)g_selectedItem->GetValue() * 1000) / 1000;
 
                 std::snprintf(buf, sizeof(buf), desc.c_str(),
-                    (int)((float)GameWindow::s_width * resScale),
-                    (int)((float)GameWindow::s_height * resScale));
+                    (int)((float)Video::s_viewportWidth * resScale),
+                    (int)((float)Video::s_viewportHeight * resScale));
 
                 desc = buf;
             }
@@ -1079,6 +1099,8 @@ static void DrawInfoPanel()
             clipRectMax.x - clipRectMin.x
         );
     }
+
+    ResetProceduralOrigin();
 
     // Pop clip rect from DrawContainer
     drawList->PopClipRect();
@@ -1197,8 +1219,25 @@ void OptionsMenu::Draw()
             drawList->AddRectFilled({ 0.0f, 0.0f }, res, IM_COL32(0, 0, 0, 223));
 
         DrawScanlineBars();
-        DrawSettingsPanel();
-        DrawInfoPanel();
+
+        float settingsGridCount = floor(Lerp(SETTINGS_NARROW_GRID_COUNT, SETTINGS_WIDE_GRID_COUNT, g_narrowOffsetScale));
+        float paddingGridCount = Lerp(PADDING_NARROW_GRID_COUNT, PADDING_WIDE_GRID_COUNT, g_narrowOffsetScale);
+        float infoGridCount = floor(Lerp(INFO_NARROW_GRID_COUNT, INFO_WIDE_GRID_COUNT, g_narrowOffsetScale));
+        float totalGridCount = settingsGridCount + paddingGridCount + infoGridCount;
+
+        float offsetX = g_aspectRatioOffsetX + (1280.0f - ((GRID_SIZE * totalGridCount) - 1)) / 2.0f;
+        float minY = Scale(g_aspectRatioOffsetY + CONTAINER_POS_Y);
+        float maxY = Scale(g_aspectRatioOffsetY + (720.0f - CONTAINER_POS_Y + 1.0f));
+
+        DrawSettingsPanel(
+            { Scale(offsetX), minY },
+            { Scale(offsetX + settingsGridCount * GRID_SIZE), maxY }
+        );
+
+        DrawInfoPanel(
+            { Scale(offsetX + (settingsGridCount + paddingGridCount) * GRID_SIZE), minY },
+            { Scale(offsetX + totalGridCount * GRID_SIZE), maxY }
+        );
 
         if (g_isStage)
             DrawFadeTransition();

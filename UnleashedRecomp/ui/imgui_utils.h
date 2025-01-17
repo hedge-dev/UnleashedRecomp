@@ -4,6 +4,7 @@
 #include <gpu/video.h>
 #include <app.h>
 #include <version.h>
+#include <patches/aspect_ratio_patches.h>
 
 #define PIXELS_TO_UV_COORDS(textureWidth, textureHeight, x, y, width, height) \
     std::make_tuple(ImVec2((float)x / (float)textureWidth, (float)y / (float)textureHeight), \
@@ -95,29 +96,26 @@ inline void ResetOutline()
     SetOutline(0.0f);
 }
 
-// Aspect ratio aware.
+inline void SetProceduralOrigin(ImVec2 proceduralOrigin)
+{
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetProceduralOrigin);
+    callbackData->setProceduralOrigin.proceduralOrigin[0] = proceduralOrigin.x;
+    callbackData->setProceduralOrigin.proceduralOrigin[1] = proceduralOrigin.y;
+}
+
+inline void ResetProceduralOrigin()
+{
+    SetProceduralOrigin({ 0.0f, 0.0f });
+}
+
 inline float Scale(float size)
 {
     auto& io = ImGui::GetIO();
 
-    if (io.DisplaySize.x > io.DisplaySize.y)
-        return size * std::max(1.0f, io.DisplaySize.y / 720.0f);
+    if (g_aspectRatio >= NARROW_ASPECT_RATIO)
+        return size * (io.DisplaySize.y / 720.0f);
     else
-        return size * std::max(1.0f, io.DisplaySize.x / 1280.0f);
-}
-
-// Not aspect ratio aware. Will stretch.
-inline float ScaleX(float x)
-{
-    auto& io = ImGui::GetIO();
-    return x * io.DisplaySize.x / 1280.0f;
-}
-
-// Not aspect ratio aware. Will stretch.
-inline float ScaleY(float y)
-{
-    auto& io = ImGui::GetIO();
-    return y * io.DisplaySize.y / 720.0f;
+        return size * (io.DisplaySize.x / 960.0f);
 }
 
 inline double ComputeMotion(double duration, double offset, double total)
