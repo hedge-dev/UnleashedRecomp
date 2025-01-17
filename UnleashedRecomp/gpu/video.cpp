@@ -1168,6 +1168,7 @@ struct ImGuiPushConstants
     ImVec2 inverseDisplaySize{};
     ImVec2 origin{ 0.0f, 0.0f };
     ImVec2 scale{ 1.0f, 1.0f };
+    ImVec2 proceduralOrigin{ 0.0f, 0.0f };
     float outline{};
 };
 
@@ -2170,6 +2171,9 @@ static void ProcDrawImGui(const RenderCommand& cmd)
                     break;
                 case ImGuiCallback::SetOutline:
                     setPushConstants(&pushConstants.outline, &callbackData->setOutline, sizeof(callbackData->setOutline));
+                    break;
+                case ImGuiCallback::SetProceduralOrigin:
+                    setPushConstants(&pushConstants.proceduralOrigin, &callbackData->setProceduralOrigin, sizeof(callbackData->setProceduralOrigin));
                     break;
                 default:
                     assert(false && "Unknown ImGui callback type.");
@@ -4813,6 +4817,8 @@ static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataS
         texture.descriptorIndex = g_textureDescriptorAllocator.allocate();
         g_textureDescriptorSet->setTexture(texture.descriptorIndex, texture.texture, RenderTextureLayout::SHADER_READ, texture.textureView.get());
 
+        texture.width = ddsDesc.width;
+        texture.height = ddsDesc.height;
         texture.viewDimension = viewDesc.dimension;
 
         struct Slice

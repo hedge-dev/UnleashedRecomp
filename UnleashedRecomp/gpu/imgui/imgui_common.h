@@ -20,6 +20,7 @@ enum class ImGuiCallback : int32_t
     SetScale = -4,
     SetMarqueeFade = -5,
     SetOutline = -6,
+    SetProceduralOrigin = -7,
     // -8 is ImDrawCallback_ResetRenderState, don't use!
 };
 
@@ -58,6 +59,11 @@ union ImGuiCallbackData
     {
         float outline;
     } setOutline;
+
+    struct
+    {
+        float proceduralOrigin[2];
+    } setProceduralOrigin;
 };
 
 extern ImGuiCallbackData* AddImGuiCallback(ImGuiCallback callback);

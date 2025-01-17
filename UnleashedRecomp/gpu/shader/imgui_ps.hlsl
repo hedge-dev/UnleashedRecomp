@@ -81,7 +81,7 @@ float median(float r, float g, float b)
 float4 main(in Interpolators interpolators) : SV_Target
 {
     float4 color = interpolators.Color;
-    color *= PixelAntialiasing(interpolators.Position.xy - 0.5);
+    color *= PixelAntialiasing(interpolators.Position.xy - (g_PushConstants.ProceduralOrigin + 0.5));
     
     if (g_PushConstants.Texture2DDescriptorIndex != 0)
     {

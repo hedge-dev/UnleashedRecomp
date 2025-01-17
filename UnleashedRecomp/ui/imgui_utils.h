@@ -96,6 +96,18 @@ inline void ResetOutline()
     SetOutline(0.0f);
 }
 
+inline void SetProceduralOrigin(ImVec2 proceduralOrigin)
+{
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetProceduralOrigin);
+    callbackData->setProceduralOrigin.proceduralOrigin[0] = proceduralOrigin.x;
+    callbackData->setProceduralOrigin.proceduralOrigin[1] = proceduralOrigin.y;
+}
+
+inline void ResetProceduralOrigin()
+{
+    SetProceduralOrigin({ 0.0f, 0.0f });
+}
+
 inline float Scale(float size)
 {
     auto& io = ImGui::GetIO();
