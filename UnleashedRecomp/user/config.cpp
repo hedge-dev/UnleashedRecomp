@@ -15,14 +15,14 @@ void Config::Load()
     {
         toml::parse_result toml;
         std::ifstream tomlStream(configPath);
+
         if (tomlStream.is_open())
-        {
             toml = toml::parse(tomlStream);
-        }
 
         for (auto def : g_configDefinitions)
         {
             def->ReadValue(toml);
+
 #if _DEBUG
             LOGFN_UTILITY("{} (0x{:X})", def->GetDefinition().c_str(), (intptr_t)def->GetValue());
 #endif
@@ -46,6 +46,9 @@ void Config::Save()
 
     for (auto def : g_configDefinitions)
     {
+        if (def->IsHidden())
+            continue;
+
         auto isFirstSection = section.empty();
         auto isDefWithSection = section != def->GetSection();
         auto tomlDef = def->GetDefinition(isDefWithSection);

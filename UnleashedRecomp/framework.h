@@ -1,20 +1,5 @@
 #pragma once
 
-#ifdef _MSVC
-    #define SWA_DLLEXPORT __declspec(dllexport)
-    #define SWA_DLLIMPORT __declspec(dllimport)
-#else
-    // TODO
-    #define SWA_DLLEXPORT
-    #define SWA_DLLIMPORT
-#endif
-
-#ifdef SWA_IMPL
-#define SWA_API extern "C" SWA_DLLEXPORT
-#else
-#define SWA_API extern "C" SWA_DLLIMPORT
-#endif
-
 #define PROC_ADDRESS(libraryName, procName) \
     GetProcAddress(LoadLibrary(TEXT(libraryName)), procName)
 

@@ -585,3 +585,8 @@ jump_address_on_false = 0x82536140
 name = "RemoveMoviePlayerLetterboxMidAsmHook"
 address = 0x82B723A8
 jump_address = 0x82B723BC
+
+[[midasm_hook]]
+name = "DisableDLCIconMidAsmHook"
+address = 0x825756B0
+jump_address_on_true = 0x825756E0

@@ -78,7 +78,7 @@ struct FindHandle : KernelObject
     }
 };
 
-SWA_API FileHandle* XCreateFileA
+FileHandle* XCreateFileA
 (
     const char* lpFileName,
     uint32_t dwDesiredAccess,

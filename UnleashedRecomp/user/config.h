@@ -8,6 +8,7 @@ class IConfigDef
 {
 public:
     virtual ~IConfigDef() = default;
+    virtual bool IsHidden() = 0;
     virtual void ReadValue(toml::v3::ex::parse_result& toml) = 0;
     virtual void MakeDefault() = 0;
     virtual std::string_view GetSection() const = 0;
@@ -28,6 +29,9 @@ public:
 
 #define CONFIG_DEFINE(section, type, name, defaultValue) \
     static inline ConfigDef<type> name{section, #name, defaultValue};
+
+#define CONFIG_DEFINE_HIDDEN(section, type, name, defaultValue) \
+    static inline ConfigDef<type, true> name{section, #name, defaultValue};
 
 #define CONFIG_DEFINE_LOCALISED(section, type, name, defaultValue) \
     static CONFIG_LOCALE g_##name##_locale; \
@@ -267,7 +271,7 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EUIScaleMode)
     { "Center",  EUIScaleMode::Centre }
 };
 
-template<typename T>
+template<typename T, bool isHidden = false>
 class ConfigDef final : public IConfigDef
 {
 public:
@@ -279,9 +283,10 @@ public:
     std::unordered_map<std::string, T>* EnumTemplate;
     std::map<T, std::string> EnumTemplateReverse{};
     CONFIG_ENUM_LOCALE(T)* EnumLocale{};
-    std::function<void(ConfigDef<T>*)> Callback;
-    std::function<void(ConfigDef<T>*)> LockCallback;
-    std::function<void(ConfigDef<T>*)> ApplyCallback;
+    std::function<void(ConfigDef<T, isHidden>*)> Callback;
+    std::function<void(ConfigDef<T, isHidden>*)> LockCallback;
+    std::function<void(ConfigDef<T, isHidden>*)> ApplyCallback;
+    bool IsLoadedFromConfig{};
 
     // CONFIG_DEFINE
     ConfigDef(std::string section, std::string name, T defaultValue) : Section(section), Name(name), DefaultValue(defaultValue)
@@ -314,9 +319,14 @@ public:
     }
 
     // CONFIG_DEFINE_CALLBACK
-    ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T>*)> callback) : Section(section), Name(name), DefaultValue(defaultValue), Callback(callback)
+    ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T, isHidden>*)> callback) : Section(section), Name(name), DefaultValue(defaultValue), Callback(callback)
     {
         g_configDefinitions.emplace_back(this);
+    }
+
+    bool IsHidden() override
+    {
+        return isHidden;
     }
 
     void ReadValue(toml::v3::ex::parse_result& toml) override
@@ -331,8 +341,9 @@ public:
             }
             else if constexpr (std::is_enum_v<T>)
             {
-                std::string value = section[Name].value_or(std::string());
+                auto value = section[Name].value_or(std::string());
                 auto it = EnumTemplate->find(value);
+
                 if (it != EnumTemplate->end())
                 {
                     Value = it->second;
@@ -349,6 +360,8 @@ public:
 
             if (Callback)
                 Callback(this);
+
+            IsLoadedFromConfig = true;
         }
     }
 
@@ -650,12 +663,13 @@ public:
     CONFIG_DEFINE_LOCALISED("Video", bool, XboxColorCorrection, false);
     CONFIG_DEFINE_ENUM_LOCALISED("Video", EUIScaleMode, UIScaleMode, EUIScaleMode::Edge);
 
-    // TODO: remove these once the exports are implemented.
-    CONFIG_DEFINE("Exports", bool, AllowCancellingUnleash, false);
-    CONFIG_DEFINE("Exports", bool, FixUnleashOutOfControlDrain, false);
-    CONFIG_DEFINE("Exports", bool, HomingAttackOnBoost, true);
-    CONFIG_DEFINE("Exports", bool, SaveScoreAtCheckpoints, false);
-    CONFIG_DEFINE("Exports", bool, SkipIntroLogos, false);
+    CONFIG_DEFINE_HIDDEN("Exports", bool, AllowCancellingUnleash, false);
+    CONFIG_DEFINE_HIDDEN("Exports", bool, DisableAutoSaveWarning, false);
+    CONFIG_DEFINE_HIDDEN("Exports", bool, DisableDLCIcon, false);
+    CONFIG_DEFINE_HIDDEN("Exports", bool, FixUnleashOutOfControlDrain, false);
+    CONFIG_DEFINE_HIDDEN("Exports", bool, HomingAttackOnBoost, true);
+    CONFIG_DEFINE_HIDDEN("Exports", bool, SaveScoreAtCheckpoints, false);
+    CONFIG_DEFINE_HIDDEN("Exports", bool, SkipIntroLogos, false);
 
     static std::filesystem::path GetConfigPath()
     {

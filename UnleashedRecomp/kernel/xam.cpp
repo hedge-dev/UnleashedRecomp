@@ -144,7 +144,7 @@ void XamRegisterContent(uint32_t type, const std::string_view name, const std::s
     XamRegisterContent(data, root);
 }
 
-SWA_API uint32_t XamNotifyCreateListener(uint64_t qwAreas)
+uint32_t XamNotifyCreateListener(uint64_t qwAreas)
 {
     auto* listener = CreateKernelObject<XamListener>();
 
@@ -153,7 +153,7 @@ SWA_API uint32_t XamNotifyCreateListener(uint64_t qwAreas)
     return GetKernelHandle(listener);
 }
 
-SWA_API void XamNotifyEnqueueEvent(uint32_t dwId, uint32_t dwParam)
+void XamNotifyEnqueueEvent(uint32_t dwId, uint32_t dwParam)
 {
     for (const auto& listener : gListeners)
     {
@@ -164,7 +164,7 @@ SWA_API void XamNotifyEnqueueEvent(uint32_t dwId, uint32_t dwParam)
     }
 }
 
-SWA_API bool XNotifyGetNext(uint32_t hNotification, uint32_t dwMsgFilter, be<uint32_t>* pdwId, be<uint32_t>* pParam)
+bool XNotifyGetNext(uint32_t hNotification, uint32_t dwMsgFilter, be<uint32_t>* pdwId, be<uint32_t>* pParam)
 {
     auto& listener = *GetKernelObject<XamListener>(hNotification);
 
@@ -205,7 +205,7 @@ SWA_API bool XNotifyGetNext(uint32_t hNotification, uint32_t dwMsgFilter, be<uin
     return false;
 }
 
-SWA_API uint32_t XamShowMessageBoxUI(uint32_t dwUserIndex, be<uint16_t>* wszTitle, be<uint16_t>* wszText, uint32_t cButtons,
+uint32_t XamShowMessageBoxUI(uint32_t dwUserIndex, be<uint16_t>* wszTitle, be<uint16_t>* wszText, uint32_t cButtons,
     xpointer<be<uint16_t>>* pwszButtons, uint32_t dwFocusButton, uint32_t dwFlags, be<uint32_t>* pResult, XXOVERLAPPED* pOverlapped)
 {
     int button{};
@@ -255,7 +255,7 @@ SWA_API uint32_t XamShowMessageBoxUI(uint32_t dwUserIndex, be<uint16_t>* wszTitl
     return 0;
 }
 
-SWA_API uint32_t XamContentCreateEnumerator(uint32_t dwUserIndex, uint32_t DeviceID, uint32_t dwContentType,
+uint32_t XamContentCreateEnumerator(uint32_t dwUserIndex, uint32_t DeviceID, uint32_t dwContentType,
     uint32_t dwContentFlags, uint32_t cItem, be<uint32_t>* pcbBuffer, be<uint32_t>* phEnum)
 {
     if (dwUserIndex != 0)
@@ -276,7 +276,7 @@ SWA_API uint32_t XamContentCreateEnumerator(uint32_t dwUserIndex, uint32_t Devic
     return 0;
 }
 
-SWA_API uint32_t XamEnumerate(uint32_t hEnum, uint32_t dwFlags, void* pvBuffer, uint32_t cbBuffer, be<uint32_t>* pcItemsReturned, XXOVERLAPPED* pOverlapped)
+uint32_t XamEnumerate(uint32_t hEnum, uint32_t dwFlags, void* pvBuffer, uint32_t cbBuffer, be<uint32_t>* pcItemsReturned, XXOVERLAPPED* pOverlapped)
 {
     auto* enumerator = GetKernelObject<XamEnumeratorBase>(hEnum);
     const auto count = enumerator->Next(pvBuffer);
@@ -290,7 +290,7 @@ SWA_API uint32_t XamEnumerate(uint32_t hEnum, uint32_t dwFlags, void* pvBuffer, 
     return ERROR_SUCCESS;
 }
 
-SWA_API uint32_t XamContentCreateEx(uint32_t dwUserIndex, const char* szRootName, const XCONTENT_DATA* pContentData,
+uint32_t XamContentCreateEx(uint32_t dwUserIndex, const char* szRootName, const XCONTENT_DATA* pContentData,
     uint32_t dwContentFlags, be<uint32_t>* pdwDisposition, be<uint32_t>* pdwLicenseMask,
     uint32_t dwFileCacheSize, uint64_t uliContentSize, PXXOVERLAPPED pOverlapped)
 {
@@ -359,13 +359,13 @@ SWA_API uint32_t XamContentCreateEx(uint32_t dwUserIndex, const char* szRootName
     return ERROR_PATH_NOT_FOUND;
 }
 
-SWA_API uint32_t XamContentClose(const char* szRootName, XXOVERLAPPED* pOverlapped)
+uint32_t XamContentClose(const char* szRootName, XXOVERLAPPED* pOverlapped)
 {
     gRootMap.erase(StringHash(szRootName));
     return 0;
 }
 
-SWA_API uint32_t XamContentGetDeviceData(uint32_t DeviceID, XDEVICE_DATA* pDeviceData)
+uint32_t XamContentGetDeviceData(uint32_t DeviceID, XDEVICE_DATA* pDeviceData)
 {
     pDeviceData->DeviceID = DeviceID;
     pDeviceData->DeviceType = XCONTENTDEVICETYPE_HDD;
@@ -381,7 +381,7 @@ SWA_API uint32_t XamContentGetDeviceData(uint32_t DeviceID, XDEVICE_DATA* pDevic
     return 0;
 }
 
-SWA_API uint32_t XamInputGetCapabilities(uint32_t unk, uint32_t userIndex, uint32_t flags, XAMINPUT_CAPABILITIES* caps)
+uint32_t XamInputGetCapabilities(uint32_t unk, uint32_t userIndex, uint32_t flags, XAMINPUT_CAPABILITIES* caps)
 {
     uint32_t result = hid::GetCapabilities(userIndex, caps);
 
@@ -400,7 +400,7 @@ SWA_API uint32_t XamInputGetCapabilities(uint32_t unk, uint32_t userIndex, uint3
     return result;
 }
 
-SWA_API uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_STATE* state)
+uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_STATE* state)
 {
     memset(state, 0, sizeof(*state));
 
@@ -464,7 +464,7 @@ SWA_API uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_S
     return ERROR_SUCCESS;
 }
 
-SWA_API uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION* vibration)
+uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION* vibration)
 {
     if (!hid::detail::IsInputDeviceController() || !Config::Vibration)
         return ERROR_SUCCESS;

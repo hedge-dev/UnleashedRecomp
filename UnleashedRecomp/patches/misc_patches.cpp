@@ -27,6 +27,11 @@ bool DisableEvilControlTutorialMidAsmHook(PPCRegister& r4, PPCRegister& r5)
     return r4.u32 == 1 && r5.u32 == 1;
 }
 
+bool DisableDLCIconMidAsmHook()
+{
+    return Config::DisableDLCIcon;
+}
+
 void ToggleSubtitlesMidAsmHook(PPCRegister& r27)
 {
     auto pApplicationDocument = (SWA::CApplicationDocument*)g_memory.Translate(r27.u32);
@@ -90,4 +95,14 @@ PPC_FUNC(sub_8305D5B8)
         return;
 
     __imp__sub_8305D5B8(ctx, base);
+}
+
+// Disable auto save warning.
+PPC_FUNC_IMPL(__imp__sub_82586698);
+PPC_FUNC(sub_82586698)
+{
+    if (Config::DisableAutoSaveWarning)
+        *(bool*)g_memory.Translate(0x83367BC2) = true;
+
+    __imp__sub_82586698(ctx, base);
 }

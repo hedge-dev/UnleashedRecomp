@@ -1,13 +1,12 @@
+#include <api/SWA.h>
 #include <apu/embedded_player.h>
+#include <cpu/guest_stack_var.h>
 #include <kernel/function.h>
 #include <kernel/heap.h>
 #include <kernel/memory.h>
-#include <cpu/guest_stack_var.h>
-#include <ui/installer_wizard.h>
 #include <ui/game_window.h>
-#include <api/boost/smart_ptr/shared_ptr.h>
 
-SWA_API void Game_PlaySound(const char* pName)
+void Game_PlaySound(const char* pName)
 {
     if (EmbeddedPlayer::s_isActive)
     {
@@ -29,12 +28,12 @@ SWA_API void Game_PlaySound(const char* pName)
     }
 }
 
-SWA_API void Window_SetDisplay(int displayIndex)
+void Window_SetDisplay(int displayIndex)
 {
     GameWindow::SetDisplay(displayIndex);
 }
 
-SWA_API void Window_SetFullscreen(bool isEnabled)
+void Window_SetFullscreen(bool isEnabled)
 {
     GameWindow::SetFullscreen(isEnabled);
 }
