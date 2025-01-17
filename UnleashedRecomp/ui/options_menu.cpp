@@ -157,12 +157,18 @@ static void DrawScanlineBars()
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
+    float optionsX;
+    if (g_aspectRatio >= WIDE_ASPECT_RATIO)
+        optionsX = g_aspectRatioOffsetX;
+    else
+        optionsX = (1.0f - g_narrowOffsetScale) * -20.0f;
+
     // Options text
     DrawTextWithOutline
     (
         g_dfsogeistdFont,
         Scale(48.0f),
-        { Scale((1.0f - g_narrowOffsetScale) * -20.0f + 122.0f), Scale(56.0f) },
+        { Scale(optionsX + 122.0f), Scale(56.0f) },
         IM_COL32(255, 190, 33, 255),
         Localise("Options_Header_Name").c_str(),
         4,

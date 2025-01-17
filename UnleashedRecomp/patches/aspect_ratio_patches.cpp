@@ -1019,8 +1019,17 @@ static double ComputeObjGetItemX(uint32_t type)
 
         x *= g_aspectRatioScale;
 
-        if (type != 47)
-            x += g_aspectRatioOffsetX * 2.0 + (1280.0 * (1.0 - g_aspectRatioScale));
+        double scaleOffset = (1280.0 * (1.0 - g_aspectRatioScale));
+
+        if (Config::UIScaleMode == EUIScaleMode::Edge)
+        {
+            if (type != 47) // Medal
+                x += g_aspectRatioOffsetX * 2.0 + scaleOffset;
+        }
+        else if (Config::UIScaleMode == EUIScaleMode::Centre)
+        {
+            x += g_aspectRatioOffsetX + scaleOffset;
+        }
 
         auto backBuffer = Video::GetBackBuffer();
         return (x - (0.5 * backBuffer->width)) / (0.5 * backBuffer->height) * OBJ_GET_ITEM_TANGENT;
