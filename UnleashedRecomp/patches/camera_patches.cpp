@@ -3,9 +3,7 @@
 #include <user/config.h>
 #include <gpu/video.h>
 #include "camera_patches.h"
-
-static constexpr float ORIGINAL_ASPECT_RATIO = 4.0f / 3.0f;
-static constexpr float ORIGINAL_WIDESCREEN_ASPECT_RATIO = 16.0f / 9.0f;
+#include "aspect_ratio_patches.h"
 
 void CameraAspectRatioMidAsmHook(PPCRegister& r30, PPCRegister& r31)
 {
@@ -14,7 +12,7 @@ void CameraAspectRatioMidAsmHook(PPCRegister& r30, PPCRegister& r31)
     auto camera = (SWA::CCamera*)g_memory.Translate(r31.u32);
 
     // Dynamically adjust horizontal aspect ratio to window dimensions.
-    camera->m_HorzAspectRatio = float(Video::s_viewportWidth) / float(Video::s_viewportHeight);
+    camera->m_HorzAspectRatio = g_aspectRatio;
 }
 
 float AdjustFieldOfView(float fieldOfView, float aspectRatio)
@@ -22,12 +20,12 @@ float AdjustFieldOfView(float fieldOfView, float aspectRatio)
     if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
     {
         // Replicate the original incorrect field of view formula if requested. 
-        fieldOfView *= ORIGINAL_ASPECT_RATIO;
+        fieldOfView *= NARROW_ASPECT_RATIO;
     }
-    else if (aspectRatio < ORIGINAL_WIDESCREEN_ASPECT_RATIO)
+    else if (aspectRatio < WIDE_ASPECT_RATIO)
     {
         // Use proper VERT+ otherwise for narrow aspect ratios.
-        fieldOfView = 2.0 * atan(tan(0.5 * fieldOfView) / aspectRatio * ORIGINAL_WIDESCREEN_ASPECT_RATIO);
+        fieldOfView = 2.0 * atan(tan(0.5 * fieldOfView) / aspectRatio * WIDE_ASPECT_RATIO);
     }
 
     return fieldOfView;

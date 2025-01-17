@@ -1335,8 +1335,6 @@ static void CreateImGuiBackend()
 #endif
 }
 
-static constexpr float ORIGINAL_ASPECT_RATIO = 4.0 / 3.0f;
-
 static void CheckSwapChain()
 {
     g_swapChain->setVsyncEnabled(Config::VSync);
@@ -1356,8 +1354,7 @@ static void CheckSwapChain()
     if (g_needsResize)
         Video::ComputeViewportDimensions();
 
-    float aspectRatio = float(Video::s_viewportWidth) / Video::s_viewportHeight;
-    if (aspectRatio >= ORIGINAL_ASPECT_RATIO)
+    if (g_aspectRatio >= NARROW_ASPECT_RATIO)
     {
         g_backBuffer->width = Video::s_viewportWidth * 720 / Video::s_viewportHeight;
         g_backBuffer->height = 720;
@@ -2470,7 +2467,7 @@ void Video::ComputeViewportDimensions()
     {
     case EAspectRatio::Wide:
     {
-        if (aspectRatio > (16.0f / 9.0f))
+        if (aspectRatio > WIDE_ASPECT_RATIO)
         {
             s_viewportWidth = height * 16 / 9;
             s_viewportHeight = height;
@@ -2487,7 +2484,7 @@ void Video::ComputeViewportDimensions()
     case EAspectRatio::Narrow:
     case EAspectRatio::OriginalNarrow:
     {
-        if (aspectRatio > (4.0f / 3.0f))
+        if (aspectRatio > NARROW_ASPECT_RATIO)
         {
             s_viewportWidth = height * 4 / 3;
             s_viewportHeight = height;

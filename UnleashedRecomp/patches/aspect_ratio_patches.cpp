@@ -174,18 +174,6 @@ PPC_FUNC(sub_825E2E60)
     __imp__sub_825E2E60(ctx, base);
 }
 
-static constexpr float NARROW_ASPECT_RATIO = 4.0f / 3.0f;
-static constexpr float WIDE_ASPECT_RATIO = 16.0f / 9.0f;
-static constexpr float STEAM_DECK_ASPECT_RATIO = 16.0f / 10.0f;
-static constexpr float TALL_ASPECT_RATIO = 1.0f / WIDE_ASPECT_RATIO;
-static constexpr float TALL_SCALE = 1280.0f / 960.0f;
-
-static float g_aspectRatio;
-static float g_offsetX;
-static float g_offsetY;
-static float g_scale;
-static float g_narrowOffsetScale;
-
 static float ComputeScale(float aspectRatio)
 {
     return ((aspectRatio * 720.0f) / 1280.0f) / sqrt((aspectRatio * 720.0f) / 1280.0f);
@@ -197,13 +185,13 @@ void AspectRatioPatches::ComputeOffsets()
     float height = Video::s_viewportHeight;
 
     g_aspectRatio = width / height;
-    g_scale = 1.0f;
+    g_aspectRatioScale = 1.0f;
 
     if (g_aspectRatio >= NARROW_ASPECT_RATIO)
     {
         // height is locked to 720 in this case 
-        g_offsetX = 0.5f * (g_aspectRatio * 720.0f - 1280.0f);
-        g_offsetY = 0.0f;
+        g_aspectRatioOffsetX = 0.5f * (g_aspectRatio * 720.0f - 1280.0f);
+        g_aspectRatioOffsetY = 0.0f;
 
         // keep same scale above Steam Deck aspect ratio
         if (g_aspectRatio < WIDE_ASPECT_RATIO)
@@ -213,15 +201,15 @@ void AspectRatioPatches::ComputeOffsets()
             float narrowScale = ComputeScale(NARROW_ASPECT_RATIO);
 
             float lerpFactor = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (STEAM_DECK_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
-            g_scale = narrowScale + (steamDeckScale - narrowScale) * lerpFactor;
+            g_aspectRatioScale = narrowScale + (steamDeckScale - narrowScale) * lerpFactor;
         }
     }
     else
     {
         // width is locked to 960 in this case to have 4:3 crop
-        g_offsetX = 0.5f * (960.0f - 1280.0f);
-        g_offsetY = 0.5f * (960.0f / g_aspectRatio - 720.0f);
-        g_scale = ComputeScale(NARROW_ASPECT_RATIO);
+        g_aspectRatioOffsetX = 0.5f * (960.0f - 1280.0f);
+        g_aspectRatioOffsetY = 0.5f * (960.0f / g_aspectRatio - 720.0f);
+        g_aspectRatioScale = ComputeScale(NARROW_ASPECT_RATIO);
     } 
 
     g_narrowOffsetScale = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (WIDE_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
@@ -234,14 +222,14 @@ PPC_FUNC(sub_8250FC70)
     __imp__sub_8250FC70(ctx, base);
 
     auto position = reinterpret_cast<be<float>*>(base + ctx.r3.u32);
-    position[0] = position[0] - g_offsetX;
-    position[1] = position[1] - g_offsetY;
+    position[0] = position[0] - g_aspectRatioOffsetX;
+    position[1] = position[1] - g_aspectRatioOffsetY;
 }
 
 void ComputeScreenPositionMidAsmHook(PPCRegister& f1, PPCRegister& f2)
 {
-    f1.f64 -= g_offsetX;
-    f2.f64 -= g_offsetY;
+    f1.f64 -= g_aspectRatioOffsetX;
+    f2.f64 -= g_aspectRatioOffsetY;
 }
 
 void WorldMapInfoMidAsmHook(PPCRegister& r4)
@@ -274,7 +262,7 @@ PPC_FUNC(sub_8258B558)
                         ctx.f2.f64 = offsetY;
 
                         if (Config::UIScaleMode == EUIScaleMode::Edge && g_narrowOffsetScale >= 1.0f)
-                            ctx.f1.f64 += g_offsetX;
+                            ctx.f1.f64 += g_aspectRatioOffsetX;
 
                         sub_830BB3D0(ctx, base);
                     }
@@ -296,7 +284,7 @@ PPC_FUNC(sub_8258B558)
             {
                 float value = 708.0f + g_narrowOffsetScale * 140.0f;
                 if (Config::UIScaleMode == EUIScaleMode::Edge && g_narrowOffsetScale >= 1.0f)
-                    value += g_offsetX;
+                    value += g_aspectRatioOffsetX;
 
                 PPC_STORE_U32(textBox + 0x38, reinterpret_cast<uint32_t&>(value));
             }
@@ -772,13 +760,13 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     else
     {
         if ((modifier.flags & ALIGN_RIGHT) != 0)
-            offsetX = g_offsetX * 2.0f;
+            offsetX = g_aspectRatioOffsetX * 2.0f;
         else if ((modifier.flags & ALIGN_LEFT) == 0)
-            offsetX = g_offsetX;
+            offsetX = g_aspectRatioOffsetX;
 
         if ((modifier.flags & SCALE) != 0)
         {
-            scaleX = g_scale;
+            scaleX = g_aspectRatioScale;
 
             if ((modifier.flags & ALIGN_RIGHT) != 0)
                 offsetX += 1280.0f * (1.0f - scaleX);
@@ -800,13 +788,13 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     else
     {
         if ((modifier.flags & ALIGN_BOTTOM) != 0)
-            offsetY = g_offsetY * 2.0f;
+            offsetY = g_aspectRatioOffsetY * 2.0f;
         else if ((modifier.flags & ALIGN_TOP) == 0)
-            offsetY = g_offsetY;
+            offsetY = g_aspectRatioOffsetY;
 
         if ((modifier.flags & SCALE) != 0)
         {
-            scaleY = g_scale;
+            scaleY = g_aspectRatioScale;
 
             if ((modifier.flags & ALIGN_BOTTOM) != 0)
                 offsetY += 720.0f * (1.0f - scaleY);
@@ -815,7 +803,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         }
     }
 
-    if (g_aspectRatio > WIDE_ASPECT_RATIO) 
+    if (g_aspectRatio > WIDE_ASPECT_RATIO)
     {
         CsdModifier offsetScaleModifier{};
         float corner = 0.0f;
@@ -897,10 +885,10 @@ PPC_FUNC(sub_82E16C70)
     auto backBuffer = Video::GetBackBuffer();
     auto scissorRect = reinterpret_cast<GuestRect*>(base + ctx.r4.u32);
 
-    scissorRect->left = scissorRect->left + g_offsetX;
-    scissorRect->top = scissorRect->top + g_offsetY;
-    scissorRect->right = scissorRect->right + g_offsetX;
-    scissorRect->bottom = scissorRect->bottom + g_offsetY;
+    scissorRect->left = scissorRect->left + g_aspectRatioOffsetX;
+    scissorRect->top = scissorRect->top + g_aspectRatioOffsetY;
+    scissorRect->right = scissorRect->right + g_aspectRatioOffsetX;
+    scissorRect->bottom = scissorRect->bottom + g_aspectRatioOffsetY;
 
     __imp__sub_82E16C70(ctx, base);
 }
@@ -1029,10 +1017,10 @@ static double ComputeObjGetItemX(uint32_t type)
         else // Medal
             x = 1058.0;
 
-        x *= g_scale;
+        x *= g_aspectRatioScale;
 
         if (type != 47)
-            x += g_offsetX * 2.0 + (1280.0 * (1.0 - g_scale));
+            x += g_aspectRatioOffsetX * 2.0 + (1280.0 * (1.0 - g_aspectRatioScale));
 
         auto backBuffer = Video::GetBackBuffer();
         return (x - (0.5 * backBuffer->width)) / (0.5 * backBuffer->height) * OBJ_GET_ITEM_TANGENT;
@@ -1068,8 +1056,8 @@ static double ComputeObjGetItemY(uint32_t type)
         else if (type == 49) // Sun Medal
             y = 582.0;
 
-        y *= g_scale;
-        y += g_offsetY * 2.0 + 720.0 * (1.0 - g_scale);
+        y *= g_aspectRatioScale;
+        y += g_aspectRatioOffsetY * 2.0 + 720.0 * (1.0 - g_aspectRatioScale);
 
         auto backBuffer = Video::GetBackBuffer();
         return ((0.5 * backBuffer->height) - y) / (0.5 * backBuffer->height) * OBJ_GET_ITEM_TANGENT;
