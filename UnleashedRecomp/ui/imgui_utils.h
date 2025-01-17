@@ -4,6 +4,7 @@
 #include <gpu/video.h>
 #include <app.h>
 #include <version.h>
+#include <patches/aspect_ratio_patches.h>
 
 #define PIXELS_TO_UV_COORDS(textureWidth, textureHeight, x, y, width, height) \
     std::make_tuple(ImVec2((float)x / (float)textureWidth, (float)y / (float)textureHeight), \
@@ -95,32 +96,14 @@ inline void ResetOutline()
     SetOutline(0.0f);
 }
 
-// Aspect ratio aware.
 inline float Scale(float size)
 {
     auto& io = ImGui::GetIO();
 
-    constexpr float ORIGINAL_ASPECT_RATIO = 4.0f / 3.0f;
-    float aspectRatio = io.DisplaySize.x / io.DisplaySize.y;
-
-    if (aspectRatio >= ORIGINAL_ASPECT_RATIO)
+    if (g_aspectRatio >= NARROW_ASPECT_RATIO)
         return size * (io.DisplaySize.y / 720.0f);
     else
         return size * (io.DisplaySize.x / 960.0f);
-}
-
-// Not aspect ratio aware. Will stretch.
-inline float ScaleX(float x)
-{
-    auto& io = ImGui::GetIO();
-    return x * io.DisplaySize.x / 1280.0f;
-}
-
-// Not aspect ratio aware. Will stretch.
-inline float ScaleY(float y)
-{
-    auto& io = ImGui::GetIO();
-    return y * io.DisplaySize.y / 720.0f;
 }
 
 inline double ComputeMotion(double duration, double offset, double total)
