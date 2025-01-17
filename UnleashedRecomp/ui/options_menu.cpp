@@ -1223,9 +1223,9 @@ void OptionsMenu::Draw()
         float settingsGridCount = floor(Lerp(SETTINGS_NARROW_GRID_COUNT, SETTINGS_WIDE_GRID_COUNT, g_narrowOffsetScale));
         float paddingGridCount = Lerp(PADDING_NARROW_GRID_COUNT, PADDING_WIDE_GRID_COUNT, g_narrowOffsetScale);
         float infoGridCount = floor(Lerp(INFO_NARROW_GRID_COUNT, INFO_WIDE_GRID_COUNT, g_narrowOffsetScale));
-        float totalGrindCount = settingsGridCount + paddingGridCount + infoGridCount;
+        float totalGridCount = settingsGridCount + paddingGridCount + infoGridCount;
 
-        float offsetX = g_aspectRatioOffsetX + (1280.0f - ((GRID_SIZE * totalGrindCount) - 1)) / 2.0f;
+        float offsetX = g_aspectRatioOffsetX + (1280.0f - ((GRID_SIZE * totalGridCount) - 1)) / 2.0f;
         float minY = Scale(g_aspectRatioOffsetY + CONTAINER_POS_Y);
         float maxY = Scale(g_aspectRatioOffsetY + (720.0f - CONTAINER_POS_Y + 1.0f));
 
@@ -1236,7 +1236,7 @@ void OptionsMenu::Draw()
 
         DrawInfoPanel(
             { Scale(offsetX + (settingsGridCount + paddingGridCount) * GRID_SIZE), minY },
-            { Scale(offsetX + totalGrindCount * GRID_SIZE), maxY }
+            { Scale(offsetX + totalGridCount * GRID_SIZE), maxY }
         );
 
         if (g_isStage)
