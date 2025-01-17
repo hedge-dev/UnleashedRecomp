@@ -8,6 +8,7 @@
 #include <gpu/imgui/imgui_common.h>
 #include <gpu/video.h>
 #include <gpu/imgui/imgui_snapshot.h>
+#include <hid/hid.h>
 #include <kernel/heap.h>
 #include <kernel/memory.h>
 #include <locale/locale.h>
@@ -1232,6 +1233,8 @@ void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
     
     ButtonGuide::Open(buttons);
     ButtonGuide::SetSideMargins(250);
+
+    hid::SetProhibitedButtons(XAMINPUT_GAMEPAD_START);
 }
 
 void OptionsMenu::Close()
@@ -1244,6 +1247,8 @@ void OptionsMenu::Close()
 
         ButtonGuide::Close();
         Config::Save();
+
+        hid::SetProhibitedButtons(0);
     }
 
     // Skip Miles Electric animation at main menu.

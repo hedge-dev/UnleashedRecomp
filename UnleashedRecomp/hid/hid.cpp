@@ -5,9 +5,16 @@
 hid::detail::EInputDevice hid::detail::g_inputDevice;
 hid::detail::EInputDevice hid::detail::g_inputDeviceController;
 
+uint16_t hid::detail::g_prohibitedButtons;
+
 void hid::Init()
 {
     detail::Init();
+}
+
+void hid::SetProhibitedButtons(uint16_t wButtons)
+{
+    hid::detail::g_prohibitedButtons = wButtons;
 }
 
 uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)

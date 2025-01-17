@@ -13,6 +13,8 @@ namespace hid::detail
     extern EInputDevice g_inputDevice;
     extern EInputDevice g_inputDeviceController;
 
+    extern uint16_t g_prohibitedButtons;
+
     void Init();
 
     uint32_t GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState);
