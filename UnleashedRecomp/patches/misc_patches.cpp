@@ -1,4 +1,5 @@
 #include <api/SWA.h>
+#include <ui/reddog/debug_draw.h>
 #include <ui/game_window.h>
 #include <user/achievement_data.h>
 #include <user/config.h>
@@ -105,23 +106,4 @@ PPC_FUNC(sub_82586698)
         *(bool*)g_memory.Translate(0x83367BC2) = true;
 
     __imp__sub_82586698(ctx, base);
-}
-
-PPC_FUNC_IMPL(__imp__sub_822C9398);
-PPC_FUNC(sub_822C9398)
-{
-    auto a2 = (Hedgehog::Math::CVector*)g_memory.Translate(ctx.r4.u32);
-    auto a3 = (Hedgehog::Math::CVector*)g_memory.Translate(ctx.r5.u32);
-    auto a4 = (be<unsigned int>*)g_memory.Translate(ctx.r6.u32);
-
-    Reddog::Vector3 start(a2->X, a2->Y, a2->Z);
-    Reddog::Vector3 end(a3->X, a3->Y, a3->Z);
-
-    const Reddog::SDrawLine line{
-        start, end, a4->value
-    };
-
-    Reddog::DebugDraw::DrawLine(line);
-
-    __imp__sub_822C9398(ctx, base);
 }

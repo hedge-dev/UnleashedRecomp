@@ -10,6 +10,8 @@ void ExportsWindow::Draw()
     {
         ImGui::TextColored({ 1, 0, 0, 1 }, "For testing purposes only, use Hedge Mod Manager to toggle these.");
         Reddog::Checkbox("Allow Cancelling Unleash", &Config::AllowCancellingUnleash.Value);
+        Reddog::Checkbox("Disable Auto Save Warning", &Config::DisableAutoSaveWarning.Value);
+        Reddog::Checkbox("Disable DLC Icon", &Config::DisableDLCIcon.Value);
         Reddog::Checkbox("Fix Unleash Out of Control Drain", &Config::FixUnleashOutOfControlDrain.Value);
         Reddog::Checkbox("Homing Attack on Boost", &Config::HomingAttackOnBoost.Value);
         Reddog::Checkbox("Save Score at Checkpoints", &Config::SaveScoreAtCheckpoints.Value);
