@@ -338,7 +338,7 @@ public:
 
     bool IsHidden() override
     {
-        return isHidden;
+        return isHidden && !IsLoadedFromConfig;
     }
 
     void ReadValue(toml::v3::ex::parse_result& toml) override
