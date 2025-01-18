@@ -272,7 +272,7 @@ PPC_FUNC(sub_8258B558)
                         ctx.f2.f64 = offsetY;
 
                         if (Config::UIScaleMode == EUIScaleMode::Edge && g_aspectRatioNarrowScale >= 1.0f)
-                            ctx.f1.f64 += g_aspectRatioOffsetX;
+                            ctx.f1.f64 += g_aspectRatioOffsetX / g_aspectRatioScale;
 
                         sub_830BB3D0(ctx, base);
                     }
@@ -294,7 +294,7 @@ PPC_FUNC(sub_8258B558)
             {
                 float value = 708.0f + g_aspectRatioNarrowScale * 140.0f;
                 if (Config::UIScaleMode == EUIScaleMode::Edge && g_aspectRatioNarrowScale >= 1.0f)
-                    value += g_aspectRatioOffsetX;
+                    value += g_aspectRatioOffsetX / g_aspectRatioScale;
 
                 PPC_STORE_U32(textBox + 0x38, reinterpret_cast<uint32_t&>(value));
             }
@@ -787,7 +787,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         if ((modifier.flags & WORLD_MAP) != 0)
         {
             if ((modifier.flags & ALIGN_LEFT) != 0)
-                offsetX += (1.0f - g_aspectRatioNarrowScale) * -20.0f;
+                offsetX += (1.0f - g_aspectRatioNarrowScale) * g_aspectRatioScale * -20.0f;
         }
     }
 
