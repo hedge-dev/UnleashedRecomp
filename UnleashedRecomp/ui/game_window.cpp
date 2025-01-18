@@ -224,7 +224,6 @@ void GameWindow::Init(const char* sdlVideoDriver)
     SetTitle();
 
     SDL_SetWindowMinimumSize(s_pWindow, MIN_WIDTH, MIN_HEIGHT);
-    SDL_SetWindowMaximumSize(s_pWindow, 1280 * 2, 720 * 2);
 
     SDL_SysWMinfo info;
     SDL_VERSION(&info.version);
