@@ -3,6 +3,7 @@
 #include <user/config.h>
 #include <ui/reddog/debug_draw.h>
 #include <ui/imgui_utils.h>
+#include <patches/aspect_ratio_patches.h>
 
 
 // boost::~::SWA::CDebugDraw::CMember::SDrawLine
@@ -44,10 +45,10 @@ PPC_FUNC(sub_82522040)
     if (Reddog::DebugDraw::GetIsDrawPosition())
     {
         const Reddog::SDrawText positionText{
-        {Scale(750), Scale(120)},
+        {Scale(g_aspectRatioOffsetX + 750), Scale(g_aspectRatioOffsetY + 120)},
         fmt::format("( {:.2f}, {:.2f}, {:.2f} )", a1->m_PlayerPosition.X.get(), a1->m_PlayerPosition.Y.get(), a1->m_PlayerPosition.Z.get()),
         0,
-        Scale(1.0f),
+        1.5f,
         0xFFFFFFFF,
         Reddog::eDrawTextFlags_NoShadow
         };
@@ -61,7 +62,7 @@ PPC_FUNC(sub_82522040)
 }
 
 // GetIsDebugRenderForGameObject()
-PPC_FUNC(sub_82512BF8)
-{
-    ctx.r3.u8 = 1; // Always return true
-}
+//PPC_FUNC(sub_82512BF8)
+//{
+//    ctx.r3.u8 = 1; // Always return true
+//}
