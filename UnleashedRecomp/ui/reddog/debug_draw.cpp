@@ -160,19 +160,19 @@ namespace Reddog
 
     void DebugDraw::DrawLine(const SDrawLine& in_rLine)
     {
-        if (!ms_IsRendering && GetIsDrawDebug())
+        if (Config::Debug && !ms_IsRendering && GetIsDrawDebug())
             ms_LineList.push_back(in_rLine);
     }
 
     void DebugDraw::DrawText2D(const SDrawText& in_rText)
     {
-        if (!ms_IsRendering && GetIsDrawText())
+        if (Config::Debug && !ms_IsRendering && GetIsDrawText())
             ms_FreeTextList.push_back(in_rText);
     }
 
     void DebugDraw::DrawText2D(const SDrawText& in_rText, const Vector3& in_rPosition)
     {
-        if (!ms_IsRendering && GetIsDrawText())
+        if (Config::Debug && !ms_IsRendering && GetIsDrawText())
         {
             auto txt = in_rText;
             txt.Position = GetNDCCoordinate(in_rPosition);
@@ -182,13 +182,13 @@ namespace Reddog
 
     void DebugDraw::DrawTextLog(const SDrawText& in_rText)
     {
-        if (!ms_IsRendering && GetIsDrawText())
+        if (Config::Debug && !ms_IsRendering && GetIsDrawText())
             ms_LogTextList.push_back(in_rText);
     }
 
     void DebugDraw::DrawTextLog(const char* in_Text, float in_Time, ImU32 in_Colour, ImU16 in_Priority)
     {
-        if (!ms_IsRendering && GetIsDrawText())
+        if (Config::Debug && !ms_IsRendering && GetIsDrawText())
             ms_LogTextList.push_back({ ImVec2(0,0), in_Text, in_Time, 0, in_Colour, eDrawTextFlags_None, in_Priority});
     }
 
