@@ -8,7 +8,8 @@ inline float g_aspectRatio;
 inline float g_aspectRatioOffsetX;
 inline float g_aspectRatioOffsetY;
 inline float g_aspectRatioScale;
-inline float g_narrowOffsetScale;
+inline float g_aspectRatioGameplayScale;
+inline float g_aspectRatioNarrowScale;
 
 struct AspectRatioPatches
 {

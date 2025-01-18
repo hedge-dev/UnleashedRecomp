@@ -36,9 +36,8 @@ PPC_FUNC(sub_82AE30D8)
         scaleV = g_aspectRatio / movieAspectRatio;
     }
 
-    auto backBuffer = Video::GetBackBuffer();
-    float halfPixelX = 1.0f / backBuffer->width;
-    float halfPixelY = 1.0f / backBuffer->height;
+    float halfPixelX = 1.0f / Video::s_viewportWidth;
+    float halfPixelY = 1.0f / Video::s_viewportHeight;
 
     pTopLeft->X = -1.0f - halfPixelX;
     pTopLeft->Y = 1.0f + halfPixelY;

@@ -185,13 +185,14 @@ void AspectRatioPatches::ComputeOffsets()
     float height = Video::s_viewportHeight;
 
     g_aspectRatio = width / height;
-    g_aspectRatioScale = 1.0f;
+    g_aspectRatioGameplayScale = 1.0f;
 
     if (g_aspectRatio >= NARROW_ASPECT_RATIO)
     {
         // height is locked to 720 in this case 
         g_aspectRatioOffsetX = 0.5f * (g_aspectRatio * 720.0f - 1280.0f);
         g_aspectRatioOffsetY = 0.0f;
+        g_aspectRatioScale = height / 720.0f;
 
         // keep same scale above Steam Deck aspect ratio
         if (g_aspectRatio < WIDE_ASPECT_RATIO)
@@ -201,7 +202,7 @@ void AspectRatioPatches::ComputeOffsets()
             float narrowScale = ComputeScale(NARROW_ASPECT_RATIO);
 
             float lerpFactor = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (STEAM_DECK_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
-            g_aspectRatioScale = narrowScale + (steamDeckScale - narrowScale) * lerpFactor;
+            g_aspectRatioGameplayScale = narrowScale + (steamDeckScale - narrowScale) * lerpFactor;
         }
     }
     else
@@ -209,11 +210,20 @@ void AspectRatioPatches::ComputeOffsets()
         // width is locked to 960 in this case to have 4:3 crop
         g_aspectRatioOffsetX = 0.5f * (960.0f - 1280.0f);
         g_aspectRatioOffsetY = 0.5f * (960.0f / g_aspectRatio - 720.0f);
-        g_aspectRatioScale = ComputeScale(NARROW_ASPECT_RATIO);
+        g_aspectRatioScale = width / 960.0f;
+        g_aspectRatioGameplayScale = ComputeScale(NARROW_ASPECT_RATIO);
     } 
 
-    g_narrowOffsetScale = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (WIDE_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
+    g_aspectRatioNarrowScale = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (WIDE_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
 }
+
+static void GetViewport(void* application, be<uint32_t>* width, be<uint32_t>* height)
+{
+    *width = 1280;
+    *height = 720;
+}
+
+GUEST_FUNCTION_HOOK(sub_82E169B8, GetViewport);
 
 // SWA::CGameDocument::ComputeScreenPosition
 PPC_FUNC_IMPL(__imp__sub_8250FC70);
@@ -258,10 +268,10 @@ PPC_FUNC(sub_8258B558)
                     if (scene != NULL)
                     {
                         ctx.r3.u32 = scene;
-                        ctx.f1.f64 = offsetX + g_narrowOffsetScale * 140.0f;
+                        ctx.f1.f64 = offsetX + g_aspectRatioNarrowScale * 140.0f;
                         ctx.f2.f64 = offsetY;
 
-                        if (Config::UIScaleMode == EUIScaleMode::Edge && g_narrowOffsetScale >= 1.0f)
+                        if (Config::UIScaleMode == EUIScaleMode::Edge && g_aspectRatioNarrowScale >= 1.0f)
                             ctx.f1.f64 += g_aspectRatioOffsetX;
 
                         sub_830BB3D0(ctx, base);
@@ -282,8 +292,8 @@ PPC_FUNC(sub_8258B558)
             uint32_t textBox = PPC_LOAD_U32(menuTextBox + 0x4);
             if (textBox != NULL)
             {
-                float value = 708.0f + g_narrowOffsetScale * 140.0f;
-                if (Config::UIScaleMode == EUIScaleMode::Edge && g_narrowOffsetScale >= 1.0f)
+                float value = 708.0f + g_aspectRatioNarrowScale * 140.0f;
+                if (Config::UIScaleMode == EUIScaleMode::Edge && g_aspectRatioNarrowScale >= 1.0f)
                     value += g_aspectRatioOffsetX;
 
                 PPC_STORE_U32(textBox + 0x38, reinterpret_cast<uint32_t&>(value));
@@ -740,8 +750,6 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             modifier.flags &= ~(ALIGN_LEFT | ALIGN_RIGHT);
     }
 
-    auto backBuffer = Video::GetBackBuffer();
-
     uint32_t size = ctx.r5.u32 * stride;
     ctx.r1.u32 -= size;
 
@@ -755,7 +763,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
 
     if ((modifier.flags & STRETCH_HORIZONTAL) != 0)
     {
-        scaleX = backBuffer->width / 1280.0f;
+        scaleX = Video::s_viewportWidth / 1280.0f;
     }
     else
     {
@@ -777,13 +785,13 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         if ((modifier.flags & WORLD_MAP) != 0)
         {
             if ((modifier.flags & ALIGN_LEFT) != 0)
-                offsetX += (1.0f - g_narrowOffsetScale) * -20.0f;
+                offsetX += (1.0f - g_aspectRatioNarrowScale) * -20.0f;
         }
     }
 
     if ((modifier.flags & STRETCH_VERTICAL) != 0)
     {
-        scaleY = backBuffer->height / 720.0f;
+        scaleY = Video::s_viewportHeight / 720.0f;
     }
     else
     {
@@ -852,11 +860,11 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         }
         else if ((modifier.flags & EXTEND_RIGHT) != 0 && (i == 2 || i == 3))
         {
-            x = std::max(x, float(backBuffer->width));
+            x = std::max(x, float(Video::s_viewportWidth));
         }
 
-        position[0] = round(x / backBuffer->width * Video::s_viewportWidth) / Video::s_viewportWidth * backBuffer->width;
-        position[1] = round(y / backBuffer->height * Video::s_viewportHeight) / Video::s_viewportHeight * backBuffer->height;
+        position[0] = x;
+        position[1] = y;
     }
 
     ctx.r4.u32 = ctx.r1.u32;
@@ -882,7 +890,6 @@ PPC_FUNC(sub_825E2E88)
 PPC_FUNC_IMPL(__imp__sub_82E16C70);
 PPC_FUNC(sub_82E16C70)
 {
-    auto backBuffer = Video::GetBackBuffer();
     auto scissorRect = reinterpret_cast<GuestRect*>(base + ctx.r4.u32);
 
     scissorRect->left = scissorRect->left + g_aspectRatioOffsetX;
@@ -928,8 +935,6 @@ PPC_FUNC(sub_830D1EF0)
 
     if (!PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET))
     {
-        auto backBuffer = Video::GetBackBuffer();
-
         struct Vertex
         {
             be<float> x;
@@ -945,8 +950,8 @@ PPC_FUNC(sub_830D1EF0)
 
         for (size_t i = 0; i < 4; i++)
         {
-            vertex[i].x = vertex[i].x * 1280.0f / backBuffer->width;
-            vertex[i].y = vertex[i].y * 720.0f / backBuffer->height;
+            vertex[i].x = vertex[i].x * 1280.0f / Video::s_viewportWidth;
+            vertex[i].y = vertex[i].y * 720.0f / Video::s_viewportHeight;
         }
 
         bool letterboxTop = PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x1);
@@ -954,8 +959,8 @@ PPC_FUNC(sub_830D1EF0)
 
         if (letterboxTop || letterboxBottom)
         {
-            float halfPixelX = 1.0f / backBuffer->width;
-            float halfPixelY = 1.0f / backBuffer->height;
+            float halfPixelX = 1.0f / Video::s_viewportWidth;
+            float halfPixelY = 1.0f / Video::s_viewportHeight;
 
             if (letterboxTop)
             {
@@ -1031,8 +1036,7 @@ static double ComputeObjGetItemX(uint32_t type)
             x += g_aspectRatioOffsetX + scaleOffset;
         }
 
-        auto backBuffer = Video::GetBackBuffer();
-        return (x - (0.5 * backBuffer->width)) / (0.5 * backBuffer->height) * OBJ_GET_ITEM_TANGENT;
+        return (x - (0.5 * Video::s_viewportWidth)) / (0.5 * Video::s_viewportHeight) * OBJ_GET_ITEM_TANGENT;
     }
 
     return 0.0;
@@ -1068,8 +1072,7 @@ static double ComputeObjGetItemY(uint32_t type)
         y *= g_aspectRatioScale;
         y += g_aspectRatioOffsetY * 2.0 + 720.0 * (1.0 - g_aspectRatioScale);
 
-        auto backBuffer = Video::GetBackBuffer();
-        return ((0.5 * backBuffer->height) - y) / (0.5 * backBuffer->height) * OBJ_GET_ITEM_TANGENT;
+        return ((0.5 * Video::s_viewportHeight) - y) / (0.5 * Video::s_viewportHeight) * OBJ_GET_ITEM_TANGENT;
     }
 
     return 0.25;
@@ -1133,12 +1136,11 @@ PPC_FUNC(sub_82B8AA40)
     PPC_STORE_U8(ctx.r3.u32, shouldDrawLetterbox);
     if (shouldDrawLetterbox)
     {
-        auto backBuffer = Video::GetBackBuffer();
-        uint32_t height = std::min(720u, backBuffer->height);
+        //uint32_t height = std::min(720u, Video::s_viewportHeight);
 
-        PPC_STORE_U32(ctx.r3.u32 + 0xC, backBuffer->width);
-        PPC_STORE_U32(ctx.r3.u32 + 0x10, height);
-        PPC_STORE_U32(ctx.r3.u32 + 0x14, (height - backBuffer->width * 9 / 16) / 2);
+        //PPC_STORE_U32(ctx.r3.u32 + 0xC, Video::s_viewportWidth);
+        //PPC_STORE_U32(ctx.r3.u32 + 0x10, height);
+        //PPC_STORE_U32(ctx.r3.u32 + 0x14, (height - Video::s_viewportWidth * 9 / 16) / 2);
     }
 
     __imp__sub_82B8AA40(ctx, base);
@@ -1161,5 +1163,5 @@ void InspireSubtitleMidAsmHook(PPCRegister& r3)
     constexpr float NARROW_OFFSET = 485.0f;
     constexpr float WIDE_OFFSET = 560.0f;
 
-    *reinterpret_cast<be<float>*>(g_memory.base + r3.u32 + 0x3C) = NARROW_OFFSET + (WIDE_OFFSET - NARROW_OFFSET) * g_narrowOffsetScale;
+    *reinterpret_cast<be<float>*>(g_memory.base + r3.u32 + 0x3C) = NARROW_OFFSET + (WIDE_OFFSET - NARROW_OFFSET) * g_aspectRatioNarrowScale;
 }

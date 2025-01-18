@@ -161,7 +161,7 @@ static void DrawScanlineBars()
     if (g_aspectRatio >= WIDE_ASPECT_RATIO)
         optionsX = g_aspectRatioOffsetX;
     else
-        optionsX = (1.0f - g_narrowOffsetScale) * -20.0f;
+        optionsX = (1.0f - g_aspectRatioNarrowScale) * -20.0f;
 
     // Options text
     DrawTextWithOutline
@@ -322,7 +322,7 @@ static bool DrawCategories()
     constexpr float WIDE_PADDING_GRID_COUNT = 3.0f;
 
     float gridSize = Scale(GRID_SIZE);
-    float textPadding = gridSize * Lerp(NARROW_PADDING_GRID_COUNT, WIDE_PADDING_GRID_COUNT, g_narrowOffsetScale);
+    float textPadding = gridSize * Lerp(NARROW_PADDING_GRID_COUNT, WIDE_PADDING_GRID_COUNT, g_aspectRatioNarrowScale);
     float tabPadding = gridSize;
 
     float size = Scale(32.0f);
@@ -468,7 +468,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     constexpr float OPTION_WIDE_GRID_COUNT = 54.0f;
 
     auto gridSize = Scale(GRID_SIZE);
-    auto optionWidth = gridSize * floor(Lerp(OPTION_NARROW_GRID_COUNT, OPTION_WIDE_GRID_COUNT, g_narrowOffsetScale));
+    auto optionWidth = gridSize * floor(Lerp(OPTION_NARROW_GRID_COUNT, OPTION_WIDE_GRID_COUNT, g_aspectRatioNarrowScale));
     auto optionHeight = gridSize * 5.5f;
     auto optionPadding = gridSize * 0.5f;
     auto valueWidth = Scale(192.0f);
@@ -1220,9 +1220,9 @@ void OptionsMenu::Draw()
 
         DrawScanlineBars();
 
-        float settingsGridCount = floor(Lerp(SETTINGS_NARROW_GRID_COUNT, SETTINGS_WIDE_GRID_COUNT, g_narrowOffsetScale));
-        float paddingGridCount = Lerp(PADDING_NARROW_GRID_COUNT, PADDING_WIDE_GRID_COUNT, g_narrowOffsetScale);
-        float infoGridCount = floor(Lerp(INFO_NARROW_GRID_COUNT, INFO_WIDE_GRID_COUNT, g_narrowOffsetScale));
+        float settingsGridCount = floor(Lerp(SETTINGS_NARROW_GRID_COUNT, SETTINGS_WIDE_GRID_COUNT, g_aspectRatioNarrowScale));
+        float paddingGridCount = Lerp(PADDING_NARROW_GRID_COUNT, PADDING_WIDE_GRID_COUNT, g_aspectRatioNarrowScale);
+        float infoGridCount = floor(Lerp(INFO_NARROW_GRID_COUNT, INFO_WIDE_GRID_COUNT, g_aspectRatioNarrowScale));
         float totalGridCount = settingsGridCount + paddingGridCount + infoGridCount;
 
         float offsetX = g_aspectRatioOffsetX + (1280.0f - ((GRID_SIZE * totalGridCount) - 1)) / 2.0f;

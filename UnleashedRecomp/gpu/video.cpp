@@ -1355,16 +1355,8 @@ static void CheckSwapChain()
     if (g_needsResize)
         Video::ComputeViewportDimensions();
 
-    if (g_aspectRatio >= NARROW_ASPECT_RATIO)
-    {
-        g_backBuffer->width = Video::s_viewportWidth * 720 / Video::s_viewportHeight;
-        g_backBuffer->height = 720;
-    }
-    else
-    {
-        g_backBuffer->width = 960;
-        g_backBuffer->height = Video::s_viewportHeight * 960 / Video::s_viewportWidth;
-    }
+    g_backBuffer->width = Video::s_viewportWidth;
+    g_backBuffer->height = Video::s_viewportHeight;
 }
 
 static void BeginCommandList()
@@ -2456,11 +2448,6 @@ static GuestSurface* GetBackBuffer()
     return g_backBuffer;
 }
 
-GuestSurface* Video::GetBackBuffer()
-{
-    return g_backBuffer;
-}
-
 void Video::ComputeViewportDimensions()
 {
     uint32_t width = g_swapChain->getWidth();
@@ -2663,9 +2650,6 @@ static GuestSurface* CreateSurface(uint32_t width, uint32_t height, uint32_t for
 
 static void FlushViewport()
 {
-    bool renderingToBackBuffer = g_renderTarget == g_backBuffer &&
-        g_backBuffer->texture != g_backBuffer->textureHolder.get();
-
     auto& commandList = g_commandLists[g_frame];
 
     if (g_dirtyStates.viewport)
@@ -2675,17 +2659,6 @@ static void FlushViewport()
         {
             viewport.x += 0.5f;
             viewport.y += 0.5f;
-        }
-
-        if (renderingToBackBuffer)
-        {
-            float width = Video::s_viewportWidth;
-            float height = Video::s_viewportHeight;
-
-            viewport.x *= width / g_backBuffer->width;
-            viewport.y *= height / g_backBuffer->height;
-            viewport.width *= width / g_backBuffer->width;
-            viewport.height *= height / g_backBuffer->height;
         }
 
         if (viewport.minDepth > viewport.maxDepth)
@@ -2703,17 +2676,6 @@ static void FlushViewport()
             g_viewport.y,
             g_viewport.x + g_viewport.width,
             g_viewport.y + g_viewport.height);
-
-        if (renderingToBackBuffer)
-        {
-            uint32_t width = Video::s_viewportWidth;
-            uint32_t height = Video::s_viewportHeight;
-
-            scissorRect.left = scissorRect.left * width / g_backBuffer->width;
-            scissorRect.top = scissorRect.top * height / g_backBuffer->height;
-            scissorRect.right = scissorRect.right * width / g_backBuffer->width;
-            scissorRect.bottom = scissorRect.bottom * height / g_backBuffer->height;
-        }
 
         commandList->setScissors(scissorRect);
 
