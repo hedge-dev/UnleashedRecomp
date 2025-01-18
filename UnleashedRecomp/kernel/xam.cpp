@@ -11,12 +11,6 @@
 #include <user/paths.h>
 #include <SDL.h>
 
-#ifdef _WIN32
-#include <CommCtrl.h>
-// Needed for commctrl
-#pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
-#endif
-
 struct XamListener : KernelObject
 {
     uint32_t id{};
@@ -208,11 +202,12 @@ bool XNotifyGetNext(uint32_t hNotification, uint32_t dwMsgFilter, be<uint32_t>* 
 uint32_t XamShowMessageBoxUI(uint32_t dwUserIndex, be<uint16_t>* wszTitle, be<uint16_t>* wszText, uint32_t cButtons,
     xpointer<be<uint16_t>>* pwszButtons, uint32_t dwFocusButton, uint32_t dwFlags, be<uint32_t>* pResult, XXOVERLAPPED* pOverlapped)
 {
-    int button{};
+    *pResult = cButtons ? cButtons - 1 : 0;
 
-#ifdef _WIN32
+#if _DEBUG
+    assert("XamShowMessageBoxUI encountered!" && false);
+#else
     std::vector<std::wstring> texts{};
-    std::vector<TASKDIALOG_BUTTON> buttons{};
 
     texts.emplace_back(reinterpret_cast<wchar_t*>(wszTitle));
     texts.emplace_back(reinterpret_cast<wchar_t*>(wszText));
@@ -226,22 +221,26 @@ uint32_t XamShowMessageBoxUI(uint32_t dwUserIndex, be<uint16_t>* wszTitle, be<ui
             ByteSwapInplace(text[i]);
     }
 
+    wprintf(L"[XamShowMessageBoxUI] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    wprintf(L"[XamShowMessageBoxUI] If you are encountering this message and the game has ceased functioning,\n");
+    wprintf(L"[XamShowMessageBoxUI] please create an issue at https://github.com/hedge-dev/UnleashedRecomp/issues.\n");
+    wprintf(L"[XamShowMessageBoxUI] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    wprintf(L"[XamShowMessageBoxUI] %ls\n", texts[0].c_str());
+    wprintf(L"[XamShowMessageBoxUI] %ls\n", texts[1].c_str());
+    wprintf(L"[XamShowMessageBoxUI] ");
+
     for (size_t i = 0; i < cButtons; i++)
-        buttons.emplace_back(i, texts[2 + i].c_str());
+    {
+        wprintf(L"%ls", texts[2 + i].c_str());
 
-    XamNotifyEnqueueEvent(9, 1);
+        if (i != cButtons - 1)
+            wprintf(L" | ");
+    }
 
-    TASKDIALOGCONFIG config{};
-    config.cbSize = sizeof(config);
-    config.pszWindowTitle = texts[0].c_str();
-    config.pszContent = texts[1].c_str();
-    config.cButtons = cButtons;
-    config.pButtons = buttons.data();
-
-    TaskDialogIndirect(&config, &button, nullptr, nullptr);
+    wprintf(L"\n");
+    wprintf(L"[XamShowMessageBoxUI] Defaulted to button: %d\n", pResult->get());
+    wprintf(L"[XamShowMessageBoxUI] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 #endif
-
-    *pResult = button;
 
     if (pOverlapped)
     {
