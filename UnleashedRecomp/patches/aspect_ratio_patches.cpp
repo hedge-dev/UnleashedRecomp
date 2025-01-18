@@ -197,7 +197,7 @@ void AspectRatioPatches::ComputeOffsets()
         if (g_aspectRatio < WIDE_ASPECT_RATIO)
         {
             // interpolate to original 4:3 scale
-            float steamDeckScale = g_aspectRatio / WIDE_ASPECT_RATIO;
+            float steamDeckScale = 1.0f / g_aspectRatioScale;
             float narrowScale = ComputeScale(NARROW_ASPECT_RATIO);
 
             float lerpFactor = std::clamp((g_aspectRatio - NARROW_ASPECT_RATIO) / (STEAM_DECK_ASPECT_RATIO - NARROW_ASPECT_RATIO), 0.0f, 1.0f);
@@ -231,14 +231,15 @@ PPC_FUNC(sub_8250FC70)
     __imp__sub_8250FC70(ctx, base);
 
     auto position = reinterpret_cast<be<float>*>(base + ctx.r3.u32);
-    position[0] = position[0] - g_aspectRatioOffsetX;
-    position[1] = position[1] - g_aspectRatioOffsetY;
+
+    position[0] = (position[0] / 1280.0f * Video::s_viewportWidth - g_aspectRatioOffsetX) / g_aspectRatioScale;
+    position[1] = (position[1] / 720.0f * Video::s_viewportHeight - g_aspectRatioOffsetY) / g_aspectRatioScale;
 }
 
 void ComputeScreenPositionMidAsmHook(PPCRegister& f1, PPCRegister& f2)
 {
-    f1.f64 -= g_aspectRatioOffsetX;
-    f2.f64 -= g_aspectRatioOffsetY;
+    f1.f64 = (f1.f64 / 1280.0 * Video::s_viewportWidth - g_aspectRatioOffsetX) / g_aspectRatioScale;
+    f2.f64 = (f2.f64 / 720.0 * Video::s_viewportHeight - g_aspectRatioOffsetY) / g_aspectRatioScale;
 }
 
 void WorldMapInfoMidAsmHook(PPCRegister& r4)
