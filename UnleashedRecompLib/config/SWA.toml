@@ -663,3 +663,8 @@ registers = ["r3"]
 name = "InspireSubtitleMidAsmHook"
 address = 0x82B949B0
 registers = ["r3"]
+
+[[midasm_hook]]
+name = "TitleMenuRemoveContinueOnCorruptSaveMidAsmHook"
+address = 0x82585470
+registers = ["r3"]

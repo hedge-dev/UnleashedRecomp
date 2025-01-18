@@ -343,6 +343,20 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         }
     },
     {
+        // Notes: message appears when the SYS-DATA is corrupted (mismatching file size).
+        // To make this occur, open the file in any editor and just remove a large chunk of data.
+        // Do not localise this unless absolutely necessary, these strings are from the XEX.
+        "Title_Message_SaveDataCorrupt",
+        {
+            { ELanguage::English, "The save file appears to be\ncorrupted and cannot be loaded." },
+            { ELanguage::Japanese, "ゲームデータの読み込みに失敗しました。\nこのまま続けるとゲームデータをセーブすることはできません" },
+            { ELanguage::German, "Diese Speicherdatei ist beschädigt\nund kann nicht geladen werden." },
+            { ELanguage::French, "Le fichier de sauvegarde semble être\nendommagé et ne peut être chargé." },
+            { ELanguage::Spanish, "El archivo parece estar dañado\ny no se puede cargar." },
+            { ELanguage::Italian, "I file di salvataggio sembrano danneggiati\ne non possono essere caricati." }
+        }
+    },
+    {
         "Common_On",
         {
             { ELanguage::English,  "ON" },

@@ -2,14 +2,21 @@
 #include <locale/locale.h>
 #include <ui/fader.h>
 #include <ui/message_window.h>
+#include <user/paths.h>
 #include <app.h>
 
 static bool g_quitMessageOpen = false;
 static bool g_quitMessageFaderBegun = false;
 static int g_quitMessageResult = -1;
 
+static std::atomic<bool> g_corruptSaveMessageOpen = false;
+static int g_corruptSaveMessageResult = -1;
+
 static bool ProcessQuitMessage()
 {
+    if (g_corruptSaveMessageOpen)
+        return false;
+
     if (!g_quitMessageOpen)
         return false;
 
@@ -37,6 +44,49 @@ static bool ProcessQuitMessage()
     return true;
 }
 
+static bool ProcessCorruptSaveMessage()
+{
+    if (!g_corruptSaveMessageOpen)
+        return false;
+
+    if (MessageWindow::Open(Localise("Title_Message_SaveDataCorrupt"), &g_corruptSaveMessageResult) == MSG_CLOSED)
+    {
+        g_corruptSaveMessageOpen = false;
+        g_corruptSaveMessageOpen.notify_one();
+        g_corruptSaveMessageResult = -1;
+    }
+
+    return true;
+}
+
+void StorageDevicePromptMidAsmHook() {}
+
+// Save data validation hook.
+PPC_FUNC_IMPL(__imp__sub_822C4330);
+PPC_FUNC(sub_822C4330)
+{
+    std::error_code ec;
+    auto saveFileSize = std::filesystem::file_size(GetSaveFilePath(true), ec);
+
+    auto expectedSize = ctx.r5.u32;
+    auto expectedSizeAdd = *(be<uint32_t>*)g_memory.Translate(0x83262110);
+
+    // TODO: check for backups here and restore them?
+    if (saveFileSize != expectedSize + expectedSizeAdd)
+    {
+        App::s_isSaveDataCorrupt = true;
+
+        g_corruptSaveMessageOpen = true;
+        g_corruptSaveMessageOpen.wait(true);
+
+        ctx.r3.u32 = 0;
+
+        return;
+    }
+
+    ctx.r3.u32 = 1;
+}
+
 // SWA::CTitleStateIntro::Update
 PPC_FUNC_IMPL(__imp__sub_82587E50);
 PPC_FUNC(sub_82587E50)
@@ -47,7 +97,7 @@ PPC_FUNC(sub_82587E50)
     {
         __imp__sub_82587E50(ctx, base);
     }
-    else
+    else if (!ProcessCorruptSaveMessage())
     {
         auto pInputState = SWA::CInputState::GetInstance();
 

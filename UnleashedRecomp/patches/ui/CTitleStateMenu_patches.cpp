@@ -56,6 +56,10 @@ PPC_FUNC(sub_825882B8)
     auto isOptionsIndex = pTitleState->m_pMember->m_pTitleMenu->m_CursorIndex == 2;
     auto isInstallIndex = pTitleState->m_pMember->m_pTitleMenu->m_CursorIndex == 3;
 
+    // Always default to New Game with corrupted save data.
+    if (App::s_isSaveDataCorrupt && pTitleState->m_pMember->m_pTitleMenu->m_CursorIndex == 1)
+        pTitleState->m_pMember->m_pTitleMenu->m_CursorIndex = 0;
+
     if (!OptionsMenu::s_isVisible && isOptionsIndex)
     {
         if (OptionsMenu::s_isRestartRequired)
@@ -90,6 +94,14 @@ PPC_FUNC(sub_825882B8)
             OptionsMenu::Close();
         }
     }
+}
+
+void TitleMenuRemoveContinueOnCorruptSaveMidAsmHook(PPCRegister& r3)
+{
+    if (!App::s_isSaveDataCorrupt)
+        return;
+
+    r3.u64 = 0;
 }
 
 void TitleMenuRemoveStorageDeviceOptionMidAsmHook(PPCRegister& r11)

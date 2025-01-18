@@ -69,6 +69,8 @@ PPC_FUNC(sub_824E5170)
 
     if (pSaveIcon->m_IsVisible)
     {
+        App::s_isSaveDataCorrupt = false;
+
         if (!m_isSavedAchievementData)
         {
             LOGN("Saving achievements...");

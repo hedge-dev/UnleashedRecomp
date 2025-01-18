@@ -49,8 +49,6 @@ void WerehogBattleMusicMidAsmHook(PPCRegister& r11)
         r11.u8 = 3;
 }
 
-void StorageDevicePromptMidAsmHook() {}
-
 /* Hook function that gets the game region
    and force result to zero for Japanese
    to display the correct logos. */
