@@ -189,8 +189,7 @@ void AspectRatioPatches::ComputeOffsets()
 
     if (g_aspectRatio >= NARROW_ASPECT_RATIO)
     {
-        // height is locked to 720 in this case 
-        g_aspectRatioOffsetX = 0.5f * (g_aspectRatio * 720.0f - 1280.0f);
+        g_aspectRatioOffsetX = (width - height * WIDE_ASPECT_RATIO) / 2.0f;
         g_aspectRatioOffsetY = 0.0f;
         g_aspectRatioScale = height / 720.0f;
 
@@ -207,9 +206,9 @@ void AspectRatioPatches::ComputeOffsets()
     }
     else
     {
-        // width is locked to 960 in this case to have 4:3 crop
-        g_aspectRatioOffsetX = 0.5f * (960.0f - 1280.0f);
-        g_aspectRatioOffsetY = 0.5f * (960.0f / g_aspectRatio - 720.0f);
+        // 4:3 crop
+        g_aspectRatioOffsetX = (width - width * NARROW_ASPECT_RATIO) / 2.0f;
+        g_aspectRatioOffsetY = (height - width / NARROW_ASPECT_RATIO) / 2.0f;
         g_aspectRatioScale = width / 960.0f;
         g_aspectRatioGameplayScale = ComputeScale(NARROW_ASPECT_RATIO);
     } 
@@ -767,6 +766,8 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     }
     else
     {
+        scaleX = g_aspectRatioScale;
+
         if ((modifier.flags & ALIGN_RIGHT) != 0)
             offsetX = g_aspectRatioOffsetX * 2.0f;
         else if ((modifier.flags & ALIGN_LEFT) == 0)
@@ -774,12 +775,12 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
 
         if ((modifier.flags & SCALE) != 0)
         {
-            scaleX = g_aspectRatioScale;
+            scaleX *= g_aspectRatioGameplayScale;
 
             if ((modifier.flags & ALIGN_RIGHT) != 0)
-                offsetX += 1280.0f * (1.0f - scaleX);
+                offsetX += Video::s_viewportWidth * (1.0f - g_aspectRatioGameplayScale);
             else if ((modifier.flags & ALIGN_LEFT) == 0)
-                offsetX += 640.0f * (1.0f - scaleX);
+                offsetX += Video::s_viewportWidth * (1.0f - g_aspectRatioGameplayScale) * 0.5f;
         }
 
         if ((modifier.flags & WORLD_MAP) != 0)
@@ -795,6 +796,8 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     }
     else
     {
+        scaleY = g_aspectRatioScale;
+
         if ((modifier.flags & ALIGN_BOTTOM) != 0)
             offsetY = g_aspectRatioOffsetY * 2.0f;
         else if ((modifier.flags & ALIGN_TOP) == 0)
@@ -802,12 +805,12 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
 
         if ((modifier.flags & SCALE) != 0)
         {
-            scaleY = g_aspectRatioScale;
+            scaleY *= g_aspectRatioGameplayScale;
 
             if ((modifier.flags & ALIGN_BOTTOM) != 0)
-                offsetY += 720.0f * (1.0f - scaleY);
+                offsetY += Video::s_viewportHeight * (1.0f - g_aspectRatioGameplayScale);
             else if ((modifier.flags & ALIGN_TOP) == 0)
-                offsetY += 360.0f * (1.0f - scaleY);
+                offsetY += Video::s_viewportHeight * (1.0f - g_aspectRatioGameplayScale) * 0.5f;
         }
     }
 
@@ -863,8 +866,8 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             x = std::max(x, float(Video::s_viewportWidth));
         }
 
-        position[0] = x;
-        position[1] = y;
+        position[0] = round(x);
+        position[1] = round(y);
     }
 
     ctx.r4.u32 = ctx.r1.u32;
@@ -950,8 +953,14 @@ PPC_FUNC(sub_830D1EF0)
 
         for (size_t i = 0; i < 4; i++)
         {
-            vertex[i].x = vertex[i].x * 1280.0f / Video::s_viewportWidth;
-            vertex[i].y = vertex[i].y * 720.0f / Video::s_viewportHeight;
+            float x = vertex[i].x * 640.0f + 640.0f;
+            float y = vertex[i].y * -360.0f + 360.0f;
+
+            x = g_aspectRatioOffsetX + (x + 0.5f) * g_aspectRatioScale;
+            y = g_aspectRatioOffsetY + (y + 0.5f) * g_aspectRatioScale;
+
+            vertex[i].x = ((x - 0.5f) / Video::s_viewportWidth) * 2.0f - 1.0f;
+            vertex[i].y = ((y - 0.5f) / Video::s_viewportHeight) * -2.0f + 1.0f;
         }
 
         bool letterboxTop = PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x1);
