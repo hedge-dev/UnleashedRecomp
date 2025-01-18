@@ -1,3 +1,4 @@
+#include "CTitleStateIntro_patches.h"
 #include <api/SWA.h>
 #include <locale/locale.h>
 #include <ui/fader.h>

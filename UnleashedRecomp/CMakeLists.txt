@@ -155,6 +155,7 @@ set(SWA_PATCHES_CXX_SOURCES
     "patches/aspect_ratio_patches.cpp"
     "patches/audio_patches.cpp"
     "patches/camera_patches.cpp"
+    "patches/CGameModeStageTitle_patches.cpp"
     "patches/fps_patches.cpp"
     "patches/inspire_patches.cpp"
     "patches/misc_patches.cpp"
