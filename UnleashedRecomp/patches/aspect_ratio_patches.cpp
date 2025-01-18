@@ -848,7 +848,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         if ((offsetScaleModifier.flags & OFFSET_SCALE_LEFT) != 0)
             offsetX *= corner / offsetScaleModifier.cornerMax;
         else if ((offsetScaleModifier.flags & OFFSET_SCALE_RIGHT) != 0)
-            offsetX = 1280.0f - (1280.0f - offsetX) * (1280.0f - corner) / (1280.0f - offsetScaleModifier.cornerMax);
+            offsetX = Video::s_viewportWidth - (Video::s_viewportWidth - offsetX) * (1280.0f - corner) / (1280.0f - offsetScaleModifier.cornerMax);
     }
 
     for (size_t i = 0; i < ctx.r5.u32; i++)
