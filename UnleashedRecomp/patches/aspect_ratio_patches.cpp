@@ -1155,11 +1155,12 @@ PPC_FUNC(sub_82B8AA40)
     PPC_STORE_U8(ctx.r3.u32, shouldDrawLetterbox);
     if (shouldDrawLetterbox)
     {
-        //uint32_t height = std::min(720u, Video::s_viewportHeight);
+        float aspectRatio = std::max(NARROW_ASPECT_RATIO, g_aspectRatio);
+        uint32_t width = aspectRatio * 720;
 
-        //PPC_STORE_U32(ctx.r3.u32 + 0xC, Video::s_viewportWidth);
-        //PPC_STORE_U32(ctx.r3.u32 + 0x10, height);
-        //PPC_STORE_U32(ctx.r3.u32 + 0x14, (height - Video::s_viewportWidth * 9 / 16) / 2);
+        PPC_STORE_U32(ctx.r3.u32 + 0xC, width);
+        PPC_STORE_U32(ctx.r3.u32 + 0x10, 720);
+        PPC_STORE_U32(ctx.r3.u32 + 0x14, (720 - width * 9 / 16) / 2);
     }
 
     __imp__sub_82B8AA40(ctx, base);
