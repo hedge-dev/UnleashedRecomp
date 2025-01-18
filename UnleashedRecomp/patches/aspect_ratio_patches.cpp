@@ -779,9 +779,9 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             scaleX *= g_aspectRatioGameplayScale;
 
             if ((modifier.flags & ALIGN_RIGHT) != 0)
-                offsetX += Video::s_viewportWidth * (1.0f - g_aspectRatioGameplayScale);
+                offsetX += 1280.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
             else if ((modifier.flags & ALIGN_LEFT) == 0)
-                offsetX += Video::s_viewportWidth * (1.0f - g_aspectRatioGameplayScale) * 0.5f;
+                offsetX += 640.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
         }
 
         if ((modifier.flags & WORLD_MAP) != 0)
@@ -809,9 +809,9 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             scaleY *= g_aspectRatioGameplayScale;
 
             if ((modifier.flags & ALIGN_BOTTOM) != 0)
-                offsetY += Video::s_viewportHeight * (1.0f - g_aspectRatioGameplayScale);
+                offsetY += 720.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
             else if ((modifier.flags & ALIGN_TOP) == 0)
-                offsetY += Video::s_viewportHeight * (1.0f - g_aspectRatioGameplayScale) * 0.5f;
+                offsetY += 360.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
         }
     }
 
@@ -896,10 +896,10 @@ PPC_FUNC(sub_82E16C70)
 {
     auto scissorRect = reinterpret_cast<GuestRect*>(base + ctx.r4.u32);
 
-    scissorRect->left = scissorRect->left + g_aspectRatioOffsetX;
-    scissorRect->top = scissorRect->top + g_aspectRatioOffsetY;
-    scissorRect->right = scissorRect->right + g_aspectRatioOffsetX;
-    scissorRect->bottom = scissorRect->bottom + g_aspectRatioOffsetY;
+    scissorRect->left = scissorRect->left * g_aspectRatioScale + g_aspectRatioOffsetX;
+    scissorRect->top = scissorRect->top * g_aspectRatioScale + g_aspectRatioOffsetY;
+    scissorRect->right = scissorRect->right * g_aspectRatioScale + g_aspectRatioOffsetX;
+    scissorRect->bottom = scissorRect->bottom * g_aspectRatioScale + g_aspectRatioOffsetY;
 
     __imp__sub_82E16C70(ctx, base);
 }
@@ -937,70 +937,77 @@ PPC_FUNC(sub_830D1EF0)
 
     __imp__sub_830D1EF0(ctx, base);
 
-    if (!PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET))
+    struct Vertex
     {
-        struct Vertex
+        be<float> x;
+        be<float> y;
+        be<float> z;
+        be<float> w;
+        be<uint32_t> color;
+        be<float> u;
+        be<float> v;
+    };
+
+    auto vertex = reinterpret_cast<Vertex*>(base + ctx.r4.u32);
+
+    for (size_t i = 0; i < 4; i++)
+    {
+        float x = vertex[i].x * 640.0f + 640.0f;
+        float y = vertex[i].y * -360.0f + 360.0f;
+
+        if (PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET))
         {
-            be<float> x;
-            be<float> y;
-            be<float> z;
-            be<float> w;
-            be<uint32_t> color;
-            be<float> u;
-            be<float> v;
-        };
-
-        auto vertex = reinterpret_cast<Vertex*>(base + ctx.r4.u32);
-
-        for (size_t i = 0; i < 4; i++)
+            // Stretch
+            x = ((x + 0.5f) / 1280.0f) * Video::s_viewportWidth;
+            y = ((y + 0.5f) / 720.0f) * Video::s_viewportHeight;
+        }
+        else
         {
-            float x = vertex[i].x * 640.0f + 640.0f;
-            float y = vertex[i].y * -360.0f + 360.0f;
-
+            // Center
             x = g_aspectRatioOffsetX + (x + 0.5f) * g_aspectRatioScale;
             y = g_aspectRatioOffsetY + (y + 0.5f) * g_aspectRatioScale;
-
-            vertex[i].x = ((x - 0.5f) / Video::s_viewportWidth) * 2.0f - 1.0f;
-            vertex[i].y = ((y - 0.5f) / Video::s_viewportHeight) * -2.0f + 1.0f;
         }
 
-        bool letterboxTop = PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x1);
-        bool letterboxBottom = PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x2);
+        vertex[i].x = ((x - 0.5f) / Video::s_viewportWidth) * 2.0f - 1.0f;
+        vertex[i].y = ((y - 0.5f) / Video::s_viewportHeight) * -2.0f + 1.0f;
+    }
 
-        if (letterboxTop || letterboxBottom)
+    bool letterboxTop = PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x1);
+    bool letterboxBottom = PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x2);
+
+    if (letterboxTop || letterboxBottom)
+    {
+        float halfPixelX = 1.0f / Video::s_viewportWidth;
+        float halfPixelY = 1.0f / Video::s_viewportHeight;
+
+        if (letterboxTop)
         {
-            float halfPixelX = 1.0f / Video::s_viewportWidth;
-            float halfPixelY = 1.0f / Video::s_viewportHeight;
+            vertex[0].x = -1.0f - halfPixelX;
+            vertex[0].y = 1.0f + halfPixelY;
 
-            if (letterboxTop)
-            {
-                vertex[0].x = -1.0f - halfPixelX;
-                vertex[0].y = 1.0f + halfPixelY;         
-                
-                vertex[1].x = 1.0f - halfPixelX;
-                vertex[1].y = 1.0f + halfPixelY;      
-                
-                vertex[2].x = -1.0f - halfPixelX;
-                // vertex[2].y untouched
+            vertex[1].x = 1.0f - halfPixelX;
+            vertex[1].y = 1.0f + halfPixelY;
 
-                vertex[3].x = 1.0f - halfPixelX;
-                // vertex[3].y untouched
-            }
-            else if (letterboxBottom)
-            {
-                vertex[0].x = -1.0f - halfPixelX;
-                // vertex[0].y untouched
+            vertex[2].x = -1.0f - halfPixelX;
+            // vertex[2].y untouched
 
-                vertex[1].x = 1.0f - halfPixelX;
-                // vertex[1].y untouched
+            vertex[3].x = 1.0f - halfPixelX;
+            // vertex[3].y untouched
+        }
+        else if (letterboxBottom)
+        {
+            vertex[0].x = -1.0f - halfPixelX;
+            // vertex[0].y untouched
 
-                vertex[2].x = -1.0f - halfPixelX;
-                vertex[2].y = -1.0f + halfPixelY;
+            vertex[1].x = 1.0f - halfPixelX;
+            // vertex[1].y untouched
 
-                vertex[3].x = 1.0f - halfPixelX;
-                vertex[3].y = -1.0f + halfPixelY;
-            }
-        }      
+            vertex[2].x = -1.0f - halfPixelX;
+            vertex[2].y = -1.0f + halfPixelY;
+
+            vertex[3].x = 1.0f - halfPixelX;
+            vertex[3].y = -1.0f + halfPixelY;
+        }
     }
 }
 
@@ -1033,8 +1040,9 @@ static double ComputeObjGetItemX(uint32_t type)
             x = 1058.0;
 
         x *= g_aspectRatioScale;
+        x *= g_aspectRatioGameplayScale;
 
-        double scaleOffset = (1280.0 * (1.0 - g_aspectRatioScale));
+        double scaleOffset = (1280.0 * (1.0 - g_aspectRatioGameplayScale)) * g_aspectRatioScale;
 
         if (Config::UIScaleMode == EUIScaleMode::Edge)
         {
@@ -1080,7 +1088,8 @@ static double ComputeObjGetItemY(uint32_t type)
             y = 582.0;
 
         y *= g_aspectRatioScale;
-        y += g_aspectRatioOffsetY * 2.0 + 720.0 * (1.0 - g_aspectRatioScale);
+        y *= g_aspectRatioGameplayScale;
+        y += g_aspectRatioOffsetY * 2.0 + 720.0 * (1.0 - g_aspectRatioGameplayScale) * g_aspectRatioScale;
 
         return ((0.5 * Video::s_viewportHeight) - y) / (0.5 * Video::s_viewportHeight) * OBJ_GET_ITEM_TANGENT;
     }
