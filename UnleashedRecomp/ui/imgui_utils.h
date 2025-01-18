@@ -110,12 +110,7 @@ inline void ResetProceduralOrigin()
 
 inline float Scale(float size)
 {
-    auto& io = ImGui::GetIO();
-
-    if (g_aspectRatio >= NARROW_ASPECT_RATIO)
-        return size * (io.DisplaySize.y / 720.0f);
-    else
-        return size * (io.DisplaySize.x / 960.0f);
+    return size * g_aspectRatioScale;
 }
 
 inline double ComputeMotion(double duration, double offset, double total)

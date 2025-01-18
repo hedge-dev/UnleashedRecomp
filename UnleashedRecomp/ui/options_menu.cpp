@@ -161,14 +161,14 @@ static void DrawScanlineBars()
     if (g_aspectRatio >= WIDE_ASPECT_RATIO)
         optionsX = g_aspectRatioOffsetX;
     else
-        optionsX = (1.0f - g_aspectRatioNarrowScale) * -20.0f;
+        optionsX = (1.0f - g_aspectRatioNarrowScale) * g_aspectRatioScale * -20.0f;
 
     // Options text
     DrawTextWithOutline
     (
         g_dfsogeistdFont,
         Scale(48.0f),
-        { Scale(optionsX + 122.0f), Scale(56.0f) },
+        { optionsX + Scale(122.0f), Scale(56.0f) },
         IM_COL32(255, 190, 33, 255),
         Localise("Options_Header_Name").c_str(),
         4,
@@ -1225,18 +1225,18 @@ void OptionsMenu::Draw()
         float infoGridCount = floor(Lerp(INFO_NARROW_GRID_COUNT, INFO_WIDE_GRID_COUNT, g_aspectRatioNarrowScale));
         float totalGridCount = settingsGridCount + paddingGridCount + infoGridCount;
 
-        float offsetX = g_aspectRatioOffsetX + (1280.0f - ((GRID_SIZE * totalGridCount) - 1)) / 2.0f;
-        float minY = Scale(g_aspectRatioOffsetY + CONTAINER_POS_Y);
-        float maxY = Scale(g_aspectRatioOffsetY + (720.0f - CONTAINER_POS_Y + 1.0f));
+        float offsetX = (1280.0f - ((GRID_SIZE * totalGridCount) - 1)) / 2.0f;
+        float minY = g_aspectRatioOffsetY + Scale(CONTAINER_POS_Y);
+        float maxY = g_aspectRatioOffsetY + Scale((720.0f - CONTAINER_POS_Y + 1.0f));
 
         DrawSettingsPanel(
-            { Scale(offsetX), minY },
-            { Scale(offsetX + settingsGridCount * GRID_SIZE), maxY }
+            { g_aspectRatioOffsetX + Scale(offsetX), minY },
+            { g_aspectRatioOffsetX + Scale(offsetX + settingsGridCount * GRID_SIZE), maxY }
         );
 
         DrawInfoPanel(
-            { Scale(offsetX + (settingsGridCount + paddingGridCount) * GRID_SIZE), minY },
-            { Scale(offsetX + totalGridCount * GRID_SIZE), maxY }
+            { g_aspectRatioOffsetX + Scale(offsetX + (settingsGridCount + paddingGridCount) * GRID_SIZE), minY },
+            { g_aspectRatioOffsetX + Scale(offsetX + totalGridCount * GRID_SIZE), maxY }
         );
 
         if (g_isStage)

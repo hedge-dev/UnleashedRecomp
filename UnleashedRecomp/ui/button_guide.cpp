@@ -229,8 +229,8 @@ void ButtonGuide::Draw()
     auto drawList = ImGui::GetForegroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
 
-    ImVec2 regionMin = { Scale(g_aspectRatioOffsetX + g_sideMargins), Scale(g_aspectRatioOffsetY * 2.0f + 720.0f - 102.0f) };
-    ImVec2 regionMax = { Scale(g_aspectRatioOffsetX + 1280.0f - g_sideMargins), Scale(g_aspectRatioOffsetY * 2.0f + 720.0f) };
+    ImVec2 regionMin = { g_aspectRatioOffsetX + Scale(g_sideMargins), g_aspectRatioOffsetY * 2.0f + Scale(720.0f - 102.0f) };
+    ImVec2 regionMax = { g_aspectRatioOffsetX + Scale(1280.0f - g_sideMargins), g_aspectRatioOffsetY * 2.0f + Scale(720.0f) };
 
     auto textMarginX = Scale(57);
     auto textMarginY = Scale(8);
