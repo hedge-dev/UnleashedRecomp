@@ -1,6 +1,8 @@
 #include <user/config.h>
 #include <api/SWA.h>
 #include <ui/game_window.h>
+#include <gpu/video.h>
+#include "aspect_ratio_patches.h"
 
 using SVertexData = SWA::Sequence::Utility::CPlayMovieWrapper::CRender::SVertexData;
 
@@ -20,40 +22,41 @@ PPC_FUNC(sub_82AE30D8)
     auto quadHeight = std::fabs(pTopLeft->Y - pBottomLeft->Y) * ((float)*pViewportHeight / 2);
 
     auto movieAspectRatio = quadWidth / quadHeight;
-    auto windowAspectRatio = (float)GameWindow::s_width / (float)GameWindow::s_height;
 
-    auto a = -1.00078f;
-    auto b = 1.00139f;
     auto scaleU = 1.0f;
     auto scaleV = 1.0f;
     auto centreV = (pTopLeft->V + pBottomRight->V) / 2.0f;
 
-    if (windowAspectRatio > movieAspectRatio)
+    if (g_aspectRatio > movieAspectRatio)
     {
-        scaleU = movieAspectRatio / windowAspectRatio;
+        scaleU = movieAspectRatio / g_aspectRatio;
     }
     else
     {
-        scaleV = windowAspectRatio / movieAspectRatio;
+        scaleV = g_aspectRatio / movieAspectRatio;
     }
 
-    pTopLeft->X = a;
-    pTopLeft->Y = b;
+    auto backBuffer = Video::GetBackBuffer();
+    float halfPixelX = 1.0f / backBuffer->width;
+    float halfPixelY = 1.0f / backBuffer->height;
+
+    pTopLeft->X = -1.0f - halfPixelX;
+    pTopLeft->Y = 1.0f + halfPixelY;
     pTopLeft->U = (pTopLeft->U - centreV) / scaleU + centreV;
     pTopLeft->V = (pTopLeft->V - centreV) / scaleV + centreV;
 
-    pTopRight->X = b;
-    pTopRight->Y = b;
+    pTopRight->X = 1.0f - halfPixelX;
+    pTopRight->Y = 1.0f + halfPixelY;
     pTopRight->U = (pTopRight->U - centreV) / scaleU + centreV;
     pTopRight->V = (pTopRight->V - centreV) / scaleV + centreV;
 
-    pBottomLeft->X = a;
-    pBottomLeft->Y = a;
+    pBottomLeft->X = -1.0f - halfPixelX;
+    pBottomLeft->Y = -1.0f + halfPixelY;
     pBottomLeft->U = (pBottomLeft->U - centreV) / scaleU + centreV;
     pBottomLeft->V = (pBottomLeft->V - centreV) / scaleV + centreV;
 
-    pBottomRight->X = b;
-    pBottomRight->Y = a;
+    pBottomRight->X = 1.0f - halfPixelX;
+    pBottomRight->Y = -1.0f + halfPixelY;
     pBottomRight->U = (pBottomRight->U - centreV) / scaleU + centreV;
     pBottomRight->V = (pBottomRight->V - centreV) / scaleV + centreV;
 
