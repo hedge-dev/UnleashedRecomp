@@ -361,12 +361,49 @@ std::vector<std::string> Split(const char* strStart, const ImFont *font, float f
 
 ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMargin, std::vector<std::string> lines)
 {
+    struct TextSegment {
+        bool annotated;
+        std::string text;
+        std::string annotation;
+    };
+
     auto x = 0.0f;
     auto y = 0.0f;
 
     for (auto& str : lines)
     {
-        auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str());
+        ///////////////////////////////////////////////////////////////////////
+        // TODO: Don't duplicate this code segment
+        std::vector<TextSegment> segments;
+        std::regex regex(R"(\[([^\:]+):([^\]]+)\])"); // Matches "[text:annotation]"
+        std::smatch match;
+
+        auto searchStart = str.cbegin();
+        while (std::regex_search(searchStart, str.cend(), match, regex))
+        {
+            if (searchStart != match[0].first)
+            {
+                segments.push_back({ false, std::string(searchStart, match[0].first), "" });
+            }
+
+            segments.push_back({ true, match[1].str(), match[2].str() });
+
+            searchStart = match[0].second;
+        }
+
+        if (searchStart != str.cend())
+        {
+            segments.push_back({ false, std::string(searchStart, str.cend()), "" });
+        }
+
+        std::string annotationRemovedLine = "";
+        for (const auto& segment : segments)
+        {
+            annotationRemovedLine += segment.text;
+        }
+        ///////////////////////////////////////////////////////////////////////
+
+        auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, annotationRemovedLine.c_str());
 
         x = std::max(x, textSize.x);
         y += textSize.y + Scale(lineMargin);
@@ -386,18 +423,65 @@ void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, co
     auto paragraphSize = MeasureCentredParagraph(font, fontSize, lineMargin, lines);
     auto offsetY = 0.0f;
 
-    for (int i = 0; i < lines.size(); i++)
-    {
-        auto& str = lines[i];
-        auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, str.c_str());
+    struct TextSegment {
+        bool annotated;
+        std::string text;
+        std::string annotation;
+    };
 
-        auto textX = str.starts_with("- ")
+    for (const auto& line : lines)
+    {
+        std::vector<TextSegment> segments;
+        std::regex regex(R"(\[([^\:]+):([^\]]+)\])"); // Matches "[text:annotation]"
+        std::smatch match;
+
+        auto searchStart = line.cbegin();
+        while (std::regex_search(searchStart, line.cend(), match, regex))
+        {
+            if (searchStart != match[0].first)
+            {
+                segments.push_back({ false, std::string(searchStart, match[0].first), ""});
+            }
+
+            segments.push_back({ true, match[1].str(), match[2].str() });
+
+            searchStart = match[0].second;
+        }
+
+        if (searchStart != line.cend())
+        {
+            segments.push_back({ false, std::string(searchStart, line.cend()), "" });
+        }
+
+        std::string annotationRemovedLine = "";
+        for (const auto& segment : segments)
+        {
+            annotationRemovedLine += segment.text;
+        }
+
+        auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, annotationRemovedLine.c_str());
+
+        auto textX = annotationRemovedLine.starts_with("- ")
             ? centre.x - paragraphSize.x / 2
             : centre.x - textSize.x / 2;
 
-        auto textY = centre.y - paragraphSize.y / 2 + offsetY;
+        for (const auto& segment : segments)
+        {
+            textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, segment.text.c_str());
+            auto textY = centre.y - paragraphSize.y / 2 + offsetY;
 
-        drawMethod(str.c_str(), { textX, textY });
+            if (segment.annotated)
+            {
+                auto annotationSize = font->CalcTextSizeA(fontSize * 0.6f, FLT_MAX, 0, segment.annotation.c_str());
+
+                float annotationX = textX + (textSize.x - annotationSize.x) / 2.0f;
+
+                annotationDrawMethod(segment.annotation.c_str(), fontSize * 0.6f, { annotationX, textY - (fontSize * 0.6f) });
+            }
+
+            drawMethod(segment.text.c_str(), { textX, textY });
+            textX += textSize.x;
+        }
 
         offsetY += textSize.y + Scale(lineMargin);
     }

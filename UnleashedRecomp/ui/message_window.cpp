@@ -319,6 +319,10 @@ void MessageWindow::Draw()
             [=](const char* str, ImVec2 pos)
             {
                 DrawTextWithShadow(g_fntSeurat, fontSize, pos, IM_COL32(255, 255, 255, 255), str);
+            },
+            [=](const char* str, float size, ImVec2 pos)
+            {
+                DrawTextWithShadow(g_fntSeurat, size, pos, IM_COL32(255, 255, 255, 255), str);
             }
         );
 
