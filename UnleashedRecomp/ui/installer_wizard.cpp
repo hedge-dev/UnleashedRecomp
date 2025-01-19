@@ -7,7 +7,6 @@
 #include <gpu/video.h>
 #include <gpu/imgui/imgui_snapshot.h>
 #include <hid/hid.h>
-#include <hid/hid_detail.h>
 #include <locale/locale.h>
 #include <patches/aspect_ratio_patches.h>
 #include <ui/imgui_utils.h>
@@ -729,9 +728,9 @@ static void DrawDescriptionContainer()
 
     if (g_currentPage != WizardPage::Installing && textAlpha >= 1.0)
     {
-        auto icon = hid::detail::IsInputDeviceController()
+        auto icon = hid::IsInputDeviceController()
             ? EButtonIcon::A
-            : hid::detail::g_inputDevice == hid::detail::EInputDevice::Keyboard
+            : hid::g_inputDevice == hid::EInputDevice::Keyboard
                 ? EButtonIcon::Enter
                 : EButtonIcon::LMB;
 

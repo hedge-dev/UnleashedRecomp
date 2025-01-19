@@ -1,10 +1,10 @@
-#include <os/version_detail.h>
+#include <os/version.h>
 
 LIB_FUNCTION(LONG, "ntdll.dll", RtlGetVersion, PRTL_OSVERSIONINFOW);
 
-os::version::detail::OSVersion os::version::detail::GetOSVersion()
+os::version::OSVersion os::version::GetOSVersion()
 {
-    auto result = os::version::detail::OSVersion{};
+    auto result = os::version::OSVersion{};
 
     OSVERSIONINFOEXW osvi = { 0 };
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);

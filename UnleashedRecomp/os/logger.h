@@ -1,9 +1,9 @@
 #pragma once
 
-#include <os/logger_detail.h>
+#include <source_location>
 
-#define LOG_IMPL(type, func, str)       os::logger::Log(str, os::logger::detail::ELogType::type, func)
-#define LOGF_IMPL(type, func, str, ...) os::logger::Log(fmt::format(str, __VA_ARGS__), os::logger::detail::ELogType::type, func)
+#define LOG_IMPL(type, func, str)       os::logger::Log(str, os::logger::ELogType::type, func)
+#define LOGF_IMPL(type, func, str, ...) os::logger::Log(fmt::format(str, __VA_ARGS__), os::logger::ELogType::type, func)
 
 // Function-specific logging.
 
@@ -51,6 +51,14 @@
 
 namespace os::logger
 {
+    enum class ELogType
+    {
+        None,
+        Utility,
+        Warning,
+        Error
+    };
+
     void Init();
-    void Log(const std::string_view str, detail::ELogType type = detail::ELogType::None, const char* func = nullptr);
+    void Log(const std::string_view str, ELogType type = ELogType::None, const char* func = nullptr);
 }

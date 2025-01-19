@@ -1,8 +1,8 @@
-#include <os/process_detail.h>
+#include <os/process.h>
 
 #include <signal.h>
 
-std::filesystem::path os::process::detail::GetExecutablePath()
+std::filesystem::path os::process::GetExecutablePath()
 {
     char exePath[PATH_MAX] = {};
     if (readlink("/proc/self/exe", exePath, PATH_MAX) > 0)
@@ -15,7 +15,7 @@ std::filesystem::path os::process::detail::GetExecutablePath()
     }
 }
 
-std::filesystem::path os::process::detail::GetWorkingDirectory()
+std::filesystem::path os::process::GetWorkingDirectory()
 {
     char cwd[PATH_MAX] = {};
     char *res = getcwd(cwd, sizeof(cwd));
@@ -29,7 +29,7 @@ std::filesystem::path os::process::detail::GetWorkingDirectory()
     }
 }
 
-bool os::process::detail::StartProcess(const std::filesystem::path path, const std::vector<std::string> args, std::filesystem::path work)
+bool os::process::StartProcess(const std::filesystem::path& path, const std::vector<std::string>& args, std::filesystem::path work)
 {
     pid_t pid = fork();
     if (pid < 0)

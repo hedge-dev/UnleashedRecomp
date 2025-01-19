@@ -10,7 +10,7 @@
 #include <decompressor.h>
 #include <kernel/function.h>
 #include <kernel/heap.h>
-#include <hid/hid_detail.h>
+#include <hid/hid.h>
 #include <kernel/memory.h>
 #include <kernel/xdbf.h>
 #include <res/bc_diff/button_bc_diff.bin.h>
@@ -3017,7 +3017,7 @@ static void SetTexture(GuestDevice* device, uint32_t index, GuestTexture* textur
     auto isPlayStation = Config::ControllerIcons == EControllerIcons::PlayStation;
 
     if (Config::ControllerIcons == EControllerIcons::Auto)
-        isPlayStation = hid::detail::g_inputDeviceController == hid::detail::EInputDevice::PlayStation;
+        isPlayStation = hid::g_inputDeviceController == hid::EInputDevice::PlayStation;
 
     if (isPlayStation && texture != nullptr && texture->patchedTexture != nullptr)
         texture = texture->patchedTexture.get();

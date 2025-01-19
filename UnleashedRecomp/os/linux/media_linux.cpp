@@ -1,6 +1,6 @@
-#include <os/media_detail.h>
+#include <os/media.h>
 
-bool os::media::detail::IsExternalMediaPlaying()
+bool os::media::IsExternalMediaPlaying()
 {
     // This functionality is not supported in Linux.
     return false;

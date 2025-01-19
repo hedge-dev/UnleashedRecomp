@@ -1,7 +1,7 @@
 #include <stdafx.h>
 #include <SDL.h>
 #include <user/config.h>
-#include <hid/hid_detail.h>
+#include <hid/hid.h>
 #include <ui/game_window.h>
 #include <kernel/xdm.h>
 #include <app.h>
@@ -40,17 +40,17 @@ public:
         return SDL_GameControllerTypeForIndex(index);
     }
 
-    hid::detail::EInputDevice GetInputDevice() const
+    hid::EInputDevice GetInputDevice() const
     {
         switch (GetControllerType())
         {
             case SDL_CONTROLLER_TYPE_PS3:
             case SDL_CONTROLLER_TYPE_PS4:
             case SDL_CONTROLLER_TYPE_PS5:
-                return hid::detail::EInputDevice::PlayStation;
+                return hid::EInputDevice::PlayStation;
         }
 
-        return hid::detail::EInputDevice::Xbox;
+        return hid::EInputDevice::Xbox;
     }
 
     void Close()
@@ -168,8 +168,8 @@ static void SetControllerInputDevice(Controller* controller)
     if (App::s_isLoading)
         return;
 
-    hid::detail::g_inputDevice = controller->GetInputDevice();
-    hid::detail::g_inputDeviceController = hid::detail::g_inputDevice;
+    hid::g_inputDevice = controller->GetInputDevice();
+    hid::g_inputDeviceController = hid::g_inputDevice;
 }
 
 int HID_OnSDLEvent(void*, SDL_Event* event)
@@ -224,13 +224,13 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
         case SDL_KEYDOWN:
         case SDL_KEYUP:
-            hid::detail::g_inputDevice = hid::detail::EInputDevice::Keyboard;
+            hid::g_inputDevice = hid::EInputDevice::Keyboard;
             break;
 
         case SDL_MOUSEMOTION:
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP:
-            hid::detail::g_inputDevice = hid::detail::EInputDevice::Mouse;
+            hid::g_inputDevice = hid::EInputDevice::Mouse;
             break;
 
         case SDL_WINDOWEVENT:
@@ -266,7 +266,7 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
     return 0;
 }
 
-void hid::detail::Init()
+void hid::Init()
 {
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS3, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4, "1");
@@ -282,7 +282,7 @@ void hid::detail::Init()
     SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
 }
 
-uint32_t hid::detail::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
+uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
 {
     static uint32_t packet;
 
@@ -301,7 +301,7 @@ uint32_t hid::detail::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
     return ERROR_SUCCESS;
 }
 
-uint32_t hid::detail::SetState(uint32_t dwUserIndex, XAMINPUT_VIBRATION* pVibration)
+uint32_t hid::SetState(uint32_t dwUserIndex, XAMINPUT_VIBRATION* pVibration)
 {
     if (!pVibration)
         return ERROR_BAD_ARGUMENTS;
@@ -314,7 +314,7 @@ uint32_t hid::detail::SetState(uint32_t dwUserIndex, XAMINPUT_VIBRATION* pVibrat
     return ERROR_SUCCESS;
 }
 
-uint32_t hid::detail::GetCapabilities(uint32_t dwUserIndex, XAMINPUT_CAPABILITIES* pCaps)
+uint32_t hid::GetCapabilities(uint32_t dwUserIndex, XAMINPUT_CAPABILITIES* pCaps)
 {
     if (!pCaps)
         return ERROR_BAD_ARGUMENTS;

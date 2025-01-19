@@ -2,7 +2,6 @@
 #include "xam.h"
 #include "xdm.h"
 #include <hid/hid.h>
-#include <hid/hid_detail.h>
 #include <ui/game_window.h>
 #include <cpu/guest_thread.h>
 #include <ranges>
@@ -455,7 +454,7 @@ uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_STATE* st
             state->Gamepad.wButtons |= XAMINPUT_GAMEPAD_Y;
     }
 
-    state->Gamepad.wButtons &= ~hid::detail::g_prohibitedButtons;
+    state->Gamepad.wButtons &= ~hid::g_prohibitedButtons;
 
     ByteSwapInplace(state->Gamepad.wButtons);
     ByteSwapInplace(state->Gamepad.sThumbLX);
@@ -468,7 +467,7 @@ uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_STATE* st
 
 uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION* vibration)
 {
-    if (!hid::detail::IsInputDeviceController() || !Config::Vibration)
+    if (!hid::IsInputDeviceController() || !Config::Vibration)
         return ERROR_SUCCESS;
 
     ByteSwapInplace(vibration->wLeftMotorSpeed);

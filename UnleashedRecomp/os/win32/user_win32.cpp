@@ -1,6 +1,6 @@
-#include <os/user_detail.h>
+#include <os/user.h>
 
-bool os::user::detail::IsDarkTheme()
+bool os::user::IsDarkTheme()
 {
     HKEY hKey;
 

@@ -1,10 +1,10 @@
-#include <os/logger_detail.h>
+#include <os/logger.h>
 
-void os::logger::detail::Init()
+void os::logger::Init()
 {
 }
 
-void os::logger::detail::Log(const std::string_view str, detail::ELogType type, const char* func)
+void os::logger::Log(const std::string_view str, ELogType type, const char* func)
 {
     if (func)
     {

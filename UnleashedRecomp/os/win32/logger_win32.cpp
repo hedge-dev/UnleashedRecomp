@@ -1,17 +1,16 @@
-#include <os/logger_detail.h>
-#include <print>
+#include <os/logger.h>
 
 #define FOREGROUND_WHITE  (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE)
 #define FOREGROUND_YELLOW (FOREGROUND_RED | FOREGROUND_GREEN)
 
 HANDLE g_hStandardOutput;
 
-void os::logger::detail::Init()
+void os::logger::Init()
 {
     g_hStandardOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 }
 
-void os::logger::detail::Log(const std::string_view str, detail::ELogType type, const char* func)
+void os::logger::Log(const std::string_view str, ELogType type, const char* func)
 {
     switch (type)
     {

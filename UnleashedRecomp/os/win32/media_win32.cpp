@@ -1,4 +1,4 @@
-#include <os/media_detail.h>
+#include <os/media.h>
 #include <os/logger.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Media.Control.h>
@@ -62,7 +62,7 @@ static GlobalSystemMediaTransportControlsSessionPlaybackInfo GetPlaybackInfo()
     }
 }
 
-bool os::media::detail::IsExternalMediaPlaying()
+bool os::media::IsExternalMediaPlaying()
 {
     auto playbackInfo = GetPlaybackInfo();
 

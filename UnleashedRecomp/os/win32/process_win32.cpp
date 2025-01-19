@@ -1,6 +1,6 @@
-#include <os/process_detail.h>
+#include <os/process.h>
 
-std::filesystem::path os::process::detail::GetExecutablePath()
+std::filesystem::path os::process::GetExecutablePath()
 {
     WCHAR exePath[MAX_PATH];
 
@@ -10,7 +10,7 @@ std::filesystem::path os::process::detail::GetExecutablePath()
     return std::filesystem::path(exePath);
 }
 
-std::filesystem::path os::process::detail::GetWorkingDirectory()
+std::filesystem::path os::process::GetWorkingDirectory()
 {
     WCHAR workPath[MAX_PATH];
 
@@ -20,7 +20,7 @@ std::filesystem::path os::process::detail::GetWorkingDirectory()
     return std::filesystem::path(workPath);
 }
 
-bool os::process::detail::StartProcess(const std::filesystem::path path, const std::vector<std::string> args, std::filesystem::path work)
+bool os::process::StartProcess(const std::filesystem::path& path, const std::vector<std::string>& args, std::filesystem::path work)
 {
     if (path.empty())
         return false;

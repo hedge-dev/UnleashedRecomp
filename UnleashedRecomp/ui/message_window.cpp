@@ -2,7 +2,7 @@
 #include "imgui_utils.h"
 #include <api/SWA.h>
 #include <gpu/video.h>
-#include <hid/hid_detail.h>
+#include <hid/hid.h>
 #include <locale/locale.h>
 #include <ui/button_guide.h>
 #include <ui/sdl_listener.h>
@@ -257,7 +257,7 @@ static void ResetSelection()
 {
     /* Always use -1 for mouse input to prevent the selection
        cursor from erroneously appearing where it shouldn't. */
-    g_selectedRowIndex = hid::detail::g_inputDevice == hid::detail::EInputDevice::Mouse
+    g_selectedRowIndex = hid::g_inputDevice == hid::EInputDevice::Mouse
         ? -1
         : g_defaultButtonIndex;
 
@@ -294,8 +294,8 @@ void MessageWindow::Draw()
     auto textMarginX = Scale(37);
     auto textMarginY = Scale(45);
 
-    bool isController = hid::detail::IsInputDeviceController();
-    bool isKeyboard = hid::detail::g_inputDevice == hid::detail::EInputDevice::Keyboard;
+    bool isController = hid::IsInputDeviceController();
+    bool isKeyboard = hid::g_inputDevice == hid::EInputDevice::Keyboard;
 
     // Handle controller input when the game is booted.
     if (App::s_isInit)

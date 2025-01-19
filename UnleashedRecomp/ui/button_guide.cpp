@@ -2,7 +2,7 @@
 #include "imgui_utils.h"
 #include <gpu/imgui/imgui_snapshot.h>
 #include <gpu/video.h>
-#include <hid/hid_detail.h>
+#include <hid/hid.h>
 #include <user/config.h>
 #include <app.h>
 #include <decompressor.h>
@@ -63,7 +63,7 @@ std::tuple<std::tuple<ImVec2, ImVec2>, GuestTexture*> GetButtonIcon(EButtonIcon 
     GuestTexture* texture;
 
     auto isPlayStation = Config::ControllerIcons == EControllerIcons::Auto
-        ? hid::detail::g_inputDeviceController == hid::detail::EInputDevice::PlayStation
+        ? hid::g_inputDeviceController == hid::EInputDevice::PlayStation
         : Config::ControllerIcons == EControllerIcons::PlayStation;
 
     auto yOffsetCmn = isPlayStation ? 42 : 0;
