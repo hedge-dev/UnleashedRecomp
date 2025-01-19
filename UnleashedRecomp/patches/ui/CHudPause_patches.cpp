@@ -68,6 +68,9 @@ bool InjectMenuBehaviour(uint32_t pThis, uint32_t count)
             pHudPause->m_Action = SWA::eActionType_Undefined;
             pHudPause->m_Transition = SWA::eTransitionType_Hide;
 
+            if (pHudPause->m_rcBg1Select)
+                pHudPause->m_rcBg1Select->SetHideFlag(true);
+
             return true;
         }
         else if (cursorIndex == count - 1)
@@ -153,6 +156,7 @@ PPC_FUNC(sub_824B0930)
             OptionsMenu::Close();
 
             GuestToHostFunction<int>(sub_824AFD28, pHudPause, 0, 0, 0, 1);
+            __imp__sub_824B0930(ctx, base);
         }
     }
     else
