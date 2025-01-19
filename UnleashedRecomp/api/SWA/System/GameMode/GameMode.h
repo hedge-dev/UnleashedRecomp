@@ -4,10 +4,9 @@
 
 namespace SWA
 {
-    class CGameMode // : Hedgehog::Universe::TStateMachine<SWA::CGame>::TState
+    class CGameMode : public Hedgehog::Universe::CStateMachineBase::CStateBase
     {
     public:
-        SWA_INSERT_PADDING(0x60); // base
         SWA_INSERT_PADDING(0x08);
     };
 }

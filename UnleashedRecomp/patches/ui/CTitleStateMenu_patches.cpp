@@ -50,15 +50,18 @@ PPC_FUNC_IMPL(__imp__sub_825882B8);
 PPC_FUNC(sub_825882B8)
 {
     auto pTitleState = (SWA::CTitleStateBase*)g_memory.Translate(ctx.r3.u32);
+
     auto pInputState = SWA::CInputState::GetInstance();
     auto& pPadState = pInputState->GetPadState();
     auto isAccepted = pPadState.IsTapped(SWA::eKeyState_A) || pPadState.IsTapped(SWA::eKeyState_Start);
-    auto isOptionsIndex = pTitleState->m_pMember->m_pTitleMenu->m_CursorIndex == 2;
-    auto isInstallIndex = pTitleState->m_pMember->m_pTitleMenu->m_CursorIndex == 3;
+
+    auto pContext = pTitleState->GetContextBase<SWA::CTitleStateBase::CTitleStateContext>();
+    auto isOptionsIndex = pContext->m_pTitleMenu->m_CursorIndex == 2;
+    auto isInstallIndex = pContext->m_pTitleMenu->m_CursorIndex == 3;
 
     // Always default to New Game with corrupted save data.
-    if (App::s_isSaveDataCorrupt && pTitleState->m_pMember->m_pTitleMenu->m_CursorIndex == 1)
-        pTitleState->m_pMember->m_pTitleMenu->m_CursorIndex = 0;
+    if (App::s_isSaveDataCorrupt && pContext->m_pTitleMenu->m_CursorIndex == 1)
+        pContext->m_pTitleMenu->m_CursorIndex = 0;
 
     if (!OptionsMenu::s_isVisible && isOptionsIndex)
     {
