@@ -57,6 +57,8 @@ void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, 
 void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text, float offset = 2.0f, float radius = 1.0f, ImU32 shadowColour = IM_COL32(0, 0, 0, 255));
 float CalcWidestTextSize(const ImFont* font, float fontSize, std::span<std::string> strs);
 std::string Truncate(const std::string& input, size_t maxLength, bool useEllipsis = true, bool usePrefixEllipsis = false);
+std::pair<std::string, std::map<std::string, std::string>> RemoveRubyAnnotations(const char* input);
+std::string ReAddRubyAnnotations(const std::string& wrappedText, const std::map<std::string, std::string>& rubyMap);
 std::vector<std::string> Split(const char* strStart, const ImFont* font, float fontSize, float maxWidth);
 Paragraph CalculateAnnotatedParagraph(const std::vector<std::string>& lines);
 std::vector<std::string> RemoveAnnotationFromParagraph(const std::vector<std::string>& lines);

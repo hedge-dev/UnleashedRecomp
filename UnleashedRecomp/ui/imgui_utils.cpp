@@ -273,6 +273,79 @@ std::string Truncate(const std::string& input, size_t maxLength, bool useEllipsi
     return input;
 }
 
+std::pair<std::string, std::map<std::string, std::string>> RemoveRubyAnnotations(const char* input) {
+    std::string output;
+    std::map<std::string, std::string> rubyMap;
+    std::string currentMain, currentRuby;
+    size_t idx = 0;
+
+    while (input[idx] != '\0')
+    {
+        if (input[idx] == '[')
+        {
+            idx++;
+            currentMain.clear();
+            currentRuby.clear();
+
+            while (input[idx] != ':' && input[idx] != ']' && input[idx] != '\0')
+            {
+                currentMain += input[idx++];
+            }
+            if (input[idx] == ':')
+            {
+                idx++;
+                while (input[idx] != ']' && input[idx] != '\0')
+                {
+                    currentRuby += input[idx++];
+                }
+            }
+            if (input[idx] == ']') 
+            {
+                idx++;
+            }
+
+            if (!currentMain.empty() && !currentRuby.empty())
+            {
+                rubyMap[currentMain] = currentRuby;
+            }
+
+            output += currentMain;
+        }
+        else
+        {
+            output += input[idx++];
+        }
+    }
+
+    return { output, rubyMap };
+}
+
+std::string ReAddRubyAnnotations(const std::string& wrappedText, const std::map<std::string, std::string>& rubyMap) {
+    std::string annotatedText;
+    size_t idx = 0;
+    size_t length = wrappedText.length();
+
+    while (idx < length) {
+        bool matched = false;
+        for (const auto& [mainText, rubyText] : rubyMap)
+        {
+            if (wrappedText.substr(idx, mainText.length()) == mainText) 
+            {
+                annotatedText += "[" + mainText + ":" + rubyText + "]";
+                idx += mainText.length();
+                matched = true;
+                break;
+            }
+        }
+        if (!matched)
+        {
+            annotatedText += wrappedText[idx++];
+        }
+    }
+
+    return annotatedText;
+}
+
 std::vector<std::string> Split(const char* strStart, const ImFont *font, float fontSize, float maxWidth)
 {
     if (!strStart)
@@ -463,9 +536,15 @@ ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float maxWidt
 
 void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, const ImVec2& centre, float lineMargin, const char* text, std::function<void(const char*, ImVec2)> drawMethod)
 {
-    auto lines = Split(text, font, fontSize, maxWidth);
+    const auto& input = RemoveRubyAnnotations(text);
+    auto lines = Split(input.first.c_str(), font, fontSize, maxWidth);
     auto paragraphSize = MeasureCentredParagraph(font, fontSize, lineMargin, lines);
     auto offsetY = 0.0f;
+
+    for (auto& line : lines)
+    {
+        line = ReAddRubyAnnotations(line, input.second);
+    }
 
     const auto& annotatedLines = CalculateAnnotatedParagraph(lines);
 
