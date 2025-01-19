@@ -45,8 +45,7 @@
 #include <res/images/options_menu/thumbnails/vibration.dds.h>
 #include <res/images/options_menu/thumbnails/vsync.dds.h>
 #include <res/images/options_menu/thumbnails/window_size.dds.h>
-#include <res/images/options_menu/thumbnails/xbox_color_correction_false.dds.h>
-#include <res/images/options_menu/thumbnails/xbox_color_correction_true.dds.h>
+#include <res/images/options_menu/thumbnails/xbox_color_correction.dds.h>
 
 #define VALUE_THUMBNAIL_MAP(type) std::unordered_map<type, std::unique_ptr<GuestTexture>>
 
@@ -112,9 +111,7 @@ void LoadThumbnails()
     g_motionBlurThumbnails[EMotionBlur::Original] = LOAD_ZSTD_TEXTURE(g_motion_blur_original);
     g_motionBlurThumbnails[EMotionBlur::Enhanced] = LOAD_ZSTD_TEXTURE(g_motion_blur_enhanced);
 
-    g_xboxColorCorrectionThumbnails[false] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_false);
-    g_xboxColorCorrectionThumbnails[true] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_true);
-
+    g_configThumbnails[&Config::XboxColorCorrection] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction);
     g_configThumbnails[&Config::UIScaleMode] = LOAD_ZSTD_TEXTURE(g_ui_scale_mode);
 }
 
@@ -170,10 +167,6 @@ GuestTexture* GetThumbnail(const IConfigDef* cfg)
         else if (cfg == &Config::MotionBlur)
         {
             TryGetValueThumbnail<EMotionBlur>(cfg, &g_motionBlurThumbnails, &texture);
-        }
-        else if (cfg == &Config::XboxColorCorrection)
-        {
-            TryGetValueThumbnail<bool>(cfg, &g_xboxColorCorrectionThumbnails, &texture);
         }
 
         return texture;
