@@ -551,26 +551,38 @@ address = 0x824DC9D4
 # CPlayerSpeedPostureInputOnPath
 [[midasm_hook]]
 name = "PostureDPadSupportMidAsmHook"
-address = 0x8234F174
-registers = ["r3"]
+address = 0x8234F194
+registers = ["r31", "f13", "f0"]
 
 # CPlayerSpeedPostureInputOnPathLocal
 [[midasm_hook]]
-name = "PostureDPadSupportMidAsmHook"
-address = 0x8234F518
-registers = ["r3"]
+name = "PostureDPadSupportPathLocalMidAsmHook"
+address = 0x8234F610
+registers = ["r30", "f0", "f13"]
 
 # CPlayerSpeedPostureInput3DStandard
 [[midasm_hook]]
 name = "PostureDPadSupportMidAsmHook"
-address = 0x8234EEC8
-registers = ["r3"]
+address = 0x8234EEE8
+registers = ["r31", "f12", "f13"]
 
 # CEvilPostureInputStandard
 [[midasm_hook]]
 name = "PostureDPadSupportMidAsmHook"
-address = 0x823CDA2C
-registers = ["r3"]
+address = 0x823CDA60
+registers = ["r3", "f11", "f12"]
+
+# CEvilPostureInputStandard
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x823CDA74
+registers = ["r3", "f0"]
+
+# CEvilPostureInputStandard
+[[midasm_hook]]
+name = "PostureDPadSupportYMidAsmHook"
+address = 0x823CDA88
+registers = ["r3", "f12"]
 
 [[midasm_hook]]
 name = "LoadingUpdateMidAsmHook"

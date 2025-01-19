@@ -4,7 +4,6 @@
 // TODO (Hyper): lower the resolution of these textures once final.
 #include <res/images/options_menu/thumbnails/achievement_notifications.dds.h>
 #include <res/images/options_menu/thumbnails/allow_background_input.dds.h>
-#include <res/images/options_menu/thumbnails/allow_dpad_movement.dds.h>
 #include <res/images/options_menu/thumbnails/antialiasing.dds.h>
 #include <res/images/options_menu/thumbnails/aspect_ratio.dds.h>
 #include <res/images/options_menu/thumbnails/battle_theme.dds.h>
@@ -78,7 +77,6 @@ void LoadThumbnails()
     g_configThumbnails[&Config::InvertCameraY] = LOAD_ZSTD_TEXTURE(g_invert_camera_y);
     g_configThumbnails[&Config::Vibration] = LOAD_ZSTD_TEXTURE(g_vibration);
     g_configThumbnails[&Config::AllowBackgroundInput] = LOAD_ZSTD_TEXTURE(g_allow_background_input);
-    g_configThumbnails[&Config::AllowDPadMovement] = LOAD_ZSTD_TEXTURE(g_allow_dpad_movement);
     g_configThumbnails[&Config::ControllerIcons] = LOAD_ZSTD_TEXTURE(g_controller_icons);
     g_configThumbnails[&Config::MasterVolume] = LOAD_ZSTD_TEXTURE(g_master_volume);
     g_configThumbnails[&Config::MusicVolume] = LOAD_ZSTD_TEXTURE(g_music_volume);

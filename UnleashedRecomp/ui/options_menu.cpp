@@ -894,7 +894,6 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraY, true);
             DrawConfigOption(rowCount++, yOffset, &Config::Vibration, true);
             DrawConfigOption(rowCount++, yOffset, &Config::AllowBackgroundInput, true);
-            DrawConfigOption(rowCount++, yOffset, &Config::AllowDPadMovement, true);
             DrawConfigOption(rowCount++, yOffset, &Config::ControllerIcons, true);
             break;
 

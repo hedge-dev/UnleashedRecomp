@@ -117,11 +117,6 @@ CONFIG_DEFINE_LOCALE(AllowBackgroundInput)
     { ELanguage::English, { "Allow Background Input", "Allow controller input whilst the game window is unfocused." } }
 };
 
-CONFIG_DEFINE_LOCALE(AllowDPadMovement)
-{
-    { ELanguage::English, { "Allow D-Pad Movement", "Allow the player to also be controlled using the directional pad." } }
-};
-
 CONFIG_DEFINE_LOCALE(MasterVolume)
 {
     { ELanguage::English, { "Master Volume", "Adjust the overall volume." } }
