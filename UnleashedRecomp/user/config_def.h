@@ -21,7 +21,7 @@ CONFIG_DEFINE_LOCALISED("Audio", bool, Subtitles, true);
 CONFIG_DEFINE_LOCALISED("Audio", bool, MusicAttenuation, false);
 CONFIG_DEFINE_LOCALISED("Audio", bool, BattleTheme, true);
 
-#ifdef SWA_D3D12
+#ifdef UNLEASHED_RECOMP_D3D12
 CONFIG_DEFINE_ENUM("Video", EGraphicsAPI, GraphicsAPI, EGraphicsAPI::D3D12);
 #else
 CONFIG_DEFINE_ENUM("Video", EGraphicsAPI, GraphicsAPI, EGraphicsAPI::Vulkan);

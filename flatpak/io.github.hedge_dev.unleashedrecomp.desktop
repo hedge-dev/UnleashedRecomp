@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Unleashed Recompiled
-Exec=/app/bin/SWA
+Exec=/app/bin/UnleashedRecomp
 Type=Application
 Icon=io.github.hedge_dev.unleashedrecomp
 Categories=Game;

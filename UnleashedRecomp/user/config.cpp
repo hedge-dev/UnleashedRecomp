@@ -45,7 +45,7 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EVoiceLanguage)
 
 CONFIG_DEFINE_ENUM_TEMPLATE(EGraphicsAPI)
 {
-#ifdef SWA_D3D12
+#ifdef UNLEASHED_RECOMP_D3D12
     { "D3D12",  EGraphicsAPI::D3D12 },
 #endif
     { "Vulkan", EGraphicsAPI::Vulkan }

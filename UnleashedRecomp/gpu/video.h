@@ -285,7 +285,7 @@ struct GuestShader : GuestResource
     std::unique_ptr<RenderShader> shader;
     struct ShaderCacheEntry* shaderCacheEntry = nullptr;
     ankerl::unordered_dense::map<uint32_t, std::unique_ptr<RenderShader>> linkedShaders;
-#ifdef SWA_D3D12
+#ifdef UNLEASHED_RECOMP_D3D12
     std::vector<ComPtr<IDxcBlob>> shaderBlobs;
     ComPtr<IDxcBlobEncoding> libraryBlob;
 #endif

@@ -1,15 +1,14 @@
 project("UnleashedRecomp")
-set(TARGET_NAME "SWA")
 
 if (WIN32)
-    option(SWA_D3D12 "Add D3D12 support for rendering" ON)
+    option(UNLEASHED_RECOMP_D3D12 "Add D3D12 support for rendering" ON)
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    option(SWA_FLATPAK "Configure the build for Flatpak compatibility." OFF)
+    option(UNLEASHED_RECOMP_FLATPAK "Configure the build for Flatpak compatibility." OFF)
 endif()
 
-option(SWA_XAUDIO2 "Use XAudio2 for audio playback" OFF)
+option(UNLEASHED_RECOMP_XAUDIO2 "Use XAudio2 for audio playback" OFF)
 
 function(BIN2C)
     cmake_parse_arguments(BIN2C_ARGS "" "TARGET_OBJ;SOURCE_FILE;DEST_FILE;ARRAY_NAME;COMPRESSION_TYPE" "" ${ARGN})
@@ -64,16 +63,15 @@ else()
 endif()
 
 add_compile_definitions(
-    SWA_IMPL
     SDL_MAIN_HANDLED
     _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR # Microsoft wtf?
     _CRT_SECURE_NO_WARNINGS)
 
-set(SWA_PRECOMPILED_HEADERS
+set(UNLEASHED_RECOMP_PRECOMPILED_HEADERS
     "stdafx.h"
 )
 
-set(SWA_KERNEL_CXX_SOURCES
+set(UNLEASHED_RECOMP_KERNEL_CXX_SOURCES
     "kernel/imports.cpp"
     "kernel/xdm.cpp"
     "kernel/heap.cpp"
@@ -82,13 +80,13 @@ set(SWA_KERNEL_CXX_SOURCES
     "kernel/io/file_system.cpp"
 )
 
-set(SWA_LOCALE_CXX_SOURCES
+set(UNLEASHED_RECOMP_LOCALE_CXX_SOURCES
     "locale/config_locale.cpp"
     "locale/locale.cpp"
 )
 
 if (WIN32)
-    set(SWA_OS_CXX_SOURCES
+    set(UNLEASHED_RECOMP_OS_CXX_SOURCES
         "os/win32/logger_win32.cpp"
         "os/win32/media_win32.cpp"
         "os/win32/process_win32.cpp"
@@ -96,7 +94,7 @@ if (WIN32)
         "os/win32/version_win32.cpp"
     )
 elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    set(SWA_OS_CXX_SOURCES
+    set(UNLEASHED_RECOMP_OS_CXX_SOURCES
         "os/linux/logger_linux.cpp"
         "os/linux/media_linux.cpp"
         "os/linux/process_linux.cpp"
@@ -105,11 +103,11 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
     )
 endif()
 
-set(SWA_CPU_CXX_SOURCES
+set(UNLEASHED_RECOMP_CPU_CXX_SOURCES
     "cpu/guest_thread.cpp"
 )
 
-set(SWA_GPU_CXX_SOURCES
+set(UNLEASHED_RECOMP_GPU_CXX_SOURCES
     "gpu/video.cpp"
     "gpu/imgui/imgui_common.cpp"
     "gpu/imgui/imgui_font_builder.cpp"
@@ -117,29 +115,29 @@ set(SWA_GPU_CXX_SOURCES
     "gpu/rhi/plume_vulkan.cpp"
 )
 
-if (SWA_D3D12)
-    list(APPEND SWA_GPU_CXX_SOURCES
+if (UNLEASHED_RECOMP_D3D12)
+    list(APPEND UNLEASHED_RECOMP_GPU_CXX_SOURCES
         "gpu/rhi/plume_d3d12.cpp"
     )
 endif()
 
-set(SWA_APU_CXX_SOURCES
+set(UNLEASHED_RECOMP_APU_CXX_SOURCES
     "apu/audio.cpp"
     "apu/embedded_player.cpp"
 )
 
-if (SWA_XAUDIO2)
-    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/xaudio_driver.cpp")
+if (UNLEASHED_RECOMP_XAUDIO2)
+    list(APPEND UNLEASHED_RECOMP_APU_CXX_SOURCES "apu/driver/xaudio_driver.cpp")
 else()
-    list(APPEND SWA_APU_CXX_SOURCES "apu/driver/sdl2_driver.cpp")
+    list(APPEND UNLEASHED_RECOMP_APU_CXX_SOURCES "apu/driver/sdl2_driver.cpp")
 endif()
 
-set(SWA_HID_CXX_SOURCES
+set(UNLEASHED_RECOMP_HID_CXX_SOURCES
     "hid/hid.cpp"
     "hid/driver/sdl_hid.cpp"
 )
 
-set(SWA_PATCHES_CXX_SOURCES
+set(UNLEASHED_RECOMP_PATCHES_CXX_SOURCES
     "patches/ui/CHudPause_patches.cpp"
     "patches/ui/CTitleStateIntro_patches.cpp"
     "patches/ui/CTitleStateMenu_patches.cpp"
@@ -158,7 +156,7 @@ set(SWA_PATCHES_CXX_SOURCES
     "patches/video_patches.cpp"
 )
 
-set(SWA_UI_CXX_SOURCES
+set(UNLEASHED_RECOMP_UI_CXX_SOURCES
     "ui/achievement_menu.cpp"
     "ui/achievement_overlay.cpp"
     "ui/installer_wizard.cpp"
@@ -171,7 +169,7 @@ set(SWA_UI_CXX_SOURCES
     "ui/game_window.cpp"
 )
 
-set(SWA_INSTALL_CXX_SOURCES
+set(UNLEASHED_RECOMP_INSTALL_CXX_SOURCES
     "install/installer.cpp"
     "install/iso_file_system.cpp"
     "install/memory_mapped_file.cpp"
@@ -187,56 +185,56 @@ set(SWA_INSTALL_CXX_SOURCES
     "install/hashes/update.cpp"
 )
 
-set(SWA_USER_CXX_SOURCES
+set(UNLEASHED_RECOMP_USER_CXX_SOURCES
     "user/achievement_data.cpp"
     "user/config.cpp"
 )
 
-set(SWA_MOD_CXX_SOURCES
+set(UNLEASHED_RECOMP_MOD_CXX_SOURCES
     "mod/mod_loader.cpp"
 )
 
-set(SWA_THIRDPARTY_SOURCES
-    "${SWA_THIRDPARTY_ROOT}/imgui/backends/imgui_impl_sdl2.cpp"
-    "${SWA_THIRDPARTY_ROOT}/imgui/imgui.cpp"
-    "${SWA_THIRDPARTY_ROOT}/imgui/imgui_demo.cpp"
-    "${SWA_THIRDPARTY_ROOT}/imgui/imgui_draw.cpp"
-    "${SWA_THIRDPARTY_ROOT}/imgui/imgui_tables.cpp"
-    "${SWA_THIRDPARTY_ROOT}/imgui/imgui_widgets.cpp"
-    "${SWA_THIRDPARTY_ROOT}/implot/implot.cpp"
-    "${SWA_THIRDPARTY_ROOT}/implot/implot_demo.cpp"
-    "${SWA_THIRDPARTY_ROOT}/implot/implot_items.cpp"
-    "${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack/lzxd.c"
-    "${SWA_THIRDPARTY_ROOT}/tiny-AES-c/aes.c"
-    "${SWA_TOOLS_ROOT}/ShaderRecomp/thirdparty/smol-v/source/smolv.cpp"
+set(UNLEASHED_RECOMP_THIRDPARTY_SOURCES
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/imgui/backends/imgui_impl_sdl2.cpp"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/imgui/imgui.cpp"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/imgui/imgui_demo.cpp"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/imgui/imgui_draw.cpp"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/imgui/imgui_tables.cpp"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/imgui/imgui_widgets.cpp"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/implot/implot.cpp"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/implot/implot_demo.cpp"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/implot/implot_items.cpp"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/libmspack/libmspack/mspack/lzxd.c"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/tiny-AES-c/aes.c"
+    "${UNLEASHED_RECOMP_TOOLS_ROOT}/XenosRecomp/thirdparty/smol-v/source/smolv.cpp"
 )
 
-set(SWA_THIRDPARTY_INCLUDES
-    "${SWA_THIRDPARTY_ROOT}/concurrentqueue"
-    "${SWA_THIRDPARTY_ROOT}/ddspp"
-    "${SWA_THIRDPARTY_ROOT}/imgui"
-    "${SWA_THIRDPARTY_ROOT}/implot"
-    "${SWA_THIRDPARTY_ROOT}/libmspack/libmspack/mspack"
-    "${SWA_THIRDPARTY_ROOT}/magic_enum/include"
-    "${SWA_THIRDPARTY_ROOT}/stb"
-    "${SWA_THIRDPARTY_ROOT}/tiny-AES-c"
-    "${SWA_THIRDPARTY_ROOT}/TinySHA1"
-    "${SWA_THIRDPARTY_ROOT}/unordered_dense/include"
-    "${SWA_THIRDPARTY_ROOT}/volk"
-    "${SWA_THIRDPARTY_ROOT}/Vulkan-Headers/include"
-    "${SWA_THIRDPARTY_ROOT}/VulkanMemoryAllocator/include"
-    "${SWA_TOOLS_ROOT}/bc_diff"
-    "${SWA_TOOLS_ROOT}/ShaderRecomp/thirdparty/smol-v/source"
+set(UNLEASHED_RECOMP_THIRDPARTY_INCLUDES
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/concurrentqueue"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/ddspp"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/imgui"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/implot"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/libmspack/libmspack/mspack"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/magic_enum/include"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/stb"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/tiny-AES-c"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/TinySHA1"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/unordered_dense/include"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/volk"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/Vulkan-Headers/include"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/VulkanMemoryAllocator/include"
+    "${UNLEASHED_RECOMP_TOOLS_ROOT}/bc_diff"
+    "${UNLEASHED_RECOMP_TOOLS_ROOT}/XenosRecomp/thirdparty/smol-v/source"
 )
 
-if (SWA_D3D12)
-    list(APPEND SWA_THIRDPARTY_INCLUDES "${SWA_THIRDPARTY_ROOT}/D3D12MemoryAllocator/include")
-    list(APPEND SWA_THIRDPARTY_SOURCES "${SWA_THIRDPARTY_ROOT}/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp")
+if (UNLEASHED_RECOMP_D3D12)
+    list(APPEND UNLEASHED_RECOMP_THIRDPARTY_INCLUDES "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/D3D12MemoryAllocator/include")
+    list(APPEND UNLEASHED_RECOMP_THIRDPARTY_SOURCES "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp")
 endif()
 
-set_source_files_properties(${SWA_THIRDPARTY_SOURCES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+set_source_files_properties(${UNLEASHED_RECOMP_THIRDPARTY_SOURCES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 
-set(SWA_CXX_SOURCES
+set(UNLEASHED_RECOMP_CXX_SOURCES
     "app.cpp"
     "exports.cpp"
     "main.cpp"
@@ -244,40 +242,38 @@ set(SWA_CXX_SOURCES
     "stdafx.cpp"
     "version.cpp"
     
-    ${SWA_KERNEL_CXX_SOURCES}
-    ${SWA_LOCALE_CXX_SOURCES}
-    ${SWA_OS_CXX_SOURCES}
-    ${SWA_CPU_CXX_SOURCES}
-    ${SWA_GPU_CXX_SOURCES}
-    ${SWA_APU_CXX_SOURCES}
-    ${SWA_HID_CXX_SOURCES}
-    ${SWA_PATCHES_CXX_SOURCES}
-    ${SWA_UI_CXX_SOURCES}
-    ${SWA_INSTALL_CXX_SOURCES}
-    ${SWA_USER_CXX_SOURCES}
-    ${SWA_MOD_CXX_SOURCES}
-    ${SWA_THIRDPARTY_SOURCES}
+    ${UNLEASHED_RECOMP_KERNEL_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_LOCALE_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_OS_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_CPU_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_GPU_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_APU_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_HID_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_PATCHES_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_UI_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_INSTALL_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_USER_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_MOD_CXX_SOURCES}
+    ${UNLEASHED_RECOMP_THIRDPARTY_SOURCES}
 )
 
 if (WIN32)
     # Set up Win32 resources for application icon.
     set(ICON_PATH "${PROJECT_SOURCE_DIR}/../UnleashedRecompResources/images/game_icon.ico")
     configure_file("res/win32/res.rc.template" "${CMAKE_BINARY_DIR}/res.rc" @ONLY)
-    add_executable(UnleashedRecomp ${SWA_CXX_SOURCES} "${CMAKE_BINARY_DIR}/res.rc")
+    add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES} "${CMAKE_BINARY_DIR}/res.rc")
 else()
-    add_executable(UnleashedRecomp ${SWA_CXX_SOURCES})
+    add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES})
 endif()
 
-set_target_properties(UnleashedRecomp PROPERTIES OUTPUT_NAME ${TARGET_NAME})
-
-if (SWA_FLATPAK)
+if (UNLEASHED_RECOMP_FLATPAK)
     target_compile_definitions(UnleashedRecomp PRIVATE "GAME_INSTALL_DIRECTORY=\"/var/data\"")
 endif()
 
-if (SWA_D3D12)
+if (UNLEASHED_RECOMP_D3D12)
     find_package(directx-headers CONFIG REQUIRED)
     find_package(directx12-agility CONFIG REQUIRED)
-    target_compile_definitions(UnleashedRecomp PRIVATE SWA_D3D12)
+    target_compile_definitions(UnleashedRecomp PRIVATE UNLEASHED_RECOMP_D3D12)
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -286,7 +282,7 @@ endif()
 
 find_package(directx-dxc REQUIRED)
 
-if (SWA_D3D12)
+if (UNLEASHED_RECOMP_D3D12)
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
     add_custom_command(TARGET UnleashedRecomp POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Core,IMPORTED_LOCATION_RELEASE> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
@@ -324,7 +320,7 @@ target_link_libraries(UnleashedRecomp PRIVATE
     msdf-atlas-gen::msdf-atlas-gen
     nfd::nfd
     o1heap
-    PowerUtils
+    XenonUtils
     SDL2::SDL2-static
     SDL2_mixer
     tomlplusplus::tomlplusplus
@@ -335,7 +331,7 @@ target_link_libraries(UnleashedRecomp PRIVATE
 target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     "${CMAKE_CURRENT_SOURCE_DIR}/api"
-    ${SWA_THIRDPARTY_INCLUDES}
+    ${UNLEASHED_RECOMP_THIRDPARTY_INCLUDES}
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -344,12 +340,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(UnleashedRecomp PRIVATE ${X11_LIBRARIES})
 endif()
 
-target_precompile_headers(UnleashedRecomp PUBLIC ${SWA_PRECOMPILED_HEADERS})
+target_precompile_headers(UnleashedRecomp PUBLIC ${UNLEASHED_RECOMP_PRECOMPILED_HEADERS})
 
 function(compile_shader FILE_PATH TARGET_NAME)
     set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/${FILE_PATH}.hlsl)
     cmake_path(GET FILE_PATH STEM VARIABLE_NAME)
-    if (SWA_D3D12)
+    if (UNLEASHED_RECOMP_D3D12)
         add_custom_command(
             OUTPUT ${FILE_PATH}.dxil.h
             COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil

@@ -2,7 +2,7 @@
 
 #include <mod/mod_loader.h>
 
-#define USER_DIRECTORY "SWA"
+#define USER_DIRECTORY "UnleashedRecomp"
 
 #ifndef GAME_INSTALL_DIRECTORY
 #define GAME_INSTALL_DIRECTORY "."

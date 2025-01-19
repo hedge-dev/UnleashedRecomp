@@ -5,8 +5,8 @@ if(NOT DEFINED ENV{VCPKG_ROOT})
 endif()
 
 include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
-set(SWA_THIRDPARTY_ROOT ${CMAKE_SOURCE_DIR}/thirdparty)
-set(SWA_TOOLS_ROOT ${CMAKE_SOURCE_DIR}/tools)
+set(UNLEASHED_RECOMP_THIRDPARTY_ROOT ${CMAKE_SOURCE_DIR}/thirdparty)
+set(UNLEASHED_RECOMP_TOOLS_ROOT ${CMAKE_SOURCE_DIR}/tools)
 set(CMAKE_CXX_STANDARD 20)
 set(BUILD_SHARED_LIBS OFF)
 
@@ -18,8 +18,8 @@ endif()
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-add_subdirectory(${SWA_THIRDPARTY_ROOT})
-add_subdirectory(${SWA_TOOLS_ROOT})
+add_subdirectory(${UNLEASHED_RECOMP_THIRDPARTY_ROOT})
+add_subdirectory(${UNLEASHED_RECOMP_TOOLS_ROOT})
 
 project("UnleashedRecomp-ALL")
 

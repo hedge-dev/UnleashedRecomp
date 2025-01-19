@@ -56,7 +56,7 @@ enum class EVoiceLanguage : uint32_t
 
 enum class EGraphicsAPI : uint32_t
 {
-#ifdef SWA_D3D12
+#ifdef UNLEASHED_RECOMP_D3D12
     D3D12,
 #endif
     Vulkan

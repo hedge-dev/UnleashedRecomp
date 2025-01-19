@@ -13,7 +13,7 @@ using Microsoft::WRL::ComPtr;
 #include <pwd.h>
 #endif
 
-#ifdef SWA_D3D12
+#ifdef UNLEASHED_RECOMP_D3D12
 #include <dxcapi.h>
 #endif
 

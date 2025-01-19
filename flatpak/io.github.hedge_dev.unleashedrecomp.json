@@ -20,10 +20,10 @@
       "name": "UnleashedRecomp",
       "buildsystem": "simple",
       "build-commands": [
-        "cmake --preset linux-release -DSWA_FLATPAK=ON -DSDL2MIXER_VORBIS=VORBISFILE",
+        "cmake --preset linux-release -DUNLEASHED_RECOMP_FLATPAK=ON -DSDL2MIXER_VORBIS=VORBISFILE",
         "cmake --build out/build/linux-release",
         "mkdir -p /app/bin",
-        "cp out/build/linux-release/UnleashedRecomp/SWA /app/bin/SWA",
+        "cp out/build/linux-release/UnleashedRecomp/UnleashedRecomp /app/bin/UnleashedRecomp",
         "install -Dm644 UnleashedRecompResources/images/game_icon.png /app/share/icons/hicolor/128x128/apps/${FLATPAK_ID}.png",
         "install -Dm644 flatpak/io.github.hedge_dev.unleashedrecomp.metainfo.xml /app/share/metainfo/${FLATPAK_ID}.metainfo.xml",
         "install -Dm644 flatpak/io.github.hedge_dev.unleashedrecomp.desktop /app/share/applications/${FLATPAK_ID}.desktop"

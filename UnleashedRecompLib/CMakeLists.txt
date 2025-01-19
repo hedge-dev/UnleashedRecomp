@@ -12,11 +12,11 @@ else()
     add_compile_options(-ffp-model=strict)
 endif()
 
-target_compile_definitions(PowerRecomp PRIVATE 
-    CONFIG_FILE_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/config/SWA.toml\"
-    HEADER_FILE_PATH=\"${SWA_TOOLS_ROOT}/PowerRecomp/PowerUtils/ppc_context.h\")
+target_compile_definitions(XenonRecomp PRIVATE 
+    XENON_RECOMP_CONFIG_FILE_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/config/SWA.toml\"
+    XENON_RECOMP_HEADER_FILE_PATH=\"${UNLEASHED_RECOMP_TOOLS_ROOT}/XenonRecomp/XenonUtils/ppc_context.h\")
 
-set(SWA_PPC_RECOMPILED_SOURCES 
+set(UNLEASHED_RECOMP_PPC_RECOMPILED_SOURCES 
     "${CMAKE_CURRENT_SOURCE_DIR}/ppc/ppc_config.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/ppc/ppc_context.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/ppc/ppc_func_mapping.cpp"
@@ -24,37 +24,37 @@ set(SWA_PPC_RECOMPILED_SOURCES
 )
 
 foreach(i RANGE 0 260)
-    list(APPEND SWA_PPC_RECOMPILED_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ppc/ppc_recomp.${i}.cpp")
+    list(APPEND UNLEASHED_RECOMP_PPC_RECOMPILED_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ppc/ppc_recomp.${i}.cpp")
 endforeach()
 
 add_custom_command(
-    OUTPUT ${SWA_PPC_RECOMPILED_SOURCES}
-    COMMAND $<TARGET_FILE:PowerRecomp>
+    OUTPUT ${UNLEASHED_RECOMP_PPC_RECOMPILED_SOURCES}
+    COMMAND $<TARGET_FILE:XenonRecomp>
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/private/default.xex" "${CMAKE_CURRENT_SOURCE_DIR}/config/SWA.toml"
 )
 
-set(SHADER_RECOMP_ROOT "${SWA_TOOLS_ROOT}/ShaderRecomp/ShaderRecomp")
-set(SHADER_RECOMP_INCLUDE "${SHADER_RECOMP_ROOT}/shader_common.h")
+set(XENOS_RECOMP_ROOT "${UNLEASHED_RECOMP_TOOLS_ROOT}/XenosRecomp/XenosRecomp")
+set(XENOS_RECOMP_INCLUDE "${XENOS_RECOMP_ROOT}/shader_common.h")
 
-target_compile_definitions(ShaderRecomp PRIVATE 
-    SHADER_RECOMP_INPUT=\"${CMAKE_CURRENT_SOURCE_DIR}/private\" 
-    SHADER_RECOMP_OUTPUT=\"${CMAKE_CURRENT_SOURCE_DIR}/shader/shader_cache.cpp\"
-    SHADER_RECOMP_INCLUDE_INPUT=\"${SHADER_RECOMP_INCLUDE}\"
+target_compile_definitions(XenosRecomp PRIVATE 
+    XENOS_RECOMP_INPUT=\"${CMAKE_CURRENT_SOURCE_DIR}/private\" 
+    XENOS_RECOMP_OUTPUT=\"${CMAKE_CURRENT_SOURCE_DIR}/shader/shader_cache.cpp\"
+    XENOS_RECOMP_INCLUDE_INPUT=\"${XENOS_RECOMP_INCLUDE}\"
 )
 
-file(GLOB SHADER_RECOMP_SOURCES 
-    "${SHADER_RECOMP_ROOT}/*.h"
-    "${SHADER_RECOMP_ROOT}/*.cpp"
+file(GLOB XENOS_RECOMP_SOURCES 
+    "${XENOS_RECOMP_ROOT}/*.h"
+    "${XENOS_RECOMP_ROOT}/*.cpp"
 )
 
 add_custom_command(
     OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/shader/shader_cache.cpp"
-    COMMAND $<TARGET_FILE:ShaderRecomp>
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/private/shader.ar" ${SHADER_RECOMP_SOURCES} ${SHADER_RECOMP_INCLUDE}
+    COMMAND $<TARGET_FILE:XenosRecomp>
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/private/shader.ar" ${XENOS_RECOMP_SOURCES} ${XENOS_RECOMP_INCLUDE}
 )
 
 add_library(UnleashedRecompLib 
-    ${SWA_PPC_RECOMPILED_SOURCES}
+    ${UNLEASHED_RECOMP_PPC_RECOMPILED_SOURCES}
     "shader/shader_cache.h"
     "shader/shader_cache.cpp"
 )
