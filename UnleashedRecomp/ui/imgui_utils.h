@@ -19,6 +19,17 @@ extern std::unique_ptr<GuestTexture> g_texLight;
 extern std::unique_ptr<GuestTexture> g_texSelectFade;
 extern std::unique_ptr<GuestTexture> g_texSelectFill;
 
+struct TextSegment {
+    bool annotated;
+    std::string text;
+    std::string annotation;
+};
+
+struct Paragraph {
+    bool annotated;
+    std::vector<std::vector<TextSegment>> lines;
+};
+
 void InitImGuiUtils();
 
 void SetGradient(const ImVec2& min, const ImVec2& max, ImU32 top, ImU32 bottom);
@@ -47,6 +58,9 @@ void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, I
 float CalcWidestTextSize(const ImFont* font, float fontSize, std::span<std::string> strs);
 std::string Truncate(const std::string& input, size_t maxLength, bool useEllipsis = true, bool usePrefixEllipsis = false);
 std::vector<std::string> Split(const char* strStart, const ImFont* font, float fontSize, float maxWidth);
+Paragraph CalculateAnnotatedParagraph(const std::vector<std::string>& lines);
+std::vector<std::string> RemoveAnnotationFromParagraph(const std::vector<std::string>& lines);
+std::string RemoveAnnotationFromParagraphLine(const std::vector<TextSegment>& annotatedLine);
 ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMargin, std::vector<std::string> lines);
 ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float maxWidth, float lineMargin, const char* text);
 void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, const ImVec2& centre, float lineMargin, const char* text, std::function<void(const char*, ImVec2)> drawMethod);

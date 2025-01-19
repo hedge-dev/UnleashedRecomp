@@ -359,27 +359,18 @@ std::vector<std::string> Split(const char* strStart, const ImFont *font, float f
     return result;
 }
 
-ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMargin, std::vector<std::string> lines)
+Paragraph CalculateAnnotatedParagraph(const std::vector<std::string>& lines)
 {
-    struct TextSegment {
-        bool annotated;
-        std::string text;
-        std::string annotation;
-    };
+    Paragraph result;
 
-    auto x = 0.0f;
-    auto y = 0.0f;
-
-    for (auto& str : lines)
+    for (const auto& line : lines)
     {
-        ///////////////////////////////////////////////////////////////////////
-        // TODO: Don't duplicate this code segment
         std::vector<TextSegment> segments;
         std::regex regex(R"(\[([^\:]+):([^\]]+)\])"); // Matches "[text:annotation]"
         std::smatch match;
 
-        auto searchStart = str.cbegin();
-        while (std::regex_search(searchStart, str.cend(), match, regex))
+        auto searchStart = line.cbegin();
+        while (std::regex_search(searchStart, line.cend(), match, regex))
         {
             if (searchStart != match[0].first)
             {
@@ -388,29 +379,75 @@ ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMar
 
             segments.push_back({ true, match[1].str(), match[2].str() });
 
+            result.annotated = true;
+
             searchStart = match[0].second;
         }
 
-        if (searchStart != str.cend())
+        if (searchStart != line.cend())
         {
-            segments.push_back({ false, std::string(searchStart, str.cend()), "" });
+            segments.push_back({ false, std::string(searchStart, line.cend()), "" });
         }
 
+        result.lines.push_back(segments);
+    }
+
+    return result;
+}
+
+std::vector<std::string> RemoveAnnotationFromParagraph(const std::vector<std::string>& lines)
+{
+    std::vector<std::string> result;
+    const auto& annotatedLines = CalculateAnnotatedParagraph(lines).lines;
+
+    for (auto& annotatedLine : annotatedLines)
+    {
         std::string annotationRemovedLine = "";
-        for (const auto& segment : segments)
+        for (const auto& segment : annotatedLine)
         {
             annotationRemovedLine += segment.text;
         }
-        ///////////////////////////////////////////////////////////////////////
 
-        auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, annotationRemovedLine.c_str());
-        auto annotationSize = font->CalcTextSizeA(fontSize * 0.6f, FLT_MAX, 0, "");
+        result.push_back(annotationRemovedLine);
+    }
+
+    return result;
+}
+
+std::string RemoveAnnotationFromParagraphLine(const std::vector<TextSegment>& annotatedLine)
+{
+    std::string result = "";
+
+    for (auto& segment : annotatedLine)
+    {
+        result += segment.text;
+    }
+
+    return result;
+}
+
+ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMargin, std::vector<std::string> lines)
+{
+    auto x = 0.0f;
+    auto y = 0.0f;
+
+    const auto& annotatedLines = CalculateAnnotatedParagraph(lines);
+    
+    std::vector<std::string> annotationRemovedLines;
+    for (const auto& line : annotatedLines.lines)
+    {
+        annotationRemovedLines.emplace_back(RemoveAnnotationFromParagraphLine(line));
+    }
+
+    for (auto& line : annotationRemovedLines)
+    {
+        auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, line.c_str());
+        auto annotationSize = font->CalcTextSizeA(fontSize * 0.55f, FLT_MAX, 0, "");
 
         x = std::max(x, textSize.x);
         y += textSize.y + Scale(lineMargin);
 
-        // TODO: This will case the text to account for annotation even if there's none included ever. This should not be the case.
-        if (&str != &lines.back())
+        if (annotatedLines.annotated && &line != &lines.back() && &line != &lines.front())
         {
             y += annotationSize.y;
         }
@@ -430,41 +467,11 @@ void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, co
     auto paragraphSize = MeasureCentredParagraph(font, fontSize, lineMargin, lines);
     auto offsetY = 0.0f;
 
-    struct TextSegment {
-        bool annotated;
-        std::string text;
-        std::string annotation;
-    };
+    const auto& annotatedLines = CalculateAnnotatedParagraph(lines);
 
-    for (const auto& line : lines)
+    for (const auto& annotatedLine : annotatedLines.lines)
     {
-        std::vector<TextSegment> segments;
-        std::regex regex(R"(\[([^\:]+):([^\]]+)\])"); // Matches "[text:annotation]"
-        std::smatch match;
-
-        auto searchStart = line.cbegin();
-        while (std::regex_search(searchStart, line.cend(), match, regex))
-        {
-            if (searchStart != match[0].first)
-            {
-                segments.push_back({ false, std::string(searchStart, match[0].first), ""});
-            }
-
-            segments.push_back({ true, match[1].str(), match[2].str() });
-
-            searchStart = match[0].second;
-        }
-
-        if (searchStart != line.cend())
-        {
-            segments.push_back({ false, std::string(searchStart, line.cend()), "" });
-        }
-
-        std::string annotationRemovedLine = "";
-        for (const auto& segment : segments)
-        {
-            annotationRemovedLine += segment.text;
-        }
+        const auto& annotationRemovedLine = RemoveAnnotationFromParagraphLine(annotatedLine);
 
         auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, annotationRemovedLine.c_str());
         auto annotationSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, "");
@@ -473,7 +480,7 @@ void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, co
             ? centre.x - paragraphSize.x / 2
             : centre.x - textSize.x / 2;
 
-        for (const auto& segment : segments)
+        for (const auto& segment : annotatedLine)
         {
             textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, segment.text.c_str());
 
@@ -481,19 +488,22 @@ void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, co
 
             if (segment.annotated)
             {
-                annotationSize = font->CalcTextSizeA(fontSize * 0.6f, FLT_MAX, 0, segment.annotation.c_str());
+                annotationSize = font->CalcTextSizeA(fontSize * 0.55f, FLT_MAX, 0, segment.annotation.c_str());
 
                 float annotationX = textX + (textSize.x - annotationSize.x) / 2.0f;
 
-                annotationDrawMethod(segment.annotation.c_str(), fontSize * 0.6f, { annotationX, textY - (fontSize * 0.6f) });
+                annotationDrawMethod(segment.annotation.c_str(), fontSize * 0.55f, { annotationX, textY - (fontSize * 0.55f) });
             }
 
             drawMethod(segment.text.c_str(), { textX, textY });
             textX += textSize.x;
         }
-
-        // TODO: This will case the text to account for annotation even if there's none included ever. This should not be the case.
-        offsetY += textSize.y + annotationSize.y + Scale(lineMargin);
+        
+        offsetY += textSize.y + Scale(lineMargin);
+        if (annotatedLines.annotated)
+        {
+            offsetY += annotationSize.y;
+        }
     }
 }
 
