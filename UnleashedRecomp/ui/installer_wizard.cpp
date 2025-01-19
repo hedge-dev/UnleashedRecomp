@@ -16,6 +16,7 @@
 #include <ui/sdl_listener.h>
 #include <ui/game_window.h>
 #include <decompressor.h>
+#include <exports.h>
 
 #include <res/images/common/hedge-dev.dds.h>
 #include <res/images/installer/install_001.dds.h>

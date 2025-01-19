@@ -19,10 +19,10 @@
 */
 
 #define CONFIG_DEFINE_LOCALE(name) \
-    CONFIG_LOCALE Config::g_##name##_locale =
+    CONFIG_LOCALE g_##name##_locale =
 
 #define CONFIG_DEFINE_ENUM_LOCALE(type) \
-    CONFIG_ENUM_LOCALE(type) Config::g_##type##_locale =
+    CONFIG_ENUM_LOCALE(type) g_##type##_locale =
 
 CONFIG_DEFINE_LOCALE(Language)
 {
