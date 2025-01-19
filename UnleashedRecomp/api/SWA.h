@@ -78,6 +78,8 @@
 #include "SWA/Inspire/InspireTextureOverlayInfo.h"
 #include "SWA/Movie/MovieDisplayer.h"
 #include "SWA/Movie/MovieManager.h"
+#include "SWA/Path/PathController.h"
+#include "SWA/Path/Animation/PathAnimation.h"
 #include "SWA/Player/Character/EvilSonic/EvilSonic.h"
 #include "SWA/Player/Character/EvilSonic/EvilSonicContext.h"
 #include "SWA/Player/Character/EvilSonic/Hud/EvilHudGuide.h"
