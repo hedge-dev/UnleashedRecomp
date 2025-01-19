@@ -404,9 +404,16 @@ ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMar
         ///////////////////////////////////////////////////////////////////////
 
         auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, annotationRemovedLine.c_str());
+        auto annotationSize = font->CalcTextSizeA(fontSize * 0.6f, FLT_MAX, 0, "");
 
         x = std::max(x, textSize.x);
         y += textSize.y + Scale(lineMargin);
+
+        // TODO: This will case the text to account for annotation even if there's none included ever. This should not be the case.
+        if (&str != &lines.back())
+        {
+            y += annotationSize.y;
+        }
     }
 
     return { x, y };
@@ -460,6 +467,7 @@ void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, co
         }
 
         auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, annotationRemovedLine.c_str());
+        auto annotationSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, "");
 
         auto textX = annotationRemovedLine.starts_with("- ")
             ? centre.x - paragraphSize.x / 2
@@ -468,11 +476,12 @@ void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, co
         for (const auto& segment : segments)
         {
             textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, segment.text.c_str());
+
             auto textY = centre.y - paragraphSize.y / 2 + offsetY;
 
             if (segment.annotated)
             {
-                auto annotationSize = font->CalcTextSizeA(fontSize * 0.6f, FLT_MAX, 0, segment.annotation.c_str());
+                annotationSize = font->CalcTextSizeA(fontSize * 0.6f, FLT_MAX, 0, segment.annotation.c_str());
 
                 float annotationX = textX + (textSize.x - annotationSize.x) / 2.0f;
 
@@ -483,7 +492,8 @@ void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, co
             textX += textSize.x;
         }
 
-        offsetY += textSize.y + Scale(lineMargin);
+        // TODO: This will case the text to account for annotation even if there's none included ever. This should not be the case.
+        offsetY += textSize.y + annotationSize.y + Scale(lineMargin);
     }
 }
 
