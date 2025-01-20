@@ -30,15 +30,16 @@ jobs:
           token: ${{ secrets.ASSET_REPO_TOKEN }}
           path: flatpak/private
 
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: ccache-${{ env.FLATPAK_ID }}
-
       - name: Install dependencies
         run: |-
           sudo apt update
-          sudo apt install -y flatpak-builder
+          sudo apt install -y flatpak-builder ccache
+
+      - name: Cache ccache directory
+        uses: actions/cache@v4
+        with:
+          path: /tmp/ccache
+          key: ur-ccache-${{ runner.os }}
 
       - name: Prepare Flatpak
         run: |
@@ -48,7 +49,7 @@ jobs:
 
       - name: Build Flatpak
         run: |
-          export CCACHE_DIR=/home/runner/work/UnleashedRecomp/UnleashedRecomp/.ccache
+          export CCACHE_DIR=/tmp/ccache
           sudo flatpak-builder --force-clean --install-deps-from=flathub --repo=repo --install builddir --ccache ./flatpak/${{ env.FLATPAK_ID }}.json
           sudo flatpak build-bundle repo ./${{ env.FLATPAK_ID }}.flatpak ${{ env.FLATPAK_ID }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
