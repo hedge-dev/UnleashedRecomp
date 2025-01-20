@@ -30,10 +30,10 @@ jobs:
           token: ${{ secrets.ASSET_REPO_TOKEN }}
           path: flatpak/private
 
-#      - name: Install dependencies
-#        run: |-
-#          sudo apt update
-#          sudo apt install -y ninja-build libsdl2-dev libgtk-3-dev flatpak-builder
+      - name: Install dependencies
+        run: |-
+          sudo apt update
+          sudo apt install -y flatpak-builder
 
       - name: Prepare Flatpak
         run: |
