@@ -5,20 +5,20 @@ namespace Chao::CSD
     inline RCPtr<CScene> CProject::CreateScene(const char* in_pName) const
     {
         RCPtr<CScene> rcScene;
-        GuestToHostFunction<void>(0x830BEE00, this, rcScene, in_pName, nullptr);
+        GuestToHostFunction<void>(sub_830BEE00, this, rcScene, in_pName, nullptr);
         return rcScene;
     }
 
     inline RCPtr<CScene> CProject::CreateScene(const char* in_pName, const char* in_pMotionName) const
     {
         RCPtr<CScene> rcScene;
-        GuestToHostFunction<void>(0x830BECE0, this, rcScene, in_pName, in_pMotionName, nullptr);
+        GuestToHostFunction<void>(sub_830BECE0, this, rcScene, in_pName, in_pMotionName, nullptr);
         return rcScene;
     }
 
     inline void CProject::DestroyScene(CScene* in_pScene)
     {
-        GuestToHostFunction<void>(0x830BE298, this, in_pScene);
+        GuestToHostFunction<void>(sub_830BE298, this, in_pScene);
     }
 
     inline void CProject::DestroyScene(RCPtr<CScene>& inout_rcScene)

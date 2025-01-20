@@ -19,7 +19,7 @@ void CHudPauseAddOptionsItemMidAsmHook(PPCRegister& pThis)
     guest_stack_var<Hedgehog::Base::CSharedString> menu("TopMenu");
     guest_stack_var<Hedgehog::Base::CSharedString> name("option");
 
-    GuestToHostFunction<int>(0x824AE690, pThis.u32, menu.get(), name.get());
+    GuestToHostFunction<int>(sub_824AE690, pThis.u32, menu.get(), name.get());
 }
 
 bool InjectMenuBehaviour(uint32_t pThis, uint32_t count)
@@ -125,7 +125,7 @@ PPC_FUNC(sub_824B0930)
         // Re-open pause menu after achievement menu closes with delay.
         if (g_achievementMenuOutroTime >= g_achievementMenuOutroThreshold)
         {
-            GuestToHostFunction<int>(0x824AFD28, pHudPause, 0, 1, 0, 0);
+            GuestToHostFunction<int>(sub_824AFD28, pHudPause, 0, 1, 0, 0);
 
             g_achievementMenuOutroTime = 0;
             g_isAchievementMenuOutro = false;
@@ -152,7 +152,7 @@ PPC_FUNC(sub_824B0930)
         {
             OptionsMenu::Close();
 
-            GuestToHostFunction<int>(0x824AFD28, pHudPause, 0, 0, 0, 1);
+            GuestToHostFunction<int>(sub_824AFD28, pHudPause, 0, 0, 0, 1);
         }
     }
     else

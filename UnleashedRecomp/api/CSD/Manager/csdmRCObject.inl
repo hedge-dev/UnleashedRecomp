@@ -30,6 +30,6 @@ namespace Chao::CSD
 
     inline void RCPtrAbs::RCObject::Release()
     {
-        GuestToHostFunction<void>(0x830BA068, this);
+        GuestToHostFunction<void>(sub_830BA068, this);
     }
 }

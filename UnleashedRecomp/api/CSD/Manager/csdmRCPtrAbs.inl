@@ -27,12 +27,12 @@ namespace Chao::CSD
 
     inline void RCPtrAbs::AttachAbs(void* in_pMemory)
     {
-        GuestToHostFunction<void>(0x830BA298, this, in_pMemory);
+        GuestToHostFunction<void>(sub_830BA298, this, in_pMemory);
     }
 
     inline void RCPtrAbs::SetAbs(const RCPtrAbs& in_rPtr)
     {
-        GuestToHostFunction<void>(0x830BA328, this, in_rPtr);
+        GuestToHostFunction<void>(sub_830BA328, this, in_rPtr);
     }
 
     inline void* RCPtrAbs::operator*() const
