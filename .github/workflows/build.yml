@@ -39,19 +39,19 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/ccache
-          key: ur-ccache-${{ runner.os }}
+          key: ccache-${{ runner.os }}
 
       - name: Prepare Flatpak
         run: |
-          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-          sudo flatpak install -y flathub org.freedesktop.Sdk//${{ env.FREEDESKTOP_VERSION }}
-          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.llvm${{ env.LLVM_VERSION }}//${{ env.FREEDESKTOP_VERSION }}
+          flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak --user install -y flathub org.freedesktop.Sdk//${{ env.FREEDESKTOP_VERSION }}
+          flatpak --user install -y flathub org.freedesktop.Sdk.Extension.llvm${{ env.LLVM_VERSION }}//${{ env.FREEDESKTOP_VERSION }}
 
       - name: Build Flatpak
         run: |
           export CCACHE_DIR=/tmp/ccache
-          sudo flatpak-builder --force-clean --install-deps-from=flathub --repo=repo --install builddir --ccache ./flatpak/${{ env.FLATPAK_ID }}.json
-          sudo flatpak build-bundle repo ./${{ env.FLATPAK_ID }}.flatpak ${{ env.FLATPAK_ID }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+          flatpak-builder --user --force-clean --install-deps-from=flathub --repo=repo --install --ccache builddir ./flatpak/${{ env.FLATPAK_ID }}.json
+          flatpak build-bundle repo ./${{ env.FLATPAK_ID }}.flatpak ${{ env.FLATPAK_ID }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
