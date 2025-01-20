@@ -43,8 +43,8 @@ jobs:
 
       - name: Build Flatpak
         run: |
-          sudo flatpak-builder --force-clean --user --install-deps-from=flathub --repo=repo --install builddir ${{ env.FLATPAK_ID }}.json
-          sudo flatpak build-bundle repo ${{ env.FLATPAK_ID }}.flatpak ${{ env.FLATPAK_ID }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak-builder --force-clean --user --install-deps-from=flathub --repo=repo --install builddir ./flatpak/${{ env.FLATPAK_ID }}.json
+          sudo flatpak build-bundle repo ./${{ env.FLATPAK_ID }}.flatpak ${{ env.FLATPAK_ID }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
