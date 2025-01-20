@@ -35,12 +35,12 @@
         },
         {
           "type": "file",
-          "path": "default.xex",
+          "path": "private/default.xex",
           "dest": "UnleashedRecompLib/private"
         },
         {
           "type": "file",
-          "path": "shader.ar",
+          "path": "private/shader.ar",
           "dest": "UnleashedRecompLib/private"
         }
       ],
