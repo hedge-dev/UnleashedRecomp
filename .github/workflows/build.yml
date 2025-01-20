@@ -30,6 +30,11 @@ jobs:
           token: ${{ secrets.ASSET_REPO_TOKEN }}
           path: flatpak/private
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ccache-${{ env.FLATPAK_ID }}
+
       - name: Install dependencies
         run: |-
           sudo apt update
