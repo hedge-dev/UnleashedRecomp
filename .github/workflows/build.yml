@@ -48,6 +48,7 @@ jobs:
 
       - name: Build Flatpak
         run: |
+          export CCACHE_DIR=/home/runner/work/UnleashedRecomp/UnleashedRecomp/.ccache
           sudo flatpak-builder --force-clean --install-deps-from=flathub --repo=repo --install builddir --ccache ./flatpak/${{ env.FLATPAK_ID }}.json
           sudo flatpak build-bundle repo ./${{ env.FLATPAK_ID }}.flatpak ${{ env.FLATPAK_ID }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
@@ -56,3 +57,10 @@ jobs:
         with:
           name: UnleashedRecomp-flatpak
           path: ./${{ env.FLATPAK_ID }}.flatpak
+      
+      - name: Upload artifact to Discord
+        uses: sinshutu/upload-to-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: ./${{ env.FLATPAK_ID }}.flatpak
