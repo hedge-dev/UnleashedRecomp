@@ -20,7 +20,7 @@
       "name": "UnleashedRecomp",
       "buildsystem": "simple",
       "build-commands": [
-        "cmake --preset linux-release -DUNLEASHED_RECOMP_FLATPAK=ON -DSDL2MIXER_VORBIS=VORBISFILE",
+        "cmake --preset linux-release -DUNLEASHED_RECOMP_FLATPAK=ON -DSDL2MIXER_VORBIS=VORBISFILE -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache",
         "cmake --build out/build/linux-release",
         "mkdir -p /app/bin",
         "cp out/build/linux-release/UnleashedRecomp/UnleashedRecomp /app/bin/UnleashedRecomp",
