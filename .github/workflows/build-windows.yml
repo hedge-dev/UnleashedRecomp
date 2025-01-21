@@ -36,8 +36,7 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Prepare Project
-        run: |
-          robocopy .\private .\UnleashedRecompLib\private
+        run: copy .\private\* .\UnleashedRecompLib\private
 
       - name: Configure Project
         run: cmake . --preset ${{ env.CMAKE_PRESET }} -DSDL2MIXER_VORBIS=VORBISFILE
