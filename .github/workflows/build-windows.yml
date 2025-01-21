@@ -37,7 +37,7 @@ jobs:
 
       - name: Prepare Project
         run: |
-          cp -r .\private ..\RecompCiTest\UnleashedRecompLib
+          cp -r .\private .\UnleashedRecompLib
 
       - name: Configure Project
         run: cmake . --preset ${{ env.CMAKE_PRESET }} -DSDL2MIXER_VORBIS=VORBISFILE
