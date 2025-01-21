@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - linux-actions
+
 env:
   FLATPAK_ID: io.github.hedge_dev.unleashedrecomp
   FREEDESKTOP_VERSION: 23.08
@@ -40,6 +41,14 @@ jobs:
           path: /tmp/ccache
           key: ccache-${{ runner.os }}
 
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./thirdparty/vcpkg/downloads
+            ./thirdparty/vcpkg/packages
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+
       - name: Prepare Flatpak
         run: |
           flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
@@ -48,20 +57,27 @@ jobs:
 
       - name: Build Flatpak
         run: |
+          echo "commit_message=$(git log -1 --pretty=%B)" >> $GITHUB_ENV
           export CCACHE_DIR=/tmp/ccache
           flatpak-builder --user --force-clean --install-deps-from=flathub --repo=repo --install --ccache builddir ./flatpak/${{ env.FLATPAK_ID }}.json
           flatpak build-bundle repo ./${{ env.FLATPAK_ID }}.flatpak ${{ env.FLATPAK_ID }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: UnleashedRecomp-flatpak
-          path: ./${{ env.FLATPAK_ID }}.flatpak
+# Uplodads the built flatpak bundle to GitHub
+#      - name: Upload artifact
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: UnleashedRecomp-flatpak
+#          path: ./${{ env.FLATPAK_ID }}.flatpak
       
       - name: Upload artifact to Discord
         env: 
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         if: ${{ env.DISCORD_WEBHOOK != '' }}
-        uses: sinshutu/upload-to-discord@master
+        uses: tsickert/discord-webhook@v6.0.0
         with:
-          args: ./${{ env.FLATPAK_ID }}.flatpak
+          webhook-url: ${{ env.DISCORD_WEBHOOK }}
+          content: |
+            Branch: ${{ github.ref_name }}
+            Commit Message: ${{ env.commit_message }}
+            Commit Hash: ${{ github.sha }}
+          filename: ./${{ env.FLATPAK_ID }}.flatpak
