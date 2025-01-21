@@ -2,9 +2,6 @@ name: Build Project
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - linux-actions
 
 env:
   FLATPAK_ID: io.github.hedge_dev.unleashedrecomp
@@ -60,8 +57,9 @@ jobs:
           path: ./${{ env.FLATPAK_ID }}.flatpak
       
       - name: Upload artifact to Discord
-        uses: sinshutu/upload-to-discord@master
-        env:
+        env: 
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        if: ${{ env.DISCORD_WEBHOOK != '' }}
+        uses: sinshutu/upload-to-discord@master
         with:
           args: ./${{ env.FLATPAK_ID }}.flatpak
