@@ -38,14 +38,6 @@ jobs:
           path: /tmp/ccache
           key: ccache-${{ runner.os }}
 
-      - name: Cache vcpkg
-        uses: actions/cache@v4
-        with:
-          path: |
-            ./thirdparty/vcpkg/downloads
-            ./thirdparty/vcpkg/packages
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-
       - name: Prepare Flatpak
         run: |
           flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
@@ -74,6 +66,7 @@ jobs:
         with:
           webhook-url: ${{ env.DISCORD_WEBHOOK }}
           content: |
+            OS: Linux
             Summary: ${{ env.commit_message }}
             Commit: ${{ github.sha }}
             Branch: ${{ github.ref_name }}

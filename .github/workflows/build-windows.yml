@@ -37,6 +37,8 @@ jobs:
             ./thirdparty/vcpkg/downloads
             ./thirdparty/vcpkg/packages
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+              vcpkg-${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -69,6 +71,13 @@ jobs:
           Move-Item -Path ".\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\UnleashedRecomp.exe" -Destination ".\release\UnleashedRecomp.exe"
 
           Compress-Archive -Path .\release\* -DestinationPath .\UnleashedRecomp-Windows.zip
+
+# Uploads the packed zip file to GitHub
+#      - name: Upload artifact
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: UnleashedRecomp-Windows
+#          path: .\UnleashedRecomp-Windows.zip
       
       - name: Upload artifact to Discord
         env: 
@@ -78,6 +87,7 @@ jobs:
         with:
           webhook-url: ${{ env.DISCORD_WEBHOOK }}
           content: |
+            OS: Windows
             Summary: ${{ env.commit_message }}
             Commit: ${{ github.sha }}
             Branch: ${{ github.ref_name }}
