@@ -2,9 +2,6 @@ name: Build Project (Windows)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - windows-actions
 
 env:
   CMAKE_PRESET: x64-Clang-Release
