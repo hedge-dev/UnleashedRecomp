@@ -1,4 +1,4 @@
-name: Build Project
+name: Build Project (Flatpak)
 
 on:
   workflow_dispatch:
@@ -74,7 +74,7 @@ jobs:
         with:
           webhook-url: ${{ env.DISCORD_WEBHOOK }}
           content: |
+            Summary: ${{ env.commit_message }}
+            Commit: ${{ github.sha }}
             Branch: ${{ github.ref_name }}
-            Commit Message: ${{ env.commit_message }}
-            Commit Hash: ${{ github.sha }}
           filename: ./${{ env.FLATPAK_ID }}.flatpak

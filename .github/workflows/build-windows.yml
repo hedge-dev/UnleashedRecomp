@@ -1,4 +1,4 @@
-name: Build Project
+name: Build Project (Windows)
 
 on:
   workflow_dispatch:
