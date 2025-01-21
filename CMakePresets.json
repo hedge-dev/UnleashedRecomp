@@ -23,8 +23,7 @@
                 "type": "equals",
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
-            },
-            "toolset": "ClangCL"
+            }
         },
         {
             "name": "x64-Clang-Debug",
