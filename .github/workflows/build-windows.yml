@@ -1,0 +1,61 @@
+name: Build Project
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - windows-actions
+
+env:
+  CMAKE_PRESET: x64-Clang-Release
+
+jobs:
+  build:
+    name: Build Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.ORG_TOKEN }}
+
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.ASSET_REPO }}
+          token: ${{ secrets.ASSET_REPO_TOKEN }}
+          path: .\private
+
+      - name: Install dependencies
+        run: |-
+          choco install ninja
+      
+      - name: Configure Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Prepare Project
+        run: |
+          cp -r .\private ..\RecompCiTest\UnleashedRecompLib
+
+      - name: Configure Project
+        run: cmake . --preset ${{ env.CMAKE_PRESET }} -DSDL2MIXER_VORBIS=VORBISFILE
+
+      - name: Build Project
+        run: cmake . --build
+      
+      - name: Pack Release
+        run: Compress-Archive -Path .\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\* -DestinationPath .\UnleashedRecomp-Windows.zip
+      
+      - name: Upload artifact to Discord
+        env: 
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        if: ${{ env.DISCORD_WEBHOOK != '' }}
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ env.DISCORD_WEBHOOK }}
+          content: |
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref_name }}
+          filename: .\UnleashedRecomp-Windows.zip
