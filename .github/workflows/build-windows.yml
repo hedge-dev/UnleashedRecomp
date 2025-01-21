@@ -43,7 +43,7 @@ jobs:
         run: cmake . --preset ${{ env.CMAKE_PRESET }} -DSDL2MIXER_VORBIS=VORBISFILE
 
       - name: Build Project
-        run: cmake . --build
+        run: cmake --build .\out\build\${{ env.CMAKE_PRESET }}
       
       - name: Pack Release
         run: Compress-Archive -Path .\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\* -DestinationPath .\UnleashedRecomp-Windows.zip
