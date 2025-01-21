@@ -2,9 +2,6 @@ name: Build Project
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - linux-actions
 
 env:
   FLATPAK_ID: io.github.hedge_dev.unleashedrecomp
