@@ -550,25 +550,25 @@ address = 0x824DC9D4
 
 # CPlayerSpeedPostureInputOnPath
 [[midasm_hook]]
-name = "PostureDPadSupportMidAsmHook"
+name = "PostureDPadSupportInvertYMidAsmHook"
 address = 0x8234F194
 registers = ["r31", "f13", "f0"]
 
 # CPlayerSpeedPostureInputOnPathLocal
 [[midasm_hook]]
-name = "PostureDPadSupportPathLocalMidAsmHook"
+name = "PostureDPadSupportMidAsmHook"
 address = 0x8234F610
 registers = ["r30", "f0", "f13"]
 
 # CPlayerSpeedPostureInput3DStandard
 [[midasm_hook]]
-name = "PostureDPadSupportMidAsmHook"
+name = "PostureDPadSupportInvertYMidAsmHook"
 address = 0x8234EEE8
 registers = ["r31", "f12", "f13"]
 
 # CEvilPostureInputStandard
 [[midasm_hook]]
-name = "PostureDPadSupportMidAsmHook"
+name = "PostureDPadSupportInvertYMidAsmHook"
 address = 0x823CDA60
 registers = ["r3", "f11", "f12"]
 
@@ -580,9 +580,94 @@ registers = ["r3", "f0"]
 
 # CEvilPostureInputStandard
 [[midasm_hook]]
-name = "PostureDPadSupportYMidAsmHook"
-address = 0x823CDA88
-registers = ["r3", "f12"]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x823CDA74
+registers = ["r3", "f0"]
+
+# SWA::CObjBobsleigh::CStateMode3D
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x8266B5F0
+registers = ["r29", "f13"]
+
+# SWA::CObjBobsleigh::CStateMode3D
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x8266B8B4
+registers = ["r29", "f0"]
+
+# SWA::CObjBobsleigh::CStateMode3D
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x8266B618
+registers = ["r29", "f0"]
+
+# SWA::CObjBobsleigh::CStateMode3D
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x8266B6AC
+registers = ["r29", "f0"]
+
+# CSuperSonicPostureInputSpaceHurrier
+[[midasm_hook]]
+name = "PostureSpaceHurrierDPadSupportXMidAsmHook"
+address = 0x82455DD8
+registers = ["r30", "v61"]
+
+# CSuperSonicPostureInputSpaceHurrier
+[[midasm_hook]]
+name = "PostureSpaceHurrierDPadSupportYMidAsmHook"
+address = 0x82455DC8
+registers = ["r30", "v63"]
+
+# CWorldMapCamera - disable rotation deadzone for touch
+[[midasm_hook]]
+name = "WorldMapTouchSupportMidAsmHook"
+address = 0x824862EC
+jump_address_on_true = 0x824862F0
+
+# CWorldMapCamera - disable flag magnetism for touch
+[[midasm_hook]]
+name = "WorldMapTouchMagnetismSupportMidAsmHook"
+address = 0x824866D4
+registers = ["f0"]
+jump_address_on_true = 0x82486838
+
+# CWorldMapCamera - touch and D-Pad support for camera adjustment threshold on the X axis
+[[midasm_hook]]
+name = "TouchAndDPadSupportWorldMapXMidAsmHook"
+address = 0x824862D8
+registers = ["r30", "f12"]
+
+# CWorldMapCamera - touch and D-Pad support for adjusing camera yaw
+[[midasm_hook]]
+name = "TouchAndDPadSupportWorldMapXMidAsmHook"
+address = 0x82486318
+registers = ["r30", "f12"]
+
+# CWorldMapCamera - touch and D-Pad support for camera adjustment threshold on the Y axis
+[[midasm_hook]]
+name = "TouchAndDPadSupportWorldMapYMidAsmHook"
+address = 0x824862CC
+registers = ["r30", "f0"]
+
+# CWorldMapCamera - touch and D-Pad support for adjusing camera pitch
+[[midasm_hook]]
+name = "TouchAndDPadSupportWorldMapYMidAsmHook"
+address = 0x824862F4
+registers = ["r30", "f0"]
+
+# CWorldMapCamera - touch and D-Pad support for flag magnetism on the X axis
+[[midasm_hook]]
+name = "TouchAndDPadSupportWorldMapMagnetismXMidAsmHook"
+address = 0x82486660
+registers = ["r27", "f29", "r28"]
+
+# CWorldMapCamera - touch and D-Pad support for flag magnetism on the Y axis
+[[midasm_hook]]
+name = "TouchAndDPadSupportWorldMapYMidAsmHook"
+address = 0x8248665C
+registers = ["r27", "f28"]
 
 [[midasm_hook]]
 name = "LoadingUpdateMidAsmHook"
