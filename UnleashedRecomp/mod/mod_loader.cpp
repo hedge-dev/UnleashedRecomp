@@ -26,9 +26,6 @@ static std::vector<Mod> g_mods;
 
 std::filesystem::path ModLoader::ResolvePath(std::string_view path)
 {
-    if (g_mods.empty())
-        return {};
-
     std::string_view root;
 
     size_t sepIndex = path.find(":\\");
@@ -50,6 +47,9 @@ std::filesystem::path ModLoader::ResolvePath(std::string_view path)
 
         return {};
     }
+
+    if (g_mods.empty())
+        return {};
 
     thread_local xxHashMap<std::filesystem::path> s_cache;
 
