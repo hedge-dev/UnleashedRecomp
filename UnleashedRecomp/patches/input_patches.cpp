@@ -1,16 +1,46 @@
 #include <api/SWA.h>
+#include <hid/hid.h>
 #include <ui/sdl_listener.h>
 #include <app.h>
 #include <exports.h>
 
-constexpr float WORLD_MAP_TOUCH_CANCEL_DEADZONE = 0.31f;
-constexpr float WORLD_MAP_TOUCH_DAMPING_FACTOR = 0.99f;
-constexpr float WORLD_MAP_TOUCH_FLICK_ACCELERATION_X = 0.4f;
-constexpr float WORLD_MAP_TOUCH_FLICK_ACCELERATION_Y = 0.2f;
-constexpr float WORLD_MAP_TOUCH_FLICK_TERMINAL_VELOCITY = 40.0f;
-constexpr float WORLD_MAP_TOUCH_FLICK_THRESHOLD = 2.25f;
-constexpr float WORLD_MAP_TOUCH_SENSITIVITY_MULTIPLIER = 1.35f;
-constexpr float WORLD_MAP_TOUCH_SMOOTHING_FACTOR = 0.8f;
+class WorldMapTouchParams
+{
+public:
+    float CancelDeadzone{ 0.31f };
+    float Damping{ 0.99f };
+    float FlickAccelX{ 0.25f };
+    float FlickAccelY{ 0.1f };
+    float FlickTerminalVelocity{ 40.0f };
+    float FlickThreshold{ 2.25f };
+    float SensitivityX{};
+    float SensitivityY{};
+    float Smoothing{ 0.8f };
+};
+
+class WorldMapTouchParamsProspero : public WorldMapTouchParams
+{
+public:
+    WorldMapTouchParamsProspero()
+    {
+        SensitivityX = 1.15f;
+        SensitivityY = 1.05f;
+    }
+}
+g_worldMapTouchParamsProspero;
+
+class WorldMapTouchParamsOrbis : public WorldMapTouchParams
+{
+public:
+    WorldMapTouchParamsOrbis()
+    {
+        SensitivityX = 0.95f;
+        SensitivityY = 1.0f;
+    }
+}
+g_worldMapTouchParamsOrbis;
+
+WorldMapTouchParams g_worldMapTouchParams{};
 
 static bool g_isTouchActive;
 
@@ -39,37 +69,32 @@ public:
 
         if (g_isTouchActive)
         {
-            constexpr auto sensitivity = WORLD_MAP_TOUCH_SENSITIVITY_MULTIPLIER;
-
             auto dxNorm = ms_touchpadDeltaX / referenceDeltaTime;
             auto dyNorm = ms_touchpadDeltaY / referenceDeltaTime;
-            auto dxSens = dxNorm * sensitivity;
-            auto dySens = dyNorm * sensitivity;
+            auto dxSens = dxNorm * g_worldMapTouchParams.SensitivityX;
+            auto dySens = dyNorm * g_worldMapTouchParams.SensitivityY;
 
-            auto smoothing = powf(WORLD_MAP_TOUCH_SMOOTHING_FACTOR, deltaTime / referenceDeltaTime);
+            auto smoothing = powf(g_worldMapTouchParams.Smoothing, deltaTime / referenceDeltaTime);
 
             g_worldMapTouchVelocityX = smoothing * g_worldMapTouchVelocityX + (1.0f - smoothing) * dxSens;
             g_worldMapTouchVelocityY = smoothing * g_worldMapTouchVelocityY + (1.0f - smoothing) * dySens;
 
-            constexpr auto flickThreshold = WORLD_MAP_TOUCH_FLICK_THRESHOLD;
+            auto flickThreshold = g_worldMapTouchParams.FlickThreshold;
 
             if (fabs(dxSens) > flickThreshold || fabs(dySens) > flickThreshold)
             {
-                constexpr auto flickAccelX = WORLD_MAP_TOUCH_FLICK_ACCELERATION_X;
-                constexpr auto flickAccelY = WORLD_MAP_TOUCH_FLICK_ACCELERATION_Y;
-
-                g_worldMapTouchVelocityX += dxNorm * flickAccelX * (deltaTime / referenceDeltaTime);
-                g_worldMapTouchVelocityY += dyNorm * flickAccelY * (deltaTime / referenceDeltaTime);
+                g_worldMapTouchVelocityX += dxNorm * g_worldMapTouchParams.FlickAccelX * (deltaTime / referenceDeltaTime);
+                g_worldMapTouchVelocityY += dyNorm * g_worldMapTouchParams.FlickAccelY * (deltaTime / referenceDeltaTime);
             }
 
-            constexpr auto terminalVelocity = WORLD_MAP_TOUCH_FLICK_TERMINAL_VELOCITY;
+            auto terminalVelocity = g_worldMapTouchParams.FlickTerminalVelocity;
 
             g_worldMapTouchVelocityX = std::clamp(g_worldMapTouchVelocityX, -terminalVelocity, terminalVelocity);
             g_worldMapTouchVelocityY = std::clamp(g_worldMapTouchVelocityY, -terminalVelocity, terminalVelocity);
         }
         else
         {
-            auto dampingFactor = powf(WORLD_MAP_TOUCH_DAMPING_FACTOR, deltaTime / referenceDeltaTime);
+            auto dampingFactor = powf(g_worldMapTouchParams.Damping, deltaTime / referenceDeltaTime);
 
             g_worldMapTouchVelocityX *= dampingFactor;
             g_worldMapTouchVelocityY *= dampingFactor;
@@ -101,10 +126,17 @@ public:
             }
 
             case SDL_CONTROLLERTOUCHPADDOWN:
+            {
+                g_worldMapTouchParams = hid::g_inputDeviceExplicit == hid::EInputDeviceExplicit::DualSense
+                    ? (WorldMapTouchParams)g_worldMapTouchParamsProspero
+                    : (WorldMapTouchParams)g_worldMapTouchParamsOrbis;
+
                 ms_touchpadFingerCount++;
                 ms_touchpadPrevX = event->ctouchpad.x;
                 ms_touchpadPrevY = event->ctouchpad.y;
+
                 break;
+            }
 
             case SDL_CONTROLLERTOUCHPADUP:
                 g_isTouchActive = false;
@@ -199,7 +231,17 @@ bool WorldMapTouchSupportMidAsmHook()
 {
     SDLEventListenerForInputPatches::Update(App::s_deltaTime);
 
-    return fabs(g_worldMapTouchVelocityX) > 0 || fabs(g_worldMapTouchVelocityY) > 0;
+    auto vxAbs = fabs(g_worldMapTouchVelocityX);
+    auto vyAbs = fabs(g_worldMapTouchVelocityY);
+
+    /* Reduce touch noise if the player has
+       their finger resting on the touchpad,
+       but allow much precise values without
+       touch for proper interpolation to zero. */
+    if (vxAbs < 0.05f || vyAbs < 0.05f)
+        return !g_isTouchActive;
+
+    return vxAbs > 0 || vyAbs > 0;
 }
 
 bool WorldMapTouchMagnetismSupportMidAsmHook(PPCRegister& f0)
@@ -211,8 +253,8 @@ void TouchAndDPadSupportWorldMapXMidAsmHook(PPCRegister& pPadState, PPCRegister&
 {
     auto pGuestPadState = (SWA::SPadState*)g_memory.Translate(pPadState.u32);
 
-    if (fabs(pGuestPadState->LeftStickHorizontal) > WORLD_MAP_TOUCH_CANCEL_DEADZONE ||
-        fabs(pGuestPadState->LeftStickVertical) > WORLD_MAP_TOUCH_CANCEL_DEADZONE)
+    if (fabs(pGuestPadState->LeftStickHorizontal) > g_worldMapTouchParams.CancelDeadzone ||
+        fabs(pGuestPadState->LeftStickVertical) > g_worldMapTouchParams.CancelDeadzone)
     {
         g_worldMapTouchVelocityX = 0;
     }
@@ -234,8 +276,8 @@ void TouchAndDPadSupportWorldMapYMidAsmHook(PPCRegister& pPadState, PPCRegister&
 {
     auto pGuestPadState = (SWA::SPadState*)g_memory.Translate(pPadState.u32);
 
-    if (fabs(pGuestPadState->LeftStickHorizontal) > WORLD_MAP_TOUCH_CANCEL_DEADZONE ||
-        fabs(pGuestPadState->LeftStickVertical) > WORLD_MAP_TOUCH_CANCEL_DEADZONE)
+    if (fabs(pGuestPadState->LeftStickHorizontal) > g_worldMapTouchParams.CancelDeadzone ||
+        fabs(pGuestPadState->LeftStickVertical) > g_worldMapTouchParams.CancelDeadzone)
     {
         g_worldMapTouchVelocityY = 0;
     }

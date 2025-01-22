@@ -2,6 +2,7 @@
 #include <SDL.h>
 #include <user/config.h>
 #include <hid/hid.h>
+#include <os/logger.h>
 #include <ui/game_window.h>
 #include <kernel/xdm.h>
 #include <app.h>
@@ -170,6 +171,15 @@ static void SetControllerInputDevice(Controller* controller)
 
     hid::g_inputDevice = controller->GetInputDevice();
     hid::g_inputDeviceController = hid::g_inputDevice;
+
+    auto controllerType = (hid::EInputDeviceExplicit)controller->GetControllerType();
+
+    if (hid::g_inputDeviceExplicit != controllerType)
+    {
+        hid::g_inputDeviceExplicit = controllerType;
+
+        LOGFN("Detected controller: {}", hid::GetInputDeviceName());
+    }
 }
 
 int HID_OnSDLEvent(void*, SDL_Event* event)
@@ -199,6 +209,7 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
         case SDL_CONTROLLERBUTTONDOWN:
         case SDL_CONTROLLERBUTTONUP:
         case SDL_CONTROLLERAXISMOTION:
+        case SDL_CONTROLLERTOUCHPADDOWN:
         {
             auto* controller = FindController(event->cdevice.which);
 
