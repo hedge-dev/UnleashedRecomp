@@ -4352,16 +4352,33 @@ static void ProcSetPixelShader(const RenderCommand& cmd)
 
             default:
             {
-                size_t height = round(Video::s_viewportHeight * Config::ResolutionScale);
+                if (g_aspectRatio >= WIDE_ASPECT_RATIO)
+                {
+                    size_t height = round(Video::s_viewportHeight * Config::ResolutionScale);
 
-                if (height > 1440)
-                    shaderIndex = GAUSSIAN_BLUR_9X9;
-                else if (height > 1080)
-                    shaderIndex = GAUSSIAN_BLUR_7X7;
-                else if (height > 720)
-                    shaderIndex = GAUSSIAN_BLUR_5X5;
+                    if (height > 1440)
+                        shaderIndex = GAUSSIAN_BLUR_9X9;
+                    else if (height > 1080)
+                        shaderIndex = GAUSSIAN_BLUR_7X7;
+                    else if (height > 720)
+                        shaderIndex = GAUSSIAN_BLUR_5X5;
+                    else
+                        shaderIndex = GAUSSIAN_BLUR_3X3;
+                }
                 else
-                    shaderIndex = GAUSSIAN_BLUR_3X3;
+                {
+                    // Narrow aspect ratios should check for width to account for VERT+.
+                    size_t width = round(Video::s_viewportWidth * Config::ResolutionScale);
+
+                    if (width > 2560)
+                        shaderIndex = GAUSSIAN_BLUR_9X9;
+                    else if (width > 1920)
+                        shaderIndex = GAUSSIAN_BLUR_7X7;
+                    else if (width > 1280)
+                        shaderIndex = GAUSSIAN_BLUR_5X5;
+                    else
+                        shaderIndex = GAUSSIAN_BLUR_3X3;
+                }
 
                 break;
             }
