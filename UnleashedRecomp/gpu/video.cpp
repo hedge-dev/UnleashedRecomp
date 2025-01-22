@@ -5093,19 +5093,16 @@ void PostProcessResolutionFix(PPCRegister& r4, PPCRegister& f1, PPCRegister& f2)
 {
     auto device = reinterpret_cast<be<uint32_t>*>(g_memory.Translate(r4.u32));
 
+    // TODO: Scale only by height in world map, as VERT+ adjustment does not get applied there.
     uint32_t width = device[46].get();
     uint32_t height = device[47].get();
+    double aspectRatio = double(width) / double(height);
 
-#if 0
-    // TODO: Figure out why this breaks for height > weight
     double factor;
-    if (width > height)
+    if (aspectRatio >= WIDE_ASPECT_RATIO)
         factor = 720.0 / double(height);
     else
         factor = 1280.0 / double(width);
-#else 
-    double factor = 720.0 / double(height);
-#endif
 
     f1.f64 *= factor;
     f2.f64 *= factor;
