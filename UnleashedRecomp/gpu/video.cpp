@@ -5106,17 +5106,37 @@ PPC_FUNC(sub_8258CAE0)
     g_renderDirectorProfiler.End();
 }
 
+// World map disables VERT+, so scaling by width does not work for it.
+static uint32_t g_forceCheckHeightForPostProcessFix;
+
+// SWA::CWorldMapCamera::CWorldMapCamera
+PPC_FUNC_IMPL(__imp__sub_824860E0);
+PPC_FUNC(sub_824860E0)
+{
+    ++g_forceCheckHeightForPostProcessFix;
+    __imp__sub_824860E0(ctx, base);
+}
+
+// SWA::CCameraController::~CCameraController
+PPC_FUNC_IMPL(__imp__sub_824831D0);
+PPC_FUNC(sub_824831D0)
+{
+    if (PPC_LOAD_U32(ctx.r3.u32) == 0x8202BF1C) // SWA::CWorldMapCamera
+        --g_forceCheckHeightForPostProcessFix;
+
+    __imp__sub_824831D0(ctx, base);
+}
+
 void PostProcessResolutionFix(PPCRegister& r4, PPCRegister& f1, PPCRegister& f2)
 {
     auto device = reinterpret_cast<be<uint32_t>*>(g_memory.Translate(r4.u32));
 
-    // TODO: Scale only by height in world map, as VERT+ adjustment does not get applied there.
     uint32_t width = device[46].get();
     uint32_t height = device[47].get();
     double aspectRatio = double(width) / double(height);
 
     double factor;
-    if (aspectRatio >= WIDE_ASPECT_RATIO)
+    if ((aspectRatio >= WIDE_ASPECT_RATIO) || (g_forceCheckHeightForPostProcessFix != 0))
         factor = 720.0 / double(height);
     else
         factor = 1280.0 / double(width);
