@@ -8,8 +8,6 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     option(UNLEASHED_RECOMP_FLATPAK "Configure the build for Flatpak compatibility." OFF)
 endif()
 
-option(UNLEASHED_RECOMP_XAUDIO2 "Use XAudio2 for audio playback" OFF)
-
 function(BIN2C)
     cmake_parse_arguments(BIN2C_ARGS "" "TARGET_OBJ;SOURCE_FILE;DEST_FILE;ARRAY_NAME;COMPRESSION_TYPE" "" ${ARGN})
 
@@ -124,13 +122,8 @@ endif()
 set(UNLEASHED_RECOMP_APU_CXX_SOURCES
     "apu/audio.cpp"
     "apu/embedded_player.cpp"
+    "apu/driver/sdl2_driver.cpp"
 )
-
-if (UNLEASHED_RECOMP_XAUDIO2)
-    list(APPEND UNLEASHED_RECOMP_APU_CXX_SOURCES "apu/driver/xaudio_driver.cpp")
-else()
-    list(APPEND UNLEASHED_RECOMP_APU_CXX_SOURCES "apu/driver/sdl2_driver.cpp")
-endif()
 
 set(UNLEASHED_RECOMP_HID_CXX_SOURCES
     "hid/hid.cpp"

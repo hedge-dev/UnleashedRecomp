@@ -137,6 +137,22 @@ CONFIG_DEFINE_LOCALE(MusicAttenuation)
     { ELanguage::English, { "Music Attenuation", "Fade out the game's music when external media is playing." } }
 };
 
+CONFIG_DEFINE_LOCALE(ChannelConfiguration)
+{
+    { ELanguage::English, { "Channel Configuration", "" } }
+};
+
+CONFIG_DEFINE_ENUM_LOCALE(EChannelConfiguration)
+{
+    {
+        ELanguage::English,
+        {
+            { EChannelConfiguration::Stereo,   { "STEREO", "" } },
+            { EChannelConfiguration::Surround, { "SURROUND", "" } }
+        }
+    }
+};
+
 CONFIG_DEFINE_LOCALE(VoiceLanguage)
 {
     { ELanguage::English, { "Voice Language", "Change the language used for character voices." } }

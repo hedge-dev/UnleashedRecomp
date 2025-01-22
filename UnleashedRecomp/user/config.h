@@ -48,6 +48,12 @@ enum class EControllerIcons : uint32_t
     PlayStation
 };
 
+enum class EChannelConfiguration : uint32_t
+{
+    Stereo,
+    Surround
+};
+
 enum class EVoiceLanguage : uint32_t
 {
     English,

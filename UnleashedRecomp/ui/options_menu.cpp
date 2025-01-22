@@ -5,6 +5,7 @@
 #include "exports.h"
 
 #include <api/SWA/System/InputState.h>
+#include <apu/audio.h>
 #include <gpu/imgui/imgui_common.h>
 #include <gpu/video.h>
 #include <gpu/imgui/imgui_snapshot.h>
@@ -507,6 +508,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                             config->Callback(config);
 
                         VideoConfigValueChangedCallback(config);
+                        XAudioConfigValueChangedCallback(config);
 
                         Game_PlaySound("sys_worldmap_finaldecide");
                     }
@@ -538,6 +540,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                             if (config->Value != s_oldValue)
                             {
                                 VideoConfigValueChangedCallback(config);
+                                XAudioConfigValueChangedCallback(config);
 
                                 if (config->ApplyCallback)
                                     config->ApplyCallback(config);
@@ -564,6 +567,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                     config->MakeDefault();
 
                     VideoConfigValueChangedCallback(config);
+                    XAudioConfigValueChangedCallback(config);
 
                     if (config->Callback)
                         config->Callback(config);
@@ -901,6 +905,7 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::MasterVolume, true);
             DrawConfigOption(rowCount++, yOffset, &Config::MusicVolume, true);
             DrawConfigOption(rowCount++, yOffset, &Config::EffectsVolume, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::ChannelConfiguration, true);
             DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason);
             DrawConfigOption(rowCount++, yOffset, &Config::Subtitles, true);
             DrawConfigOption(rowCount++, yOffset, &Config::MusicAttenuation, AudioPatches::CanAttenuate(), &Localise("Options_Desc_OSNotSupported"));

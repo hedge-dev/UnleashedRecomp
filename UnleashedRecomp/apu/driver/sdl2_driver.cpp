@@ -1,26 +1,29 @@
-#include "sdl2_driver.h"
+#include <apu/audio.h>
 #include <cpu/guest_thread.h>
 #include <kernel/heap.h>
+#include <user/config.h>
 
 static PPCFunc* g_clientCallback{};
 static uint32_t g_clientCallbackParam{}; // pointer in guest memory
 static SDL_AudioDeviceID g_audioDevice{};
 static bool g_downMixToStereo;
 
-void XAudioInitializeSystem()
+static void CreateAudioDevice()
 {
-    SDL_SetHint(SDL_HINT_AUDIO_CATEGORY, "playback");
-    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME, "Unleashed Recompiled");
-    SDL_InitSubSystem(SDL_INIT_AUDIO);
+    if (g_audioDevice != NULL)
+        SDL_CloseAudioDevice(g_audioDevice);
+
+    bool surround = Config::ChannelConfiguration == EChannelConfiguration::Surround;
+    int allowedChanges = surround ? SDL_AUDIO_ALLOW_CHANNELS_CHANGE : 0;
 
     SDL_AudioSpec desired{}, obtained{};
     desired.freq = XAUDIO_SAMPLES_HZ;
     desired.format = AUDIO_F32SYS;
-    desired.channels = XAUDIO_NUM_CHANNELS;
+    desired.channels = surround ? XAUDIO_NUM_CHANNELS : 2;
     desired.samples = XAUDIO_NUM_SAMPLES;
-    g_audioDevice = SDL_OpenAudioDevice(nullptr, 0, &desired, &obtained, SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
+    g_audioDevice = SDL_OpenAudioDevice(nullptr, 0, &desired, &obtained, allowedChanges);
 
-    if (obtained.channels != 2 && obtained.channels != XAUDIO_NUM_CHANNELS)
+    if (obtained.channels != 2 && obtained.channels != XAUDIO_NUM_CHANNELS) // This check may fail only when surround sound is enabled.
     {
         SDL_CloseAudioDevice(g_audioDevice);
         g_audioDevice = SDL_OpenAudioDevice(nullptr, 0, &desired, &obtained, 0);
@@ -29,7 +32,16 @@ void XAudioInitializeSystem()
     g_downMixToStereo = (obtained.channels == 2);
 }
 
+void XAudioInitializeSystem()
+{
+    SDL_SetHint(SDL_HINT_AUDIO_CATEGORY, "playback");
+    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME, "Unleashed Recompiled");
+    SDL_InitSubSystem(SDL_INIT_AUDIO);
+    CreateAudioDevice();
+}
+
 static std::unique_ptr<std::thread> g_audioThread;
+static volatile bool g_audioThreadShouldExit;
 
 static void AudioThread()
 {
@@ -39,7 +51,7 @@ static void AudioThread()
 
     size_t channels = g_downMixToStereo ? 2 : XAUDIO_NUM_CHANNELS;
 
-    while (true)
+    while (!g_audioThreadShouldExit)
     {
         uint32_t queuedAudioSize = SDL_GetQueuedAudioSize(g_audioDevice);
         constexpr size_t MAX_LATENCY = 10;
@@ -62,6 +74,13 @@ static void AudioThread()
     }
 }
 
+static void CreateAudioThread()
+{
+    SDL_PauseAudioDevice(g_audioDevice, 0);
+    g_audioThreadShouldExit = false;
+    g_audioThread = std::make_unique<std::thread>(AudioThread);
+}
+
 void XAudioRegisterClient(PPCFunc* callback, uint32_t param)
 {
     auto* pClientParam = static_cast<uint32_t*>(g_userHeap.Alloc(sizeof(param)));
@@ -70,8 +89,7 @@ void XAudioRegisterClient(PPCFunc* callback, uint32_t param)
     g_clientCallbackParam = g_memory.MapVirtual(pClientParam);
     g_clientCallback = callback;
 
-    SDL_PauseAudioDevice(g_audioDevice, 0);
-    g_audioThread = std::make_unique<std::thread>(AudioThread);
+    CreateAudioThread();
 }
 
 void XAudioSubmitFrame(void* samples)
@@ -117,5 +135,20 @@ void XAudioSubmitFrame(void* samples)
         }
 
         SDL_QueueAudio(g_audioDevice, &audioFrames, sizeof(audioFrames));
+    }
+}
+
+void XAudioConfigValueChangedCallback(IConfigDef* configDef)
+{
+    if (configDef == &Config::ChannelConfiguration)
+    {
+        if (g_audioThread->joinable())
+        {
+            g_audioThreadShouldExit = true;
+            g_audioThread->join();
+        }
+
+        CreateAudioDevice();
+        CreateAudioThread();
     }
 }

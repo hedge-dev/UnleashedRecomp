@@ -37,6 +37,12 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EControllerIcons)
     { "PlayStation", EControllerIcons::PlayStation }
 };
 
+CONFIG_DEFINE_ENUM_TEMPLATE(EChannelConfiguration)
+{
+    { "Stereo",   EChannelConfiguration::Stereo },
+    { "Surround", EChannelConfiguration::Surround }
+};
+
 CONFIG_DEFINE_ENUM_TEMPLATE(EVoiceLanguage)
 {
     { "English",  EVoiceLanguage::English },
