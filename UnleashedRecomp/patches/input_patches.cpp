@@ -253,17 +253,6 @@ void TouchAndDPadSupportWorldMapYMidAsmHook(PPCRegister& pPadState, PPCRegister&
     }
 }
 
-/* This hook is unique as it is created after a label that is branched to
-   if input should be prohibited, resulting in the pad state being a nullptr.
-   We check the condition that enables that branch here for safety. */
-void TouchAndDPadSupportWorldMapMagnetismXMidAsmHook(PPCRegister& pPadState, PPCRegister& x, PPCRegister& isInputProhibited)
-{
-    if (isInputProhibited.u8 || !pPadState.u32)
-        return;
-
-    TouchAndDPadSupportWorldMapXMidAsmHook(pPadState, x);
-}
-
 // SWA::CWorldMapCamera::Update
 PPC_FUNC_IMPL(__imp__sub_82486968);
 PPC_FUNC(sub_82486968)
@@ -278,7 +267,6 @@ PPC_FUNC(sub_82486968)
 }
 
 // World Map cursor move hook.
-PPC_FUNC_IMPL(__imp__sub_8256C938);
 PPC_FUNC(sub_8256C938)
 {
     auto pWorldMapCursor = (SWA::CWorldMapCursor*)g_memory.Translate(ctx.r3.u32);
