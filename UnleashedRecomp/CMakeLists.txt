@@ -39,9 +39,7 @@ function(BIN2C)
 endfunction()
 
 add_compile_options(
-    -march=sandybridge
     -fno-strict-aliasing
-
     -Wno-switch
     -Wno-unused-function
     -Wno-unused-variable
