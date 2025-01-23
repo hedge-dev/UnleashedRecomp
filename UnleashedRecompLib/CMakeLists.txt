@@ -1,8 +1,6 @@
 project("UnleashedRecompLib")
 
 add_compile_options(
-    -march=sandybridge
-    -mlzcnt
     -fno-strict-aliasing
 )
 

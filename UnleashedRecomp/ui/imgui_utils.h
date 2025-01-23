@@ -108,6 +108,17 @@ inline void ResetProceduralOrigin()
     SetProceduralOrigin({ 0.0f, 0.0f });
 }
 
+inline void SetAdditive(bool enabled)
+{
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetAdditive);
+    callbackData->setAdditive.enabled = enabled;
+}
+
+inline void ResetAdditive()
+{
+    SetAdditive(false);
+}
+
 inline float Scale(float size)
 {
     return size * g_aspectRatioScale;

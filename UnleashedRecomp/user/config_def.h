@@ -2,6 +2,8 @@
 // the preprocessed output. The header is only going to have the declarations this way.
 
 CONFIG_DEFINE_ENUM_LOCALISED("System", ELanguage, Language, ELanguage::English);
+CONFIG_DEFINE_ENUM_LOCALISED("System", EVoiceLanguage, VoiceLanguage, EVoiceLanguage::English);
+CONFIG_DEFINE_LOCALISED("System", bool, Subtitles, true);
 CONFIG_DEFINE_LOCALISED("System", bool, Hints, true);
 CONFIG_DEFINE_LOCALISED("System", bool, ControlTutorial, true);
 CONFIG_DEFINE_LOCALISED("System", bool, AchievementNotifications, true);
@@ -17,8 +19,6 @@ CONFIG_DEFINE_LOCALISED("Audio", float, MasterVolume, 1.0f);
 CONFIG_DEFINE_LOCALISED("Audio", float, MusicVolume, 1.0f);
 CONFIG_DEFINE_LOCALISED("Audio", float, EffectsVolume, 1.0f);
 CONFIG_DEFINE_ENUM_LOCALISED("Audio", EChannelConfiguration, ChannelConfiguration, EChannelConfiguration::Stereo);
-CONFIG_DEFINE_ENUM_LOCALISED("Audio", EVoiceLanguage, VoiceLanguage, EVoiceLanguage::English);
-CONFIG_DEFINE_LOCALISED("Audio", bool, Subtitles, true);
 CONFIG_DEFINE_LOCALISED("Audio", bool, MusicAttenuation, false);
 CONFIG_DEFINE_LOCALISED("Audio", bool, BattleTheme, true);
 

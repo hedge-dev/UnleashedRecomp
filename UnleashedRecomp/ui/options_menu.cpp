@@ -887,6 +887,8 @@ static void DrawConfigOptions()
     {
         case 0: // SYSTEM
             DrawConfigOption(rowCount++, yOffset, &Config::Language, !OptionsMenu::s_isPause, cmnReason);
+            DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason);
+            DrawConfigOption(rowCount++, yOffset, &Config::Subtitles, true);
             DrawConfigOption(rowCount++, yOffset, &Config::Hints, !isStage, cmnReason);
             DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, !isStage, cmnReason);
             DrawConfigOption(rowCount++, yOffset, &Config::AchievementNotifications, true);
@@ -906,8 +908,6 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::MusicVolume, true);
             DrawConfigOption(rowCount++, yOffset, &Config::EffectsVolume, true);
             DrawConfigOption(rowCount++, yOffset, &Config::ChannelConfiguration, true);
-            DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason);
-            DrawConfigOption(rowCount++, yOffset, &Config::Subtitles, true);
             DrawConfigOption(rowCount++, yOffset, &Config::MusicAttenuation, AudioPatches::CanAttenuate(), &Localise("Options_Desc_OSNotSupported"));
             DrawConfigOption(rowCount++, yOffset, &Config::BattleTheme, true);
             break;

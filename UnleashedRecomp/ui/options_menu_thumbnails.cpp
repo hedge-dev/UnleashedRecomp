@@ -65,6 +65,8 @@ void LoadThumbnails()
     g_namedThumbnails["WindowSize"] = LOAD_ZSTD_TEXTURE(g_window_size);
 
     g_configThumbnails[&Config::Language] = LOAD_ZSTD_TEXTURE(g_language);
+    g_configThumbnails[&Config::VoiceLanguage] = LOAD_ZSTD_TEXTURE(g_voice_language);
+    g_configThumbnails[&Config::Subtitles] = LOAD_ZSTD_TEXTURE(g_subtitles);
     g_configThumbnails[&Config::Hints] = LOAD_ZSTD_TEXTURE(g_hints);
     g_configThumbnails[&Config::ControlTutorial] = LOAD_ZSTD_TEXTURE(g_control_tutorial);
     g_configThumbnails[&Config::AchievementNotifications] = LOAD_ZSTD_TEXTURE(g_achievement_notifications);
@@ -80,8 +82,6 @@ void LoadThumbnails()
     g_configThumbnails[&Config::MasterVolume] = LOAD_ZSTD_TEXTURE(g_master_volume);
     g_configThumbnails[&Config::MusicVolume] = LOAD_ZSTD_TEXTURE(g_music_volume);
     g_configThumbnails[&Config::EffectsVolume] = LOAD_ZSTD_TEXTURE(g_effects_volume);
-    g_configThumbnails[&Config::VoiceLanguage] = LOAD_ZSTD_TEXTURE(g_voice_language);
-    g_configThumbnails[&Config::Subtitles] = LOAD_ZSTD_TEXTURE(g_subtitles);
     g_configThumbnails[&Config::MusicAttenuation] = LOAD_ZSTD_TEXTURE(g_music_attenuation);
     g_configThumbnails[&Config::BattleTheme] = LOAD_ZSTD_TEXTURE(g_battle_theme);
     g_configThumbnails[&Config::WindowSize] = LOAD_ZSTD_TEXTURE(g_window_size);

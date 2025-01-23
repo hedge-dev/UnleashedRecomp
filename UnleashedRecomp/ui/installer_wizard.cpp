@@ -613,13 +613,15 @@ static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
     );
     double gridOverlayAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
 
-    const uint32_t gridColor = IM_COL32(0, 33, 0, (isTextArea ? 128 : 255) * gridAlpha);
+    const uint32_t gridColor = IM_COL32(0, 33, 0, (isTextArea ? 223 : 255) * gridAlpha);
     const uint32_t gridOverlayColor = IM_COL32(0, 32, 0, 128 * gridOverlayAlpha);
 
     float gridSize = Scale(GRID_SIZE);
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_CHECKERBOARD);
+    SetAdditive(true);
     drawList->AddRectFilled(min, max, gridColor);
+    SetAdditive(false);
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
     if (isTextArea) 
