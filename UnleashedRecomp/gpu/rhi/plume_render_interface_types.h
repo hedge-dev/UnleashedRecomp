@@ -1127,7 +1127,7 @@ namespace plume {
             desc.srcBlend = RenderBlend::SRC_ALPHA;
             desc.dstBlend = RenderBlend::INV_SRC_ALPHA;
             desc.blendOp = RenderBlendOperation::ADD;
-            desc.srcBlendAlpha = RenderBlend::ONE;
+            desc.srcBlendAlpha = RenderBlend::SRC_ALPHA;
             desc.dstBlendAlpha = RenderBlend::INV_SRC_ALPHA;
             desc.blendOpAlpha = RenderBlendOperation::ADD;
             return desc;

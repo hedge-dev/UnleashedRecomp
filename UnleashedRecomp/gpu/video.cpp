@@ -1141,6 +1141,7 @@ static constexpr size_t SAMPLER_DESCRIPTOR_SIZE = 1024;
 static std::unique_ptr<GuestTexture> g_imFontTexture;
 static std::unique_ptr<RenderPipelineLayout> g_imPipelineLayout;
 static std::unique_ptr<RenderPipeline> g_imPipeline;
+static std::unique_ptr<RenderPipeline> g_imAdditivePipeline;
 
 template<typename T>
 static void ExecuteCopyCommandList(const T& function)
@@ -1308,6 +1309,9 @@ static void CreateImGuiBackend()
     pipelineDesc.inputSlots = &inputSlot;
     pipelineDesc.inputSlotsCount = 1;
     g_imPipeline = g_device->createGraphicsPipeline(pipelineDesc);
+
+    pipelineDesc.renderTargetBlend[0].dstBlend = RenderBlend::ONE;
+    g_imAdditivePipeline = g_device->createGraphicsPipeline(pipelineDesc);
 
 #ifndef ENABLE_IM_FONT_ATLAS_SNAPSHOT
     ImFontAtlasSnapshot snapshot;
@@ -2091,9 +2095,10 @@ static void ProcDrawImGui(const RenderCommand& cmd)
     SetFramebuffer(g_backBuffer, nullptr, false);
 
     auto& commandList = g_commandLists[g_frame];
+    auto pipeline = g_imPipeline.get();
 
     commandList->setGraphicsPipelineLayout(g_imPipelineLayout.get());
-    commandList->setPipeline(g_imPipeline.get());
+    commandList->setPipeline(pipeline);
     commandList->setGraphicsDescriptorSet(g_textureDescriptorSet.get(), 0);
     commandList->setGraphicsDescriptorSet(g_samplerDescriptorSet.get(), 1);
 
@@ -2167,6 +2172,16 @@ static void ProcDrawImGui(const RenderCommand& cmd)
                 case ImGuiCallback::SetProceduralOrigin:
                     setPushConstants(&pushConstants.proceduralOrigin, &callbackData->setProceduralOrigin, sizeof(callbackData->setProceduralOrigin));
                     break;
+                case ImGuiCallback::SetAdditive:
+                {
+                    auto pipelineToSet = callbackData->setAdditive.enabled ? g_imAdditivePipeline.get() : g_imPipeline.get();
+                    if (pipeline != pipelineToSet)
+                    {
+                        commandList->setPipeline(pipelineToSet);
+                        pipeline = pipelineToSet;
+                    }
+                    break;
+                }
                 default:
                     assert(false && "Unknown ImGui callback type.");
                     break;
