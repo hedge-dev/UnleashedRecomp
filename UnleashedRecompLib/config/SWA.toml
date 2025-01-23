@@ -680,3 +680,13 @@ registers = ["r3"]
 name = "TitleMenuRemoveContinueOnCorruptSaveMidAsmHook"
 address = 0x82585470
 registers = ["r3"]
+
+[[midasm_hook]]
+name = "ObjBigBarrelAllocMidAsmHook"
+address = 0x8271B778
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "ObjBigBarrelSetPositionMidAsmHook"
+address = 0x8271B5C8
+registers = ["r3", "r4"]

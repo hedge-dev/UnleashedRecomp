@@ -17,6 +17,7 @@ namespace Hedgehog::Math
         be<float> X;
         be<float> Y;
         be<float> Z;
+        be<float> W;
     };
 
     class CVector4
