@@ -17,7 +17,7 @@ PPC_FUNC(sub_824DCF38)
     if (Config::TimeOfDayTransition == ETimeOfDayTransition::PlayStation)
     {
         if (ctx.r4.u32 == SWA::eLoadingDisplayType_WerehogMovie)
-            ctx.r4.u32 = SWA::eLoadingDisplayType_Arrows;
+            ctx.r4.u32 = SWA::eLoadingDisplayType_ChangeTimeOfDay;
     }
 
     if (auto pGameDocument = SWA::CGameDocument::GetInstance())
@@ -34,6 +34,12 @@ PPC_FUNC(sub_824DCF38)
     }
 
     __imp__sub_824DCF38(ctx, base);
+}
+
+// The game checks for a bool to render the PS3 transition animation. It's never set so it's presumably a "is PS3" bool.
+bool LoadingRenderMidAsmHook()
+{
+    return Config::TimeOfDayTransition == ETimeOfDayTransition::PlayStation;
 }
 
 // SWA::CLoading::Update

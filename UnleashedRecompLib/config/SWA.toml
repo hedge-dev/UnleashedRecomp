@@ -802,3 +802,8 @@ registers = ["r3"]
 name = "ObjBigBarrelSetPositionMidAsmHook"
 address = 0x8271B5C8
 registers = ["r3", "r4"]
+
+[[midasm_hook]]
+name = "LoadingRenderMidAsmHook"
+address = 0x824DB734
+jump_address_on_true = 0x824DB738
