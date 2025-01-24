@@ -5,7 +5,7 @@
 #include <kernel/xdbf.h>
 #include <locale/locale.h>
 #include <ui/button_guide.h>
-#include <user/achievement_data.h>
+#include <user/achievement_manager.h>
 #include <user/config.h>
 #include <app.h>
 #include <exports.h>
@@ -276,7 +276,7 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
     if (!isUnlocked)
         return;
 
-    auto timestamp = AchievementData::GetTimestamp(achievement.ID);
+    auto timestamp = AchievementManager::GetTimestamp(achievement.ID);
 
     if (!timestamp)
         return;
@@ -485,7 +485,7 @@ static void DrawAchievementTotal(ImVec2 min, ImVec2 max)
     auto uv1 = ImVec2((columnIndex + 1) * spriteSize / textureWidth, (rowIndex + 1) * spriteSize / textureHeight);
 
     constexpr auto recordsHalfTotal = ACH_RECORDS / 2;
-    auto records = AchievementData::GetTotalRecords();
+    auto records = AchievementManager::GetTotalRecords();
 
     ImVec4 colBronze = ImGui::ColorConvertU32ToFloat4(IM_COL32(198, 105, 15, 255 * alpha));
     ImVec4 colSilver = ImGui::ColorConvertU32ToFloat4(IM_COL32(220, 220, 220, 255 * alpha));
@@ -613,7 +613,7 @@ static void DrawContentContainer()
     {
         auto achievement = std::get<0>(tpl);
 
-        if (AchievementData::IsUnlocked(achievement.ID))
+        if (AchievementManager::IsUnlocked(achievement.ID))
             DrawAchievement(rowCount++, yOffset, achievement, true);
     }
 
@@ -621,7 +621,7 @@ static void DrawContentContainer()
     {
         auto achievement = std::get<0>(tpl);
 
-        if (!AchievementData::IsUnlocked(achievement.ID))
+        if (!AchievementManager::IsUnlocked(achievement.ID))
             DrawAchievement(rowCount++, yOffset, achievement, false);
     }
 
@@ -804,7 +804,7 @@ void AchievementMenu::Open()
         if (Config::Language == ELanguage::English)
             achievement.Name = xdbf::FixInvalidSequences(achievement.Name);
 
-        g_achievements.push_back(std::make_tuple(achievement, AchievementData::GetTimestamp(achievement.ID)));
+        g_achievements.push_back(std::make_tuple(achievement, AchievementManager::GetTimestamp(achievement.ID)));
     }
 
     std::sort(g_achievements.begin(), g_achievements.end(), [](const auto& a, const auto& b)

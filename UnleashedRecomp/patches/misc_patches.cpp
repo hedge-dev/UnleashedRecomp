@@ -1,11 +1,11 @@
 #include <api/SWA.h>
 #include <ui/game_window.h>
-#include <user/achievement_data.h>
+#include <user/achievement_manager.h>
 #include <user/config.h>
 
 void AchievementManagerUnlockMidAsmHook(PPCRegister& id)
 {
-    AchievementData::Unlock(id.u32);
+    AchievementManager::Unlock(id.u32);
 }
 
 bool DisableHintsMidAsmHook()

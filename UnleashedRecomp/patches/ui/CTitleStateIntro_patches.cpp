@@ -3,6 +3,7 @@
 #include <locale/locale.h>
 #include <ui/fader.h>
 #include <ui/message_window.h>
+#include <user/achievement_manager.h>
 #include <user/paths.h>
 #include <app.h>
 
@@ -12,6 +13,9 @@ static int g_quitMessageResult = -1;
 
 static std::atomic<bool> g_corruptSaveMessageOpen = false;
 static int g_corruptSaveMessageResult = -1;
+
+static bool g_corruptAchievementsMessageOpen = false;
+static int g_corruptAchievementsMessageResult = -1;
 
 static bool ProcessQuitMessage()
 {
@@ -60,7 +64,36 @@ static bool ProcessCorruptSaveMessage()
     return true;
 }
 
-void StorageDevicePromptMidAsmHook() {}
+static bool ProcessCorruptAchievementsMessage()
+{
+    if (!g_corruptAchievementsMessageOpen)
+        return false;
+
+    auto message = AchievementManager::Status == EAchStatus::IOError
+        ? Localise("Title_Message_AchievementDataIOError")
+        : Localise("Title_Message_AchievementDataCorrupt");
+
+    if (MessageWindow::Open(message, &g_corruptAchievementsMessageResult) == MSG_CLOSED)
+    {
+        // Allow user to proceed if the achievement data couldn't be loaded.
+        // Restarting may fix this error, so it isn't worth clearing the data for.
+        if (AchievementManager::Status != EAchStatus::IOError)
+            AchievementManager::Save(true);
+
+        g_corruptAchievementsMessageOpen = false;
+        g_corruptAchievementsMessageResult = -1;
+    }
+
+    return true;
+}
+
+void StorageDevicePromptMidAsmHook()
+{
+    AchievementManager::Load();
+
+    if (AchievementManager::Status != EAchStatus::Success)
+        g_corruptAchievementsMessageOpen = true;
+}
 
 // Save data validation hook.
 PPC_FUNC_IMPL(__imp__sub_822C55B0);
@@ -82,7 +115,7 @@ PPC_FUNC(sub_82587E50)
     {
         __imp__sub_82587E50(ctx, base);
     }
-    else if (!ProcessCorruptSaveMessage())
+    else if (!ProcessCorruptSaveMessage() && !ProcessCorruptAchievementsMessage())
     {
         auto pInputState = SWA::CInputState::GetInstance();
 

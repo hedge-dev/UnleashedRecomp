@@ -343,7 +343,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         }
     },
     {
-        // Notes: message appears when the SYS-DATA is corrupted (mismatching file size).
+        // Notes: message appears when SYS-DATA is corrupted (mismatching file size) upon pressing start at the title screen.
         // To make this occur, open the file in any editor and just remove a large chunk of data.
         // Do not localise this unless absolutely necessary, these strings are from the XEX.
         "Title_Message_SaveDataCorrupt",
@@ -354,6 +354,22 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
             { ELanguage::French, "Le fichier de sauvegarde semble être\nendommagé et ne peut être chargé." },
             { ELanguage::Spanish, "El archivo parece estar dañado\ny no se puede cargar." },
             { ELanguage::Italian, "I file di salvataggio sembrano danneggiati\ne non possono essere caricati." }
+        }
+    },
+    {
+        // Notes: message appears when ACH-DATA is corrupted (mismatching file size, bad signature, incorrect version or invalid checksum) upon pressing start at the title screen.
+        // To make this occur, open the file in any editor and just remove a large chunk of data.
+        "Title_Message_AchievementDataCorrupt",
+        {
+            { ELanguage::English, "The achievement data appears to be\ncorrupted and cannot be loaded.\n\nProceeding from this point will\nclear your achievement data." }
+        }
+    },
+    {
+        // Notes: message appears when ACH-DATA cannot be loaded upon pressing start at the title screen.
+        // To make this occur, lock the ACH-DATA file using an external program so that it cannot be accessed by the game.
+        "Title_Message_AchievementDataIOError",
+        {
+            { ELanguage::English, "The achievement data could not be loaded.\nYour achievements will not be saved." }
         }
     },
     {

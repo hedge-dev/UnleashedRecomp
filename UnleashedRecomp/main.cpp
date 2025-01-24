@@ -10,7 +10,6 @@
 #include <xex.h>
 #include <apu/audio.h>
 #include <hid/hid.h>
-#include <user/achievement_data.h>
 #include <user/config.h>
 #include <user/paths.h>
 #include <kernel/xdbf.h>
@@ -183,8 +182,6 @@ int main(int argc, char *argv[])
     }
 
     ModLoader::Init();
-
-    AchievementData::Load();
 
     KiSystemStartup();
 

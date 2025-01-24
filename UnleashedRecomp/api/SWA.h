@@ -52,6 +52,7 @@
 #include "Hedgehog/Universe/Engine/hhUpdateInfo.h"
 #include "Hedgehog/Universe/Engine/hhUpdateUnit.h"
 #include "Hedgehog/Universe/Thread/hhParallelJob.h"
+#include "SWA/Achievement/AchievementID.h"
 #include "SWA/Achievement/AchievementManager.h"
 #include "SWA/Achievement/AchievementTest.h"
 #include "SWA/CSD/CsdDatabaseWrapper.h"

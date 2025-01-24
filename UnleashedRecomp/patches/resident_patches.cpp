@@ -1,8 +1,8 @@
-#include <user/achievement_data.h>
-#include <user/config.h>
 #include <api/SWA.h>
-#include <os/logger.h>
 #include <hid/hid.h>
+#include <os/logger.h>
+#include <user/achievement_manager.h>
+#include <user/config.h>
 #include <app.h>
 
 bool m_isSavedAchievementData = false;
@@ -73,9 +73,7 @@ PPC_FUNC(sub_824E5170)
 
         if (!m_isSavedAchievementData)
         {
-            LOGN("Saving achievements...");
-
-            AchievementData::Save();
+            AchievementManager::Save();
 
             m_isSavedAchievementData = true;
         }

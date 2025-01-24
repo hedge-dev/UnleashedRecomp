@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SWA.inl>
+#include <SWA/Achievement/AchievementID.h>
 
 namespace SWA
 {
@@ -9,7 +10,7 @@ namespace SWA
     public:
         SWA_INSERT_PADDING(0x38);
         be<uint32_t> m_Unk1;
-        be<uint32_t> m_AchievementID;
+        be<EAchievementID> m_AchievementID;
         uint8_t m_Unk2;
     };
 }
