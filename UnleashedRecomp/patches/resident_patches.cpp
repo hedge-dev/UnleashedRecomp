@@ -42,6 +42,20 @@ bool LoadingRenderMidAsmHook()
     return Config::TimeOfDayTransition == ETimeOfDayTransition::PlayStation;
 }
 
+// Patch "ui_loading.yncp" to remove the medal swinging animation.
+// SWA::CCsdProject::Make
+PPC_FUNC_IMPL(__imp__sub_825E4068);
+PPC_FUNC(sub_825E4068)
+{
+    if (ctx.r4.u32 != NULL && ctx.r5.u32 == 0x65C0C && XXH3_64bits(base + ctx.r4.u32, ctx.r5.u32) == 0xD4DA1A9BE4D79BED)
+    {
+        // Keyframe count. First keyframe is at the center of the screen.
+        PPC_STORE_U32(ctx.r4.u32 + 0x2794C, 1);
+    }
+
+    __imp__sub_825E4068(ctx, base);
+}
+
 // SWA::CLoading::Update
 PPC_FUNC_IMPL(__imp__sub_824DAB60);
 PPC_FUNC(sub_824DAB60)
