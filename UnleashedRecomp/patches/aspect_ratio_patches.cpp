@@ -598,6 +598,8 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_status/header/status_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
     { HashStr("ui_status/logo/logo/bg_position/c_1"), { STRETCH_HORIZONTAL } },
     { HashStr("ui_status/logo/logo/bg_position/c_2"), { STRETCH_HORIZONTAL } },
+    { HashStr("ui_status/main/arrow_effect/a_efc_1"), { OFFSET_SCALE_LEFT, 866.0f } },
+    { HashStr("ui_status/main/arrow_effect/a_efc_1/position/img_01"), { STORE_RIGHT_CORNER } },
     { HashStr("ui_status/main/progless/bg/prgs_bg_1"), { OFFSET_SCALE_LEFT, 714.0f } },
     { HashStr("ui_status/main/progless/bg/prgs_bg_1/position/center/right"), { STORE_RIGHT_CORNER } },
     { HashStr("ui_status/main/progless/prgs/prgs_bar_1"), { OFFSET_SCALE_LEFT, 586.0f } },
