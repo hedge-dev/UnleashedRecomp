@@ -390,6 +390,12 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_loading/bg_1"), { STRETCH } },
     { HashStr("ui_loading/bg_2"), { STRETCH } },
 
+    // ui_mediaroom
+    { HashStr("ui_mediaroom/header/bg/img_1"), { EXTEND_LEFT } },
+    { HashStr("ui_mediaroom/header/bg/img_10"), { EXTEND_RIGHT } },  
+    { HashStr("ui_mediaroom/header/frame/img_1"), { EXTEND_LEFT } },
+    { HashStr("ui_mediaroom/header/frame/img_5"), { EXTEND_RIGHT } },
+
     // ui_missionscreen
     { HashStr("ui_missionscreen/player_count"), { ALIGN_TOP_LEFT | SCALE } },
     { HashStr("ui_missionscreen/time_count"), { ALIGN_TOP_LEFT | SCALE } },
