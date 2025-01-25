@@ -647,8 +647,9 @@ after_instruction = true
 
 # SWA::CWorldMapCamera - disable rotation deadzone for touch
 [[midasm_hook]]
-name = "WorldMapTouchSupportMidAsmHook"
+name = "WorldMapDeadzoneMidAsmHook"
 address = 0x824862EC
+registers = ["r30"]
 jump_address_on_true = 0x824862F0
 
 # SWA::CWorldMapCamera - disable flag magnetism for touch
