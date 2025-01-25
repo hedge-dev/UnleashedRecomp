@@ -307,7 +307,7 @@ void MessageWindow::Draw()
 
     if (DrawContainer(g_appearTime, centre, { textSize.x / 2 + textMarginX, textSize.y / 2 + textMarginY }, !g_isControlsVisible))
     {
-        DrawCentredParagraph
+        DrawRubyAnnotatedText
         (
             g_fntSeurat,
             fontSize,
@@ -323,7 +323,9 @@ void MessageWindow::Draw()
             [=](const char* str, float size, ImVec2 pos)
             {
                 DrawTextWithShadow(g_fntSeurat, size, pos, IM_COL32(255, 255, 255, 255), str);
-            }
+            },
+
+            true
         );
 
         drawList->PopClipRect();

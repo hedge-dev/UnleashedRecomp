@@ -617,11 +617,6 @@ void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, c
     }
 }
 
-void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, const ImVec2& centre, float lineMargin, const char* text, std::function<void(const char*, ImVec2)> drawMethod)
-{
-    DrawRubyAnnotatedText(font, fontSize, maxWidth, centre, lineMargin, text, drawMethod, annotationDrawMethod, true);
-}
-
 float Lerp(float a, float b, float t)
 {
     return a + (b - a) * t;

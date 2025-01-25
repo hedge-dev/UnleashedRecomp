@@ -26,7 +26,7 @@ struct TextSegment {
 };
 
 struct Paragraph {
-    bool annotated;
+    bool annotated = false;
     std::vector<std::vector<TextSegment>> lines;
 };
 
@@ -68,7 +68,6 @@ std::string RemoveAnnotationFromParagraphLine(const std::vector<TextSegment>& an
 ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMargin, std::vector<std::string> lines);
 ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float maxWidth, float lineMargin, const char* text);
 void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, const ImVec2& pos, float lineMargin, const char* text, std::function<void(const char*, ImVec2)> drawMethod, std::function<void(const char*, float, ImVec2)> annotationDrawMethod, bool isCentred = false);
-void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, const ImVec2& centre, float lineMargin, const char* text, std::function<void(const char*, ImVec2)> drawMethod);
 float Lerp(float a, float b, float t);
 float Cubic(float a, float b, float t);
 float Hermite(float a, float b, float t);
