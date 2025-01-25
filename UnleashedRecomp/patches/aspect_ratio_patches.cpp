@@ -671,6 +671,35 @@ static bool g_cornerExtract;
 
 //#define CORNER_DEBUG
 
+// Explicit translations don't get affected by gameplay UI downscaling.
+// This is required for the medal info in pause menu.
+static float g_scenePositionX;
+static float g_scenePositionY;
+
+// Chao::CSD::CScene::Render
+PPC_FUNC_IMPL(__imp__sub_830BC640);
+PPC_FUNC(sub_830BC640)
+{
+    g_scenePositionX = 0.0f;
+    g_scenePositionY = 0.0f;
+
+    uint32_t motionPattern = PPC_LOAD_U32(ctx.r3.u32 + 0x98);
+    if (motionPattern != NULL)
+    {
+        uint32_t member = PPC_LOAD_U32(motionPattern + 0xC);
+        if (member != NULL)
+        {
+            uint32_t x = PPC_LOAD_U32(member + 0x2C);
+            uint32_t y = PPC_LOAD_U32(member + 0x30);
+
+            g_scenePositionX = 1280.0f * reinterpret_cast<float&>(x);
+            g_scenePositionY = 720.0f * reinterpret_cast<float&>(y);
+        }
+    }
+
+    __imp__sub_830BC640(ctx, base);
+}
+
 // Chao::CSD::Scene::Render
 PPC_FUNC_IMPL(__imp__sub_830C6A00);
 PPC_FUNC(sub_830C6A00)
@@ -770,6 +799,8 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
 
     float offsetX = 0.0f;
     float offsetY = 0.0f;
+    float pivotX = 0.0f;
+    float pivotY = 0.0f;
     float scaleX = 1.0f;
     float scaleY = 1.0f;
 
@@ -789,11 +820,14 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         if ((modifier.flags & SCALE) != 0)
         {
             scaleX *= g_aspectRatioGameplayScale;
+            pivotX = g_scenePositionX;
 
             if ((modifier.flags & ALIGN_RIGHT) != 0)
                 offsetX += 1280.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
             else if ((modifier.flags & ALIGN_LEFT) == 0)
                 offsetX += 640.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
+
+            offsetX += pivotX * g_aspectRatioScale;
         }
 
         if ((modifier.flags & WORLD_MAP) != 0)
@@ -819,11 +853,14 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         if ((modifier.flags & SCALE) != 0)
         {
             scaleY *= g_aspectRatioGameplayScale;
+            pivotY = g_scenePositionY;
 
             if ((modifier.flags & ALIGN_BOTTOM) != 0)
                 offsetY += 720.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
             else if ((modifier.flags & ALIGN_TOP) == 0)
                 offsetY += 360.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
+
+            offsetY += pivotY * g_aspectRatioScale;
         }
     }
 
@@ -867,8 +904,8 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     {
         auto position = reinterpret_cast<be<float>*>(stack + i * stride);
 
-        float x = offsetX + position[0] * scaleX;
-        float y = offsetY + position[1] * scaleY;
+        float x = offsetX + (position[0] - pivotX) * scaleX;
+        float y = offsetY + (position[1] - pivotY) * scaleY;
 
         if ((modifier.flags & EXTEND_LEFT) != 0 && (i == 0 || i == 1))
         {
