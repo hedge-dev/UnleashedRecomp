@@ -580,9 +580,63 @@ registers = ["r3", "f0"]
 
 # SWA::Player::CEvilPostureInputStandard
 [[midasm_hook]]
+name = "PostureDPadSupportYMidAsmHook"
+address = 0x823CDA88
+registers = ["r3", "f12"]
+
+# SWA::Player::CEvilSonicContext::CStateColumn
+[[midasm_hook]]
 name = "PostureDPadSupportXMidAsmHook"
-address = 0x823CDA74
-registers = ["r3", "f0"]
+address = 0x823E057C
+registers = ["r11", "f0"]
+
+# SWA::Player::CEvilSonicContext::CStateColumn
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x823E0634
+registers = ["r11", "f0"]
+
+# SWA::Player::CEvilSonicContext::CStateColumn
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x823E065C
+registers = ["r11", "f0"]
+
+# SWA::Player::CEvilSonicContext::CStateColumn
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x823E088C
+registers = ["r11", "f0"]
+
+# SWA::Player::CEvilSonicContext::CStateColumn
+[[midasm_hook]]
+name = "PostureDPadSupportYMidAsmHook"
+address = 0x823DFB10
+registers = ["r23", "f0"]
+
+# SWA::Player::CEvilSonicContext::CStateColumn
+[[midasm_hook]]
+name = "PostureDPadSupportYMidAsmHook"
+address = 0x823E0AB4
+registers = ["r11", "f0"]
+
+# SWA::Player::CEvilSonicContext::CStateColumn
+[[midasm_hook]]
+name = "PostureDPadSupportYMidAsmHook"
+address = 0x823E0BB8
+registers = ["r11", "f13"]
+
+# SWA::Player::CEvilSonicContext::CStateColumn
+[[midasm_hook]]
+name = "PostureDPadSupportYMidAsmHook"
+address = 0x823E0CBC
+registers = ["r29", "f0"]
+
+# SWA::Player::CEvilSonicContext::CStateColumn
+[[midasm_hook]]
+name = "PostureDPadSupportYMidAsmHook"
+address = 0x823E01EC
+registers = ["r23", "f0"]
 
 # SWA::CObjBobsleigh::CStateMode3D
 [[midasm_hook]]
