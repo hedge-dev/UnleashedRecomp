@@ -814,3 +814,8 @@ registers = ["r3", "r4"]
 name = "LoadingRenderMidAsmHook"
 address = 0x824DB734
 jump_address_on_true = 0x824DB738
+
+[[midasm_hook]]
+name = "FxFadeRenderQuadMidAsmHook"
+address = 0x82BA7D3C
+registers = ["r3", "r5", "r31"]

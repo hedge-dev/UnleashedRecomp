@@ -1195,11 +1195,22 @@ void ViewRingXMidAsmHook(PPCRegister& f1, PPCVRegister& v62)
     }
 }
 
+// SWA::Inspire::CLetterbox::CLetterbox
+PPC_FUNC_IMPL(__imp__sub_82B8A8F8);
+PPC_FUNC(sub_82B8A8F8)
+{
+    // Permanently store the letterbox bool instead of letting the game set it to false from widescreen check.
+    bool letterbox = PPC_LOAD_U8(ctx.r4.u32);
+    __imp__sub_82B8A8F8(ctx, base);
+    PPC_STORE_U8(ctx.r3.u32, letterbox);
+}
+
 // SWA::Inspire::CLetterbox::Draw
 PPC_FUNC_IMPL(__imp__sub_82B8AA40);
 PPC_FUNC(sub_82B8AA40)
 {
-    bool shouldDrawLetterbox = Config::CutsceneAspectRatio != ECutsceneAspectRatio::Unlocked && g_aspectRatio < WIDE_ASPECT_RATIO;
+    bool letterbox = PPC_LOAD_U8(ctx.r3.u32);
+    bool shouldDrawLetterbox = letterbox && Config::CutsceneAspectRatio != ECutsceneAspectRatio::Unlocked && g_aspectRatio < WIDE_ASPECT_RATIO;
 
     PPC_STORE_U8(ctx.r3.u32, shouldDrawLetterbox);
     if (shouldDrawLetterbox)
@@ -1212,7 +1223,11 @@ PPC_FUNC(sub_82B8AA40)
         PPC_STORE_U32(ctx.r3.u32 + 0x14, (720 - width * 9 / 16) / 2);
     }
 
+    auto r3 = ctx.r3;
     __imp__sub_82B8AA40(ctx, base);
+
+    // Restore the original letterbox value.
+    PPC_STORE_U8(r3.u32, letterbox);
 }
 
 void InspireLetterboxTopMidAsmHook(PPCRegister& r3)
@@ -1233,4 +1248,24 @@ void InspireSubtitleMidAsmHook(PPCRegister& r3)
     constexpr float WIDE_OFFSET = 560.0f;
 
     *reinterpret_cast<be<float>*>(g_memory.base + r3.u32 + 0x3C) = NARROW_OFFSET + (WIDE_OFFSET - NARROW_OFFSET) * g_aspectRatioNarrowScale;
+}
+
+void FxFadeRenderQuadMidAsmHook(PPCRegister& r3, PPCRegister& r5, PPCRegister& r31)
+{
+    auto texCoord = reinterpret_cast<be<float>*>(g_memory.base + r5.u32);
+
+    // Fade textures are slightly squashed in the original game at 4:3.
+    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
+    {
+        if (*(g_memory.base + r31.u32 + 0x44))
+        {
+            texCoord[1] = 0.0f + 0.125f;
+            texCoord[3] = 1.0f - 0.125f;
+        }
+        else
+        {
+            texCoord[0] = 0.0f - 0.125f;
+            texCoord[2] = 1.0f + 0.125f;
+        }
+    }
 }
