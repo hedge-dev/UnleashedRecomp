@@ -189,6 +189,13 @@ void DrawPauseHeaderContainer(ImVec2 min, ImVec2 max, float alpha)
     drawList->AddImage(g_texGeneralWindow.get(), { max.x - commonWidth, min.y }, max, GET_UV_COORDS(right), colour);
 }
 
+void DrawTextBasic(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text)
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+
+    drawList->AddText(font, fontSize, pos, colour, text, nullptr);
+}
+
 void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 color, const char* text, double time, double delay, double speed)
 {
     auto drawList = ImGui::GetForegroundDrawList();
@@ -203,6 +210,24 @@ void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& pos, 
 
     if (textX + textSize.x < pos.x)
         drawList->AddText(font, fontSize, { textX + textSize.x + rectWidth, pos.y }, color, text);
+
+    drawList->PopClipRect();
+}
+
+void DrawTextWithMarqueeShadow(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 colour, const char* text, double time, double delay, double speed, float offset, float radius, ImU32 shadowColour)
+{
+    auto drawList = ImGui::GetForegroundDrawList();
+    auto rectWidth = max.x - min.x;
+    auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
+    auto textX = pos.x - fmodf(std::max(0.0, ImGui::GetTime() - (time + delay)) * speed, textSize.x + rectWidth);
+
+    drawList->PushClipRect(min, max, true);
+
+    if (textX <= pos.x)
+        DrawTextWithShadow(font, fontSize, { textX, pos.y }, colour, text, offset, radius, shadowColour);
+
+    if (textX + textSize.x < pos.x)
+        DrawTextWithShadow(font, fontSize, { textX + textSize.x + rectWidth, pos.y }, colour, text, offset, radius, shadowColour);
 
     drawList->PopClipRect();
 }
@@ -534,12 +559,12 @@ ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float maxWidt
     return MeasureCentredParagraph(font, fontSize, lineMargin, Split(text, font, fontSize, maxWidth));
 }
 
-void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, const ImVec2& centre, float lineMargin, const char* text, std::function<void(const char*, ImVec2)> drawMethod)
+void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, const ImVec2& pos, float lineMargin, const char* text, std::function<void(const char*, ImVec2)> drawMethod, std::function<void(const char*, float, ImVec2)> annotationDrawMethod, bool isCentred)
 {
     const auto& input = RemoveRubyAnnotations(text);
     auto lines = Split(input.first.c_str(), font, fontSize, maxWidth);
     auto paragraphSize = MeasureCentredParagraph(font, fontSize, lineMargin, lines);
-    auto offsetY = 0.0f;
+    float offsetY = 0.0f;
 
     for (auto& line : lines)
     {
@@ -555,20 +580,26 @@ void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, co
         auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, annotationRemovedLine.c_str());
         auto annotationSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, "");
 
-        auto textX = annotationRemovedLine.starts_with("- ")
-            ? centre.x - paragraphSize.x / 2
-            : centre.x - textSize.x / 2;
+        float textX = pos.x;
+        if (isCentred)
+        {
+            textX = annotationRemovedLine.starts_with("- ")
+                ? pos.x - paragraphSize.x / 2
+                : pos.x - textSize.x / 2;
+        }
 
         for (const auto& segment : annotatedLine)
         {
             textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, segment.text.c_str());
-
-            auto textY = centre.y - paragraphSize.y / 2 + offsetY;
+            float textY = pos.y + offsetY;
+            if (isCentred)
+            {
+                textY = pos.y - paragraphSize.y / 2 + offsetY;
+            }
 
             if (segment.annotated)
             {
                 annotationSize = font->CalcTextSizeA(fontSize * 0.55f, FLT_MAX, 0, segment.annotation.c_str());
-
                 float annotationX = textX + (textSize.x - annotationSize.x) / 2.0f;
 
                 annotationDrawMethod(segment.annotation.c_str(), fontSize * 0.55f, { annotationX, textY - (fontSize * 0.55f) });
@@ -577,7 +608,7 @@ void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, co
             drawMethod(segment.text.c_str(), { textX, textY });
             textX += textSize.x;
         }
-        
+
         offsetY += textSize.y + Scale(lineMargin);
         if (annotatedLines.annotated)
         {
@@ -586,22 +617,9 @@ void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, co
     }
 }
 
-void DrawTextWithMarqueeShadow(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 colour, const char* text, double time, double delay, double speed, float offset, float radius, ImU32 shadowColour)
+void DrawCentredParagraph(const ImFont* font, float fontSize, float maxWidth, const ImVec2& centre, float lineMargin, const char* text, std::function<void(const char*, ImVec2)> drawMethod)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
-    auto rectWidth = max.x - min.x;
-    auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
-    auto textX = pos.x - fmodf(std::max(0.0, ImGui::GetTime() - (time + delay)) * speed, textSize.x + rectWidth);
-
-    drawList->PushClipRect(min, max, true);
-
-    if (textX <= pos.x)
-        DrawTextWithShadow(font, fontSize, { textX, pos.y }, colour, text, offset, radius, shadowColour);
-
-    if (textX + textSize.x < pos.x)
-        DrawTextWithShadow(font, fontSize, { textX + textSize.x + rectWidth, pos.y }, colour, text, offset, radius, shadowColour);
-
-    drawList->PopClipRect();
+    DrawRubyAnnotatedText(font, fontSize, maxWidth, centre, lineMargin, text, drawMethod, annotationDrawMethod, true);
 }
 
 float Lerp(float a, float b, float t)

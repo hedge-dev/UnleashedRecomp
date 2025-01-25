@@ -1231,17 +1231,24 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
             desc += "\n\n" + g_selectedItem->GetValueDescription(Config::Language);
         }
 
-        auto size = Scale(26.0f);
-
-        drawList->AddText
-        (
+        auto fontSize = Scale(26.0f);
+        
+        DrawRubyAnnotatedText(
             g_seuratFont,
-            size,
-            { clipRectMin.x, thumbnailMax.y + size - 5.0f },
-            IM_COL32_WHITE,
+            fontSize,
+            clipRectMax.x - clipRectMin.y,
+            { clipRectMin.x, thumbnailMax.y + fontSize - 5.0f },
+            0.0f,
             desc.c_str(),
-            0,
-            clipRectMax.x - clipRectMin.x
+
+            [=](const char* str, ImVec2 pos)
+            {
+                DrawTextBasic(g_seuratFont, fontSize, pos, IM_COL32(255, 255, 255, 255), str);
+            },
+            [=](const char* str, float size, ImVec2 pos)
+            {
+                DrawTextBasic(g_seuratFont, size, pos, IM_COL32(255, 255, 255, 255), str);
+            }
         );
     }
 
