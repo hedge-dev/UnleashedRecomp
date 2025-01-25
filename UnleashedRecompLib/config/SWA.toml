@@ -816,6 +816,15 @@ address = 0x824DB734
 jump_address_on_true = 0x824DB738
 
 [[midasm_hook]]
-name = "FxFadeRenderQuadMidAsmHook"
+name = "FxFadePreRenderQuadMidAsmHook"
 address = 0x82BA7D3C
-registers = ["r3", "r5", "r31"]
+registers = ["r31"]
+
+[[midasm_hook]]
+name = "FxFadePostRenderQuadMidAsmHook"
+address = 0x82BA7D40
+
+[[midasm_hook]]
+name = "YggdrasillRenderQuadMidAsmHook"
+address = 0x82E9FBA0
+registers = ["r3", "r6"]

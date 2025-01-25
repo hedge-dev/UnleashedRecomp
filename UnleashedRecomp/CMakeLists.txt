@@ -361,6 +361,7 @@ function(compile_pixel_shader FILE_PATH)
     compile_shader(${FILE_PATH} ps_6_0)
 endfunction()
 
+compile_pixel_shader(blend_color_alpha_ps)
 compile_vertex_shader(copy_vs)
 compile_pixel_shader(csd_filter_ps)
 compile_vertex_shader(csd_no_tex_vs)

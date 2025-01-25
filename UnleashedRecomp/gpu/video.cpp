@@ -37,6 +37,7 @@
 #include "../../tools/XenosRecomp/XenosRecomp/shader_common.h"
 
 #ifdef UNLEASHED_RECOMP_D3D12
+#include "shader/blend_color_alpha_ps.hlsl.dxil.h"
 #include "shader/copy_vs.hlsl.dxil.h"
 #include "shader/csd_filter_ps.hlsl.dxil.h"
 #include "shader/csd_no_tex_vs.hlsl.dxil.h"
@@ -56,6 +57,7 @@
 #include "shader/resolve_msaa_depth_8x.hlsl.dxil.h"
 #endif
 
+#include "shader/blend_color_alpha_ps.hlsl.spirv.h"
 #include "shader/copy_vs.hlsl.spirv.h"
 #include "shader/csd_filter_ps.hlsl.spirv.h"
 #include "shader/csd_no_tex_vs.hlsl.spirv.h"
@@ -4233,7 +4235,9 @@ static GuestShader* CreateShader(const be<uint32_t>* function, ResourceType reso
         {
             shader = g_userHeap.AllocPhysical<GuestShader>(resourceType);
 
-            if (hash == 0xB1086A4947A797DE)
+            if (hash == 0x85ED723035ECF535)
+                shader->shader = CREATE_SHADER(blend_color_alpha_ps);
+            else if (hash == 0xB1086A4947A797DE)
                 shader->shader = CREATE_SHADER(csd_no_tex_vs);
             else if (hash == 0xB4CAFC034A37C8A8)
                 shader->shader = CREATE_SHADER(csd_vs);

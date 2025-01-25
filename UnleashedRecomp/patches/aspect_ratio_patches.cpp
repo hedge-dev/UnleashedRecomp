@@ -1250,22 +1250,63 @@ void InspireSubtitleMidAsmHook(PPCRegister& r3)
     *reinterpret_cast<be<float>*>(g_memory.base + r3.u32 + 0x3C) = NARROW_OFFSET + (WIDE_OFFSET - NARROW_OFFSET) * g_aspectRatioNarrowScale;
 }
 
-void FxFadeRenderQuadMidAsmHook(PPCRegister& r3, PPCRegister& r5, PPCRegister& r31)
+enum class FadeTextureMode
 {
-    auto texCoord = reinterpret_cast<be<float>*>(g_memory.base + r5.u32);
+    Unknown,
+    Letterbox,
+    SideCrop
+};
 
-    // Fade textures are slightly squashed in the original game at 4:3.
-    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
+static FadeTextureMode g_fadeTextureMode;
+
+void FxFadePreRenderQuadMidAsmHook(PPCRegister& r31)
+{
+    g_fadeTextureMode = *(g_memory.base + r31.u32 + 0x44) ? FadeTextureMode::Letterbox : FadeTextureMode::SideCrop;
+}
+
+void FxFadePostRenderQuadMidAsmHook()
+{
+    g_fadeTextureMode = FadeTextureMode::Unknown;
+}
+
+void YggdrasillRenderQuadMidAsmHook(PPCRegister& r3, PPCRegister& r6)
+{
+    if (g_fadeTextureMode != FadeTextureMode::Unknown)
     {
-        if (*(g_memory.base + r31.u32 + 0x44))
+        float scaleX = 1.0f;
+        float scaleY = 1.0f;
+        
+        // Fade textures are slightly squashed in the original game at 4:3.
+        if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
         {
-            texCoord[1] = 0.0f + 0.125f;
-            texCoord[3] = 1.0f - 0.125f;
+            if (g_fadeTextureMode == FadeTextureMode::Letterbox)
+                scaleY = 1.25f;
+            else
+                scaleX = 0.8f;
         }
         else
         {
-            texCoord[0] = 0.0f - 0.125f;
-            texCoord[2] = 1.0f + 0.125f;
+            if (g_fadeTextureMode == FadeTextureMode::Letterbox && g_aspectRatio < WIDE_ASPECT_RATIO)
+                scaleY = WIDE_ASPECT_RATIO / g_aspectRatio;
+            else
+                scaleX = g_aspectRatio / WIDE_ASPECT_RATIO;
+        }
+
+        struct Vertex
+        {
+            be<float> x;
+            be<float> y;
+            be<float> z;
+            be<float> u;
+            be<float> v;
+        };
+
+        auto vertex = reinterpret_cast<Vertex*>(g_memory.base + r6.u32);
+
+        for (size_t i = 0; i < 6; i++)
+        {
+            vertex[i].u = (vertex[i].u - 0.5f) * scaleX + 0.5f;
+            vertex[i].v = (vertex[i].v - 0.5f) * scaleY + 0.5f;
         }
     }
 }
