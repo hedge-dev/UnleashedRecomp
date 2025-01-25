@@ -65,19 +65,19 @@ static constexpr double PULSE_ANIMATION_LOOP_SPEED = 1.5;
 static constexpr double PULSE_ANIMATION_LOOP_DELAY = 0.5;
 static constexpr double PULSE_ANIMATION_LOOP_FADE_HIGH_POINT = 0.5;
 
-constexpr float IMAGE_X = 165.0f;
-constexpr float IMAGE_Y = 106.0f;
+constexpr float IMAGE_X = 161.5f;
+constexpr float IMAGE_Y = 103.5f;
 constexpr float IMAGE_WIDTH = 512.0f;
 constexpr float IMAGE_HEIGHT = 512.0f;
 
-constexpr float CONTAINER_X = 510.0f;
-constexpr float CONTAINER_Y = 225.0f;
-constexpr float CONTAINER_WIDTH = 528.0f;
-constexpr float CONTAINER_HEIGHT = 245.0f;
+constexpr float CONTAINER_X = 513.5f;
+constexpr float CONTAINER_Y = 225.5f;
+constexpr float CONTAINER_WIDTH = 526.0f;
+constexpr float CONTAINER_HEIGHT = 245.5f;
 constexpr float SIDE_CONTAINER_WIDTH = CONTAINER_WIDTH / 2.0f;
 
 constexpr float BOTTOM_X_GAP = 4.0f;
-constexpr float BOTTOM_Y_GAP = 4.0f;
+constexpr float BOTTOM_Y_GAP = 6.5f;
 constexpr float CONTAINER_BUTTON_WIDTH = 250.0f;
 constexpr float CONTAINER_BUTTON_GAP = 9.0f;
 constexpr float BUTTON_HEIGHT = 22.0f;
@@ -512,9 +512,9 @@ static void DrawHeaderIcons()
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    float iconsPosX = 253.0f;
-    float iconsPosY = 79.0f;
-    float iconsScale = 58;
+    float iconsPosX = 256.0f;
+    float iconsPosY = 80.0f;
+    float iconsScale = 62.0f;
 
     // Miles Electric Icon
     float milesIconMotion = ComputeMotionInstaller(g_appearTime, g_disappearTime, MILES_ICON_ANIMATION_TIME, MILES_ICON_ANIMATION_DURATION);
@@ -594,8 +594,8 @@ static void DrawScanlineBars()
     DrawTextWithOutline
     (
         g_dfsogeistdFont,
-        Scale(42),
-        { g_aspectRatioOffsetX + Scale(285), Scale(57) },
+        Scale(48.0f),
+        { g_aspectRatioOffsetX + Scale(288.0f), Scale(54.5f) },
         IM_COL32(255, 195, 0, 255 * alphaMotion * breatheMotion),
         headerText.c_str(), 4,
         IM_COL32(0, 0, 0, 255 * alphaMotion * breatheMotion),
@@ -669,14 +669,14 @@ static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
     }
 
     // The draw area
-    drawList->PushClipRect({ min.x + gridSize * 2.0f, min.y + gridSize * 2.0f }, { max.x - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
+    drawList->PushClipRect({ min.x - Scale(8.0f) + gridSize * 2.0f - Scale(28.0f) * 0.55f, min.y + gridSize * 2.0f - Scale(28.0f) * 0.55f}, {max.x + Scale(8.0f) - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f});
 }
 
 static void DrawDescriptionContainer()
 {
     auto &res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
-    auto fontSize = Scale(26.0f);
+    auto fontSize = Scale(28.0f);
 
     ImVec2 descriptionMin = { round(g_aspectRatioOffsetX + Scale(CONTAINER_X)), round(g_aspectRatioOffsetY + Scale(CONTAINER_Y)) };
     ImVec2 descriptionMax = { round(g_aspectRatioOffsetX + Scale(CONTAINER_X + CONTAINER_WIDTH)), round(g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT)) };
@@ -706,15 +706,22 @@ static void DrawDescriptionContainer()
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
-    drawList->AddText
+    DrawRubyAnnotatedText
     (
         g_seuratFont,
         fontSize,
-        { clipRectMin.x, clipRectMin.y },
-        IM_COL32(255, 255, 255, 255 * textAlpha),
+        clipRectMax.x - clipRectMin.x,
+        { clipRectMin.x + fontSize * 0.55f, clipRectMin.y + fontSize * 0.55f },
+        5.0f,
         descriptionText,
-        0,
-        clipRectMax.x - clipRectMin.x
+        [=](const char* str, ImVec2 pos)
+        {
+            DrawTextBasic(g_seuratFont, fontSize, pos, IM_COL32(255, 255, 255, 255 * textAlpha), str);
+        },
+        [=](const char* str, float size, ImVec2 pos)
+        {
+            DrawTextBasic(g_seuratFont, size, pos, IM_COL32(255, 255, 255, 255 * textAlpha), str);
+        }
     );
 
     drawList->PopClipRect();
