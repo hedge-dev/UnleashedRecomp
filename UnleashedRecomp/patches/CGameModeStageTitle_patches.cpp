@@ -1,5 +1,5 @@
 #include <api/SWA.h>
-#include <patches/ui/CTitleStateIntro_patches.h>
+#include <patches/CTitleStateIntro_patches.h>
 
 // SWA::CGameModeStageTitle::Update
 PPC_FUNC_IMPL(__imp__sub_825518B8);
