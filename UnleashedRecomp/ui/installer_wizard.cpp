@@ -669,7 +669,7 @@ static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
     }
 
     // The draw area
-    drawList->PushClipRect({ min.x - Scale(8.0f) + gridSize * 2.0f - Scale(28.0f) * 0.55f, min.y + gridSize * 2.0f - Scale(28.0f) * 0.55f}, {max.x + Scale(8.0f) - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f});
+    drawList->PushClipRect({ min.x - Scale(8.0f) + gridSize * 2.0f - Scale(28.0f) * 0.55f, min.y + gridSize * 2.0f - Scale(28.0f) * 0.55f }, { max.x + Scale(8.0f) - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
 }
 
 static void DrawDescriptionContainer()

@@ -724,6 +724,11 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     auto alpha = fadedOut ? 0.5f : 1.0f;
     auto textColour = IM_COL32(255, 255, 255, 255 * alpha);
 
+    if (Config::Language == ELanguage::Japanese)
+    {
+        textPos.y += Scale(10.0f);
+    }
+
     if (g_selectedItem == config)
     {
         float prevItemOffset = (g_prevSelectedRowIndex - g_selectedRowIndex) * (optionHeight + optionPadding);
@@ -746,7 +751,23 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     }
     else
     {
-        drawList->AddText(g_seuratFont, size, textPos, textColour, configName.c_str(), 0, 0.0f, &textClipRect);
+        DrawRubyAnnotatedText
+        (
+            g_seuratFont,
+            size,
+            textClipRect.z - textClipRect.x,
+            textPos,
+            0.0f,
+            configName.c_str(),
+            [=](const char* str, ImVec2 pos)
+            {
+                DrawTextBasic(g_seuratFont, size, pos, textColour, str);
+            },
+            [=](const char* str, float annotationSize, ImVec2 pos)
+            {
+                DrawTextBasic(g_seuratFont, annotationSize, pos, textColour, str);
+            }
+        );
     }
 
     // Right side
@@ -1233,12 +1254,19 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
 
         auto fontSize = Scale(26.0f);
         
-        DrawRubyAnnotatedText(
+        float offsetY = 0.0f;
+        if (Config::Language == ELanguage::Japanese)
+        {
+            offsetY = Scale(10.0f);
+        }
+
+        DrawRubyAnnotatedText
+        (
             g_seuratFont,
             fontSize,
-            clipRectMax.x - clipRectMin.y,
-            { clipRectMin.x, thumbnailMax.y + fontSize - 5.0f },
-            0.0f,
+            clipRectMax.x - clipRectMin.x,
+            { clipRectMin.x, thumbnailMax.y + fontSize - 5.0f + offsetY },
+            5.0f,
             desc.c_str(),
 
             [=](const char* str, ImVec2 pos)
