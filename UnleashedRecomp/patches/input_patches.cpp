@@ -165,10 +165,15 @@ static bool IsLeftStickThreshold(const SWA::SPadState* pPadState, double deadzon
         (pPadState->LeftStickVertical * pPadState->LeftStickVertical)) > deadzone;
 }
 
-static bool IsTouchThreshold(double deadzone = 0)
+static bool IsTouchThreshold(double deadzone = 0, bool isBelowThreshold = false)
 {
-    return sqrtl((g_worldMapTouchVelocityX * g_worldMapTouchVelocityX) +
-        (g_worldMapTouchVelocityY * g_worldMapTouchVelocityY)) > deadzone;
+    auto sqrt = sqrtl((g_worldMapTouchVelocityX * g_worldMapTouchVelocityX) +
+        (g_worldMapTouchVelocityY * g_worldMapTouchVelocityY));
+
+    if (isBelowThreshold)
+        return sqrt < deadzone;
+
+    return sqrt >= deadzone;
 }
 
 static void SetDPadAnalogDirectionX(PPCRegister& pPadState, PPCRegister& x, bool invert, float max = 1.0f)
@@ -254,13 +259,10 @@ bool WorldMapDeadzoneMidAsmHook(PPCRegister& pPadState)
     {
         SDLEventListenerForInputPatches::Update(App::s_deltaTime);
 
-        auto vxAbs = fabs(g_worldMapTouchVelocityX);
-        auto vyAbs = fabs(g_worldMapTouchVelocityY);
-
         /* Reduce touch noise if the player has their finger
            resting on the touchpad, but allow much precise values
            without touch for proper interpolation to zero. */
-        if (IsTouchThreshold(0.05))
+        if (IsTouchThreshold(0.05, true))
             return !g_isTouchActive;
 
         return IsTouchThreshold();
@@ -269,9 +271,17 @@ bool WorldMapDeadzoneMidAsmHook(PPCRegister& pPadState)
     return IsDPadThreshold(pGuestPadState) || IsLeftStickThreshold(pGuestPadState, WORLD_MAP_ROTATE_DEADZONE);
 }
 
-bool WorldMapTouchMagnetismSupportMidAsmHook(PPCRegister& f0)
+bool WorldMapMagnetismMidAsmHook(PPCRegister& f0)
 {
-    return fabs(g_worldMapTouchVelocityX) > f0.f64 || fabs(g_worldMapTouchVelocityY) > f0.f64;
+    if (IsTouchThreshold(f0.f64, true))
+    {
+        g_worldMapTouchVelocityX = 0;
+        g_worldMapTouchVelocityY = 0;
+
+        return true;
+    }
+
+    return false;
 }
 
 void TouchAndDPadSupportWorldMapXMidAsmHook(PPCRegister& pPadState, PPCRegister& x)
@@ -282,10 +292,9 @@ void TouchAndDPadSupportWorldMapXMidAsmHook(PPCRegister& pPadState, PPCRegister&
     {
         SetDPadAnalogDirectionX(pPadState, x, false);
     }
-    else
+    else if (fabs(g_worldMapTouchVelocityX) > 0)
     {
-        if (fabs(g_worldMapTouchVelocityX) > 0)
-            x.f64 = -g_worldMapTouchVelocityX;
+        x.f64 = -g_worldMapTouchVelocityX;
     }
 }
 
@@ -297,10 +306,9 @@ void TouchAndDPadSupportWorldMapYMidAsmHook(PPCRegister& pPadState, PPCRegister&
     {
         SetDPadAnalogDirectionY(pPadState, y, false);
     }
-    else
+    else if (fabs(g_worldMapTouchVelocityY) > 0)
     {
-        if (fabs(g_worldMapTouchVelocityY) > 0)
-            y.f64 = g_worldMapTouchVelocityY;
+        y.f64 = g_worldMapTouchVelocityY;
     }
 }
 
@@ -348,7 +356,7 @@ PPC_FUNC(sub_8256C938)
         if (rPadState.IsDown(SWA::eKeyState_DpadRight))
             pWorldMapCursor->m_LeftStickHorizontal = 1.0f;
 
-        if (sqrtf((pWorldMapCursor->m_LeftStickHorizontal * pWorldMapCursor->m_LeftStickHorizontal) +
+        if (sqrtl((pWorldMapCursor->m_LeftStickHorizontal * pWorldMapCursor->m_LeftStickHorizontal) +
             (pWorldMapCursor->m_LeftStickVertical * pWorldMapCursor->m_LeftStickVertical)) > WORLD_MAP_ROTATE_DEADZONE)
         {
             pWorldMapCursor->m_IsCursorMoving = true;
