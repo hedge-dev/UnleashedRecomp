@@ -1230,17 +1230,17 @@ void OptionsMenu::Draw()
         float totalGridCount = settingsGridCount + paddingGridCount + infoGridCount;
 
         float offsetX = (1280.0f - ((GRID_SIZE * totalGridCount) - 1)) / 2.0f;
-        float minY = g_aspectRatioOffsetY + Scale(CONTAINER_POS_Y);
-        float maxY = g_aspectRatioOffsetY + Scale((720.0f - CONTAINER_POS_Y + 1.0f));
+        float minY = round(g_aspectRatioOffsetY + Scale(CONTAINER_POS_Y));
+        float maxY = round(g_aspectRatioOffsetY + Scale((720.0f - CONTAINER_POS_Y + 1.0f)));
 
         DrawSettingsPanel(
-            { g_aspectRatioOffsetX + Scale(offsetX), minY },
-            { g_aspectRatioOffsetX + Scale(offsetX + settingsGridCount * GRID_SIZE), maxY }
+            { round(g_aspectRatioOffsetX + Scale(offsetX)), minY },
+            { round(g_aspectRatioOffsetX + Scale(offsetX + settingsGridCount * GRID_SIZE)), maxY }
         );
 
         DrawInfoPanel(
-            { g_aspectRatioOffsetX + Scale(offsetX + (settingsGridCount + paddingGridCount) * GRID_SIZE), minY },
-            { g_aspectRatioOffsetX + Scale(offsetX + totalGridCount * GRID_SIZE), maxY }
+            { round(g_aspectRatioOffsetX + Scale(offsetX + (settingsGridCount + paddingGridCount) * GRID_SIZE)), minY },
+            { round(g_aspectRatioOffsetX + Scale(offsetX + totalGridCount * GRID_SIZE)), maxY }
         );
 
         if (g_isStage)

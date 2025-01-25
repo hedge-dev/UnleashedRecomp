@@ -639,8 +639,8 @@ static void DrawDescriptionContainer()
     auto drawList = ImGui::GetForegroundDrawList();
     auto fontSize = Scale(26.0f);
 
-    ImVec2 descriptionMin = { g_aspectRatioOffsetX + Scale(CONTAINER_X), g_aspectRatioOffsetY + Scale(CONTAINER_Y) };
-    ImVec2 descriptionMax = { g_aspectRatioOffsetX + Scale(CONTAINER_X + CONTAINER_WIDTH), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT) };
+    ImVec2 descriptionMin = { round(g_aspectRatioOffsetX + Scale(CONTAINER_X)), round(g_aspectRatioOffsetY + Scale(CONTAINER_Y)) };
+    ImVec2 descriptionMax = { round(g_aspectRatioOffsetX + Scale(CONTAINER_X + CONTAINER_WIDTH)), round(g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT)) };
     SetProceduralOrigin(descriptionMin);
     DrawContainer(descriptionMin, descriptionMax, true);
 
