@@ -5107,11 +5107,60 @@ PPC_FUNC(sub_8258CAE0)
 
     if (g_needsResize)
     {
+        // Backup fade values. These get modified by cutscenes, 
+        // and resizing will cause the values to be forgotten.
+        // NOTE: Intentionally ignoring the shared pointers here.
+        auto traverseFxJobs = [&]<typename TCallback>(const TCallback& callback)
+        {
+            uint32_t scheduler = PPC_LOAD_U32(ctx.r3.u32 + 0xE0);
+            if (scheduler != NULL)
+            {
+                uint32_t member = PPC_LOAD_U32(scheduler + 0x8);
+                if (member != NULL)
+                {
+                    for (uint32_t it = PPC_LOAD_U32(member + 0x24); it != PPC_LOAD_U32(member + 0x28); it += 8)
+                    {
+                        uint32_t job = PPC_LOAD_U32(it);
+                        if (job != NULL && PPC_LOAD_U32(job) == 0x820CA6F8) // SWA::CFxFade
+                            callback(job);
+                    }
+                }
+            }
+        };
+
+        struct FadeValues
+        {
+            uint8_t field50[0x18];
+            uint8_t field88;
+        };
+
+        std::map<uint32_t, FadeValues> fadeValuesMap;
+        traverseFxJobs([&](uint32_t job)
+            {
+                FadeValues fadeValues{};
+
+                memcpy(fadeValues.field50, base + job + 0x50, sizeof(fadeValues.field50));
+                fadeValues.field88 = PPC_LOAD_U8(job + 0x88);
+
+                fadeValuesMap.emplace(PPC_LOAD_U32(job + 0x48), fadeValues);
+            });
+
         auto r3 = ctx.r3;
         ctx.r4 = g_r4;
         ctx.r5 = g_r5;
         __imp__sub_8258C8A0(ctx, base);
         ctx.r3 = r3;
+
+        // Restore fade values.
+        traverseFxJobs([&](uint32_t job)
+            {
+                auto findResult = fadeValuesMap.find(PPC_LOAD_U32(job + 0x48));
+                if (findResult != fadeValuesMap.end()) // May NOT actually be found.
+                {
+                    memcpy(base + job + 0x50, findResult->second.field50, sizeof(findResult->second.field50));
+                    PPC_STORE_U8(job + 0x88, findResult->second.field88);
+                }
+            });
 
         g_needsResize = false;
     }
