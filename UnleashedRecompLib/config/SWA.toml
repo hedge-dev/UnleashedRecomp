@@ -749,6 +749,11 @@ address = 0x824DB3E4
 registers = ["r3"]
 
 [[midasm_hook]]
+name = "AddPrimitive2DMidAsmHook"
+address = 0x82B34914
+registers = ["r3"]
+
+[[midasm_hook]]
 name = "ObjGetItemFieldOfViewMidAsmHook"
 address = 0x82692934
 registers = ["r1", "f1"]
