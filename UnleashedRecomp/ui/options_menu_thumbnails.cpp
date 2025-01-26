@@ -1,11 +1,10 @@
 #include <ui/options_menu_thumbnails.h>
 #include <decompressor.h>
-#include <hid/hid_detail.h>
+#include <hid/hid.h>
 
 // TODO (Hyper): lower the resolution of these textures once final.
 #include <res/images/options_menu/thumbnails/achievement_notifications.dds.h>
 #include <res/images/options_menu/thumbnails/allow_background_input.dds.h>
-#include <res/images/options_menu/thumbnails/allow_dpad_movement.dds.h>
 #include <res/images/options_menu/thumbnails/antialiasing_none.dds.h>
 #include <res/images/options_menu/thumbnails/antialiasing_2x.dds.h>
 #include <res/images/options_menu/thumbnails/antialiasing_4x.dds.h>
@@ -67,7 +66,7 @@ static VALUE_THUMBNAIL_MAP(EShadowResolution) g_shadowResolutionThumbnails;
 static VALUE_THUMBNAIL_MAP(EGITextureFiltering) g_giTextureFilteringThumbnails;
 static VALUE_THUMBNAIL_MAP(EMotionBlur) g_motionBlurThumbnails;
 static VALUE_THUMBNAIL_MAP(bool) g_xboxColorCorrectionThumbnails;
-static VALUE_THUMBNAIL_MAP(EMovieScaleMode) g_movieScaleModeThumbnails;
+static VALUE_THUMBNAIL_MAP(ECutsceneAspectRatio) g_cutsceneAspectRatioThumbnails;
 
 void LoadThumbnails()
 {
@@ -128,12 +127,13 @@ void LoadThumbnails()
 
     g_configThumbnails[&Config::UIAlignmentMode] = LOAD_ZSTD_TEXTURE(g_ui_alignment_mode);
 
-    g_movieScaleModeThumbnails[EMovieScaleMode::Fit] = LOAD_ZSTD_TEXTURE(g_movie_scale_fit);
-    g_movieScaleModeThumbnails[EMovieScaleMode::Fill] = LOAD_ZSTD_TEXTURE(g_movie_scale_fill);
-    g_movieScaleModeThumbnails[EMovieScaleMode::Stretch] = LOAD_ZSTD_TEXTURE(g_movie_scale_stretch); // To be removed
+    g_cutsceneAspectRatioThumbnails[ECutsceneAspectRatio::Original] = LOAD_ZSTD_TEXTURE(g_movie_scale_fit);
+    g_cutsceneAspectRatioThumbnails[ECutsceneAspectRatio::Unlocked] = LOAD_ZSTD_TEXTURE(g_movie_scale_fill);
 
-    g_xboxColorCorrectionThumbnails[false] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_false);
-    g_xboxColorCorrectionThumbnails[true] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_true);
+    //g_xboxColorCorrectionThumbnails[false] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_false);
+    //g_xboxColorCorrectionThumbnails[true] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_true);
+
+    g_configThumbnails[&Config::XboxColorCorrection] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction);
 }
 
 template<typename T>
@@ -174,7 +174,7 @@ GuestTexture* GetThumbnail(const IConfigDef* cfg)
             bool isPlayStation = Config::ControllerIcons == EControllerIcons::PlayStation;
 
             if (Config::ControllerIcons == EControllerIcons::Auto)
-                isPlayStation = hid::detail::g_inputDeviceController == hid::detail::EInputDevice::PlayStation;
+                isPlayStation = hid::g_inputDeviceController == hid::EInputDevice::PlayStation;
 
             texture = isPlayStation ? g_namedThumbnails["ControlTutorialPS"].get() : g_namedThumbnails["ControlTutorialXB"].get();
         }
@@ -206,9 +206,9 @@ GuestTexture* GetThumbnail(const IConfigDef* cfg)
         {
             TryGetValueThumbnail<bool>(cfg, &g_xboxColorCorrectionThumbnails, &texture);
         }
-        else if (cfg == &Config::MovieScaleMode)
+        else if (cfg == &Config::CutsceneAspectRatio)
         {
-            TryGetValueThumbnail<EMovieScaleMode>(cfg, &g_movieScaleModeThumbnails, &texture);
+            TryGetValueThumbnail<ECutsceneAspectRatio>(cfg, &g_cutsceneAspectRatioThumbnails, &texture);
         }
 
         return texture;
