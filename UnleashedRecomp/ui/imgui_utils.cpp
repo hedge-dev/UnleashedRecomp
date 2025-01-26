@@ -597,6 +597,8 @@ ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float maxWidt
 
 void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, const ImVec2& pos, float lineMargin, const char* text, std::function<void(const char*, ImVec2)> drawMethod, std::function<void(const char*, float, ImVec2)> annotationDrawMethod, bool isCentred)
 {
+    float annotationFontSize = fontSize * ANNOTATION_FONT_SIZE_MODIFIER;
+
     const auto& input = RemoveRubyAnnotations(text);
     auto lines = Split(input.first.c_str(), font, fontSize, maxWidth);
     auto paragraphSize = MeasureCentredParagraph(font, fontSize, lineMargin, lines);
@@ -614,7 +616,7 @@ void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, c
         const auto& annotationRemovedLine = RemoveAnnotationFromParagraphLine(annotatedLine);
 
         auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, annotationRemovedLine.c_str());
-        auto annotationSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, "");
+        auto annotationSize = font->CalcTextSizeA(annotationFontSize, FLT_MAX, 0, "");
 
         float textX = pos.x;
         if (isCentred)
@@ -635,10 +637,10 @@ void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, c
 
             if (segment.annotated)
             {
-                annotationSize = font->CalcTextSizeA(fontSize * 0.55f, FLT_MAX, 0, segment.annotation.c_str());
+                annotationSize = font->CalcTextSizeA(annotationFontSize, FLT_MAX, 0, segment.annotation.c_str());
                 float annotationX = textX + (textSize.x - annotationSize.x) / 2.0f;
 
-                annotationDrawMethod(segment.annotation.c_str(), fontSize * 0.55f, { annotationX, textY - (fontSize * 0.55f) });
+                annotationDrawMethod(segment.annotation.c_str(), annotationFontSize, { annotationX, textY - annotationFontSize });
             }
 
             drawMethod(segment.text.c_str(), { textX, textY });

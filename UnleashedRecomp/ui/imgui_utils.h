@@ -14,6 +14,8 @@
 
 #define BREATHE_MOTION(start, end, time, rate) Lerp(start, end, (sin((ImGui::GetTime() - time) * (2.0f * M_PI / rate)) + 1.0f) / 2.0f)
 
+constexpr float ANNOTATION_FONT_SIZE_MODIFIER = 0.6f;
+
 extern std::unique_ptr<GuestTexture> g_texGeneralWindow;
 extern std::unique_ptr<GuestTexture> g_texLight;
 extern std::unique_ptr<GuestTexture> g_texSelectFade;

@@ -1252,20 +1252,37 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
             desc += "\n\n" + g_selectedItem->GetValueDescription(Config::Language);
         }
 
-        auto fontSize = Scale(26.0f);
+        auto fontSize = Scale(28.0f);
+        auto annotationFontSize = fontSize * ANNOTATION_FONT_SIZE_MODIFIER;
+
+        // Extra padding between the start of the description text and the bottom of the thumbnail
+        float offsetY = Scale(24.0f);
         
-        float offsetY = 0.0f;
+        float textX = clipRectMin.x - Scale(0.5f);
+        float textY = thumbnailMax.y + offsetY;
+
         if (Config::Language == ELanguage::Japanese)
         {
-            offsetY = Scale(10.0f);
+            // Removing some padding of the applied due to the inclusion of annotation for Japanese
+            textY -= Scale(8.0f);
+
+            // The annotation (and thus the Japanese) can be drawn above the edges of the info panel thus the clip needs to be extended a bit
+            clipRectMin.x -= annotationFontSize;
+            clipRectMin.y -= annotationFontSize;
+            clipRectMax.x += annotationFontSize;
+            clipRectMax.y += annotationFontSize;
+
+            textY += annotationFontSize;
         }
+
+        drawList->PushClipRect(clipRectMin, clipRectMax, false);
 
         DrawRubyAnnotatedText
         (
             g_seuratFont,
             fontSize,
             clipRectMax.x - clipRectMin.x,
-            { clipRectMin.x, thumbnailMax.y + fontSize - 5.0f + offsetY },
+            { textX, textY },
             5.0f,
             desc.c_str(),
 
@@ -1278,6 +1295,8 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
                 DrawTextBasic(g_seuratFont, size, pos, IM_COL32(255, 255, 255, 255), str);
             }
         );
+
+        drawList->PopClipRect();
     }
 
     ResetProceduralOrigin();
