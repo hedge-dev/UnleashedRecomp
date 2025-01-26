@@ -370,7 +370,7 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_gate/footer/status_footer"), { ALIGN_BOTTOM } },
     { HashStr("ui_gate/header/status_title"), { ALIGN_TOP | OFFSET_SCALE_LEFT, 652.0f } },
     { HashStr("ui_gate/header/status_title/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
-    { HashStr("ui_gate/header/status_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT} },
+    { HashStr("ui_gate/header/status_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT } },
     { HashStr("ui_gate/header/status_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
     { HashStr("ui_gate/window/window_bg"), { STRETCH } },
 
@@ -383,12 +383,18 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_itemresult/main/iresult_title"), { ALIGN_TOP } },
     { HashStr("ui_itemresult/main/iresult_title"), { ALIGN_TOP | OFFSET_SCALE_LEFT, 688.0f } },
     { HashStr("ui_itemresult/main/iresult_title/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
-    { HashStr("ui_itemresult/main/iresult_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT} },
+    { HashStr("ui_itemresult/main/iresult_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT } },
     { HashStr("ui_itemresult/main/iresult_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
 
     // ui_loading
     { HashStr("ui_loading/bg_1"), { STRETCH } },
     { HashStr("ui_loading/bg_2"), { STRETCH } },
+    { HashStr("ui_loading/n_2_d/bg/sky"), { STRETCH } },
+    { HashStr("ui_loading/n_2_d/bg/under"), { STRETCH } },
+    { HashStr("ui_loading/n_2_d/letterbox/letterbox_under"), { STRETCH } },
+    { HashStr("ui_loading/n_2_d/letterbox/letterbox_top"), { STRETCH } },
+    { HashStr("ui_loading/n_2_d/letterbox/black_l"), { EXTEND_LEFT | STRETCH_VERTICAL } },
+    { HashStr("ui_loading/n_2_d/letterbox/black_r"), { EXTEND_RIGHT | STRETCH_VERTICAL } },
 
     // ui_mediaroom
     { HashStr("ui_mediaroom/header/bg/img_1"), { EXTEND_LEFT } },

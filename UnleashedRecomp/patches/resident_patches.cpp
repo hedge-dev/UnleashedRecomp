@@ -11,13 +11,17 @@ bool m_isSavedAchievementData = false;
 PPC_FUNC_IMPL(__imp__sub_824DCF38);
 PPC_FUNC(sub_824DCF38)
 {
+    auto pLoading = (SWA::CLoading*)g_memory.Translate(ctx.r3.u32);
+
     App::s_isLoading = true;
 
-    // TODO: use the actual PS3 loading screen ("n_2_d").
     if (Config::TimeOfDayTransition == ETimeOfDayTransition::PlayStation)
     {
         if (ctx.r4.u32 == SWA::eLoadingDisplayType_WerehogMovie)
+        {
             ctx.r4.u32 = SWA::eLoadingDisplayType_ChangeTimeOfDay;
+            pLoading->m_IsNightToDay = App::s_isWerehog;
+        }
     }
 
     if (auto pGameDocument = SWA::CGameDocument::GetInstance())
