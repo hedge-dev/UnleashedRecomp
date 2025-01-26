@@ -9,6 +9,7 @@ inline const char* g_credits[] =
     "RadiantDerg",
     "PTKay",
     "DeaThProj",
+    "SuperSonic16",
     "NextinHKRY",
     "M&M",
     "saguinee",

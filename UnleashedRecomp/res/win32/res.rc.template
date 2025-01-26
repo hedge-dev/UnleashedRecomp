@@ -1,1 +1,40 @@
-IDI_ICON1 ICON "@ICON_PATH@"
+#include <windows.h>
+
+#define UNLEASHED_RECOMP_VERSION_BIN @WIN32_VERSION_BINARY@
+#define UNLEASHED_RECOMP_VERSION_STR "@WIN32_VERSION_STRING@"
+
+#ifdef _DEBUG
+#define UNLEASHED_RECOMP_FILE_FLAGS VS_FF_DEBUG
+#else
+#define UNLEASHED_RECOMP_FILE_FLAGS 0
+#endif
+
+IDI_ICON1 ICON "@WIN32_ICON_PATH@"
+
+VS_VERSION_INFO VERSIONINFO
+    FILEVERSION    UNLEASHED_RECOMP_VERSION_BIN
+    PRODUCTVERSION UNLEASHED_RECOMP_VERSION_BIN
+    FILEFLAGSMASK  VS_FFI_FILEFLAGSMASK
+    FILEFLAGS      UNLEASHED_RECOMP_FILE_FLAGS
+    FILEOS         VOS_NT_WINDOWS32
+    FILETYPE       VFT_APP
+    FILESUBTYPE    VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080904B0" // English (UK), Unicode
+        BEGIN
+            VALUE "ProductName",      "Unleashed Recompiled"
+            VALUE "FileDescription",  "Unleashed Recompiled"
+            VALUE "CompanyName",      "hedge-dev"
+            VALUE "FileVersion",      UNLEASHED_RECOMP_VERSION_STR
+            VALUE "ProductVersion",   UNLEASHED_RECOMP_VERSION_STR
+            VALUE "InternalName",     "UnleashedRecomp"
+            VALUE "OriginalFilename", "SWA.exe"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0809, 0x04B0
+    END
+END

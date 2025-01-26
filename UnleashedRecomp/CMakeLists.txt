@@ -249,9 +249,46 @@ set(UNLEASHED_RECOMP_CXX_SOURCES
     ${UNLEASHED_RECOMP_THIRDPARTY_SOURCES}
 )
 
+include("version.cmake")
+
+set(VERSION_TXT "${PROJECT_SOURCE_DIR}/res/version.txt")
+
+# Only show Git info and build type if not Release.
+set(SHOW_GIT_INFO_AND_BUILD_TYPE 0)
+if (NOT ${CMAKE_BUILD_TYPE} MATCHES "Release")
+    set(SHOW_GIT_INFO_AND_BUILD_TYPE 1)
+endif()
+
+GenerateVersionSources(
+    OUTPUT_DIR ${PROJECT_SOURCE_DIR}
+    VERSION_TXT ${VERSION_TXT}
+    H_TEMPLATE "${PROJECT_SOURCE_DIR}/res/version.h.template"
+    CXX_TEMPLATE "${PROJECT_SOURCE_DIR}/res/version.cpp.template"
+    BUILD_TYPE ${CMAKE_BUILD_TYPE}
+    SHOW_GIT_INFO ${SHOW_GIT_INFO_AND_BUILD_TYPE}
+    SHOW_BUILD_TYPE ${SHOW_GIT_INFO_AND_BUILD_TYPE}
+)
+
 if (WIN32)
-    # Set up Win32 resources for application icon.
-    set(ICON_PATH "${PROJECT_SOURCE_DIR}/../UnleashedRecompResources/images/game_icon.ico")
+    # Create binary version number for Win32 integer attributes.
+    CreateVersionString(
+        VERSION_TXT ${VERSION_TXT}
+        OUTPUT_CSV 1
+        OUTPUT_VAR WIN32_VERSION_BINARY
+    )
+
+    # Create string version number for Win32 detailed attributes.
+    CreateVersionString(
+        VERSION_TXT ${VERSION_TXT}
+        BUILD_TYPE ${CMAKE_BUILD_TYPE}
+        SHOW_GIT_INFO ${SHOW_GIT_INFO_AND_BUILD_TYPE}
+        SHOW_BUILD_TYPE ${SHOW_GIT_INFO_AND_BUILD_TYPE}
+        OUTPUT_VAR WIN32_VERSION_STRING
+    )
+
+    # Set Win32 icon path.
+    set(WIN32_ICON_PATH "${PROJECT_SOURCE_DIR}/../UnleashedRecompResources/images/game_icon.ico")
+
     configure_file("res/win32/res.rc.template" "${CMAKE_BINARY_DIR}/res.rc" @ONLY)
     add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES} "${CMAKE_BINARY_DIR}/res.rc")
 else()
@@ -406,23 +443,6 @@ endfunction()
 generate_aggregate_header(
     "${CMAKE_CURRENT_SOURCE_DIR}/api"
     "${CMAKE_CURRENT_SOURCE_DIR}/api/SWA.h"
-)
-
-# Only show build type if not Release.
-set(SHOW_GIT_INFO_AND_BUILD_TYPE 0)
-if (NOT ${CMAKE_BUILD_TYPE} MATCHES "Release")
-    set(SHOW_GIT_INFO_AND_BUILD_TYPE 1)
-endif()
-
-include("version.cmake")
-GenerateVersionSources(
-    OUTPUT_DIR "${PROJECT_SOURCE_DIR}"
-    VERSION_TXT "${PROJECT_SOURCE_DIR}/res/version.txt"
-    H_TEMPLATE "${PROJECT_SOURCE_DIR}/res/version.h.template"
-    CXX_TEMPLATE "${PROJECT_SOURCE_DIR}/res/version.cpp.template"
-    BUILD_TYPE ${CMAKE_BUILD_TYPE}
-    SHOW_GIT_INFO ${SHOW_GIT_INFO_AND_BUILD_TYPE}
-    SHOW_BUILD_TYPE ${SHOW_GIT_INFO_AND_BUILD_TYPE}
 )
 
 set(RESOURCES_SOURCE_PATH "${PROJECT_SOURCE_DIR}/../UnleashedRecompResources")
