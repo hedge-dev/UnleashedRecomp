@@ -799,14 +799,22 @@ name = "WorldMapInfoMidAsmHook"
 address = 0x8257AF34
 registers = ["r4"]
 
+# Loading
 [[midasm_hook]]
 name = "AddPrimitive2DMidAsmHook"
 address = 0x824DB3E4
 registers = ["r3"]
 
+# NPC
 [[midasm_hook]]
 name = "AddPrimitive2DMidAsmHook"
 address = 0x82B34914
+registers = ["r3"]
+
+# Title
+[[midasm_hook]]
+name = "AddPrimitive2DMidAsmHook"
+address = 0x82581C2C
 registers = ["r3"]
 
 [[midasm_hook]]
