@@ -2098,8 +2098,9 @@ static void DrawImGui()
     ButtonGuide::Draw();
     Fader::Draw();
 
-    DrawProfiler();
+    assert(ImGui::GetForegroundDrawList()->_ClipRectStack.Size == 1 && "Some clip rects were not removed from the stack!");
 
+    DrawProfiler();
     ImGui::Render();
 
     auto drawData = ImGui::GetDrawData();

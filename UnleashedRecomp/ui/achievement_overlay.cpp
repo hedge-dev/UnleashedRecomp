@@ -67,9 +67,13 @@ static bool DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25)
 
     DrawPauseContainer(g_upWindow.get(), min, max, alpha);
 
-    drawList->PushClipRect(min, max);
+    if (containerMotion >= 1.0f)
+    {
+        drawList->PushClipRect(min, max);
+        return true;
+    }
 
-    return containerMotion >= 1.0f;
+    return false;
 }
 
 void AchievementOverlay::Init()
@@ -117,48 +121,49 @@ void AchievementOverlay::Draw()
 
     if (DrawContainer(min, max))
     {
-        if (g_isClosing)
+        if (!g_isClosing)
+        {
+            // Draw achievement icon.
+            drawList->AddImage
+            (
+                g_xdbfTextureCache[g_achievement.ID],                                                   // user_texture_id
+                { /* X */ min.x + imageMarginX, /* Y */ min.y + imageMarginY },                         // p_min
+                { /* X */ min.x + imageMarginX + imageSize, /* Y */ min.y + imageMarginY + imageSize }, // p_max
+                { 0, 0 },                                                                               // uv_min
+                { 1, 1 },                                                                               // uv_max
+                IM_COL32(255, 255, 255, 255)                                                            // col
+            );
+
+            // Draw header text.
+            DrawTextWithShadow
+            (
+                g_fntSeurat,                                                                                 // font
+                fontSize,                                                                                    // fontSize
+                { /* X */ min.x + textMarginX + (maxSize - headerSize.x) / 2, /* Y */ min.y + textMarginY }, // pos
+                IM_COL32(252, 243, 5, 255),                                                                  // colour
+                strAchievementUnlocked,                                                                      // text
+                2,                                                                                           // offset
+                1.0f,                                                                                        // radius
+                IM_COL32(0, 0, 0, 255)                                                                       // shadowColour
+            );
+
+            // Draw achievement name.
+            DrawTextWithShadow
+            (
+                g_fntSeurat,                                                                                                       // font
+                fontSize,                                                                                                          // fontSize
+                { /* X */ min.x + textMarginX + (maxSize - bodySize.x) / 2, /* Y */ min.y + textMarginY + bodySize.y + Scale(6) }, // pos
+                IM_COL32(255, 255, 255, 255),                                                                                      // colour
+                strAchievementName,                                                                                                // text
+                2,                                                                                                                 // offset
+                1.0f,                                                                                                              // radius
+                IM_COL32(0, 0, 0, 255)                                                                                             // shadowColour
+            );
+        }
+        else
         {
             s_isVisible = false;
-            return;
         }
-
-        // Draw achievement icon.
-        drawList->AddImage
-        (
-            g_xdbfTextureCache[g_achievement.ID],                                                   // user_texture_id
-            { /* X */ min.x + imageMarginX, /* Y */ min.y + imageMarginY },                         // p_min
-            { /* X */ min.x + imageMarginX + imageSize, /* Y */ min.y + imageMarginY + imageSize }, // p_max
-            { 0, 0 },                                                                               // uv_min
-            { 1, 1 },                                                                               // uv_max
-            IM_COL32(255, 255, 255, 255)                                                            // col
-        );
-
-        // Draw header text.
-        DrawTextWithShadow
-        (
-            g_fntSeurat,                                                                                 // font
-            fontSize,                                                                                    // fontSize
-            { /* X */ min.x + textMarginX + (maxSize - headerSize.x) / 2, /* Y */ min.y + textMarginY }, // pos
-            IM_COL32(252, 243, 5, 255),                                                                  // colour
-            strAchievementUnlocked,                                                                      // text
-            2,                                                                                           // offset
-            1.0f,                                                                                        // radius
-            IM_COL32(0, 0, 0, 255)                                                                       // shadowColour
-        );
-
-        // Draw achievement name.
-        DrawTextWithShadow
-        (
-            g_fntSeurat,                                                                                                       // font
-            fontSize,                                                                                                          // fontSize
-            { /* X */ min.x + textMarginX + (maxSize - bodySize.x) / 2, /* Y */ min.y + textMarginY + bodySize.y + Scale(6) }, // pos
-            IM_COL32(255, 255, 255, 255),                                                                                      // colour
-            strAchievementName,                                                                                                // text
-            2,                                                                                                                 // offset
-            1.0f,                                                                                                              // radius
-            IM_COL32(0, 0, 0, 255)                                                                                             // shadowColour
-        );
 
         // Pop clip rect from DrawContainer.
         drawList->PopClipRect();

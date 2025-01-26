@@ -192,9 +192,13 @@ bool DrawContainer(float appearTime, ImVec2 centre, ImVec2 max, bool isForegroun
 
     DrawPauseContainer(g_upWindow.get(), _min, _max, alpha);
 
-    drawList->PushClipRect(_min, _max);
+    if (containerMotion >= 1.0f && !g_isClosing)
+    {
+        drawList->PushClipRect(_min, _max);
+        return true;
+    }
 
-    return containerMotion >= 1.0f && !g_isClosing;
+    return false;
 }
 
 void DrawButton(int rowIndex, float yOffset, float width, float height, std::string& text)

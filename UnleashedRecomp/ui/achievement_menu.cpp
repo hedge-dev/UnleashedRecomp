@@ -580,11 +580,13 @@ static void DrawContentContainer()
 
     if (motion < 1.0f)
     {
+        drawList->PopClipRect();
         return;
     }
     else if (g_isClosing)
     {
         AchievementMenu::s_isVisible = false;
+        drawList->PopClipRect();
         return;
     }
 
