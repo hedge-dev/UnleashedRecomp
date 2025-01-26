@@ -94,6 +94,8 @@ void XAudioRegisterClient(PPCFunc* callback, uint32_t param)
 
 void XAudioSubmitFrame(void* samples)
 {
+    auto floatSamples = reinterpret_cast<be<float>*>(samples);
+
     if (g_downMixToStereo)
     {
         // 0: left 1.0f, right 0.0f
@@ -102,8 +104,6 @@ void XAudioSubmitFrame(void* samples)
         // 3: left 0.0f, right 0.0f
         // 4: left 1.0f, right 0.0f
         // 5: left 0.0f, right 1.0f
-
-        auto floatSamples = reinterpret_cast<be<float>*>(samples);
 
         std::array<float, 2 * XAUDIO_NUM_SAMPLES> audioFrames;
 
@@ -116,22 +116,20 @@ void XAudioSubmitFrame(void* samples)
             float ch4 = floatSamples[4 * XAUDIO_NUM_SAMPLES + i];
             float ch5 = floatSamples[5 * XAUDIO_NUM_SAMPLES + i];
 
-            audioFrames[i * 2 + 0] = ch0 + ch2 * 0.75f + ch4;
-            audioFrames[i * 2 + 1] = ch1 + ch2 * 0.75f + ch5;
+            audioFrames[i * 2 + 0] = (ch0 + ch2 * 0.75f + ch4) * Config::MasterVolume;
+            audioFrames[i * 2 + 1] = (ch1 + ch2 * 0.75f + ch5) * Config::MasterVolume;
         }
 
         SDL_QueueAudio(g_audioDevice, &audioFrames, sizeof(audioFrames));
     }
     else
     {
-        auto rawSamples = reinterpret_cast<be<uint32_t>*>(samples);
-
-        std::array<uint32_t, XAUDIO_NUM_CHANNELS * XAUDIO_NUM_SAMPLES> audioFrames;
+        std::array<float, XAUDIO_NUM_CHANNELS * XAUDIO_NUM_SAMPLES> audioFrames;
 
         for (size_t i = 0; i < XAUDIO_NUM_SAMPLES; i++)
         {
             for (size_t j = 0; j < XAUDIO_NUM_CHANNELS; j++)
-                audioFrames[i * XAUDIO_NUM_CHANNELS + j] = rawSamples[j * XAUDIO_NUM_SAMPLES + i];
+                audioFrames[i * XAUDIO_NUM_CHANNELS + j] = floatSamples[j * XAUDIO_NUM_SAMPLES + i] * Config::MasterVolume;
         }
 
         SDL_QueueAudio(g_audioDevice, &audioFrames, sizeof(audioFrames));
