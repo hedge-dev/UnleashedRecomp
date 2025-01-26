@@ -48,7 +48,7 @@ jobs:
         run: |
           echo "commit_message=$(git log -1 --pretty=%s)" >> $GITHUB_ENV
           export CCACHE_DIR=/tmp/ccache
-          flatpak-builder --user --force-clean --install-deps-from=flathub --repo=repo --install --ccache builddir ./flatpak/${{ env.FLATPAK_ID }}.json
+          flatpak-builder --user --force-clean --install-deps-from=flathub --repo=repo --ccache builddir ./flatpak/${{ env.FLATPAK_ID }}.json
           flatpak build-bundle repo ./${{ env.FLATPAK_ID }}.flatpak ${{ env.FLATPAK_ID }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
 # Uploads the built flatpak bundle to GitHub
