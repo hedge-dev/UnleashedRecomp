@@ -201,15 +201,51 @@ void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& pos, 
     auto drawList = ImGui::GetForegroundDrawList();
     auto rectWidth = max.x - min.x;
     auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
-    auto textX = pos.x - fmodf(std::max(0.0, ImGui::GetTime() - (time + delay)) * speed, textSize.x + rectWidth);
+    auto textX = position.x - fmodf(std::max(0.0, ImGui::GetTime() - (time + delay)) * speed, textSize.x + rectWidth);
 
     drawList->PushClipRect(min, max, true);
 
-    if (textX <= pos.x)
-        drawList->AddText(font, fontSize, { textX, pos.y }, color, text);
+    if (textX <= position.x)
+    {
+        DrawRubyAnnotatedText
+        (
+            font,
+            fontSize,
+            rectWidth,
+            { textX, position.y },
+            0.0f,
+            text,
+            [=](const char* str, ImVec2 pos)
+            {
+                DrawTextBasic(font, fontSize, pos, color, str);
+            },
+            [=](const char* str, float size, ImVec2 pos)
+            {
+                DrawTextBasic(font, size, pos, color, str);
+            }
+        );
+    }
 
-    if (textX + textSize.x < pos.x)
-        drawList->AddText(font, fontSize, { textX + textSize.x + rectWidth, pos.y }, color, text);
+    if (textX + textSize.x < position.x)
+    {
+        DrawRubyAnnotatedText
+        (
+            font,
+            fontSize,
+            rectWidth,
+            { textX + textSize.x + rectWidth, position.y },
+            0.0f,
+            text,
+            [=](const char* str, ImVec2 pos)
+            {
+                DrawTextBasic(font, fontSize, pos, color, str);
+            },
+            [=](const char* str, float size, ImVec2 pos)
+            {
+                DrawTextBasic(font, size, pos, color, str);
+            }
+        );
+    }
 
     drawList->PopClipRect();
 }
