@@ -2044,6 +2044,32 @@ static void DrawProfiler()
 static void DrawImGui()
 {
     ImGui_ImplSDL2_NewFrame();
+
+    auto& io = ImGui::GetIO();
+    io.DisplaySize = { float(Video::s_viewportWidth), float(Video::s_viewportHeight) };
+
+    // ImGui doesn't know that we center the screen for specific aspect ratio
+    // settings, which causes mouse events to not work correctly. To fix this, 
+    // we can adjust the mouse events before ImGui processes them.
+    uint32_t width = g_swapChain->getWidth();
+    uint32_t height = g_swapChain->getHeight();
+
+    if (width != Video::s_viewportWidth || height != Video::s_viewportHeight)
+    {
+        float mousePosOffsetX = (width - Video::s_viewportWidth) / 2.0f;
+        float mousePosOffsetY = (height - Video::s_viewportHeight) / 2.0f;
+
+        for (int i = 0; i < io.Ctx->InputEventsQueue.Size; i++)
+        {
+            auto& e = io.Ctx->InputEventsQueue[i];
+            if (e.Type == ImGuiInputEventType_MousePos)
+            {
+                if (e.MousePos.PosX != -FLT_MAX) e.MousePos.PosX -= mousePosOffsetX;
+                if (e.MousePos.PosY != -FLT_MAX) e.MousePos.PosY -= mousePosOffsetY;
+            }
+        }
+    }
+
     ImGui::NewFrame();
 
     ResetImGuiCallbacks();
@@ -2063,8 +2089,6 @@ static void DrawImGui()
     }
     ImGui::End();
 #endif
-
-    ImGui::GetIO().DisplaySize = { float(Video::s_viewportWidth), float(Video::s_viewportHeight) };
 
     AchievementMenu::Draw();
     OptionsMenu::Draw();
