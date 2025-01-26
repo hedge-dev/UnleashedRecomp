@@ -41,6 +41,7 @@ namespace hid
     uint32_t SetState(uint32_t dwUserIndex, XAMINPUT_VIBRATION* pVibration);
     uint32_t GetCapabilities(uint32_t dwUserIndex, XAMINPUT_CAPABILITIES* pCaps);
 
+    bool IsInputAllowed();
     bool IsInputDeviceController();
     std::string GetInputDeviceName();
 }

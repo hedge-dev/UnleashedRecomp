@@ -53,7 +53,7 @@ class SDLEventListenerForMessageWindow : public SDLEventListener
 public:
     void OnSDLEvent(SDL_Event* event) override
     {
-        if (App::s_isInit || !MessageWindow::s_isVisible)
+        if (App::s_isInit || !MessageWindow::s_isVisible || !hid::IsInputAllowed())
             return;
 
         constexpr float axisValueRange = 32767.0f;

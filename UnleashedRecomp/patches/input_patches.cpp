@@ -123,6 +123,9 @@ public:
 
     void OnSDLEvent(SDL_Event* event) override
     {
+        if (!hid::IsInputAllowed())
+            return;
+
         switch (event->type)
         {
 #ifdef UI_KBM_SUPPORT

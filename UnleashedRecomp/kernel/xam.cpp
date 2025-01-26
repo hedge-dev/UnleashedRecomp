@@ -405,7 +405,8 @@ uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_STATE* st
 {
     memset(state, 0, sizeof(*state));
 
-    uint32_t result = hid::GetState(userIndex, state);
+    if (hid::IsInputAllowed())
+        hid::GetState(userIndex, state);
 
     if (GameWindow::s_isFocused)
     {

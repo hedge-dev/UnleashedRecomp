@@ -68,7 +68,7 @@ public:
 
     bool CanPoll()
     {
-        return controller && (GameWindow::s_isFocused || Config::AllowBackgroundInput);
+        return controller;
     }
 
     void PollAxis()

@@ -159,100 +159,103 @@ class SDLEventListenerForInstaller : public SDLEventListener
 public:
     void OnSDLEvent(SDL_Event *event) override
     {
+        if (!InstallerWizard::s_isVisible || !g_currentMessagePrompt.empty() || g_currentPickerVisible || !hid::IsInputAllowed())
+            return;
+
         constexpr float AxisValueRange = 32767.0f;
         constexpr float AxisTapRange = 0.5f;
-        if (!InstallerWizard::s_isVisible || !g_currentMessagePrompt.empty() || g_currentPickerVisible)
-        {
-            return;
-        }
-
         int newCursorIndex = -1;
         ImVec2 tapDirection = {};
+
         switch (event->type)
         {
-        case SDL_KEYDOWN:
-            switch (event->key.keysym.scancode)
+            case SDL_KEYDOWN:
             {
-            case SDL_SCANCODE_LEFT:
-            case SDL_SCANCODE_RIGHT:
-                tapDirection.x = (event->key.keysym.scancode == SDL_SCANCODE_RIGHT) ? 1.0f : -1.0f;
-                break;
-            case SDL_SCANCODE_UP:
-            case SDL_SCANCODE_DOWN:
-                tapDirection.y = (event->key.keysym.scancode == SDL_SCANCODE_DOWN) ? 1.0f : -1.0f;
-                break;
-            case SDL_SCANCODE_RETURN:
-            case SDL_SCANCODE_KP_ENTER:
-                g_currentCursorAccepted = (g_currentCursorIndex >= 0);
-                break;
-            }
-
-            break;
-        case SDL_CONTROLLERBUTTONDOWN:
-            switch (event->cbutton.button)
-            {
-            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                tapDirection = { -1.0f, 0.0f };
-                break;
-            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-                tapDirection = { 1.0f, 0.0f };
-                break;
-            case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                tapDirection = { 0.0f, -1.0f };
-                break;
-            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                tapDirection = { 0.0f, 1.0f };
-                break;
-            case SDL_CONTROLLER_BUTTON_A:
-                g_currentCursorAccepted = (g_currentCursorIndex >= 0);
-                break;
-            }
-
-            break;
-        case SDL_CONTROLLERAXISMOTION:
-        {
-            if (event->caxis.axis < 2)
-            {
-                float newAxisValue = event->caxis.value / AxisValueRange;
-                bool sameDirection = (newAxisValue * g_joypadAxis[event->caxis.axis]) > 0.0f;
-                bool wasInRange = abs(g_joypadAxis[event->caxis.axis]) > AxisTapRange;
-                bool isInRange = abs(newAxisValue) > AxisTapRange;
-                if (sameDirection && !wasInRange && isInRange)
+                switch (event->key.keysym.scancode)
                 {
-                    tapDirection[event->caxis.axis] = newAxisValue;
+                    case SDL_SCANCODE_LEFT:
+                    case SDL_SCANCODE_RIGHT:
+                        tapDirection.x = (event->key.keysym.scancode == SDL_SCANCODE_RIGHT) ? 1.0f : -1.0f;
+                        break;
+                    case SDL_SCANCODE_UP:
+                    case SDL_SCANCODE_DOWN:
+                        tapDirection.y = (event->key.keysym.scancode == SDL_SCANCODE_DOWN) ? 1.0f : -1.0f;
+                        break;
+                    case SDL_SCANCODE_RETURN:
+                    case SDL_SCANCODE_KP_ENTER:
+                        g_currentCursorAccepted = (g_currentCursorIndex >= 0);
+                        break;
                 }
 
-                g_joypadAxis[event->caxis.axis] = newAxisValue;
+                break;
             }
 
-            break;
-        }
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEMOTION:
-        {
-            for (size_t i = 0; i < g_currentCursorRects.size(); i++)
+            case SDL_CONTROLLERBUTTONDOWN:
             {
-                auto &currentRect = g_currentCursorRects[i];
-                if (ImGui::IsMouseHoveringRect(currentRect.first, currentRect.second, false))
+                switch (event->cbutton.button)
                 {
-                    newCursorIndex = int(i);
+                    case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                        tapDirection = { -1.0f, 0.0f };
+                        break;
+                    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                        tapDirection = { 1.0f, 0.0f };
+                        break;
+                    case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                        tapDirection = { 0.0f, -1.0f };
+                        break;
+                    case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                        tapDirection = { 0.0f, 1.0f };
+                        break;
+                    case SDL_CONTROLLER_BUTTON_A:
+                        g_currentCursorAccepted = (g_currentCursorIndex >= 0);
+                        break;
+                }
 
-                    if (event->type == SDL_MOUSEBUTTONDOWN && event->button.button == SDL_BUTTON_LEFT)
+                break;
+            }
+
+            case SDL_CONTROLLERAXISMOTION:
+            {
+                if (event->caxis.axis < 2)
+                {
+                    float newAxisValue = event->caxis.value / AxisValueRange;
+                    bool sameDirection = (newAxisValue * g_joypadAxis[event->caxis.axis]) > 0.0f;
+                    bool wasInRange = abs(g_joypadAxis[event->caxis.axis]) > AxisTapRange;
+                    bool isInRange = abs(newAxisValue) > AxisTapRange;
+                    if (sameDirection && !wasInRange && isInRange)
                     {
-                        g_currentCursorAccepted = true;
+                        tapDirection[event->caxis.axis] = newAxisValue;
                     }
 
-                    break;
+                    g_joypadAxis[event->caxis.axis] = newAxisValue;
                 }
+
+                break;
             }
 
-            if (newCursorIndex < 0)
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEMOTION:
             {
-                g_currentCursorIndex = -1;
-            }
+                for (size_t i = 0; i < g_currentCursorRects.size(); i++)
+                {
+                    auto &currentRect = g_currentCursorRects[i];
 
-            break;
-        }
+                    if (ImGui::IsMouseHoveringRect(currentRect.first, currentRect.second, false))
+                    {
+                        newCursorIndex = int(i);
+
+                        if (event->type == SDL_MOUSEBUTTONDOWN && event->button.button == SDL_BUTTON_LEFT)
+                            g_currentCursorAccepted = true;
+
+                        break;
+                    }
+                }
+
+                if (newCursorIndex < 0)
+                    g_currentCursorIndex = -1;
+
+                break;
+            }
         }
 
         if (tapDirection.x != 0.0f || tapDirection.y != 0.0f)
@@ -300,9 +303,7 @@ public:
         if (newCursorIndex >= 0)
         {
             if (g_currentCursorIndex != newCursorIndex)
-            {
                 Game_PlaySound("sys_worldmap_cursor");
-            }
 
             g_currentCursorIndex = newCursorIndex;
         }
