@@ -751,11 +751,13 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     }
     else
     {
+        drawList->PushClipRect(min, max, true);
+
         DrawRubyAnnotatedText
         (
             g_seuratFont,
             size,
-            textClipRect.z - textClipRect.x,
+            FLT_MAX,
             textPos,
             0.0f,
             configName.c_str(),
@@ -768,6 +770,8 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                 DrawTextBasic(g_seuratFont, annotationSize, pos, textColour, str);
             }
         );
+
+        drawList->PopClipRect();
     }
 
     // Right side
