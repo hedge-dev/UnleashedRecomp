@@ -1280,7 +1280,7 @@ void YggdrasillRenderQuadMidAsmHook(PPCRegister& r3, PPCRegister& r6)
         if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
         {
             if (g_fadeTextureMode == FadeTextureMode::Letterbox)
-                scaleY = 1.25f;
+                scaleY = NARROW_ASPECT_RATIO;
             else
                 scaleX = 0.8f;
         }

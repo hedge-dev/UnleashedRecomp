@@ -17,14 +17,14 @@ cbuffer SharedConstants : register(b2, space4)
 {
     uint s0_Texture2DDescriptorIndex : packoffset(c0.x);
     uint s0_SamplerDescriptorIndex : packoffset(c12.x);
-	DEFINE_SHARED_CONSTANTS();
+    DEFINE_SHARED_CONSTANTS();
 };
 
 #endif
 
 float4 main(
-	in float4 iPos : SV_Position,
-	in float4 iTexCoord0 : TEXCOORD0) : SV_Target0
+    in float4 iPos : SV_Position,
+    in float4 iTexCoord0 : TEXCOORD0) : SV_Target0
 {
     Texture2D<float4> texture = g_Texture2DDescriptorHeap[s0_Texture2DDescriptorIndex];
     SamplerState samplerState = g_SamplerDescriptorHeap[s0_SamplerDescriptorIndex];
