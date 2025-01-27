@@ -43,7 +43,7 @@ static constexpr double CONTAINER_FULL_DURATION = CONTAINER_BACKGROUND_TIME + CO
 static constexpr double CONTAINER_CATEGORY_TIME = (CONTAINER_INNER_TIME + CONTAINER_BACKGROUND_TIME) / 2.0;
 static constexpr double CONTAINER_CATEGORY_DURATION = 12.0;
 
-static constexpr float CONTAINER_POS_Y = 118.0f;
+static constexpr float CONTAINER_POS_Y = 117.0f;
 
 static constexpr float SETTINGS_WIDE_GRID_COUNT = 90.0f;
 static constexpr float INFO_WIDE_GRID_COUNT = 42.0f;
@@ -146,15 +146,20 @@ static void DrawScanlineBars()
     );
 
     // Bottom bar
+    ImVec2 max{ 0.0f, res.y - height };
+    SetProceduralOrigin(max);
+
     drawList->AddRectFilledMultiColor
     (
         { res.x, res.y },
-        { 0.0f, res.y - height },
+        max,
         COLOR0,
         COLOR0,
         COLOR1,
         COLOR1
     );
+
+    ResetProceduralOrigin();
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
@@ -183,7 +188,7 @@ static void DrawScanlineBars()
         { 0.0f, height },
         { res.x, height },
         OUTLINE_COLOR,
-        Scale(1)
+        Scale(2.0f)
     );
 
     // Bottom bar line
@@ -192,7 +197,7 @@ static void DrawScanlineBars()
         { 0.0f, res.y - height },
         { res.x, res.y - height },
         OUTLINE_COLOR,
-        Scale(1)
+        Scale(2.0f)
     );
 
     DrawVersionString(g_newRodinFont);
@@ -1229,18 +1234,19 @@ void OptionsMenu::Draw()
         float infoGridCount = floor(Lerp(INFO_NARROW_GRID_COUNT, INFO_WIDE_GRID_COUNT, g_aspectRatioNarrowScale));
         float totalGridCount = settingsGridCount + paddingGridCount + infoGridCount;
 
-        float offsetX = (1280.0f - ((GRID_SIZE * totalGridCount) - 1)) / 2.0f;
+        float minX = round(g_aspectRatioOffsetX + Scale((1280.0f - (GRID_SIZE * totalGridCount)) / 2.0f));
+        float maxX = res.x - minX;
         float minY = round(g_aspectRatioOffsetY + Scale(CONTAINER_POS_Y));
         float maxY = round(g_aspectRatioOffsetY + Scale((720.0f - CONTAINER_POS_Y + 1.0f)));
 
         DrawSettingsPanel(
-            { round(g_aspectRatioOffsetX + Scale(offsetX)), minY },
-            { round(g_aspectRatioOffsetX + Scale(offsetX + settingsGridCount * GRID_SIZE)), maxY }
+            { minX, minY },
+            { minX + Scale(settingsGridCount * GRID_SIZE), maxY }
         );
 
         DrawInfoPanel(
-            { round(g_aspectRatioOffsetX + Scale(offsetX + (settingsGridCount + paddingGridCount) * GRID_SIZE)), minY },
-            { round(g_aspectRatioOffsetX + Scale(offsetX + totalGridCount * GRID_SIZE)), maxY }
+            { maxX - Scale(infoGridCount * GRID_SIZE) - 1.0f, minY },
+            { maxX - 1.0f, maxY }
         );
 
         if (g_isStage)
