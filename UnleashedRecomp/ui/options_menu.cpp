@@ -100,7 +100,6 @@ static void DrawScanlineBars()
     constexpr uint32_t COLOR1 = IM_COL32(203, 255, 0, 55);
     constexpr uint32_t FADE_COLOR0 = IM_COL32(0, 0, 0, 255);
     constexpr uint32_t FADE_COLOR1 = IM_COL32(0, 0, 0, 0);
-    constexpr uint32_t OUTLINE_COLOR = IM_COL32(115, 178, 104, 255);
 
     float height = Scale(105.0f);
 
@@ -182,23 +181,40 @@ static void DrawScanlineBars()
         IMGUI_SHADER_MODIFIER_TITLE_BEVEL
     );
 
+    auto drawLine = [&](bool top)
+        {
+            float y = top ? height : (res.y - height);
+
+            constexpr uint32_t TOP_COLOR0 = IM_COL32(222, 255, 189, 7);
+            constexpr uint32_t TOP_COLOR1 = IM_COL32(222, 255, 189, 65);
+            constexpr uint32_t BOTTOM_COLOR0 = IM_COL32(173, 255, 156, 65);
+            constexpr uint32_t BOTTOM_COLOR1 = IM_COL32(173, 255, 156, 7);
+
+            drawList->AddRectFilledMultiColor(
+                { 0.0f, y - Scale(2.0f) },
+                { res.x, y }, 
+                top ? TOP_COLOR0 : BOTTOM_COLOR1,
+                top ? TOP_COLOR0 : BOTTOM_COLOR1, 
+                top ? TOP_COLOR1 : BOTTOM_COLOR0,
+                top ? TOP_COLOR1 : BOTTOM_COLOR0);
+
+            drawList->AddRectFilledMultiColor(
+                { 0.0f, y + Scale(1.0f) }, 
+                { res.x, y + Scale(3.0f) }, 
+                top ? BOTTOM_COLOR0 : TOP_COLOR1, 
+                top ? BOTTOM_COLOR0 : TOP_COLOR1,
+                top ? BOTTOM_COLOR1 : TOP_COLOR0, 
+                top ? BOTTOM_COLOR1 : TOP_COLOR0);
+
+            constexpr uint32_t CENTER_COLOR = IM_COL32(115, 178, 104, 255);
+            drawList->AddRectFilled({ 0.0f, y }, { res.x, y + Scale(1.0f) }, CENTER_COLOR);
+        };
+
     // Top bar line
-    drawList->AddLine
-    (
-        { 0.0f, height },
-        { res.x, height },
-        OUTLINE_COLOR,
-        Scale(2.0f)
-    );
+    drawLine(true);
 
     // Bottom bar line
-    drawList->AddLine
-    (
-        { 0.0f, res.y - height },
-        { res.x, res.y - height },
-        OUTLINE_COLOR,
-        Scale(2.0f)
-    );
+    drawLine(false);
 
     DrawVersionString(g_newRodinFont);
 }
