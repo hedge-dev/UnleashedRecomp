@@ -70,14 +70,14 @@ constexpr float IMAGE_Y = 103.5f;
 constexpr float IMAGE_WIDTH = 512.0f;
 constexpr float IMAGE_HEIGHT = 512.0f;
 
-constexpr float CONTAINER_X = 513.5f;
-constexpr float CONTAINER_Y = 225.5f;
-constexpr float CONTAINER_WIDTH = 526.0f;
-constexpr float CONTAINER_HEIGHT = 245.5f;
+constexpr float CONTAINER_X = 513.0f;
+constexpr float CONTAINER_Y = 226.0f;
+constexpr float CONTAINER_WIDTH = 526.5f;
+constexpr float CONTAINER_HEIGHT = 246.0f;
 constexpr float SIDE_CONTAINER_WIDTH = CONTAINER_WIDTH / 2.0f;
 
 constexpr float BOTTOM_X_GAP = 4.0f;
-constexpr float BOTTOM_Y_GAP = 6.5f;
+constexpr float BOTTOM_Y_GAP = 6.0f;
 constexpr float CONTAINER_BUTTON_WIDTH = 250.0f;
 constexpr float CONTAINER_BUTTON_GAP = 9.0f;
 constexpr float BUTTON_HEIGHT = 22.0f;
@@ -343,12 +343,12 @@ static const int WIZARD_INSTALL_TEXTURE_INDEX[] =
 // These are ordered from bottom to top in a 3x2 grid.
 const char* LANGUAGE_TEXT[] =
 {
-    "FRANÇAIS", // French
+    "FRANÃƒâ€¡AIS", // French
     "DEUTSCH", // German
     "ENGLISH", // English
-    "ESPAÑOL", // Spanish
+    "ESPAÃƒâ€˜OL", // Spanish
     "ITALIANO", // Italian
-    "日本語", // Japanese
+    "Ã¦â€”Â¥Ã¦Å“Â¬Ã¨ÂªÅ¾", // Japanese
 };
 
 const ELanguage LANGUAGE_ENUM[] =
@@ -669,7 +669,7 @@ static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
     }
 
     // The draw area
-    drawList->PushClipRect({ min.x - Scale(8.0f) + gridSize * 2.0f - Scale(28.0f) * 0.55f, min.y + gridSize * 2.0f - Scale(28.0f) * 0.55f }, { max.x + Scale(8.0f) - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
+    drawList->PushClipRect({ min.x - gridSize * 2.0f, min.y + gridSize * 2.0f }, { max.x - gridSize * 2.0f + 1.0f, max.y - gridSize * 2.0f + 1.0f });
 }
 
 static void DrawDescriptionContainer()
@@ -677,9 +677,10 @@ static void DrawDescriptionContainer()
     auto &res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetForegroundDrawList();
     auto fontSize = Scale(28.0f);
+    auto annotationFontSize = fontSize * ANNOTATION_FONT_SIZE_MODIFIER;
 
-    ImVec2 descriptionMin = { round(g_aspectRatioOffsetX + Scale(CONTAINER_X)), round(g_aspectRatioOffsetY + Scale(CONTAINER_Y)) };
-    ImVec2 descriptionMax = { round(g_aspectRatioOffsetX + Scale(CONTAINER_X + CONTAINER_WIDTH)), round(g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT)) };
+    ImVec2 descriptionMin = { round(g_aspectRatioOffsetX + Scale(CONTAINER_X + 0.5f)), round(g_aspectRatioOffsetY + Scale(CONTAINER_Y + 0.5f)) };
+    ImVec2 descriptionMax = { round(g_aspectRatioOffsetX + Scale(CONTAINER_X + 0.5f + CONTAINER_WIDTH)), round(g_aspectRatioOffsetY + Scale(CONTAINER_Y + 0.5f + CONTAINER_HEIGHT)) };
     SetProceduralOrigin(descriptionMin);
     DrawContainer(descriptionMin, descriptionMax, true);
 
@@ -706,13 +707,38 @@ static void DrawDescriptionContainer()
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
+    float textX = clipRectMin.x + fontSize;
+    float textY = clipRectMin.y - Scale(1.0f);
+
+    float lineMargin = 5.0f;
+
+    if (Config::Language == ELanguage::Japanese)
+    {
+        lineMargin = 5.5f;
+
+        // Removing some padding of the applied due to the inclusion of annotation for Japanese
+        textX -= (fontSize + Scale(1.5f));
+        textY -= Scale(7.0f);
+
+        // The annotation (and thus the Japanese) can be drawn above the edges of the info panel thus the clip needs to be extended a bit
+        clipRectMin.x -= annotationFontSize;
+        clipRectMin.y -= annotationFontSize;
+        clipRectMax.x += annotationFontSize;
+        clipRectMax.y += annotationFontSize;
+
+        textX += annotationFontSize;
+        textY += annotationFontSize;
+    }
+
+    drawList->PushClipRect(clipRectMin, clipRectMax, false);
+
     DrawRubyAnnotatedText
     (
         g_seuratFont,
         fontSize,
         clipRectMax.x - clipRectMin.x,
-        { clipRectMin.x + fontSize * 0.55f, clipRectMin.y + fontSize * 0.55f },
-        5.0f,
+        { textX, textY },
+        lineMargin,
         descriptionText,
         [=](const char* str, ImVec2 pos)
         {
@@ -723,6 +749,8 @@ static void DrawDescriptionContainer()
             DrawTextBasic(g_seuratFont, size, pos, IM_COL32(255, 255, 255, 255 * textAlpha), str);
         }
     );
+
+    drawList->PopClipRect();
 
     drawList->PopClipRect();
 
