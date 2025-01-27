@@ -12,6 +12,8 @@
 #include <res/images/options_menu/thumbnails/aspect_ratio.dds.h>
 #include <res/images/options_menu/thumbnails/battle_theme.dds.h>
 #include <res/images/options_menu/thumbnails/brightness.dds.h>
+#include <res/images/options_menu/thumbnails/channel_stereo.dds.h>
+#include <res/images/options_menu/thumbnails/channel_surround.dds.h>
 #include <res/images/options_menu/thumbnails/control_tutorial_xb.dds.h>
 #include <res/images/options_menu/thumbnails/control_tutorial_ps.dds.h>
 #include <res/images/options_menu/thumbnails/controller_icons.dds.h>
@@ -31,7 +33,6 @@
 #include <res/images/options_menu/thumbnails/motion_blur_enhanced.dds.h>
 #include <res/images/options_menu/thumbnails/movie_scale_fit.dds.h>
 #include <res/images/options_menu/thumbnails/movie_scale_fill.dds.h>
-#include <res/images/options_menu/thumbnails/movie_scale_stretch.dds.h>
 #include <res/images/options_menu/thumbnails/music_attenuation.dds.h>
 #include <res/images/options_menu/thumbnails/music_volume.dds.h>
 #include <res/images/options_menu/thumbnails/resolution_scale.dds.h>
@@ -50,7 +51,8 @@
 #include <res/images/options_menu/thumbnails/vertical_camera.dds.h>
 #include <res/images/options_menu/thumbnails/voice_language.dds.h>
 #include <res/images/options_menu/thumbnails/vibration.dds.h>
-#include <res/images/options_menu/thumbnails/vsync.dds.h>
+#include <res/images/options_menu/thumbnails/vsync_on.dds.h>
+#include <res/images/options_menu/thumbnails/vsync_off.dds.h>
 #include <res/images/options_menu/thumbnails/window_size.dds.h>
 #include <res/images/options_menu/thumbnails/xbox_color_correction.dds.h>
 
@@ -60,7 +62,9 @@ static std::unordered_map<std::string_view, std::unique_ptr<GuestTexture>> g_nam
 static std::unordered_map<const IConfigDef*, std::unique_ptr<GuestTexture>> g_configThumbnails;
 
 static VALUE_THUMBNAIL_MAP(ETimeOfDayTransition) g_timeOfDayTransitionThumbnails;
+static VALUE_THUMBNAIL_MAP(EChannelConfiguration) g_channelConfigurationThumbnails;
 static VALUE_THUMBNAIL_MAP(EAntiAliasing) g_msaaAntiAliasingThumbnails;
+static VALUE_THUMBNAIL_MAP(bool) g_vsyncThumbnails;
 static VALUE_THUMBNAIL_MAP(bool) g_transparencyAntiAliasingThumbnails;
 static VALUE_THUMBNAIL_MAP(EShadowResolution) g_shadowResolutionThumbnails;
 static VALUE_THUMBNAIL_MAP(EGITextureFiltering) g_giTextureFilteringThumbnails;
@@ -92,6 +96,10 @@ void LoadThumbnails()
     g_configThumbnails[&Config::MasterVolume] = LOAD_ZSTD_TEXTURE(g_master_volume);
     g_configThumbnails[&Config::MusicVolume] = LOAD_ZSTD_TEXTURE(g_music_volume);
     g_configThumbnails[&Config::EffectsVolume] = LOAD_ZSTD_TEXTURE(g_effects_volume);
+
+    g_channelConfigurationThumbnails[EChannelConfiguration::Stereo] = LOAD_ZSTD_TEXTURE(g_channel_stereo);
+    g_channelConfigurationThumbnails[EChannelConfiguration::Surround] = LOAD_ZSTD_TEXTURE(g_channel_surround);
+
     g_configThumbnails[&Config::MusicAttenuation] = LOAD_ZSTD_TEXTURE(g_music_attenuation);
     g_configThumbnails[&Config::BattleTheme] = LOAD_ZSTD_TEXTURE(g_battle_theme);
     g_configThumbnails[&Config::WindowSize] = LOAD_ZSTD_TEXTURE(g_window_size);
@@ -99,7 +107,10 @@ void LoadThumbnails()
     g_configThumbnails[&Config::AspectRatio] = LOAD_ZSTD_TEXTURE(g_aspect_ratio);
     g_configThumbnails[&Config::ResolutionScale] = LOAD_ZSTD_TEXTURE(g_resolution_scale);
     g_configThumbnails[&Config::Fullscreen] = LOAD_ZSTD_TEXTURE(g_fullscreen);
-    g_configThumbnails[&Config::VSync] = LOAD_ZSTD_TEXTURE(g_vsync);
+
+    g_vsyncThumbnails[false] = LOAD_ZSTD_TEXTURE(g_vsync_off);
+    g_vsyncThumbnails[true] = LOAD_ZSTD_TEXTURE(g_vsync_on);
+
     g_configThumbnails[&Config::FPS] = LOAD_ZSTD_TEXTURE(g_fps);
     g_configThumbnails[&Config::Brightness] = LOAD_ZSTD_TEXTURE(g_brightness);
 
@@ -209,6 +220,14 @@ GuestTexture* GetThumbnail(const IConfigDef* cfg)
         else if (cfg == &Config::CutsceneAspectRatio)
         {
             TryGetValueThumbnail<ECutsceneAspectRatio>(cfg, &g_cutsceneAspectRatioThumbnails, &texture);
+        }
+        else if (cfg == &Config::VSync)
+        {
+            TryGetValueThumbnail<bool>(cfg, &g_vsyncThumbnails, &texture);
+        }
+        else if (cfg == &Config::ChannelConfiguration)
+        {
+            TryGetValueThumbnail<EChannelConfiguration>(cfg, &g_channelConfigurationThumbnails, &texture);
         }
 
         return texture;
