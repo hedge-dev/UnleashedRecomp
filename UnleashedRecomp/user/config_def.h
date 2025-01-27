@@ -77,6 +77,7 @@ CONFIG_DEFINE_ENUM_LOCALISED("Video", EUIScaleMode, UIScaleMode, EUIScaleMode::E
 CONFIG_DEFINE_HIDDEN("Exports", bool, AllowCancellingUnleash, false);
 CONFIG_DEFINE_HIDDEN("Exports", bool, DisableAutoSaveWarning, false);
 CONFIG_DEFINE_HIDDEN("Exports", bool, DisableDLCIcon, false);
+CONFIG_DEFINE_HIDDEN("Exports", bool, DisableDWMRoundedCorners, false);
 CONFIG_DEFINE_HIDDEN("Exports", bool, FixUnleashOutOfControlDrain, false);
 CONFIG_DEFINE_HIDDEN("Exports", bool, HomingAttackOnBoost, true);
 CONFIG_DEFINE_HIDDEN("Exports", bool, SaveScoreAtCheckpoints, false);

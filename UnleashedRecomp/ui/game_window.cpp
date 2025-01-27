@@ -231,6 +231,12 @@ void GameWindow::Init(const char* sdlVideoDriver)
 
 #if defined(_WIN32)
     s_renderWindow = info.info.win.window;
+
+    if (Config::DisableDWMRoundedCorners)
+    {
+        DWM_WINDOW_CORNER_PREFERENCE wcp = DWMWCP_DONOTROUND;
+        DwmSetWindowAttribute(s_renderWindow, DWMWA_WINDOW_CORNER_PREFERENCE, &wcp, sizeof(wcp));
+    }
 #elif defined(SDL_VULKAN_ENABLED)
     s_renderWindow = s_pWindow;
 #elif defined(__linux__)
