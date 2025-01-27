@@ -43,8 +43,8 @@
 #include <res/images/options_menu/thumbnails/shadow_resolution_x4096.dds.h>
 #include <res/images/options_menu/thumbnails/shadow_resolution_x8192.dds.h>
 #include <res/images/options_menu/thumbnails/subtitles.dds.h>
-#include <res/images/options_menu/thumbnails/time_of_day_transition_xbox.dds.h>
-#include <res/images/options_menu/thumbnails/time_of_day_transition_playstation.dds.h>
+#include <res/images/options_menu/thumbnails/time_transition_xb.dds.h>
+#include <res/images/options_menu/thumbnails/time_transition_ps.dds.h>
 #include <res/images/options_menu/thumbnails/transparency_antialiasing_false.dds.h>
 #include <res/images/options_menu/thumbnails/transparency_antialiasing_true.dds.h>
 #include <res/images/options_menu/thumbnails/ui_alignment_mode.dds.h>
