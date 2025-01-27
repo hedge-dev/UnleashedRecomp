@@ -81,3 +81,35 @@ PPC_FUNC(sub_830D25D8)
 
     __imp__sub_830D25D8(ctx, base);
 }
+
+// Rope renderables sometimes get bogus colors due to the material parameters of whatever
+// was rendered last leaking into their render state. We can reset them to fix it.
+
+static void SetDefaultMaterialParameters(GuestDevice* device)
+{
+    const be<float> diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    const be<float> ambient[] = { 1.0f, 1.0f, 1.0f, 0.0f };
+    const be<float> specular[] = { 0.9f, 0.9f, 0.9f, 0.0f };
+
+    memcpy(&device->pixelShaderFloatConstants[64], diffuse, sizeof(diffuse)); // g_Diffuse
+    memcpy(&device->pixelShaderFloatConstants[68], ambient, sizeof(ambient)); // g_Ambient
+    memcpy(&device->pixelShaderFloatConstants[72], specular, sizeof(specular)); // g_Specular
+
+    device->dirtyFlags[1] = ~0ull;
+}
+
+// SWA::CRopeRenderable::Render
+PPC_FUNC_IMPL(__imp__sub_827CBF68);
+PPC_FUNC(sub_827CBF68)
+{
+    SetDefaultMaterialParameters(reinterpret_cast<GuestDevice*>(base + PPC_LOAD_U32(PPC_LOAD_U32(ctx.r4.u32))));
+    __imp__sub_827CBF68(ctx, base);
+}
+
+// SWA::CObjUpReel::CPrimitiveReel::Render
+PPC_FUNC_IMPL(__imp__sub_8260BBF8);
+PPC_FUNC(sub_8260BBF8)
+{
+    SetDefaultMaterialParameters(reinterpret_cast<GuestDevice*>(base + PPC_LOAD_U32(PPC_LOAD_U32(ctx.r4.u32))));
+    __imp__sub_8260BBF8(ctx, base);
+}
