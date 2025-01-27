@@ -1397,6 +1397,8 @@ static void BeginCommandList()
 
                 g_intermediaryBackBufferTextureWidth = width;
                 g_intermediaryBackBufferTextureHeight = height;
+
+                g_backBuffer->framebuffers.clear();
             }
 
             g_backBuffer->texture = g_intermediaryBackBufferTexture.get();
