@@ -335,6 +335,8 @@ enum
 
     OFFSET_SCALE_LEFT = 1 << 13,
     OFFSET_SCALE_RIGHT = 1 << 14,
+
+    REPEAT_LEFT = 1 << 15
 };
 
 struct CsdModifier
@@ -637,6 +639,22 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_worldmap/contents/choices/cts_choices_bg"), { STRETCH } },
     { HashStr("ui_worldmap/contents/info/bg/cts_info_bg"), { ALIGN_TOP_LEFT | WORLD_MAP } },
     { HashStr("ui_worldmap/contents/info/bg/info_bg_1"), { ALIGN_TOP_LEFT | WORLD_MAP } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_01/row_01/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_01/row_02/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_01/row_03/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_01/row_04/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },  
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_02/row_01/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_02/row_02/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_02/row_03/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_02/row_04/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } }, 
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_03/row_01/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_03/row_02/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_03/row_03/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_03/row_04/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } }, 
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_04/row_01/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_04/row_02/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_04/row_03/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
+    { HashStr("ui_worldmap/contents/info/bg/info_bg_1/position_04/row_04/img_12"), { ALIGN_TOP_LEFT | WORLD_MAP | REPEAT_LEFT } },
     { HashStr("ui_worldmap/contents/info/img/info_img_1"), { ALIGN_TOP_LEFT | WORLD_MAP } },
     { HashStr("ui_worldmap/contents/info/img/info_img_2"), { ALIGN_TOP_LEFT | WORLD_MAP } },
     { HashStr("ui_worldmap/contents/info/img/info_img_3"), { ALIGN_TOP_LEFT | WORLD_MAP } },
@@ -803,6 +821,11 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     uint8_t* stack = base + ctx.r1.u32;
     memcpy(stack, base + ctx.r4.u32, size);
 
+    auto getPosition = [&](size_t index)
+        {
+            return reinterpret_cast<be<float>*>(stack + index * stride);
+        };
+
     float offsetX = 0.0f;
     float offsetY = 0.0f;
     float pivotX = 0.0f;
@@ -880,7 +903,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             offsetScaleModifier = g_castModifier.value();
 
             uint32_t vertexIndex = ((offsetScaleModifier.flags & STORE_LEFT_CORNER) != 0) ? 0 : 3;
-            corner = *reinterpret_cast<be<float>*>(base + ctx.r4.u32 + vertexIndex * stride);
+            corner = *getPosition(vertexIndex);
         }
 
         if (offsetScaleModifier.cornerMax == 0.0f && g_castNodeModifier.has_value())
@@ -908,7 +931,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
 
     for (size_t i = 0; i < ctx.r5.u32; i++)
     {
-        auto position = reinterpret_cast<be<float>*>(stack + i * stride);
+        auto position = getPosition(i);
 
         float x = offsetX + (position[0] - pivotX) * scaleX;
         float y = offsetY + (position[1] - pivotY) * scaleY;
@@ -926,9 +949,38 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         position[1] = round(y);
     }
 
-    ctx.r4.u32 = ctx.r1.u32;
-    original(ctx, base);
-    ctx.r1.u32 += size;
+    if ((modifier.flags & REPEAT_LEFT) != 0)
+    {
+        float width = *getPosition(2) - *getPosition(0);
+
+        auto r3 = ctx.r3;
+        auto r5 = ctx.r5;
+        auto r6 = ctx.r6;
+        auto r7 = ctx.r7;
+        auto r8 = ctx.r8;
+
+        while (*getPosition(2) > 0.0f)
+        {
+            ctx.r3 = r3;
+            ctx.r4 = ctx.r1;
+            ctx.r5 = r5;
+            ctx.r6 = r6;
+            ctx.r7 = r7;
+            ctx.r8 = r8;
+            original(ctx, base);
+
+            for (size_t i = 0; i < ctx.r5.u32; i++)
+                *getPosition(i) = *getPosition(i) - width;
+        }
+
+        ctx.r1.u32 += size;
+    }
+    else
+    {
+        ctx.r4.u32 = ctx.r1.u32;
+        original(ctx, base);
+        ctx.r1.u32 += size;
+    }
 }
 
 // SWA::CCsdPlatformMirage::Draw
