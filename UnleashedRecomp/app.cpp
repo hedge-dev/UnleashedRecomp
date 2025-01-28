@@ -19,7 +19,6 @@ void App::Restart(std::vector<std::string> restartArgs)
 void App::Exit()
 {
     Config::Save();
-    Registry::Save();
 
 #ifdef _WIN32
     timeEndPeriod(1);
