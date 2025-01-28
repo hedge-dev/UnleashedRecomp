@@ -336,7 +336,9 @@ enum
     OFFSET_SCALE_LEFT = 1 << 13,
     OFFSET_SCALE_RIGHT = 1 << 14,
 
-    REPEAT_LEFT = 1 << 15
+    REPEAT_LEFT = 1 << 15,
+
+    TORNADO_DEFENSE = 1 << 16,
 };
 
 struct CsdModifier
@@ -493,12 +495,12 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_playscreen_su/footer"), { ALIGN_BOTTOM_RIGHT | SCALE } },
 
     // ui_prov_playscreen
-    { HashStr("ui_prov_playscreen/so_speed_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
-    { HashStr("ui_prov_playscreen/so_ringenagy_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
-    { HashStr("ui_prov_playscreen/bg"), { ALIGN_TOP_LEFT | SCALE } },
-    { HashStr("ui_prov_playscreen/info_1"), { ALIGN_TOP_LEFT | SCALE } },
-    { HashStr("ui_prov_playscreen/info_2"), { ALIGN_TOP_LEFT | SCALE } },
-    { HashStr("ui_prov_playscreen/ring_get_effect"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_prov_playscreen/so_speed_gauge"), { ALIGN_BOTTOM_LEFT | SCALE | TORNADO_DEFENSE } },
+    { HashStr("ui_prov_playscreen/so_ringenagy_gauge"), { ALIGN_BOTTOM_LEFT | SCALE | TORNADO_DEFENSE } },
+    { HashStr("ui_prov_playscreen/bg"), { ALIGN_TOP_LEFT | SCALE | TORNADO_DEFENSE } },
+    { HashStr("ui_prov_playscreen/info_1"), { ALIGN_TOP_LEFT | SCALE | TORNADO_DEFENSE } },
+    { HashStr("ui_prov_playscreen/info_2"), { ALIGN_TOP_LEFT | SCALE | TORNADO_DEFENSE } },
+    { HashStr("ui_prov_playscreen/ring_get_effect"), { ALIGN_BOTTOM_LEFT | SCALE | TORNADO_DEFENSE } },
 
     // ui_result
     { HashStr("ui_result/footer/result_footer"), { ALIGN_BOTTOM } },
@@ -731,33 +733,45 @@ PPC_FUNC(sub_830C6A00)
 {
     g_sceneModifier = FindModifier(ctx.r3.u32);
 
-    if (g_sceneModifier.has_value() && (g_sceneModifier->flags & (OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT)) != 0)
+    if (g_sceneModifier.has_value())
     {
-        auto r3 = ctx.r3;
-        auto r4 = ctx.r4;
-        auto r5 = ctx.r5;
-        auto r6 = ctx.r6;
+        // Tornado Defense bugs out when applying gameplay UI scaling.
+        // This seems consistent with base game behavior, because the UI
+        // is normally squashed, which was probably done to work around this.
+        if ((g_sceneModifier->flags & TORNADO_DEFENSE) != 0)
+        {
+            g_scenePositionX = 0.0f;
+            g_scenePositionY = 0.0f;
+        }
 
-        // Queue draw calls, but don't actually draw anything. We just want to extract the corner.
-        g_cornerExtract = true;
-        __imp__sub_830C6A00(ctx, base);
-        g_cornerExtract = false;
+        if ((g_sceneModifier->flags & (OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT)) != 0)
+        {
+            auto r3 = ctx.r3;
+            auto r4 = ctx.r4;
+            auto r5 = ctx.r5;
+            auto r6 = ctx.r6;
+
+            // Queue draw calls, but don't actually draw anything. We just want to extract the corner.
+            g_cornerExtract = true;
+            __imp__sub_830C6A00(ctx, base);
+            g_cornerExtract = false;
 
 #ifdef CORNER_DEBUG
-        if (g_sceneModifier->cornerMax == FLT_MAX)
-        {
-            fmt::print("Corners: ");
-            for (auto corner : g_corners)
-                fmt::print("{} ", corner);
+            if (g_sceneModifier->cornerMax == FLT_MAX)
+            {
+                fmt::print("Corners: ");
+                for (auto corner : g_corners)
+                    fmt::print("{} ", corner);
 
-            fmt::println("");
-        }
+                fmt::println("");
+            }
 #endif
 
-        ctx.r3 = r3;
-        ctx.r4 = r4;
-        ctx.r5 = r5;
-        ctx.r6 = r6;
+            ctx.r3 = r3;
+            ctx.r4 = r4;
+            ctx.r5 = r5;
+            ctx.r6 = r6;
+        }
     }
 
     __imp__sub_830C6A00(ctx, base);
@@ -816,6 +830,9 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
             modifier.flags &= ~(ALIGN_LEFT | ALIGN_RIGHT);
     }
 
+    // Tornado Defense UI is squashed at 4:3, presumably to work around an explicit translation issue.
+    bool squash = Config::AspectRatio == EAspectRatio::OriginalNarrow && (modifier.flags & TORNADO_DEFENSE) != 0;
+
     uint32_t size = ctx.r5.u32 * stride;
     ctx.r1.u32 -= size;
 
@@ -834,7 +851,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     float scaleX = 1.0f;
     float scaleY = 1.0f;
 
-    if ((modifier.flags & STRETCH_HORIZONTAL) != 0 && g_aspectRatio >= WIDE_ASPECT_RATIO)
+    if (squash || ((modifier.flags & STRETCH_HORIZONTAL) != 0 && g_aspectRatio >= WIDE_ASPECT_RATIO))
     {
         scaleX = Video::s_viewportWidth / 1280.0f;
     }
@@ -867,7 +884,7 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         }
     }
 
-    if ((modifier.flags & STRETCH_VERTICAL) != 0)
+    if (squash || ((modifier.flags & STRETCH_VERTICAL) != 0))
     {
         scaleY = Video::s_viewportHeight / 720.0f;
     }
