@@ -31,7 +31,7 @@ std::filesystem::path os::process::GetWorkingDirectory()
 
 bool os::process::SetWorkingDirectory(const std::filesystem::path& path)
 {
-    return chdir(path.u8string().c_str()) == 0;
+    return chdir(path.c_str()) == 0;
 }
 
 bool os::process::StartProcess(const std::filesystem::path& path, const std::vector<std::string>& args, std::filesystem::path work)
