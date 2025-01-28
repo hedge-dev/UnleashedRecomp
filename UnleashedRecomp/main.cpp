@@ -152,14 +152,6 @@ int main(int argc, char *argv[])
 
     os::logger::Init();
 
-    Registry::Load();
-
-    if (!Registry::RootDirectoryPath.empty())
-    {
-        if (!os::process::SetWorkingDirectory(std::filesystem::path(Registry::RootDirectoryPath)))
-            LOGFN_ERROR("Failed to set working directory from registry");
-    }
-
     bool forceInstaller = false;
     bool forceDLCInstaller = false;
     const char *sdlVideoDriver = nullptr;

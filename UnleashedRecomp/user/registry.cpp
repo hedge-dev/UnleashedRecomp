@@ -5,7 +5,7 @@
 
 void Registry::Load()
 {
-    os::registry::ReadValue(STR(RootDirectoryPath), RootDirectoryPath);
+
 }
 
 void Registry::Save()

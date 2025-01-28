@@ -35,6 +35,7 @@ PPC_FUNC(sub_824EB490)
     App::s_isInit = true;
     App::s_isMissingDLC = !Installer::checkAllDLC(GetGamePath());
     App::s_language = Config::Language;
+    Registry::Save();
 
     __imp__sub_824EB490(ctx, base);
 }
