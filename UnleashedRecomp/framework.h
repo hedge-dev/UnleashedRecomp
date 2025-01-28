@@ -7,6 +7,8 @@
     typedef returnType _##procName(__VA_ARGS__); \
     _##procName* procName = (_##procName*)PROC_ADDRESS(libraryName, #procName);
 
+#define STR(x) #x
+
 template<typename T>
 inline T RoundUp(const T& in_rValue, uint32_t in_round)
 {

@@ -12,9 +12,11 @@
 #include <hid/hid.h>
 #include <user/config.h>
 #include <user/paths.h>
+#include <user/registry.h>
 #include <kernel/xdbf.h>
 #include <install/installer.h>
 #include <os/logger.h>
+#include <os/process.h>
 #include <ui/installer_wizard.h>
 #include <mod/mod_loader.h>
 
@@ -165,6 +167,13 @@ int main(int argc, char *argv[])
     }
 
     Config::Load();
+    Registry::Load();
+
+    if (!Registry::RootDirectoryPath.empty())
+    {
+        if (!os::process::SetWorkingDirectory(std::filesystem::path(Registry::RootDirectoryPath)))
+            LOGFN_ERROR("Failed to set working directory: \"{}\"", Registry::RootDirectoryPath);
+    }
 
     HostStartup();
 

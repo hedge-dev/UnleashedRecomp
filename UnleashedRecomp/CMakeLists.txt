@@ -179,6 +179,7 @@ set(UNLEASHED_RECOMP_USER_CXX_SOURCES
     "user/achievement_data.cpp"
     "user/achievement_manager.cpp"
     "user/config.cpp"
+    "user/registry.cpp"
 )
 
 set(UNLEASHED_RECOMP_MOD_CXX_SOURCES

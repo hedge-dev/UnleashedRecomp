@@ -8,6 +8,7 @@
 #include <ui/game_window.h>
 #include <user/config.h>
 #include <user/paths.h>
+#include <user/registry.h>
 
 void App::Restart(std::vector<std::string> restartArgs)
 {
@@ -18,6 +19,7 @@ void App::Restart(std::vector<std::string> restartArgs)
 void App::Exit()
 {
     Config::Save();
+    Registry::Save();
 
 #ifdef _WIN32
     timeEndPeriod(1);
