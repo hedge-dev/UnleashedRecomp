@@ -9,7 +9,7 @@ inline bool os::registry::Init()
 }
 
 template<typename T>
-bool os::registry::ReadValue(const std::string& name, T& data)
+bool os::registry::ReadValue(const std::string_view& name, T& data)
 {
     HKEY hKey;
 
@@ -17,7 +17,7 @@ bool os::registry::ReadValue(const std::string& name, T& data)
         return false;
 
     wchar_t wideName[128];
-    int wideNameSize = MultiByteToWideChar(CP_UTF8, 0, name.c_str(), name.size(), wideName, sizeof(wideName));
+    int wideNameSize = MultiByteToWideChar(CP_UTF8, 0, name.data(), name.size(), wideName, sizeof(wideName));
     if (wideNameSize == 0)
     {
         return false;
@@ -90,7 +90,7 @@ bool os::registry::ReadValue(const std::string& name, T& data)
 }
 
 template<typename T>
-bool os::registry::WriteValue(const std::string& name, const T& data)
+bool os::registry::WriteValue(const std::string_view& name, const T& data)
 {
     HKEY hKey;
 
@@ -136,7 +136,7 @@ bool os::registry::WriteValue(const std::string& name, const T& data)
     if (wideString)
     {
         wchar_t wideName[128];
-        int wideNameSize = MultiByteToWideChar(CP_UTF8, 0, name.c_str(), name.size(), wideName, sizeof(wideName));
+        int wideNameSize = MultiByteToWideChar(CP_UTF8, 0, name.data(), name.size(), wideName, sizeof(wideName));
         if (wideNameSize == 0)
         {
             return false;
@@ -147,7 +147,7 @@ bool os::registry::WriteValue(const std::string& name, const T& data)
     }
     else
     {
-        result = RegSetValueExA(hKey, name.c_str(), 0, dataType, pData, dataSize);
+        result = RegSetValueExA(hKey, name.data(), 0, dataType, pData, dataSize);
     }
 
     RegCloseKey(hKey);

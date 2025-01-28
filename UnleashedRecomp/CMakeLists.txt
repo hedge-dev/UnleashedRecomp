@@ -298,6 +298,7 @@ endif()
 
 if (UNLEASHED_RECOMP_FLATPAK)
     target_compile_definitions(UnleashedRecomp PRIVATE "GAME_INSTALL_DIRECTORY=\"/var/data\"")
+    target_compile_definitions(UnleashedRecomp PRIVATE "UNLEASHED_RECOMP_FLATPAK")
 endif()
 
 if (UNLEASHED_RECOMP_D3D12)

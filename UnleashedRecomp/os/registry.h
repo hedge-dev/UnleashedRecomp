@@ -5,10 +5,10 @@ namespace os::registry
     bool Init();
 
     template<typename T>
-    bool ReadValue(const std::string& name, T& data);
+    bool ReadValue(const std::string_view& name, T& data);
 
     template<typename T>
-    bool WriteValue(const std::string& name, const T& data);
+    bool WriteValue(const std::string_view& name, const T& data);
 }
 
 #if _WIN32
