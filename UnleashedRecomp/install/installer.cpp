@@ -201,7 +201,17 @@ static DLC detectDLC(const std::filesystem::path &sourcePath, VirtualFileSystem 
 bool Installer::checkGameInstall(const std::filesystem::path &baseDirectory, std::filesystem::path &modulePath)
 {
     modulePath = baseDirectory / PatchedDirectory / GameExecutableFile;
-    return std::filesystem::exists(modulePath);
+
+    if (!std::filesystem::exists(modulePath))
+        return false;
+
+    if (!std::filesystem::exists(baseDirectory / UpdateDirectory / UpdateExecutablePatchFile))
+        return false;
+
+    if (!std::filesystem::exists(baseDirectory / GameDirectory / GameExecutableFile))
+        return false;
+
+    return true;
 }
 
 bool Installer::checkDLCInstall(const std::filesystem::path &baseDirectory, DLC dlc)
