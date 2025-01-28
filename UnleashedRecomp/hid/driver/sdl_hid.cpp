@@ -127,6 +127,11 @@ public:
 
         SDL_GameControllerRumble(controller, vibration.wLeftMotorSpeed * 256, vibration.wRightMotorSpeed * 256, VIBRATION_TIMEOUT_MS);
     }
+
+    void SetLED(const uint8_t r, const uint8_t g, const uint8_t b) const
+    {
+        SDL_GameControllerSetLED(controller, r, g, b);
+    }
 };
 
 std::array<Controller, 4> g_controllers;
@@ -182,6 +187,15 @@ static void SetControllerInputDevice(Controller* controller)
     }
 }
 
+static void SetControllerTimeOfDayLED(Controller& controller, bool isNight)
+{
+    auto r = isNight ? 22 : 0;
+    auto g = isNight ? 0 : 37;
+    auto b = isNight ? 101 : 184;
+
+    controller.SetLED(r, g, b);
+}
+
 int HID_OnSDLEvent(void*, SDL_Event* event)
 {
     switch (event->type)
@@ -191,7 +205,13 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
             const auto freeIndex = FindFreeController();
 
             if (freeIndex != -1)
-                g_controllers[freeIndex] = Controller(event->cdevice.which);
+            {
+                auto controller = Controller(event->cdevice.which);
+
+                g_controllers[freeIndex] = controller;
+
+                SetControllerTimeOfDayLED(controller, App::s_isWerehog);
+            }
 
             break;
         }
@@ -258,17 +278,8 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
         case SDL_USER_EVILSONIC:
         {
-            auto* controller = FindController(event->cdevice.which);
-
-            if (!controller)
-                break;
-
-            auto isNight = event->user.code;
-            auto r = isNight ? 22 : 0;
-            auto g = isNight ? 0 : 37;
-            auto b = isNight ? 101 : 184;
-
-            SDL_GameControllerSetLED(controller->controller, r, g, b);
+            for (auto& controller : g_controllers)
+                SetControllerTimeOfDayLED(controller, event->user.code);
 
             break;
         }
@@ -279,12 +290,15 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
 void hid::Init()
 {
+    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_GAMECUBE, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS3, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4, "1");
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5, "1");
-    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_GAMECUBE, "1");
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_PLAYER_LED, "1");
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
-    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
     SDL_SetHint(SDL_HINT_XINPUT_ENABLED, "1");
 
     SDL_InitSubSystem(SDL_INIT_EVENTS);

@@ -1,8 +1,8 @@
 #include <api/SWA.h>
 #include <hid/hid.h>
-#include <ui/sdl_listener.h>
 #include <app.h>
 #include <exports.h>
+#include <sdl_listener.h>
 
 constexpr double WORLD_MAP_ROTATE_DEADZONE = 0.69999999;
 constexpr double WORLD_MAP_CURSOR_DEADZONE = 0.30000001;
@@ -42,7 +42,7 @@ public:
 }
 g_worldMapCursorParamsOrbis;
 
-#ifdef UI_KBM_SUPPORT
+#ifdef UNLEASHED_RECOMP_UI_KBM_SUPPORT
 class WorldMapCursorParamsMouse : public WorldMapCursorParams
 {
 public:
@@ -128,7 +128,7 @@ public:
 
         switch (event->type)
         {
-#ifdef UI_KBM_SUPPORT
+#ifdef UNLEASHED_RECOMP_UI_KBM_SUPPORT
             case SDL_MOUSEMOTION:
             {
                 if (!ms_isMouseDown)

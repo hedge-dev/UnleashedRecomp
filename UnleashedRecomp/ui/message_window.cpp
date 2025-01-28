@@ -1,17 +1,18 @@
 #include "message_window.h"
-#include "imgui_utils.h"
 #include <api/SWA.h>
+#include <gpu/imgui/imgui_snapshot.h>
 #include <gpu/video.h>
 #include <hid/hid.h>
 #include <locale/locale.h>
 #include <ui/button_guide.h>
-#include <ui/sdl_listener.h>
+#include <ui/imgui_utils.h>
 #include <app.h>
-#include <exports.h>
-#include <res/images/common/general_window.dds.h>
 #include <decompressor.h>
+#include <exports.h>
+#include <sdl_listener.h>
+
+#include <res/images/common/general_window.dds.h>
 #include <res/images/common/select_fade.dds.h>
-#include <gpu/imgui/imgui_snapshot.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;

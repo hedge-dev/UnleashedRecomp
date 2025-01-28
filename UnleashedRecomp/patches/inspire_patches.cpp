@@ -1,9 +1,9 @@
 #include "inspire_patches.h"
 #include <api/SWA.h>
 #include <ui/game_window.h>
-#include <ui/window_events.h>
 #include <os/logger.h>
 #include <app.h>
+#include <sdl_events.h>
 
 static SWA::Inspire::CScene* g_pScene;
 static std::string g_sceneName;

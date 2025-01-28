@@ -1,9 +1,9 @@
 #pragma once
 
 #include <kernel/memory.h>
-#include <ui/sdl_listener.h>
 #include <ui/options_menu.h>
 #include <os/logger.h>
+#include <sdl_listener.h>
 
 class FrontendListener : public SDLEventListener
 {

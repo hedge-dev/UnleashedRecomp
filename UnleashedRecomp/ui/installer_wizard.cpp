@@ -12,10 +12,10 @@
 #include <ui/imgui_utils.h>
 #include <ui/button_guide.h>
 #include <ui/message_window.h>
-#include <ui/sdl_listener.h>
 #include <ui/game_window.h>
 #include <decompressor.h>
 #include <exports.h>
+#include <sdl_listener.h>
 
 #include <res/images/common/hedge-dev.dds.h>
 #include <res/images/installer/install_001.dds.h>

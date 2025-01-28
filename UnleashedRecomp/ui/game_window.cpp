@@ -3,8 +3,8 @@
 #include <os/logger.h>
 #include <os/user.h>
 #include <os/version.h>
-#include <ui/sdl_listener.h>
 #include <app.h>
+#include <sdl_listener.h>
 #include <SDL_syswm.h>
 
 #if _WIN32

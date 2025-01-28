@@ -156,7 +156,6 @@ set(UNLEASHED_RECOMP_UI_CXX_SOURCES
     "ui/message_window.cpp"
     "ui/options_menu_thumbnails.cpp"
     "ui/options_menu.cpp"
-    "ui/sdl_listener.cpp"
     "ui/game_window.cpp"
 )
 
@@ -231,6 +230,7 @@ set(UNLEASHED_RECOMP_CXX_SOURCES
     "exports.cpp"
     "main.cpp"
     "misc_impl.cpp"
+    "sdl_listener.cpp"
     "stdafx.cpp"
     "version.cpp"
     

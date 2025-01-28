@@ -24,10 +24,10 @@
 #include <ui/installer_wizard.h>
 #include <ui/message_window.h>
 #include <ui/options_menu.h>
-#include <ui/sdl_listener.h>
 #include <ui/game_window.h>
 #include <patches/aspect_ratio_patches.h>
 #include <user/config.h>
+#include <sdl_listener.h>
 #include <xxHashMap.h>
 
 #if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)

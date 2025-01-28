@@ -1,8 +1,8 @@
 #pragma once
 
 #include <gpu/rhi/plume_render_interface_types.h>
-#include <ui/window_events.h>
 #include <user/config.h>
+#include <sdl_events.h>
 
 #define DEFAULT_WIDTH 1280
 #define DEFAULT_HEIGHT 720

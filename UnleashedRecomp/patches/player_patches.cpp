@@ -1,9 +1,9 @@
 #include <api/SWA.h>
 #include <ui/game_window.h>
-#include <ui/window_events.h>
 #include <user/config.h>
 #include <os/logger.h>
 #include <app.h>
+#include <sdl_events.h>
 
 static uint32_t g_lastEnemyScore;
 static uint32_t g_lastTrickScore;
