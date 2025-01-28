@@ -27,7 +27,7 @@ bool os::registry::ReadValue(const std::string_view& name, T& data)
     DWORD bufferSize = 0;
     DWORD dataType = 0;
 
-    auto result = RegQueryValueExW(hKey, wideName, NULL, &dataType, nullptr, &bufferSize);
+    auto result = RegGetValueW(hKey, nullptr, wideName, RRF_RT_ANY, &dataType, nullptr, &bufferSize);
 
     if (result != ERROR_SUCCESS)
     {
@@ -42,7 +42,7 @@ bool os::registry::ReadValue(const std::string_view& name, T& data)
         {
             std::vector<uint8_t> buffer{};
             buffer.reserve(bufferSize);
-            result = RegQueryValueExW(hKey, wideName, nullptr, nullptr, buffer.data(), &bufferSize);
+            result = RegGetValueW(hKey, nullptr, wideName, RRF_RT_REG_SZ, nullptr, buffer.data(), &bufferSize);
 
             if (result == ERROR_SUCCESS)
             {
@@ -58,7 +58,7 @@ bool os::registry::ReadValue(const std::string_view& name, T& data)
         {
             std::vector<uint8_t> buffer{};
             buffer.reserve(bufferSize);
-            result = RegQueryValueExW(hKey, wideName, nullptr, nullptr, buffer.data(), &bufferSize);
+            result = RegGetValueW(hKey, nullptr, wideName, RRF_RT_REG_SZ, nullptr, buffer.data(), &bufferSize);
 
             if (result == ERROR_SUCCESS)
             {
@@ -68,17 +68,11 @@ bool os::registry::ReadValue(const std::string_view& name, T& data)
     }
     else if constexpr (std::is_same_v<T, uint32_t>)
     {
-        if (dataType == REG_DWORD)
-        {
-            result = RegQueryValueExW(hKey, wideName, nullptr, nullptr, (BYTE*)&data, &bufferSize);
-        }
+        result = RegGetValueW(hKey, nullptr, wideName, RRF_RT_DWORD, nullptr, (BYTE*)&data, &bufferSize);
     }
     else if constexpr (std::is_same_v<T, uint64_t>)
     {
-        if (dataType == REG_QWORD)
-        {
-            result = RegQueryValueExW(hKey, wideName, nullptr, nullptr, (BYTE*)&data, &bufferSize);
-        }
+        result = RegGetValueW(hKey, nullptr, wideName, RRF_RT_QWORD, nullptr, (BYTE*)&data, &bufferSize);
     }
     else
     {
