@@ -90,7 +90,7 @@ std::vector<std::filesystem::path>* ModLoader::GetIncludeDirectories(size_t modI
 
 void ModLoader::Init()
 {
-    std::filesystem::path userPath = GetUserPath();
+    const std::filesystem::path& userPath = GetUserPath();
 
     IniFile configIni;
     if (!configIni.read(userPath / "cpkredir.ini"))
@@ -110,7 +110,9 @@ void ModLoader::Init()
         if (!saveFilePathU8.empty())
             ModLoader::s_saveFilePath = std::u8string_view((const char8_t*)saveFilePathU8.c_str());
         else
-            ModLoader::s_saveFilePath = userPath / "mlsave/SYS-DATA";
+            ModLoader::s_saveFilePath = userPath / "mlsave";
+
+        ModLoader::s_saveFilePath /= "SYS-DATA";
     }
 
     std::string modsDbIniFilePathU8 = configIni.getString("CPKREDIR", "ModsDbIni", "");
@@ -187,15 +189,20 @@ void ModLoader::Init()
                 modSaveFilePathU8 = modIni.getString("Main", "SaveFile", std::string());
         }
 
-        if (!mod.includeDirs.empty())
-            g_mods.emplace_back(std::move(mod));
-
         if (!modSaveFilePathU8.empty())
         {
             std::replace(modSaveFilePathU8.begin(), modSaveFilePathU8.end(), '\\', '/');
             ModLoader::s_saveFilePath = modDirectoryPath / std::u8string_view((const char8_t*)modSaveFilePathU8.c_str());
+
+            // Save file paths in HMM mods are treated as folders.
+            if (mod.type == ModType::HMM)
+                ModLoader::s_saveFilePath /= "SYS-DATA";
+
             foundModSaveFilePath = true;
         }
+
+        if (!mod.includeDirs.empty())
+            g_mods.emplace_back(std::move(mod));
     }
 }
 
