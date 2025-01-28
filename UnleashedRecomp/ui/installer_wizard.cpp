@@ -343,12 +343,12 @@ static const int WIZARD_INSTALL_TEXTURE_INDEX[] =
 // These are ordered from bottom to top in a 3x2 grid.
 const char* LANGUAGE_TEXT[] =
 {
-    "FRANÃƒâ€¡AIS", // French
+    "FRANÇAIS", // French
     "DEUTSCH", // German
     "ENGLISH", // English
-    "ESPAÃƒâ€˜OL", // Spanish
+    "ESPAÑOL", // Spanish
     "ITALIANO", // Italian
-    "Ã¦â€”Â¥Ã¦Å“Â¬Ã¨ÂªÅ¾", // Japanese
+    "日本語", // Japanese
 };
 
 const ELanguage LANGUAGE_ENUM[] =

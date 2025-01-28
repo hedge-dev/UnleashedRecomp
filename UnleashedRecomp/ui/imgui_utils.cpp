@@ -560,7 +560,7 @@ std::string RemoveAnnotationFromParagraphLine(const std::vector<TextSegment>& an
     return result;
 }
 
-ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMargin, std::vector<std::string> lines)
+ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMargin, const std::vector<std::string>& lines)
 {
     auto x = 0.0f;
     auto y = 0.0f;
@@ -573,15 +573,17 @@ ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMar
         annotationRemovedLines.emplace_back(RemoveAnnotationFromParagraphLine(line));
     }
 
-    for (auto& line : annotationRemovedLines)
+    for (size_t i = 0; i < annotationRemovedLines.size(); i++)
     {
+        auto& line = annotationRemovedLines[i];
+
         auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, line.c_str());
-        auto annotationSize = font->CalcTextSizeA(fontSize * 0.55f, FLT_MAX, 0, "");
+        auto annotationSize = font->CalcTextSizeA(fontSize * ANNOTATION_FONT_SIZE_MODIFIER, FLT_MAX, 0, "");
 
         x = std::max(x, textSize.x);
         y += textSize.y + Scale(lineMargin);
 
-        if (annotatedLines.annotated && &line != &lines.back() && &line != &lines.front())
+        if (annotatedLines.annotated)
         {
             y += annotationSize.y;
         }
@@ -601,13 +603,14 @@ void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, c
 
     const auto& input = RemoveRubyAnnotations(text);
     auto lines = Split(input.first.c_str(), font, fontSize, maxWidth);
-    auto paragraphSize = MeasureCentredParagraph(font, fontSize, lineMargin, lines);
-    float offsetY = 0.0f;
 
     for (auto& line : lines)
     {
         line = ReAddRubyAnnotations(line, input.second);
     }
+    
+    auto paragraphSize = MeasureCentredParagraph(font, fontSize, lineMargin, lines);
+    float offsetY = 0.0f;
 
     const auto& annotatedLines = CalculateAnnotatedParagraph(lines);
 
@@ -619,21 +622,20 @@ void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, c
         auto annotationSize = font->CalcTextSizeA(annotationFontSize, FLT_MAX, 0, "");
 
         float textX = pos.x;
+        float textY = pos.y + offsetY;
+
         if (isCentred)
         {
             textX = annotationRemovedLine.starts_with("- ")
                 ? pos.x - paragraphSize.x / 2
                 : pos.x - textSize.x / 2;
+
+            textY = pos.y - paragraphSize.y / 2 + offsetY;
         }
 
         for (const auto& segment : annotatedLine)
         {
             textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, segment.text.c_str());
-            float textY = pos.y + offsetY;
-            if (isCentred)
-            {
-                textY = pos.y - paragraphSize.y / 2 + offsetY;
-            }
 
             if (segment.annotated)
             {
