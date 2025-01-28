@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
     if (!Registry::RootDirectoryPath.empty())
     {
         if (!os::process::SetWorkingDirectory(std::filesystem::path(Registry::RootDirectoryPath)))
-            LOGFN_ERROR("Failed to set working directory: \"{}\"", Registry::RootDirectoryPath.string());
+            LOGFN_ERROR("Failed to set working directory from registry");
     }
 
     bool forceInstaller = false;
