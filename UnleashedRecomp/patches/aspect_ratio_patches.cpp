@@ -663,6 +663,7 @@ static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers
     { HashStr("ui_worldmap/footer/worldmap_footer_img_A"), { ALIGN_BOTTOM } },
     { HashStr("ui_worldmap/header/worldmap_header_bg"), { ALIGN_TOP } },
     { HashStr("ui_worldmap/header/worldmap_header_img"), { ALIGN_TOP_LEFT | WORLD_MAP } },
+    { HashStr("ui_worldmap/header/worldmap_header_img/head_icon"), { SKIP } },
 
     // ui_worldmap_help
     { HashStr("ui_worldmap_help/balloon/help_window/position/msg_bg_l"), { EXTEND_LEFT } },
