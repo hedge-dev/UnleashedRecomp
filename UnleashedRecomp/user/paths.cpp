@@ -6,7 +6,7 @@ std::filesystem::path g_userPath = BuildUserPath();
 
 bool CheckPortable()
 {
-    return std::filesystem::exists(g_executableRoot / "/portable.txt");
+    return std::filesystem::exists(g_executableRoot / "portable.txt");
 }
 
 std::filesystem::path BuildUserPath()
