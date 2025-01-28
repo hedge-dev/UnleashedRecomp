@@ -180,6 +180,7 @@ set(UNLEASHED_RECOMP_USER_CXX_SOURCES
     "user/achievement_manager.cpp"
     "user/config.cpp"
     "user/registry.cpp"
+    "user/paths.cpp"
 )
 
 set(UNLEASHED_RECOMP_MOD_CXX_SOURCES

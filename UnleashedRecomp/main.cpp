@@ -152,6 +152,14 @@ int main(int argc, char *argv[])
 
     os::logger::Init();
 
+    Registry::Load();
+
+    if (!Registry::RootDirectoryPath.empty())
+    {
+        if (!os::process::SetWorkingDirectory(std::filesystem::path(Registry::RootDirectoryPath)))
+            LOGFN_ERROR("Failed to set working directory: \"{}\"", Registry::RootDirectoryPath.string());
+    }
+
     bool forceInstaller = false;
     bool forceDLCInstaller = false;
     const char *sdlVideoDriver = nullptr;
@@ -171,13 +179,6 @@ int main(int argc, char *argv[])
     }
 
     Config::Load();
-    Registry::Load();
-
-    if (!Registry::RootDirectoryPath.empty())
-    {
-        if (!os::process::SetWorkingDirectory(std::filesystem::path(Registry::RootDirectoryPath)))
-            LOGFN_ERROR("Failed to set working directory: \"{}\"", Registry::RootDirectoryPath.string());
-    }
 
     HostStartup();
 
