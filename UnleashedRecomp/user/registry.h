@@ -3,7 +3,7 @@
 class Registry
 {
 public:
-    inline static std::string RootDirectoryPath;
+    inline static std::filesystem::path RootDirectoryPath;
 
     static void Load();
     static void Save();

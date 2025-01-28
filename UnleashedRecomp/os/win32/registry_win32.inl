@@ -16,44 +16,77 @@ bool os::registry::ReadValue(const std::string& name, T& data)
     if (RegOpenKeyExW(HKEY_CURRENT_USER, g_registryRoot, 0, KEY_READ, &hKey) != ERROR_SUCCESS)
         return false;
 
-    BYTE buffer[512];
-    DWORD bufferSize = sizeof(buffer);
+    wchar_t wideName[128];
+    int wideNameSize = MultiByteToWideChar(CP_UTF8, 0, name.c_str(), name.size(), wideName, sizeof(wideName));
+    if (wideNameSize == 0)
+    {
+        return false;
+    }
+
+    wideName[wideNameSize] = 0;
+    DWORD bufferSize = 0;
     DWORD dataType = 0;
 
-    auto result = RegQueryValueExA(hKey, name.c_str(), NULL, &dataType, buffer, &bufferSize);
-
-    RegCloseKey(hKey);
+    auto result = RegQueryValueExW(hKey, wideName, NULL, &dataType, nullptr, &bufferSize);
 
     if (result != ERROR_SUCCESS)
+    {
+        RegCloseKey(hKey);
         return false;
+    }
 
+    result = ERROR_INVALID_FUNCTION;
     if constexpr (std::is_same_v<T, std::string>)
     {
-        if (dataType != REG_SZ)
-            return false;
+        if (dataType == REG_SZ)
+        {
+            std::vector<uint8_t> buffer{};
+            buffer.reserve(bufferSize);
+            result = RegQueryValueExW(hKey, wideName, nullptr, nullptr, buffer.data(), &bufferSize);
 
-        data = std::string((char*)buffer, bufferSize - 1);
+            if (result == ERROR_SUCCESS)
+            {
+                int valueSize = WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)buffer.data(), (bufferSize / sizeof(wchar_t)) - 1, nullptr, 0, nullptr, nullptr);
+                data.resize(valueSize);
+                WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)buffer.data(), (bufferSize / sizeof(wchar_t)) - 1, data.data(), valueSize, nullptr, nullptr);
+            }
+        }
+    }
+    else if constexpr (std::is_same_v<T, std::filesystem::path>)
+    {
+        if (dataType == REG_SZ)
+        {
+            std::vector<uint8_t> buffer{};
+            buffer.reserve(bufferSize);
+            result = RegQueryValueExW(hKey, wideName, nullptr, nullptr, buffer.data(), &bufferSize);
+
+            if (result == ERROR_SUCCESS)
+            {
+                data = reinterpret_cast<wchar_t*>(buffer.data());
+            }
+        }
     }
     else if constexpr (std::is_same_v<T, uint32_t>)
     {
-        if (dataType != REG_DWORD)
-            return false;
-
-        data = *(uint32_t*)buffer;
+        if (dataType == REG_DWORD)
+        {
+            result = RegQueryValueExW(hKey, wideName, nullptr, nullptr, (BYTE*)&data, &bufferSize);
+        }
     }
     else if constexpr (std::is_same_v<T, uint64_t>)
     {
-        if (dataType != REG_QWORD)
-            return false;
-
-        data = *(uint32_t*)buffer;
+        if (dataType == REG_QWORD)
+        {
+            result = RegQueryValueExW(hKey, wideName, nullptr, nullptr, (BYTE*)&data, &bufferSize);
+        }
     }
     else
     {
         static_assert(false, "Unsupported data type.");
     }
 
-    return true;
+    RegCloseKey(hKey);
+    return result == ERROR_SUCCESS;
 }
 
 template<typename T>
