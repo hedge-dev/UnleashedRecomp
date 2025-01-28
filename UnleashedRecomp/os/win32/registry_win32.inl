@@ -1,45 +1,19 @@
 #include <os/registry.h>
 #include <unordered_map>
 
-static const std::unordered_map<std::string, HKEY> g_rootKeys =
+inline const wchar_t* g_registryRoot = L"Software\\UnleashedRecomp";
+
+inline bool os::registry::Init()
 {
-    { "HKEY_CLASSES_ROOT",   HKEY_CLASSES_ROOT   },
-    { "HKEY_CURRENT_USER",   HKEY_CURRENT_USER   },
-    { "HKEY_LOCAL_MACHINE",  HKEY_LOCAL_MACHINE  },
-    { "HKEY_USERS",          HKEY_USERS          },
-    { "HKEY_CURRENT_CONFIG", HKEY_CURRENT_CONFIG }
-};
-
-static HKEY ParseRootKey(const std::string& name)
-{
-    auto it = g_rootKeys.find(name);
-
-    if (it == g_rootKeys.end())
-        return nullptr;
-
-    return it->second;
+    return true;
 }
 
 template<typename T>
-bool os::registry::ReadValue(const std::filesystem::path& path, const std::string& name, T& data)
+bool os::registry::ReadValue(const std::string& name, T& data)
 {
-    auto pathStr = path.string();
-    auto pathSeparator = pathStr.find('\\');
-
-    if (pathSeparator == std::string::npos)
-        return false;
-
-    auto rootKey = pathStr.substr(0, pathSeparator);
-    auto subKey = pathStr.substr(pathSeparator + 1);
-
-    HKEY hRootKey = ParseRootKey(rootKey);
-
-    if (!hRootKey)
-        return false;
-
     HKEY hKey;
 
-    if (RegOpenKeyExA(hRootKey, subKey.c_str(), 0, KEY_READ, &hKey) != ERROR_SUCCESS)
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, g_registryRoot, 0, KEY_READ, &hKey) != ERROR_SUCCESS)
         return false;
 
     BYTE buffer[512];
@@ -83,30 +57,17 @@ bool os::registry::ReadValue(const std::filesystem::path& path, const std::strin
 }
 
 template<typename T>
-bool os::registry::WriteValue(const std::filesystem::path& path, const std::string& name, const T& data)
+bool os::registry::WriteValue(const std::string& name, const T& data)
 {
-    auto pathStr = path.string();
-    auto pathSeparator = pathStr.find('\\');
-
-    if (pathSeparator == std::string::npos)
-        return false;
-
-    auto rootKey = pathStr.substr(0, pathSeparator);
-    auto subKey = pathStr.substr(pathSeparator + 1);
-
-    HKEY hRootKey = ParseRootKey(rootKey);
-
-    if (!hRootKey)
-        return false;
-
     HKEY hKey;
 
-    if (RegCreateKeyExA(hRootKey, subKey.c_str(), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) != ERROR_SUCCESS)
+    if (RegCreateKeyExW(HKEY_CURRENT_USER, g_registryRoot, 0, nullptr, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) != ERROR_SUCCESS)
         return false;
 
     BYTE* pData = nullptr;
     DWORD dataSize = 0;
     DWORD dataType = 0;
+    bool wideString = false;
 
     if constexpr (std::is_same_v<T, std::string>)
     {
@@ -126,12 +87,35 @@ bool os::registry::WriteValue(const std::filesystem::path& path, const std::stri
         dataSize = sizeof(T);
         dataType = REG_QWORD;
     }
+    else if constexpr (std::is_same_v<T, std::filesystem::path>)
+    {
+        pData = (BYTE*)data.c_str();
+        dataSize = (wcslen((const wchar_t*)pData) + 1) * sizeof(wchar_t);
+        dataType = REG_SZ;
+        wideString = true;
+    }
     else
     {
         static_assert(false, "Unsupported data type.");
     }
 
-    auto result = RegSetValueExA(hKey, name.c_str(), 0, dataType, (const BYTE*)pData, dataSize);
+    LSTATUS result = ERROR_INVALID_FUNCTION;
+    if (wideString)
+    {
+        wchar_t wideName[128];
+        int wideNameSize = MultiByteToWideChar(CP_UTF8, 0, name.c_str(), name.size(), wideName, sizeof(wideName));
+        if (wideNameSize == 0)
+        {
+            return false;
+        }
+
+        wideName[wideNameSize] = 0;
+        result = RegSetValueExW(hKey, wideName, 0, dataType, pData, dataSize);
+    }
+    else
+    {
+        result = RegSetValueExA(hKey, name.c_str(), 0, dataType, pData, dataSize);
+    }
 
     RegCloseKey(hKey);
 

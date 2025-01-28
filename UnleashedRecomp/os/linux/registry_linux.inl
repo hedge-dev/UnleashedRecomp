@@ -1,5 +1,11 @@
 #include <os/registry.h>
 
+// TODO: Implement
+inline bool os::registry::Init()
+{
+    return false;
+}
+
 // TODO: read from file?
 template<typename T>
 bool os::registry::ReadValue(const std::filesystem::path& path, const std::string& name, T& data)
