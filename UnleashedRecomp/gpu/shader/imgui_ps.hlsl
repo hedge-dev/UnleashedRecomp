@@ -146,7 +146,27 @@ float4 main(in Interpolators interpolators) : SV_Target
     else if (any(g_PushConstants.BoundsMin != g_PushConstants.BoundsMax))
     {
         float2 factor = saturate((interpolators.Position.xy - g_PushConstants.BoundsMin) / (g_PushConstants.BoundsMax - g_PushConstants.BoundsMin));
-        color *= lerp(DecodeColor(g_PushConstants.GradientTop), DecodeColor(g_PushConstants.GradientBottom), smoothstep(0.0, 1.0, factor.y));
+        
+        if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_RECTANGLE_BEVEL)
+        {
+            float bevelSize = 0.9;
+
+            float shadow = saturate((factor.x - bevelSize) / (1.0 - bevelSize));
+            shadow = max(shadow, saturate((factor.y - bevelSize) / (1.0 - bevelSize)));
+
+            float rim = saturate((1.0 - factor.x - bevelSize) / (1.0 - bevelSize));
+            rim = max(rim, saturate((1.0 - factor.y - bevelSize) / (1.0 - bevelSize)));
+
+            float3 rimColor = float3(1, 0.8, 0.29);
+            float3 shadowColor = float3(0.84, 0.57, 0);
+
+            color.rgb = lerp(color.rgb, rimColor, smoothstep(0.0, 1.0, rim));
+            color.rgb = lerp(color.rgb, shadowColor, smoothstep(0.0, 1.0, shadow));
+        }
+        else
+        {
+            color *= lerp(DecodeColor(g_PushConstants.GradientTop), DecodeColor(g_PushConstants.GradientBottom), smoothstep(0.0, 1.0, factor.y));
+        }
     }
         
     if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_GRAYSCALE)

@@ -89,10 +89,138 @@ static bool g_isControlsVisible = false;
 static bool g_isEnterKeyBuffered = false;
 static bool g_canReset = false;
 static bool g_isLanguageOptionChanged = false;
+static bool g_titleAnimBegin = true;
 
 static double g_appearTime = 0.0;
 
 static std::unique_ptr<GuestTexture> g_upMilesElectric;
+
+static void DrawTitle()
+{
+    static constexpr double fadeOffset = 3.0;
+    static constexpr double fadeDuration = 28.0;
+    static constexpr double fadeAdditiveDuration = 20.0;
+    static constexpr double squareMoveDuration = 5.0;
+    static constexpr double squareMoveEndDuration = 40.0;
+    static constexpr double squareBlinkDuration = 10.0;
+    static constexpr double squareFadeDuration = 45.0;
+
+    static bool isRectVisible;
+    static bool isRectFinalAdjustment;
+    static float rectX;
+    static double rectMoveMotionOffset;
+    static double rectBlinkMotionOffset;
+
+    if (g_titleAnimBegin)
+    {
+        isRectVisible = true;
+        isRectFinalAdjustment = false;
+        rectX = 0;
+        rectMoveMotionOffset = 0;
+        rectBlinkMotionOffset = 0;
+        g_titleAnimBegin = false;
+    }
+
+    auto drawList = ImGui::GetForegroundDrawList();
+    auto x = Scale(122);
+    auto y = Scale(56);
+
+    if (g_aspectRatio >= WIDE_ASPECT_RATIO)
+        x += g_aspectRatioOffsetX;
+    else
+        x += (1.0f - g_aspectRatioNarrowScale) * g_aspectRatioScale * -20.0f;
+
+    ImVec2 optionsMin = { x, y };
+
+    auto drawText = [&](float alpha)
+    {
+        DrawTextWithOutline
+        (
+            g_dfsogeistdFont,
+            Scale(48),
+            optionsMin,
+            IM_COL32(255, 190, 33, 255 * alpha),
+            Localise("Options_Header_Name").c_str(),
+            4,
+            IM_COL32(0, 0, 0, 255 * alpha),
+            IMGUI_SHADER_MODIFIER_TITLE_BEVEL
+        );
+    };
+
+    if (g_isStage)
+    {
+        drawText(1.0f);
+        return;
+    }
+
+    drawText(Hermite(0.0f, 1.0f, ComputeMotion(g_appearTime, fadeOffset, fadeDuration)));
+
+    auto rectMoveMotion = ComputeMotion(g_appearTime, rectMoveMotionOffset, squareMoveDuration);
+    auto rectEndMotion = ComputeMotion(g_appearTime, 0.0, squareMoveEndDuration);
+    auto rectBlinkMotion = sin(ComputeMotion(g_appearTime, squareMoveEndDuration + rectBlinkMotionOffset, squareBlinkDuration) * M_PI);
+    auto rectAlphaMotion = 1.0f;
+    auto rectY = Scale(10);
+    auto rectSize = Scale(32);
+
+    if (rectBlinkMotion > 0.0)
+    {
+        if (!isRectFinalAdjustment)
+        {
+            /* Ensure the blinking animation starts
+               past the German localisation. */
+            rectX += rectSize + (rectSize * 0.25f);
+            isRectFinalAdjustment = true;
+        }
+    
+        isRectVisible = !isRectVisible;
+        rectBlinkMotionOffset += squareBlinkDuration;
+    }
+
+    if (rectEndMotion >= 1.0)
+    {
+        // Fade out the square.
+        rectAlphaMotion = 1.0f - ComputeMotion(g_appearTime, squareMoveEndDuration + squareBlinkDuration, squareFadeDuration);
+    }
+    else if (rectMoveMotion >= 1.0)
+    {
+        // Move the square along in steps by its own width and offset the animation to repeat.
+        rectX += rectSize;
+        rectMoveMotionOffset += squareMoveDuration;
+    }
+
+    if (isRectVisible)
+    {
+        float rectScale = 1.0f;
+        if (rectBlinkMotion == 0.0)
+        {
+            constexpr float RECT_SCALES[] = { 1.2f, 1.1f, 1.1f, 1.0f, 1.15f, 0.4f, 1.2f, 1.1f, 1.05f, 1.0f, 1.5f, 1.2f, 1.0f };
+            rectScale = RECT_SCALES[uint32_t(round(rectX / rectSize)) % std::size(RECT_SCALES)];
+        }
+
+        ImVec2 rectMin = { optionsMin.x + rectX, optionsMin.y + rectY };
+        ImVec2 rectMax = { optionsMin.x + rectX + rectSize * rectScale, optionsMin.y + rectY + rectSize };
+
+        auto rectOutlineMargin = Scale(2.5f);
+
+        ImVec2 rectOutlineMin = { rectMin.x - rectOutlineMargin, rectMin.y - rectOutlineMargin };
+        ImVec2 rectOutlineMax = { rectMax.x + rectOutlineMargin, rectMax.y + rectOutlineMargin };
+
+        drawList->AddRectFilled(rectOutlineMin, rectOutlineMax, IM_COL32(0, 0, 0, 255 * rectAlphaMotion), Scale(5));
+
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_RECTANGLE_BEVEL);
+        SetGradient(rectMin, rectMax, IM_COL32_WHITE, IM_COL32_WHITE);
+
+        drawList->AddRectFilled(rectMin, rectMax, IM_COL32(255, 188, 0, 255 * rectAlphaMotion));
+
+        ResetGradient();
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
+    }
+
+    // The flash gets rendered after the rectangle in the original game.
+    SetAdditive(true);
+    drawText(1.0 - 2.0 * abs(ComputeLinearMotion(g_appearTime, fadeDuration, fadeAdditiveDuration) - 0.5));
+    SetAdditive(false);
+}
 
 static void DrawScanlineBars()
 {
@@ -162,53 +290,36 @@ static void DrawScanlineBars()
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
-    float optionsX;
-    if (g_aspectRatio >= WIDE_ASPECT_RATIO)
-        optionsX = g_aspectRatioOffsetX;
-    else
-        optionsX = (1.0f - g_aspectRatioNarrowScale) * g_aspectRatioScale * -20.0f;
-
-    // Options text
-    DrawTextWithOutline
-    (
-        g_dfsogeistdFont,
-        Scale(48.0f),
-        { optionsX + Scale(122.0f), Scale(56.0f) },
-        IM_COL32(255, 190, 33, 255),
-        Localise("Options_Header_Name").c_str(),
-        4,
-        IM_COL32_BLACK,
-        IMGUI_SHADER_MODIFIER_TITLE_BEVEL
-    );
+    DrawTitle();
 
     auto drawLine = [&](bool top)
-        {
-            float y = top ? height : (res.y - height);
+    {
+        float y = top ? height : (res.y - height);
 
-            constexpr uint32_t TOP_COLOR0 = IM_COL32(222, 255, 189, 7);
-            constexpr uint32_t TOP_COLOR1 = IM_COL32(222, 255, 189, 65);
-            constexpr uint32_t BOTTOM_COLOR0 = IM_COL32(173, 255, 156, 65);
-            constexpr uint32_t BOTTOM_COLOR1 = IM_COL32(173, 255, 156, 7);
+        constexpr uint32_t TOP_COLOR0 = IM_COL32(222, 255, 189, 7);
+        constexpr uint32_t TOP_COLOR1 = IM_COL32(222, 255, 189, 65);
+        constexpr uint32_t BOTTOM_COLOR0 = IM_COL32(173, 255, 156, 65);
+        constexpr uint32_t BOTTOM_COLOR1 = IM_COL32(173, 255, 156, 7);
 
-            drawList->AddRectFilledMultiColor(
-                { 0.0f, y - Scale(2.0f) },
-                { res.x, y }, 
-                top ? TOP_COLOR0 : BOTTOM_COLOR1,
-                top ? TOP_COLOR0 : BOTTOM_COLOR1, 
-                top ? TOP_COLOR1 : BOTTOM_COLOR0,
-                top ? TOP_COLOR1 : BOTTOM_COLOR0);
+        drawList->AddRectFilledMultiColor(
+            { 0.0f, y - Scale(2.0f) },
+            { res.x, y }, 
+            top ? TOP_COLOR0 : BOTTOM_COLOR1,
+            top ? TOP_COLOR0 : BOTTOM_COLOR1, 
+            top ? TOP_COLOR1 : BOTTOM_COLOR0,
+            top ? TOP_COLOR1 : BOTTOM_COLOR0);
 
-            drawList->AddRectFilledMultiColor(
-                { 0.0f, y + Scale(1.0f) }, 
-                { res.x, y + Scale(3.0f) }, 
-                top ? BOTTOM_COLOR0 : TOP_COLOR1, 
-                top ? BOTTOM_COLOR0 : TOP_COLOR1,
-                top ? BOTTOM_COLOR1 : TOP_COLOR0, 
-                top ? BOTTOM_COLOR1 : TOP_COLOR0);
+        drawList->AddRectFilledMultiColor(
+            { 0.0f, y + Scale(1.0f) }, 
+            { res.x, y + Scale(3.0f) }, 
+            top ? BOTTOM_COLOR0 : TOP_COLOR1, 
+            top ? BOTTOM_COLOR0 : TOP_COLOR1,
+            top ? BOTTOM_COLOR1 : TOP_COLOR0, 
+            top ? BOTTOM_COLOR1 : TOP_COLOR0);
 
-            constexpr uint32_t CENTER_COLOR = IM_COL32(115, 178, 104, 255);
-            drawList->AddRectFilled({ 0.0f, y }, { res.x, y + Scale(1.0f) }, CENTER_COLOR);
-        };
+        constexpr uint32_t CENTER_COLOR = IM_COL32(115, 178, 104, 255);
+        drawList->AddRectFilled({ 0.0f, y }, { res.x, y + Scale(1.0f) }, CENTER_COLOR);
+    };
 
     // Top bar line
     drawLine(true);
@@ -1287,6 +1398,7 @@ void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
     g_categoryAnimMin = { 0.0f, 0.0f };
     g_categoryAnimMax = { 0.0f, 0.0f };
     g_selectedItem = nullptr;
+    g_titleAnimBegin = true;
 
     /* Store button state so we can track it later
        and prevent the first item being selected. */
