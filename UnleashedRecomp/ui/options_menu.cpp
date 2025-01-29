@@ -190,8 +190,15 @@ static void DrawTitle()
 
     if (isRectVisible)
     {
+        float rectScale = 1.0f;
+        if (rectBlinkMotion == 0.0)
+        {
+            constexpr float RECT_SCALES[] = { 1.2f, 1.1f, 1.1f, 1.0f, 1.15f, 0.4f, 1.2f, 1.1f, 1.05f, 1.0f, 1.5f, 1.2f, 1.0f };
+            rectScale = RECT_SCALES[uint32_t(round(rectX / rectSize)) % std::size(RECT_SCALES)];
+        }
+
         ImVec2 rectMin = { optionsMin.x + rectX, optionsMin.y + rectY };
-        ImVec2 rectMax = { optionsMin.x + rectX + rectSize, optionsMin.y + rectY + rectSize };
+        ImVec2 rectMax = { optionsMin.x + rectX + rectSize * rectScale, optionsMin.y + rectY + rectSize };
 
         auto rectOutlineMargin = Scale(2.5f);
 
