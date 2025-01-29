@@ -904,3 +904,13 @@ name = "MakeCueSheetDataMidAsmHook"
 address = 0x82E5EA40
 registers = ["r31"]
 jump_address_on_true = 0x82E5EA4C
+
+[[midasm_hook]]
+name = "WaitVsyncMidAsmHook"
+address = 0x82AE2770
+jump_address = 0x82AE2774
+
+[[midasm_hook]]
+name = "ApplicationFrameLimiterMidAsmHook"
+address = 0x822C1064
+jump_address = 0x822C111C

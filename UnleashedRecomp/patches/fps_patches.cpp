@@ -120,3 +120,11 @@ PPC_FUNC(sub_8312DBF8)
     while (std::chrono::steady_clock::now() < next)
         std::this_thread::yield();
 }
+
+void WaitVsyncMidAsmHook()
+{
+}
+
+void ApplicationFrameLimiterMidAsmHook()
+{
+}
