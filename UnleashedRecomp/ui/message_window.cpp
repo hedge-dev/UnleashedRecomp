@@ -273,7 +273,7 @@ void MessageWindow::Draw()
     auto maxWidth = Scale(820);
     auto fontSize = Scale(28);
 
-    const auto& input = RemoveRubyAnnotations(g_text.c_str());
+    const auto input = RemoveRubyAnnotations(g_text.c_str());
     auto lines = Split(input.first.c_str(), g_fntSeurat, fontSize, maxWidth);
     
     for (auto& line : lines)

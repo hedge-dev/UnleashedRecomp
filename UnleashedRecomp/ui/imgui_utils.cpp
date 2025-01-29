@@ -381,7 +381,7 @@ std::pair<std::string, std::map<std::string, std::string>> RemoveRubyAnnotations
     return { output, rubyMap };
 }
 
-std::string ReAddRubyAnnotations(const std::string& wrappedText, const std::map<std::string, std::string>& rubyMap) {
+std::string ReAddRubyAnnotations(const std::string_view& wrappedText, const std::map<std::string, std::string>& rubyMap) {
     std::string annotatedText;
     size_t idx = 0;
     size_t length = wrappedText.length();
@@ -392,7 +392,12 @@ std::string ReAddRubyAnnotations(const std::string& wrappedText, const std::map<
         {
             if (wrappedText.substr(idx, mainText.length()) == mainText) 
             {
-                annotatedText += "[" + mainText + ":" + rubyText + "]";
+                annotatedText += "[";
+                annotatedText += mainText;
+                annotatedText += ":";
+                annotatedText += rubyText;
+                annotatedText += "]";
+
                 idx += mainText.length();
                 matched = true;
                 break;
@@ -543,9 +548,9 @@ Paragraph CalculateAnnotatedParagraph(const std::vector<std::string>& lines)
 std::vector<std::string> RemoveAnnotationFromParagraph(const std::vector<std::string>& lines)
 {
     std::vector<std::string> result;
-    const auto& annotatedLines = CalculateAnnotatedParagraph(lines).lines;
+    const auto paragraph = CalculateAnnotatedParagraph(lines);
 
-    for (auto& annotatedLine : annotatedLines)
+    for (auto& annotatedLine : paragraph.lines)
     {
         std::string annotationRemovedLine = "";
         for (const auto& segment : annotatedLine)
@@ -576,10 +581,10 @@ ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMar
     auto x = 0.0f;
     auto y = 0.0f;
 
-    const auto& annotatedLines = CalculateAnnotatedParagraph(lines);
+    const auto paragraph = CalculateAnnotatedParagraph(lines);
     
     std::vector<std::string> annotationRemovedLines;
-    for (const auto& line : annotatedLines.lines)
+    for (const auto& line : paragraph.lines)
     {
         annotationRemovedLines.emplace_back(RemoveAnnotationFromParagraphLine(line));
     }
@@ -594,7 +599,7 @@ ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMar
         x = std::max(x, textSize.x);
         y += textSize.y + Scale(lineMargin);
 
-        if (annotatedLines.annotated)
+        if (paragraph.annotated)
         {
             y += annotationSize.y;
         }
@@ -612,7 +617,7 @@ void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, c
 {
     float annotationFontSize = fontSize * ANNOTATION_FONT_SIZE_MODIFIER;
 
-    const auto& input = RemoveRubyAnnotations(text);
+    const auto input = RemoveRubyAnnotations(text);
     auto lines = Split(input.first.c_str(), font, fontSize, maxWidth);
 
     for (auto& line : lines)
@@ -623,11 +628,11 @@ void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, c
     auto paragraphSize = MeasureCentredParagraph(font, fontSize, lineMargin, lines);
     float offsetY = 0.0f;
 
-    const auto& annotatedLines = CalculateAnnotatedParagraph(lines);
+    const auto paragraph = CalculateAnnotatedParagraph(lines);
 
-    for (const auto& annotatedLine : annotatedLines.lines)
+    for (const auto& annotatedLine : paragraph.lines)
     {
-        const auto& annotationRemovedLine = RemoveAnnotationFromParagraphLine(annotatedLine);
+        const auto annotationRemovedLine = RemoveAnnotationFromParagraphLine(annotatedLine);
 
         auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, annotationRemovedLine.c_str());
         auto annotationSize = font->CalcTextSizeA(annotationFontSize, FLT_MAX, 0, "");
@@ -661,7 +666,7 @@ void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, c
         }
 
         offsetY += textSize.y + Scale(lineMargin);
-        if (annotatedLines.annotated)
+        if (paragraph.annotated)
         {
             offsetY += annotationSize.y;
         }

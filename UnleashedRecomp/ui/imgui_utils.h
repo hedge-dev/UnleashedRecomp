@@ -62,7 +62,7 @@ void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, I
 float CalcWidestTextSize(const ImFont* font, float fontSize, std::span<std::string> strs);
 std::string Truncate(const std::string& input, size_t maxLength, bool useEllipsis = true, bool usePrefixEllipsis = false);
 std::pair<std::string, std::map<std::string, std::string>> RemoveRubyAnnotations(const char* input);
-std::string ReAddRubyAnnotations(const std::string& wrappedText, const std::map<std::string, std::string>& rubyMap);
+std::string ReAddRubyAnnotations(const std::string_view& wrappedText, const std::map<std::string, std::string>& rubyMap);
 std::vector<std::string> Split(const char* strStart, const ImFont* font, float fontSize, float maxWidth);
 Paragraph CalculateAnnotatedParagraph(const std::vector<std::string>& lines);
 std::vector<std::string> RemoveAnnotationFromParagraph(const std::vector<std::string>& lines);
