@@ -99,7 +99,7 @@ static void DrawTitle()
 {
     static constexpr double fadeOffset = 3.0;
     static constexpr double fadeDuration = 28.0;
-    static constexpr double fadeAdditiveDuration = 18.0;
+    static constexpr double fadeAdditiveDuration = 20.0;
     static constexpr double squareMoveDuration = 5.0;
     static constexpr double squareMoveEndDuration = 40.0;
     static constexpr double squareBlinkDuration = 10.0;
@@ -154,9 +154,6 @@ static void DrawTitle()
     }
 
     drawText(Hermite(0.0f, 1.0f, ComputeMotion(g_appearTime, fadeOffset, fadeDuration)));
-    SetAdditive(true);
-    drawText(sin(ComputeMotion(g_appearTime, fadeDuration, fadeAdditiveDuration) * std::numbers::pi));
-    SetAdditive(false);
 
     auto rectMoveMotion = ComputeMotion(g_appearTime, rectMoveMotionOffset, squareMoveDuration);
     auto rectEndMotion = ComputeMotion(g_appearTime, 0.0, squareMoveEndDuration);
@@ -206,6 +203,11 @@ static void DrawTitle()
         // TODO: apply bevel to this square (may require a new shader modifier, existing ones don't work).
         drawList->AddRectFilled(rectMin, rectMax, IM_COL32(255, 188, 0, 255 * rectAlphaMotion));
     }
+
+    // The flash gets rendered after the rectangle in the original game.
+    SetAdditive(true);
+    drawText(1.0 - 2.0 * abs(ComputeLinearMotion(g_appearTime, fadeDuration, fadeAdditiveDuration) - 0.5));
+    SetAdditive(false);
 }
 
 static void DrawScanlineBars()
