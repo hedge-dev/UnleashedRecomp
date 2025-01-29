@@ -62,6 +62,7 @@ static int32_t g_firstVisibleRowIndex;
 static int32_t g_prevSelectedRowIndex;
 static int32_t g_selectedRowIndex;
 static double g_rowSelectionTime;
+static float g_prevOffsetRatio;
 
 static bool g_leftWasHeld;
 static bool g_upWasHeld;
@@ -406,6 +407,7 @@ static void ResetSelection()
     g_selectedRowIndex = 0;
     g_prevSelectedRowIndex = 0;
     g_rowSelectionTime = ImGui::GetTime();
+    g_prevOffsetRatio = 0.0f;
     g_leftWasHeld = false;
     g_upWasHeld = false;
     g_rightWasHeld = false;
@@ -1144,7 +1146,11 @@ static void DrawConfigOptions()
     {
         float totalHeight = (clipRectMax.y - clipRectMin.y);
         float heightRatio = float(visibleRowCount) / float(rowCount);
+
         float offsetRatio = float(g_firstVisibleRowIndex) / float(rowCount);
+        offsetRatio = Lerp(g_prevOffsetRatio, offsetRatio, 1.0f - exp(-16.0f * ImGui::GetIO().DeltaTime));
+        g_prevOffsetRatio = offsetRatio;
+
         float minY = offsetRatio * totalHeight + clipRectMin.y;
 
         drawList->AddRectFilled
