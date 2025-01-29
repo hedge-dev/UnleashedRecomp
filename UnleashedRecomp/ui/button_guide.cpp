@@ -3,9 +3,11 @@
 #include <gpu/imgui/imgui_snapshot.h>
 #include <gpu/video.h>
 #include <hid/hid.h>
+#include <patches/aspect_ratio_patches.h>
 #include <user/config.h>
 #include <app.h>
 #include <decompressor.h>
+
 #include <res/images/common/controller.dds.h>
 #include <res/images/common/kbm.dds.h>
 

@@ -1,16 +1,15 @@
 #include "achievement_overlay.h"
-#include "imgui_utils.h"
+#include <gpu/imgui/imgui_snapshot.h>
 #include <gpu/video.h>
 #include <kernel/memory.h>
 #include <kernel/xdbf.h>
 #include <locale/locale.h>
-#include <user/config.h>
+#include <ui/imgui_utils.h>
 #include <user/achievement_data.h>
+#include <user/config.h>
 #include <app.h>
 #include <exports.h>
 #include <decompressor.h>
-#include <res/images/common/general_window.dds.h>
-#include <gpu/imgui/imgui_snapshot.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;
@@ -28,8 +27,6 @@ static double g_appearTime = 0;
 static Achievement g_achievement;
 
 static ImFont* g_fntSeurat;
-
-static std::unique_ptr<GuestTexture> g_upWindow;
 
 static bool DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25)
 {
@@ -65,7 +62,7 @@ static bool DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25)
         ? Hermite(1, 0, colourMotion)
         : Hermite(0, 1, colourMotion);
 
-    DrawPauseContainer(g_upWindow.get(), min, max, alpha);
+    DrawPauseContainer(min, max, alpha);
 
     if (containerMotion >= 1.0f)
     {
@@ -81,8 +78,6 @@ void AchievementOverlay::Init()
     auto& io = ImGui::GetIO();
 
     g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
-
-    g_upWindow = LOAD_ZSTD_TEXTURE(g_general_window);
 }
 
 void AchievementOverlay::Draw()

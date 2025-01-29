@@ -1,20 +1,20 @@
 #include "achievement_menu.h"
-#include "imgui_utils.h"
 #include <api/SWA.h>
+#include <gpu/imgui/imgui_snapshot.h>
 #include <gpu/video.h>
+#include <hid/hid.h>
 #include <kernel/xdbf.h>
 #include <locale/locale.h>
+#include <patches/aspect_ratio_patches.h>
 #include <ui/button_guide.h>
+#include <ui/imgui_utils.h>
 #include <user/achievement_manager.h>
 #include <user/config.h>
 #include <app.h>
 #include <exports.h>
 #include <decompressor.h>
+
 #include <res/images/achievements_menu/trophy.dds.h>
-#include <res/images/common/general_window.dds.h>
-#include <res/images/common/select_fill.dds.h>
-#include <gpu/imgui/imgui_snapshot.h>
-#include <hid/hid.h>
 
 constexpr double HEADER_CONTAINER_INTRO_MOTION_START = 0;
 constexpr double HEADER_CONTAINER_INTRO_MOTION_END = 15;
@@ -44,8 +44,6 @@ static ImFont* g_fntNewRodinDB;
 static ImFont* g_fntNewRodinUB;
 
 static std::unique_ptr<GuestTexture> g_upTrophyIcon;
-static std::unique_ptr<GuestTexture> g_upSelectionCursor;
-static std::unique_ptr<GuestTexture> g_upWindow;
 
 static int g_firstVisibleRowIndex;
 static int g_selectedRowIndex;
@@ -71,41 +69,9 @@ static void DrawContainer(ImVec2 min, ImVec2 max, ImU32 gradientTop, ImU32 gradi
 {
     auto drawList = ImGui::GetForegroundDrawList();
 
-    DrawPauseContainer(g_upWindow.get(), min, max, alpha);
+    DrawPauseContainer(min, max, alpha);
 
     drawList->PushClipRect({ min.x, min.y + Scale(20) }, { max.x, max.y - Scale(5) });
-}
-
-static void DrawSelectionContainer(ImVec2 min, ImVec2 max)
-{
-    auto drawList = ImGui::GetForegroundDrawList();
-
-    static auto breatheStart = ImGui::GetTime();
-    auto alpha = BREATHE_MOTION(1.0f, 0.65f, breatheStart, 0.92f);
-    auto colour = IM_COL32(255, 255, 255, 255 * alpha);
-
-    auto commonWidth = Scale(11);
-    auto commonHeight = Scale(24);
-
-    auto tl = PIXELS_TO_UV_COORDS(64, 64, 0, 0, 11, 24);
-    auto tc = PIXELS_TO_UV_COORDS(64, 64, 11, 0, 8, 24);
-    auto tr = PIXELS_TO_UV_COORDS(64, 64, 19, 0, 11, 24);
-    auto cl = PIXELS_TO_UV_COORDS(64, 64, 0, 24, 11, 2);
-    auto cc = PIXELS_TO_UV_COORDS(64, 64, 11, 24, 8, 2);
-    auto cr = PIXELS_TO_UV_COORDS(64, 64, 19, 24, 11, 2);
-    auto bl = PIXELS_TO_UV_COORDS(64, 64, 0, 26, 11, 24);
-    auto bc = PIXELS_TO_UV_COORDS(64, 64, 11, 26, 8, 24);
-    auto br = PIXELS_TO_UV_COORDS(64, 64, 19, 26, 11, 24);
-
-    drawList->AddImage(g_upSelectionCursor.get(), min, { min.x + commonWidth, min.y + commonHeight }, GET_UV_COORDS(tl), colour);
-    drawList->AddImage(g_upSelectionCursor.get(), { min.x + commonWidth, min.y }, { max.x - commonWidth, min.y + commonHeight }, GET_UV_COORDS(tc), colour);
-    drawList->AddImage(g_upSelectionCursor.get(), { max.x - commonWidth, min.y }, { max.x, min.y + commonHeight }, GET_UV_COORDS(tr), colour);
-    drawList->AddImage(g_upSelectionCursor.get(), { min.x, min.y + commonHeight }, { min.x + commonWidth, max.y - commonHeight }, GET_UV_COORDS(cl), colour);
-    drawList->AddImage(g_upSelectionCursor.get(), { min.x + commonWidth, min.y + commonHeight }, { max.x - commonWidth, max.y - commonHeight }, GET_UV_COORDS(cc), colour);
-    drawList->AddImage(g_upSelectionCursor.get(), { max.x - commonWidth, min.y + commonHeight }, { max.x, max.y - commonHeight }, GET_UV_COORDS(cr), colour);
-    drawList->AddImage(g_upSelectionCursor.get(), { min.x, max.y - commonHeight }, { min.x + commonWidth, max.y }, GET_UV_COORDS(bl), colour);
-    drawList->AddImage(g_upSelectionCursor.get(), { min.x + commonWidth, max.y - commonHeight }, { max.x - commonWidth, max.y }, GET_UV_COORDS(bc), colour);
-    drawList->AddImage(g_upSelectionCursor.get(), { max.x - commonWidth, max.y - commonHeight }, { max.x, max.y }, GET_UV_COORDS(br), colour);
 }
 
 static void DrawHeaderContainer(const char* text)
@@ -137,7 +103,7 @@ static void DrawHeaderContainer(const char* text)
     ImVec2 min = { g_aspectRatioOffsetX + Scale(containerMarginX), g_aspectRatioOffsetY + Scale(136) };
     ImVec2 max = { min.x + textMarginX * 2 + textSize.x + Scale(5), g_aspectRatioOffsetY + Scale(196) };
 
-    DrawPauseHeaderContainer(g_upWindow.get(), min, max, alpha);
+    DrawPauseHeaderContainer(min, max, alpha);
 
     SetTextSkew((min.y + max.y) / 2.0f, Scale(3.0f));
 
@@ -780,8 +746,6 @@ void AchievementMenu::Init()
     g_fntNewRodinUB = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-UB.otf");
 
     g_upTrophyIcon = LOAD_ZSTD_TEXTURE(g_trophy);
-    g_upSelectionCursor = LOAD_ZSTD_TEXTURE(g_select_fill);
-    g_upWindow = LOAD_ZSTD_TEXTURE(g_general_window);
 }
 
 void AchievementMenu::Draw()

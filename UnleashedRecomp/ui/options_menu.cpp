@@ -1,10 +1,7 @@
 #include "options_menu.h"
 #include "options_menu_thumbnails.h"
-#include "imgui_utils.h"
-#include "game_window.h"
-#include "exports.h"
 
-#include <api/SWA/System/InputState.h>
+#include <api/SWA.h>
 #include <apu/audio.h>
 #include <gpu/imgui/imgui_common.h>
 #include <gpu/video.h>
@@ -13,11 +10,14 @@
 #include <kernel/heap.h>
 #include <kernel/memory.h>
 #include <locale/locale.h>
+#include <patches/aspect_ratio_patches.h>
+#include <patches/audio_patches.h>
 #include <ui/button_guide.h>
+#include <ui/game_window.h>
+#include <ui/imgui_utils.h>
 #include <app.h>
 #include <decompressor.h>
-
-#include <patches/audio_patches.h>
+#include <exports.h>
 
 #include <res/images/options_menu/miles_electric.dds.h>
 
@@ -690,6 +690,9 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     }
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
+
+    if constexpr (std::is_same_v<T, bool>)
+        DrawToggleLight({ min.x + Scale(14), min.y + ((max.y - min.y) - Scale(14)) / 2 + Scale(1) }, config->Value);
 
     // Selection triangles
     if (lockedOnOption)

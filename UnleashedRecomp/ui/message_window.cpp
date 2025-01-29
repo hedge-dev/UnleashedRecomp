@@ -11,9 +11,6 @@
 #include <exports.h>
 #include <sdl_listener.h>
 
-#include <res/images/common/general_window.dds.h>
-#include <res/images/common/select_fade.dds.h>
-
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;
 constexpr double OVERLAY_CONTAINER_INTRO_FADE_START = 5;
@@ -39,9 +36,6 @@ static double g_appearTime;
 static double g_controlsAppearTime;
 
 static ImFont* g_fntSeurat;
-
-static std::unique_ptr<GuestTexture> g_upSelectionCursor;
-static std::unique_ptr<GuestTexture> g_upWindow;
 
 std::string g_text;
 int g_result;
@@ -190,7 +184,7 @@ bool DrawContainer(float appearTime, ImVec2 centre, ImVec2 max, bool isForegroun
     if (isForeground)
         drawList->AddRectFilled({ 0.0f, 0.0f }, ImGui::GetIO().DisplaySize, IM_COL32(0, 0, 0, 190 * (g_foregroundCount ? 1 : alpha)));
 
-    DrawPauseContainer(g_upWindow.get(), _min, _max, alpha);
+    DrawPauseContainer(_min, _max, alpha);
 
     if (containerMotion >= 1.0f && !g_isClosing)
     {
@@ -214,20 +208,7 @@ void DrawButton(int rowIndex, float yOffset, float width, float height, std::str
     bool isSelected = rowIndex == g_selectedRowIndex;
 
     if (isSelected)
-    {
-        static auto breatheStart = ImGui::GetTime();
-        auto alpha = BREATHE_MOTION(1.0f, 0.55f, breatheStart, 0.92f);
-        auto colour = IM_COL32(255, 255, 255, 255 * alpha);
-
-        auto width  = Scale(11);
-        auto left   = PIXELS_TO_UV_COORDS(64, 64, 0, 0, 11, 50);
-        auto centre = PIXELS_TO_UV_COORDS(64, 64, 11, 0, 8, 50);
-        auto right  = PIXELS_TO_UV_COORDS(64, 64, 19, 0, 11, 50);
-
-        drawList->AddImage(g_upSelectionCursor.get(), min, { min.x + width, max.y }, GET_UV_COORDS(left), colour);
-        drawList->AddImage(g_upSelectionCursor.get(), { min.x + width, min.y }, { max.x - width, max.y }, GET_UV_COORDS(centre), colour);
-        drawList->AddImage(g_upSelectionCursor.get(), { max.x - width, min.y }, max, GET_UV_COORDS(right), colour);
-    }
+        DrawSelectionContainer(min, max, true);
 
     auto fontSize = Scale(28);
     auto textSize = g_fntSeurat->CalcTextSizeA(fontSize, FLT_MAX, 0, text.c_str());
@@ -277,9 +258,6 @@ void MessageWindow::Init()
     auto& io = ImGui::GetIO();
 
     g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
-
-    g_upSelectionCursor = LOAD_ZSTD_TEXTURE(g_select_fade);
-    g_upWindow = LOAD_ZSTD_TEXTURE(g_general_window);
 }
 
 void MessageWindow::Draw()

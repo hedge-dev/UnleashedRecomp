@@ -838,7 +838,7 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
     DrawButtonContainer(min, max, baser, baseg, alpha);
 
     ImFont *font = sourceButton ? g_newRodinFont : g_dfsogeistdFont;
-    float size = Scale(sourceButton ? 15.0f : 20.0f);
+    float size = Scale(sourceButton ? 16.5f : 20.0f);
     float squashRatio;
     ImVec2 textSize = ComputeTextSize(font, buttonText, size, squashRatio, Scale(maxTextWidth));
     min.x += ((max.x - min.x) - textSize.x) / 2.0f;
@@ -911,7 +911,11 @@ static void DrawSourceButton(ButtonColumn buttonColumn, float yRatio, const char
     float minusY = (CONTAINER_BUTTON_GAP + BUTTON_HEIGHT) * yRatio;
     ImVec2 min = { minX, g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT - CONTAINER_BUTTON_GAP - BUTTON_HEIGHT - minusY) };
     ImVec2 max = { maxX, g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT - CONTAINER_BUTTON_GAP - minusY) };
-    DrawButton(min, max, sourceText, true, sourceSet, buttonPressed);
+
+    auto lightSize = Scale(14);
+
+    DrawButton(min, max, sourceText, true, sourceSet, buttonPressed, (max.x - min.x) - lightSize * 10);
+    DrawToggleLight({ min.x + lightSize, min.y + ((max.y - min.y) - lightSize) / 2 + Scale(1) }, sourceSet);
 }
 
 static void DrawProgressBar(float progressRatio)

@@ -21,6 +21,7 @@
 #include <ui/achievement_overlay.h>
 #include <ui/button_guide.h>
 #include <ui/fader.h>
+#include <ui/imgui_utils.h>
 #include <ui/installer_wizard.h>
 #include <ui/message_window.h>
 #include <ui/options_menu.h>
@@ -1223,6 +1224,7 @@ static void CreateImGuiBackend()
     ImFontAtlasSnapshot::GenerateGlyphRanges();
 #endif
 
+    InitImGuiUtils();
     AchievementMenu::Init();
     AchievementOverlay::Init();
     ButtonGuide::Init();
