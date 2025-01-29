@@ -890,3 +890,17 @@ address = 0x82BA7D40
 name = "YggdrasillRenderQuadMidAsmHook"
 address = 0x82E9FBA0
 registers = ["r3", "r6"]
+
+# CSB loader
+[[midasm_hook]]
+name = "MakeCueSheetDataMidAsmHook"
+address = 0x82E5EA10
+registers = ["r31"]
+jump_address_on_true = 0x82E5EA40
+
+# Name assignment
+[[midasm_hook]]
+name = "MakeCueSheetDataMidAsmHook"
+address = 0x82E5EA40
+registers = ["r31"]
+jump_address_on_true = 0x82E5EA4C

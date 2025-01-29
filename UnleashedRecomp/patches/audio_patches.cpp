@@ -65,3 +65,31 @@ void AudioPatches::Update(float deltaTime)
 
 // Stub volume setter.
 GUEST_FUNCTION_STUB(sub_82E58728);
+
+// HORRIBLE HACK ZONE
+// The options menu uses se_system_worldmap.csb, which is stored in Title.ar.00.
+// This archive gets unloaded in stages, which causes sounds to not play in the options menu.
+// To solve this, once the CSB gets loaded at title, we'll keep it PERMANENTLY loaded.
+// This'll make the SFX not work if Title never gets loaded, but that'll only happen when quick booting to stages.
+static bool g_loadedWorldMapCsb;
+
+bool MakeCueSheetDataMidAsmHook(PPCRegister& r31)
+{
+    uint8_t* base = g_memory.base;
+    uint32_t str = PPC_LOAD_U32(r31.u32);
+
+    if (str != NULL && strcmp(reinterpret_cast<const char*>(base + str), "se_system_worldmap") == 0)
+    {
+        if (!g_loadedWorldMapCsb)
+        {
+            g_loadedWorldMapCsb = true;
+            return false; // Allow load for the first and only time.
+        }
+
+        // Already loaded before, skip all the loading and name assignment code.
+        // Not assigning the name prevents it from unloading the CSB file.
+        return true;
+    }
+
+    return false;
+}
