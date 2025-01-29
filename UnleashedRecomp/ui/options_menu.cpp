@@ -200,8 +200,13 @@ static void DrawTitle()
 
         drawList->AddRectFilled(rectOutlineMin, rectOutlineMax, IM_COL32(0, 0, 0, 255 * rectAlphaMotion), Scale(5));
 
-        // TODO: apply bevel to this square (may require a new shader modifier, existing ones don't work).
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_RECTANGLE_BEVEL);
+        SetGradient(rectMin, rectMax, IM_COL32_WHITE, IM_COL32_WHITE);
+
         drawList->AddRectFilled(rectMin, rectMax, IM_COL32(255, 188, 0, 255 * rectAlphaMotion));
+
+        ResetGradient();
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
     }
 
     // The flash gets rendered after the rectangle in the original game.
