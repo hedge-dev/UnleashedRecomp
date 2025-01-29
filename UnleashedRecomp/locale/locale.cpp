@@ -24,7 +24,12 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
     {
         "Options_Header_Name",
         {
-            { ELanguage::English, "OPTIONS" }
+            { ELanguage::English, "OPTIONS" },
+            { ELanguage::Japanese, "OPTION" },
+            { ELanguage::German, "OPTIONEN" },
+            { ELanguage::French, "OPTIONS" },
+            { ELanguage::Spanish, "OPCIONES" },
+            { ELanguage::Italian, "OPZIONI" }
         }
     },
     {
