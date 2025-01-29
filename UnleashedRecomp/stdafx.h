@@ -49,7 +49,6 @@ using Microsoft::WRL::ComPtr;
 #include <list>
 #include <semaphore>
 #include <numeric>
-#include <numbers>
 #include <charconv>
 
 #include "framework.h"

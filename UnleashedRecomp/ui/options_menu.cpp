@@ -157,7 +157,7 @@ static void DrawTitle()
 
     auto rectMoveMotion = ComputeMotion(g_appearTime, rectMoveMotionOffset, squareMoveDuration);
     auto rectEndMotion = ComputeMotion(g_appearTime, 0.0, squareMoveEndDuration);
-    auto rectBlinkMotion = sin(ComputeMotion(g_appearTime, squareMoveEndDuration + rectBlinkMotionOffset, squareBlinkDuration) * std::numbers::pi);
+    auto rectBlinkMotion = sin(ComputeMotion(g_appearTime, squareMoveEndDuration + rectBlinkMotionOffset, squareBlinkDuration) * M_PI);
     auto rectAlphaMotion = 1.0f;
     auto rectY = Scale(10);
     auto rectSize = Scale(32);
