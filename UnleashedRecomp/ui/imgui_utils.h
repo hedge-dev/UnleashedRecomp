@@ -37,6 +37,7 @@ void ResetProceduralOrigin();
 void SetAdditive(bool enabled);
 void ResetAdditive();
 float Scale(float size);
+double ComputeLinearMotion(double duration, double offset, double total);
 double ComputeMotion(double duration, double offset, double total);
 void DrawPauseContainer(ImVec2 min, ImVec2 max, float alpha = 1);
 void DrawPauseHeaderContainer(ImVec2 min, ImVec2 max, float alpha = 1);
