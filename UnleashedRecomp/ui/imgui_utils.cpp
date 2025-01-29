@@ -196,7 +196,7 @@ void DrawTextBasic(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 
     drawList->AddText(font, fontSize, pos, colour, text, nullptr);
 }
 
-void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 color, const char* text, double time, double delay, double speed)
+void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& position, const ImVec2& min, const ImVec2& max, ImU32 color, const char* text, double time, double delay, double speed)
 {
     auto drawList = ImGui::GetForegroundDrawList();
     auto rectWidth = max.x - min.x;
@@ -500,27 +500,38 @@ Paragraph CalculateAnnotatedParagraph(const std::vector<std::string>& lines)
     for (const auto& line : lines)
     {
         std::vector<TextSegment> segments;
-        std::regex regex(R"(\[([^\:]+):([^\]]+)\])"); // Matches "[text:annotation]"
-        std::smatch match;
 
-        auto searchStart = line.cbegin();
-        while (std::regex_search(searchStart, line.cend(), match, regex))
+        size_t pos = 0;
+        size_t start = 0;
+
+        while ((start = line.find('[', pos)) != std::string::npos)
         {
-            if (searchStart != match[0].first)
+            size_t end = line.find(']', start);
+            if (end == std::string::npos)
+                break;
+
+            size_t colon = line.find(':', start);
+            if (colon != std::string::npos && colon < end)
             {
-                segments.push_back({ false, std::string(searchStart, match[0].first), "" });
+                if (start != pos)
+                {
+                    segments.push_back({ false, line.substr(pos, start - pos), "" });
+                }
+
+                segments.push_back({ true, line.substr(start + 1, colon - start - 1), line.substr(colon + 1, end - colon - 1) });
+
+                result.annotated = true;
+                pos = end + 1;
             }
-
-            segments.push_back({ true, match[1].str(), match[2].str() });
-
-            result.annotated = true;
-
-            searchStart = match[0].second;
+            else
+            {
+                pos = start + 1;
+            }
         }
 
-        if (searchStart != line.cend())
+        if (pos < line.size())
         {
-            segments.push_back({ false, std::string(searchStart, line.cend()), "" });
+            segments.push_back({ false, line.substr(pos), "" });
         }
 
         result.lines.push_back(segments);
