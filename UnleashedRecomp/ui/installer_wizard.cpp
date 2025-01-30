@@ -710,6 +710,11 @@ static void DrawDescriptionContainer()
     float textX = clipRectMin.x + fontSize;
     float textY = clipRectMin.y - Scale(1.0f);
 
+    auto lineWidth = clipRectMax.x - (fontSize / 2.0f) - clipRectMin.x;
+
+    clipRectMax.x += fontSize;
+    clipRectMax.y += Scale(1.0f);
+
     float lineMargin = 5.0f;
 
     if (Config::Language == ELanguage::Japanese)
@@ -736,7 +741,7 @@ static void DrawDescriptionContainer()
     (
         g_seuratFont,
         fontSize,
-        clipRectMax.x - clipRectMin.x,
+        lineWidth,
         { textX, textY },
         lineMargin,
         descriptionText,
