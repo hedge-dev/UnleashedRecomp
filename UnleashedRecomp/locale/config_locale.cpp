@@ -97,14 +97,25 @@ CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
     }
 };
 
-CONFIG_DEFINE_LOCALE(InvertCameraX)
+CONFIG_DEFINE_LOCALE(HorizontalCamera)
 {
-    { ELanguage::English, { "Invert Camera X", "Toggle between inverted left and right camera movement." } }
+    { ELanguage::English, { "Horizontal Camera", "Change how the camera moves left and right." } }
 };
 
-CONFIG_DEFINE_LOCALE(InvertCameraY)
+CONFIG_DEFINE_LOCALE(VerticalCamera)
 {
-    { ELanguage::English, { "Invert Camera Y", "Toggle between inverted up and down camera movement." } }
+    { ELanguage::English, { "Vertical Camera", "Change how the camera moves up and down." } }
+};
+
+CONFIG_DEFINE_ENUM_LOCALE(ECameraRotationMode)
+{
+    {
+        ELanguage::English,
+        {
+            { ECameraRotationMode::Normal,  { "NORMAL", "" } },
+            { ECameraRotationMode::Reverse, { "REVERSE", "" } }
+        }
+    }
 };
 
 CONFIG_DEFINE_LOCALE(Vibration)

@@ -10,8 +10,8 @@ CONFIG_DEFINE_LOCALISED("System", bool, AchievementNotifications, true);
 CONFIG_DEFINE_ENUM_LOCALISED("System", ETimeOfDayTransition, TimeOfDayTransition, ETimeOfDayTransition::Xbox);
 CONFIG_DEFINE("System", bool, ShowConsole, false);
 
-CONFIG_DEFINE_LOCALISED("Input", bool, InvertCameraX, false);
-CONFIG_DEFINE_LOCALISED("Input", bool, InvertCameraY, false);
+CONFIG_DEFINE_ENUM_LOCALISED("Input", ECameraRotationMode, HorizontalCamera, ECameraRotationMode::Normal);
+CONFIG_DEFINE_ENUM_LOCALISED("Input", ECameraRotationMode, VerticalCamera, ECameraRotationMode::Normal);
 CONFIG_DEFINE_LOCALISED("Input", bool, Vibration, true);
 CONFIG_DEFINE_LOCALISED("Input", bool, AllowBackgroundInput, false);
 CONFIG_DEFINE_ENUM_LOCALISED("Input", EControllerIcons, ControllerIcons, EControllerIcons::Auto);

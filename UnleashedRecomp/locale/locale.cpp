@@ -177,7 +177,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
     {
         "Installer_Page_SelectGameAndUpdate",
         {
-            { ELanguage::English, "Add the sources for your copy of the game and its title update." }
+            { ELanguage::English, "Add the sources for the game and its title update." }
         }
     },
     {

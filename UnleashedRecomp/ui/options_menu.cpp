@@ -1058,8 +1058,8 @@ static void DrawConfigOptions()
             break;
 
         case 1: // INPUT
-            DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraX, true);
-            DrawConfigOption(rowCount++, yOffset, &Config::InvertCameraY, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::HorizontalCamera, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::VerticalCamera, true);
             DrawConfigOption(rowCount++, yOffset, &Config::Vibration, true);
             DrawConfigOption(rowCount++, yOffset, &Config::AllowBackgroundInput, true);
             DrawConfigOption(rowCount++, yOffset, &Config::ControllerIcons, true);

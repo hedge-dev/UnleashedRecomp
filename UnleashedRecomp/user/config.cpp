@@ -30,6 +30,12 @@ CONFIG_DEFINE_ENUM_TEMPLATE(ETimeOfDayTransition)
     { "PlayStation", ETimeOfDayTransition::PlayStation }
 };
 
+CONFIG_DEFINE_ENUM_TEMPLATE(ECameraRotationMode)
+{
+    { "Normal",  ECameraRotationMode::Normal },
+    { "Reverse", ECameraRotationMode::Reverse },
+};
+
 CONFIG_DEFINE_ENUM_TEMPLATE(EControllerIcons)
 {
     { "Auto",        EControllerIcons::Auto },

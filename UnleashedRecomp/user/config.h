@@ -41,6 +41,12 @@ enum class ETimeOfDayTransition : uint32_t
     PlayStation
 };
 
+enum class ECameraRotationMode : uint32_t
+{
+    Normal,
+    Reverse
+};
+
 enum class EControllerIcons : uint32_t
 {
     Auto,
