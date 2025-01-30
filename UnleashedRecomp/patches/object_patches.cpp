@@ -1,5 +1,6 @@
 #include <user/config.h>
 #include <SWA/CharacterUtility/CharacterProxy.h>
+#include <hid/hid.h>
 
 // CObjFlame::CObjFlame
 // A field is not zero initialized,
@@ -66,4 +67,34 @@ void ObjBigBarrelSetPositionMidAsmHook(PPCRegister& r3, PPCRegister& r4)
         position->Y = position->Y - characterProxy->m_Velocity.Y * factor;
         position->Z = position->Z - characterProxy->m_Velocity.Z * factor;
     }
+}
+
+// Tornado Defense bullet particles are colored by the button prompt, which differs on PlayStation 3.
+// Luckily, the PS3 particles are left in the files, and they get spawned by name when a bullet gets created.
+
+// SWA::CExBullet::AddCallback
+PPC_FUNC_IMPL(__imp__sub_82B14CC0);
+PPC_FUNC(sub_82B14CC0)
+{
+    auto isPlayStation = Config::ControllerIcons == EControllerIcons::PlayStation;
+
+    if (Config::ControllerIcons == EControllerIcons::Auto)
+        isPlayStation = hid::g_inputDeviceController == hid::EInputDevice::PlayStation;
+
+    if (isPlayStation)
+    {
+        PPC_STORE_U8(0x820C2A0B, 'b'); // Cross
+        PPC_STORE_U8(0x820C29C3, 'r'); // Circle
+        PPC_STORE_U8(0x820C29DB, 'p'); // Square
+        PPC_STORE_U8(0x820C29F3, 'g'); // Triangle
+    }
+    else
+    {
+        PPC_STORE_U8(0x820C2A0B, 'g'); // A
+        PPC_STORE_U8(0x820C29C3, 'r'); // B
+        PPC_STORE_U8(0x820C29DB, 'b'); // X
+        PPC_STORE_U8(0x820C29F3, 'o'); // Y
+    }
+
+    __imp__sub_82B14CC0(ctx, base);
 }
