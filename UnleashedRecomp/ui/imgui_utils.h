@@ -35,6 +35,7 @@ struct Paragraph {
 void InitImGuiUtils();
 
 void SetGradient(const ImVec2& min, const ImVec2& max, ImU32 top, ImU32 bottom);
+void SetGradient(const ImVec2& min, const ImVec2& max, ImU32 topLeft, ImU32 topRight, ImU32 bottomRight, ImU32 bottomLeft);
 void ResetGradient();
 void SetShaderModifier(uint32_t shaderModifier);
 void SetOrigin(ImVec2 origin);

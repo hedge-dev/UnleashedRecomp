@@ -32,8 +32,10 @@ union ImGuiCallbackData
     {
         float boundsMin[2];
         float boundsMax[2];
-        uint32_t gradientTop;
-        uint32_t gradientBottom;
+        uint32_t gradientTopLeft;
+        uint32_t gradientTopRight;
+        uint32_t gradientBottomRight;
+        uint32_t gradientBottomLeft;
     } setGradient;
 
     struct

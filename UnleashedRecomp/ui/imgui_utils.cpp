@@ -24,13 +24,20 @@ void InitImGuiUtils()
 
 void SetGradient(const ImVec2& min, const ImVec2& max, ImU32 top, ImU32 bottom)
 {
+    SetGradient(min, max, top, top, bottom, bottom);
+}
+
+void SetGradient(const ImVec2& min, const ImVec2& max, ImU32 topLeft, ImU32 topRight, ImU32 bottomRight, ImU32 bottomLeft)
+{
     auto callbackData = AddImGuiCallback(ImGuiCallback::SetGradient);
     callbackData->setGradient.boundsMin[0] = min.x;
     callbackData->setGradient.boundsMin[1] = min.y;
     callbackData->setGradient.boundsMax[0] = max.x;
     callbackData->setGradient.boundsMax[1] = max.y;
-    callbackData->setGradient.gradientTop = top;
-    callbackData->setGradient.gradientBottom = bottom;
+    callbackData->setGradient.gradientTopLeft = topLeft;
+    callbackData->setGradient.gradientTopRight = topRight;
+    callbackData->setGradient.gradientBottomRight = bottomRight;
+    callbackData->setGradient.gradientBottomLeft = bottomLeft;
 }
 
 void ResetGradient()

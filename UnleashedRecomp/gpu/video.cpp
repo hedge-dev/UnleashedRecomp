@@ -1196,8 +1196,10 @@ struct ImGuiPushConstants
 {
     ImVec2 boundsMin{};
     ImVec2 boundsMax{};
-    ImU32 gradientTop{};
-    ImU32 gradientBottom{};
+    ImU32 gradientTopLeft{};
+    ImU32 gradientTopRight{};
+    ImU32 gradientBottomRight{};
+    ImU32 gradientBottomLeft{};
     uint32_t shaderModifier{};
     uint32_t texture2DDescriptorIndex{};
     ImVec2 inverseDisplaySize{};

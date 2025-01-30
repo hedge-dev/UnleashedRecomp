@@ -165,7 +165,9 @@ float4 main(in Interpolators interpolators) : SV_Target
         }
         else
         {
-            color *= lerp(DecodeColor(g_PushConstants.GradientTop), DecodeColor(g_PushConstants.GradientBottom), smoothstep(0.0, 1.0, factor.y));
+            float4 top = lerp(DecodeColor(g_PushConstants.GradientTopLeft), DecodeColor(g_PushConstants.GradientTopRight), smoothstep(0.0, 1.0, factor.x));
+            float4 bottom = lerp(DecodeColor(g_PushConstants.GradientBottomLeft), DecodeColor(g_PushConstants.GradientBottomRight), smoothstep(0.0, 1.0, factor.x));
+            color *= lerp(top, bottom, smoothstep(0.0, 1.0, factor.y));
         }
     }
         
