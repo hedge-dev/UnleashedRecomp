@@ -60,3 +60,8 @@ bool os::process::StartProcess(const std::filesystem::path& path, const std::vec
 
     return true;
 }
+
+void os::process::ShowConsole()
+{
+    // Unnecessary on Linux.
+}

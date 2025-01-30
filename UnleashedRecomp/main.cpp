@@ -172,6 +172,9 @@ int main(int argc, char *argv[])
 
     Config::Load();
 
+    if (Config::ShowConsole)
+        os::process::ShowConsole();
+
     HostStartup();
 
     std::filesystem::path modulePath;

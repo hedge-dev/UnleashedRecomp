@@ -6,6 +6,7 @@
 #include <kernel/function.h>
 #include <kernel/heap.h>
 #include <user/paths.h>
+#include <os/process.h>
 #include <xxHashMap.h>
 
 enum class ModType
@@ -114,6 +115,9 @@ void ModLoader::Init()
 
         ModLoader::s_saveFilePath /= "SYS-DATA";
     }
+
+    if (configIni.getString("CPKREDIR", "LogType", std::string()) == "console")
+        os::process::ShowConsole();
 
     std::string modsDbIniFilePathU8 = configIni.getString("CPKREDIR", "ModsDbIni", "");
     if (modsDbIniFilePathU8.empty())

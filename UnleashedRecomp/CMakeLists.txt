@@ -294,6 +294,11 @@ if (WIN32)
 
     configure_file("res/win32/res.rc.template" "${CMAKE_BINARY_DIR}/res.rc" @ONLY)
     add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES} "${CMAKE_BINARY_DIR}/res.rc")
+
+    # Hide console for release configurations.
+    if (${CMAKE_BUILD_TYPE} MATCHES "Release")
+        target_link_options(UnleashedRecomp PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
+    endif()
 else()
     add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES})
 endif()

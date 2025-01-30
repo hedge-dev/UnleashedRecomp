@@ -8,6 +8,7 @@ CONFIG_DEFINE_LOCALISED("System", bool, Hints, true);
 CONFIG_DEFINE_LOCALISED("System", bool, ControlTutorial, true);
 CONFIG_DEFINE_LOCALISED("System", bool, AchievementNotifications, true);
 CONFIG_DEFINE_ENUM_LOCALISED("System", ETimeOfDayTransition, TimeOfDayTransition, ETimeOfDayTransition::Xbox);
+CONFIG_DEFINE("System", bool, ShowConsole, false);
 
 CONFIG_DEFINE_LOCALISED("Input", bool, InvertCameraX, false);
 CONFIG_DEFINE_LOCALISED("Input", bool, InvertCameraY, false);

@@ -51,3 +51,14 @@ bool os::process::StartProcess(const std::filesystem::path& path, const std::vec
 
     return true;
 }
+
+void os::process::ShowConsole()
+{
+    if (GetConsoleWindow() == nullptr)
+    {
+        AllocConsole();
+        freopen("CONIN$", "r", stdin);
+        freopen("CONOUT$", "w", stderr);
+        freopen("CONOUT$", "w", stdout);
+    }
+}
