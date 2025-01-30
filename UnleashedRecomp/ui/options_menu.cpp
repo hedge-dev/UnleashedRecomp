@@ -27,6 +27,8 @@ static constexpr double MILES_ELECTRIC_FOREGROUND_FADE_DURATION = 6.0;
 static constexpr double MILES_ELECTRIC_FOREGROUND_FADE_IN_TIME = MILES_ELECTRIC_SCALE_DURATION - 2.0;
 static constexpr double MILES_ELECTRIC_FOREGROUND_FADE_OUT_TIME = MILES_ELECTRIC_FOREGROUND_FADE_IN_TIME + MILES_ELECTRIC_FOREGROUND_FADE_DURATION;
 
+static constexpr double VALUE_SLIDER_INTRO_DURATION = 20.0;
+
 static constexpr double CONTAINER_LINE_ANIMATION_DURATION = 8.0;
 
 static constexpr double CONTAINER_OUTER_TIME = CONTAINER_LINE_ANIMATION_DURATION + 8.0; // 8 frame delay
@@ -70,6 +72,7 @@ static bool g_rightWasHeld;
 static bool g_downWasHeld;
 
 static bool g_lockedOnOption;
+static double g_lockedOnTime;
 static double g_lastTappedTime;
 static double g_lastIncrementTime;
 static double g_lastIncrementSoundTime;
@@ -589,6 +592,132 @@ static bool DrawCategories()
     return false;
 }
 
+static void DrawSelectionArrows(ImVec2 min, ImVec2 max, bool isLeftTapped, bool isRightTapped, bool isSlider)
+{
+    static constexpr double sizeMotionDuration = 16.0;
+
+    static bool isLeftArrowMotion = false;
+    static bool isRightArrowMotion = false;
+
+    auto drawList = ImGui::GetForegroundDrawList();
+    auto gridSize = Scale(GRID_SIZE);
+    auto width = gridSize * 2.5f;
+    auto padding = gridSize;
+
+    auto bgMotion = (isLeftArrowMotion || isRightArrowMotion)
+        ? ComputeMotion(g_lastTappedTime, 8.0, sizeMotionDuration)
+        : 0;
+
+    if (isLeftTapped)
+    {
+        isLeftArrowMotion = true;
+        isRightArrowMotion = false;
+    }
+
+    if (isRightTapped)
+    {
+        isLeftArrowMotion = false;
+        isRightArrowMotion = true;
+    }
+
+    if (bgMotion >= 1.0 || isSlider)
+    {
+        isLeftArrowMotion = false;
+        isRightArrowMotion = false;
+    }
+
+    auto getBgColour = [&](bool isAnim) -> ImU32
+    {
+        return IM_COL32(0, 97, 0, Lerp(96, 255, isAnim ? bgMotion : 1));
+    };
+
+    auto bgLeftColour = getBgColour(isLeftArrowMotion);
+    auto bgRightColour = getBgColour(isRightArrowMotion);
+
+    auto invertMotion = isSlider ? ComputeMotion(g_lockedOnTime, 0, VALUE_SLIDER_INTRO_DURATION) : 0;
+    auto invertMotionX = invertMotion > 0.5 ? 1.0 : 0.0; // Arrow side point invert animation
+
+    auto xAdd = Hermite(0, Scale(10), sin(invertMotion * M_PI)); // Arrow jump animation
+    auto y = (min.y + max.y) / 2.0f;
+
+    // Left triangle vertices
+    auto leftX = Lerp(min.x - padding, min.x - padding - width, invertMotionX) - xAdd;
+    auto leftV1Y = Hermite(min.y, max.y, invertMotion);
+    auto leftV2Y = Hermite(max.y, min.y, invertMotion);
+    auto leftV3X = Hermite(min.x - padding - width, min.x - padding, invertMotionX) - xAdd;
+
+    // Right triangle vertices
+    auto rightX = Lerp(max.x + padding, max.x + padding + width, invertMotionX) + xAdd;
+    auto rightV1Y = Hermite(max.y, min.y, invertMotion);
+    auto rightV2Y = Hermite(min.y, max.y, invertMotion);
+    auto rightV3X = Hermite(max.x + padding + width, max.x + padding, invertMotionX) + xAdd;
+
+    auto drawLeftArrow = [&](ImU32 col)
+    {
+        drawList->AddTriangleFilled({ leftX, leftV1Y }, { leftX, leftV2Y }, { leftV3X, y }, col);
+    };
+
+    auto drawRightArrow = [&](ImU32 col)
+    {
+        drawList->AddTriangleFilled({ rightX, rightV1Y }, { rightX, rightV2Y }, { rightV3X, y }, col);
+    };
+
+    drawLeftArrow(bgLeftColour);
+    drawRightArrow(bgRightColour);
+
+    // Additive gradient colours
+    auto c0 = IM_COL32(255, 0, 255, 255);
+    auto c1 = IM_COL32(255, 128, 255, 255);
+
+    SetAdditive(true);
+
+    // Apply additive gradients
+    SetGradient({ leftX, leftV1Y }, { leftV3X, y }, c0, c1, c1, c0);
+    drawLeftArrow(bgLeftColour);
+    SetGradient({ rightX, rightV1Y }, { rightV3X, y }, c0, c1, c1, c0);
+    drawRightArrow(bgRightColour);
+    ResetGradient();
+
+    if (isSlider)
+    {
+        auto col = IM_COL32(0, 97, 0, 255 * invertMotion);
+
+        drawLeftArrow(col);
+        drawRightArrow(col);
+    }
+    else
+    {
+        auto fgMotion = ComputeMotion(g_lastTappedTime, 0, sizeMotionDuration);
+        auto fgMotionSine = sin(fgMotion * M_PI);
+        auto fgScale = Lerp(0, Scale(4), fgMotionSine);
+        auto fgColour = IM_COL32(0, 97, 0, 255 * fgMotionSine);
+
+        if (isLeftArrowMotion)
+        {
+            drawList->AddTriangleFilled
+            (
+                { min.x - padding, min.y - fgScale },
+                { min.x - padding, max.y + fgScale },
+                { min.x - padding - width - (fgScale + Scale(2)), (min.y + max.y) / 2.0f },
+                fgColour
+            );
+        }
+
+        if (isRightArrowMotion)
+        {
+            drawList->AddTriangleFilled
+            (
+                { max.x + padding, max.y + fgScale },
+                { max.x + padding, min.y - fgScale },
+                { max.x + padding + width + (fgScale + Scale(2)), (min.y + max.y) / 2.0f },
+                fgColour
+            );
+        }
+    }
+
+    SetAdditive(false);
+}
+
 template<typename T>
 static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* config,
     bool isAccessible, std::string* inaccessibleReason = nullptr,
@@ -601,15 +730,15 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
     constexpr float OPTION_NARROW_GRID_COUNT = 36.0f;
     constexpr float OPTION_WIDE_GRID_COUNT = 54.0f;
+    constexpr bool IS_SLIDER_TYPE = std::is_same_v<T, float> || std::is_same_v<T, int32_t>;
 
+    auto isValueSlider = IS_SLIDER_TYPE && isSlider;
     auto gridSize = Scale(GRID_SIZE);
     auto optionWidth = gridSize * floor(Lerp(OPTION_NARROW_GRID_COUNT, OPTION_WIDE_GRID_COUNT, g_aspectRatioNarrowScale));
     auto optionHeight = gridSize * 5.5f;
     auto optionPadding = gridSize * 0.5f;
     auto valueWidth = Scale(192.0f);
     auto valueHeight = gridSize * 3.0f;
-    auto triangleWidth = gridSize * 2.5f;
-    auto trianglePadding = gridSize;
 
     // Left side
     ImVec2 min = { clipRectMin.x, clipRectMin.y + (optionHeight + optionPadding) * rowIndex + yOffset };
@@ -623,6 +752,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     ImVec4 textClipRect = { min.x, min.y, max.x, max.y };
 
     bool lockedOnOption = false;
+
     if (g_selectedRowIndex == rowIndex)
     {
         g_selectedItem = config;
@@ -657,6 +787,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
                         if (g_lockedOnOption)
                         {
+                            g_lockedOnTime = ImGui::GetTime();
                             g_leftWasHeld = false;
                             g_rightWasHeld = false;
 
@@ -725,9 +856,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     auto textColour = IM_COL32(255, 255, 255, 255 * alpha);
 
     if (Config::Language == ELanguage::Japanese)
-    {
         textPos.y += Scale(10.0f);
-    }
 
     if (g_selectedItem == config)
     {
@@ -788,12 +917,19 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     {
         if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int32_t>)
         {
+            if (lockedOnOption)
+            {
+                SetAdditive(true);
+                drawList->AddRectFilled(min, max, IM_COL32(192, 192, 0, 96 * ComputeMotion(g_lockedOnTime, 0, VALUE_SLIDER_INTRO_DURATION)));
+                SetAdditive(false);
+            }
+
             // Inner container of slider
             const uint32_t innerColor0 = IM_COL32(0, 65, 0, 255 * alpha);
             const uint32_t innerColor1 = IM_COL32(0, 32, 0, 255 * alpha);
 
-            float xPadding = Scale(6.0f);
-            float yPadding = Scale(3.0f);
+            float xPadding = Scale(6);
+            float yPadding = Scale(3);
 
             drawList->AddRectFilledMultiColor
             (
@@ -809,8 +945,8 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             const uint32_t sliderColor0 = IM_COL32(57, 241, 0, 255 * alpha);
             const uint32_t sliderColor1 = IM_COL32(2, 106, 0, 255 * alpha);
 
-            xPadding += Scale(1.0f);
-            yPadding += Scale(1.0f);
+            xPadding += Scale(2);
+            yPadding += Scale(2);
 
             ImVec2 sliderMin = { min.x + xPadding, min.y + yPadding };
             ImVec2 sliderMax = { max.x - xPadding, max.y - yPadding };
@@ -835,26 +971,6 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     // Selection triangles
     if (lockedOnOption)
     {
-        constexpr uint32_t COLOR = IM_COL32(0, 97, 0, 255);
-
-        // Left
-        drawList->AddTriangleFilled
-        (
-            { min.x - trianglePadding, min.y },
-            { min.x - trianglePadding, max.y }, 
-            { min.x - trianglePadding - triangleWidth, (min.y + max.y) / 2.0f }, 
-            COLOR
-        );
-
-        // Right
-        drawList->AddTriangleFilled
-        (
-            { max.x + trianglePadding, max.y },
-            { max.x + trianglePadding, min.y },
-            { max.x + trianglePadding + triangleWidth, (min.y + max.y) / 2.0f },
-            COLOR
-        );
-
         bool leftIsHeld = padState.IsDown(SWA::eKeyState_DpadLeft) || padState.LeftStickHorizontal < -0.5f;
         bool rightIsHeld = padState.IsDown(SWA::eKeyState_DpadRight) || padState.LeftStickHorizontal > 0.5f;
 
@@ -871,6 +987,8 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
         g_leftWasHeld = leftIsHeld;
         g_rightWasHeld = rightIsHeld;
+
+        DrawSelectionArrows(min, max, leftTapped, rightTapped, isValueSlider);
 
         if constexpr (std::is_enum_v<T>)
         {
