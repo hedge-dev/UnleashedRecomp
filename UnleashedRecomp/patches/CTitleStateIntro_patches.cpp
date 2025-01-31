@@ -1,5 +1,6 @@
 #include "CTitleStateIntro_patches.h"
 #include <api/SWA.h>
+#include <install/update_checker.h>
 #include <locale/locale.h>
 #include <ui/fader.h>
 #include <ui/message_window.h>
@@ -7,8 +8,9 @@
 #include <user/paths.h>
 #include <app.h>
 
+static bool g_faderBegun = false;
+
 bool g_quitMessageOpen = false;
-static bool g_quitMessageFaderBegun = false;
 static int g_quitMessageResult = -1;
 
 static std::atomic<bool> g_corruptSaveMessageOpen = false;
@@ -16,6 +18,9 @@ static int g_corruptSaveMessageResult = -1;
 
 static bool g_corruptAchievementsMessageOpen = false;
 static int g_corruptAchievementsMessageResult = -1;
+
+static bool g_updateAvailableMessageOpen = false;
+static int g_updateAvailableMessageResult = -1;
 
 static bool ProcessQuitMessage()
 {
@@ -25,7 +30,7 @@ static bool ProcessQuitMessage()
     if (!g_quitMessageOpen)
         return false;
 
-    if (g_quitMessageFaderBegun)
+    if (g_faderBegun)
         return true;
 
     std::array<std::string, 2> options = { Localise("Common_Yes"), Localise("Common_No") };
@@ -36,7 +41,7 @@ static bool ProcessQuitMessage()
         {
             case 0:
                 Fader::FadeOut(1, []() { App::Exit(); });
-                g_quitMessageFaderBegun = true;
+                g_faderBegun = true;
                 break;
 
             case 1:
@@ -87,13 +92,40 @@ static bool ProcessCorruptAchievementsMessage()
     return true;
 }
 
-void StorageDevicePromptMidAsmHook()
+static bool ProcessUpdateAvailableMessage()
 {
-    AchievementManager::Load();
+    if (!g_updateAvailableMessageOpen)
+        return false;
 
-    if (AchievementManager::Status != EAchStatus::Success)
-        g_corruptAchievementsMessageOpen = true;
+    if (g_faderBegun)
+        return true;
+
+    std::array<std::string, 2> options = { Localise("Common_Yes"), Localise("Common_No") };
+
+    if (MessageWindow::Open(Localise("Title_Message_UpdateAvailable"), &g_updateAvailableMessageResult, options) == MSG_CLOSED)
+    {
+        if (!g_updateAvailableMessageResult)
+        {
+            Fader::FadeOut(1,
+            //
+                []()
+                {
+                    UpdateChecker::visitWebsite();
+                    App::Exit();
+                }
+            );
+
+            g_faderBegun = true;
+        }
+
+        g_updateAvailableMessageOpen = false;
+        g_updateAvailableMessageResult = -1;
+    }
+
+    return true;
 }
+
+void StorageDevicePromptMidAsmHook() {}
 
 // Save data validation hook.
 PPC_FUNC_IMPL(__imp__sub_822C55B0);
@@ -115,12 +147,27 @@ PPC_FUNC(sub_82587E50)
     {
         __imp__sub_82587E50(ctx, base);
     }
-    else if (!ProcessCorruptSaveMessage() && !ProcessCorruptAchievementsMessage())
+    else if (!ProcessUpdateAvailableMessage() && !ProcessCorruptSaveMessage() && !ProcessCorruptAchievementsMessage())
     {
-        auto pInputState = SWA::CInputState::GetInstance();
+        if (auto pInputState = SWA::CInputState::GetInstance())
+        {
+            auto& rPadState = pInputState->GetPadState();
+            auto isAccepted = rPadState.IsTapped(SWA::eKeyState_A) || rPadState.IsTapped(SWA::eKeyState_Start);
+            auto isDeclined = rPadState.IsTapped(SWA::eKeyState_B);
 
-        if (pInputState && pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
-            g_quitMessageOpen = true;
+            if (isAccepted)
+            {
+                g_updateAvailableMessageOpen = UpdateChecker::check() == UpdateChecker::Result::UpdateAvailable;
+
+                AchievementManager::Load();
+
+                if (AchievementManager::Status != EAchStatus::Success)
+                    g_corruptAchievementsMessageOpen = true;
+            }
+
+            if (isDeclined)
+                g_quitMessageOpen = true;
+        }
 
         if (!ProcessQuitMessage())
             __imp__sub_82587E50(ctx, base);

@@ -378,6 +378,12 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         }
     },
     {
+        "Title_Message_UpdateAvailable",
+        {
+            { ELanguage::English, "An update is available!\n\nWould you like to visit the\nreleases page to download it?" }
+        }
+    },
+    {
         "Common_On",
         {
             { ELanguage::English,  "ON" },
