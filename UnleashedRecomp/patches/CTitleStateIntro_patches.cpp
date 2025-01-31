@@ -147,7 +147,7 @@ PPC_FUNC(sub_82587E50)
     {
         __imp__sub_82587E50(ctx, base);
     }
-    else if (!ProcessUpdateAvailableMessage() && !ProcessCorruptSaveMessage() && !ProcessCorruptAchievementsMessage())
+    else if (!ProcessUpdateAvailableMessage() && !ProcessCorruptSaveMessage() && !ProcessCorruptAchievementsMessage() && !g_faderBegun)
     {
         if (auto pInputState = SWA::CInputState::GetInstance())
         {
