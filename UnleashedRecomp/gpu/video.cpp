@@ -1514,7 +1514,9 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
             g_device = g_interface->createDevice();
             if (g_device != nullptr)
             {
+#ifdef UNLEASHED_RECOMP_D3D12
                 g_vulkan = (interfaceFunction == CreateVulkanInterfaceWrapper);
+#endif
                 break;
             }
         }
