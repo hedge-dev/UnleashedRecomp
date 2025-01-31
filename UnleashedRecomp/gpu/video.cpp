@@ -1551,7 +1551,7 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     {
         return false;
     }
-    
+
     g_capabilities = g_device->getCapabilities();
 
     LoadEmbeddedResources();
@@ -2069,6 +2069,23 @@ static Profiler g_renderDirectorProfiler;
 static bool g_profilerVisible;
 static bool g_profilerWasToggled;
 
+static const char *DeviceTypeName(RenderDeviceType type)
+{
+    switch (type) 
+    {
+    case RenderDeviceType::INTEGRATED:
+        return "Integrated";
+    case RenderDeviceType::DISCRETE:
+        return "Discrete";
+    case RenderDeviceType::VIRTUAL:
+        return "Virtual";
+    case RenderDeviceType::CPU:
+        return "CPU";
+    default:
+        return "Unknown";
+    }
+}
+
 static void DrawProfiler()
 {
     bool toggleProfiler = SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_F1] != 0;
@@ -2136,7 +2153,9 @@ static void DrawProfiler()
 
         ImGui::Text("API: %s", g_vulkan ? "Vulkan" : "D3D12");
         ImGui::Text("Device: %s", g_device->getDescription().name.c_str());
+        ImGui::Text("Device Type: %s", DeviceTypeName(g_device->getDescription().type));
         ImGui::Text("VRAM: %.2f MiB", (double)(g_device->getDescription().dedicatedVideoMemory) / (1024.0 * 1024.0));
+        ImGui::Text("UMA: %s", g_capabilities.uma ? "Supported" : "Unsupported");
 
         const char* sdlVideoDriver = SDL_GetCurrentVideoDriver();
         if (sdlVideoDriver != nullptr)
