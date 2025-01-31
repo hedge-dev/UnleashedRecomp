@@ -1497,6 +1497,7 @@ static void ApplyLowEndDefaults()
     ApplyLowEndDefault(Config::AntiAliasing, EAntiAliasing::MSAA2x, changed);
     ApplyLowEndDefault(Config::ShadowResolution, EShadowResolution::Original, changed);
     ApplyLowEndDefault(Config::TransparencyAntiAliasing, false, changed);
+    ApplyLowEndDefault(Config::GITextureFiltering, EGITextureFiltering::Bilinear, changed);
 
     if (changed) {
         Config::Save();
