@@ -29,16 +29,22 @@ public:
 
 extern std::vector<IConfigDef*> g_configDefinitions;
 
-enum class EUnleashGaugeBehaviour : uint32_t
+enum class EVoiceLanguage : uint32_t
 {
-    Original,
-    Revised
+    English,
+    Japanese
 };
 
 enum class ETimeOfDayTransition : uint32_t
 {
     Xbox,
     PlayStation
+};
+
+enum class ECameraRotationMode : uint32_t
+{
+    Normal,
+    Reverse
 };
 
 enum class EControllerIcons : uint32_t
@@ -52,12 +58,6 @@ enum class EChannelConfiguration : uint32_t
 {
     Stereo,
     Surround
-};
-
-enum class EVoiceLanguage : uint32_t
-{
-    English,
-    Japanese
 };
 
 enum class EGraphicsAPI : uint32_t

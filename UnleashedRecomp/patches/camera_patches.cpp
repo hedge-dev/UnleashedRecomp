@@ -43,8 +43,8 @@ PPC_FUNC(sub_824697B0)
 {
     auto pCamera = (SWA::CCamera*)g_memory.Translate(ctx.r3.u32);
 
-    pCamera->m_InvertX = Config::InvertCameraX;
-    pCamera->m_InvertY = Config::InvertCameraY;
+    pCamera->m_InvertX = Config::HorizontalCamera == ECameraRotationMode::Reverse;
+    pCamera->m_InvertY = Config::VerticalCamera == ECameraRotationMode::Reverse;
 
     __imp__sub_824697B0(ctx, base);
 }

@@ -17,8 +17,7 @@
 #include <res/images/options_menu/thumbnails/gi_texture_filtering_bilinear.dds.h>
 #include <res/images/options_menu/thumbnails/gi_texture_filtering_bicubic.dds.h>
 #include <res/images/options_menu/thumbnails/hints.dds.h>
-#include <res/images/options_menu/thumbnails/invert_camera_x.dds.h>
-#include <res/images/options_menu/thumbnails/invert_camera_y.dds.h>
+#include <res/images/options_menu/thumbnails/horizontal_camera.dds.h>
 #include <res/images/options_menu/thumbnails/language.dds.h>
 #include <res/images/options_menu/thumbnails/master_volume.dds.h>
 #include <res/images/options_menu/thumbnails/monitor.dds.h>
@@ -41,6 +40,7 @@
 #include <res/images/options_menu/thumbnails/transparency_antialiasing_false.dds.h>
 #include <res/images/options_menu/thumbnails/transparency_antialiasing_true.dds.h>
 #include <res/images/options_menu/thumbnails/ui_scale_mode.dds.h>
+#include <res/images/options_menu/thumbnails/vertical_camera.dds.h>
 #include <res/images/options_menu/thumbnails/voice_language.dds.h>
 #include <res/images/options_menu/thumbnails/vibration.dds.h>
 #include <res/images/options_menu/thumbnails/vsync.dds.h>
@@ -74,8 +74,8 @@ void LoadThumbnails()
     g_timeOfDayTransitionThumbnails[ETimeOfDayTransition::Xbox] = LOAD_ZSTD_TEXTURE(g_time_of_day_transition_xbox);
     g_timeOfDayTransitionThumbnails[ETimeOfDayTransition::PlayStation] = LOAD_ZSTD_TEXTURE(g_time_of_day_transition_playstation);
 
-    g_configThumbnails[&Config::InvertCameraX] = LOAD_ZSTD_TEXTURE(g_invert_camera_x);
-    g_configThumbnails[&Config::InvertCameraY] = LOAD_ZSTD_TEXTURE(g_invert_camera_y);
+    g_configThumbnails[&Config::HorizontalCamera] = LOAD_ZSTD_TEXTURE(g_horizontal_camera);
+    g_configThumbnails[&Config::VerticalCamera] = LOAD_ZSTD_TEXTURE(g_vertical_camera);
     g_configThumbnails[&Config::Vibration] = LOAD_ZSTD_TEXTURE(g_vibration);
     g_configThumbnails[&Config::AllowBackgroundInput] = LOAD_ZSTD_TEXTURE(g_allow_background_input);
     g_configThumbnails[&Config::ControllerIcons] = LOAD_ZSTD_TEXTURE(g_controller_icons);

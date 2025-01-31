@@ -3435,7 +3435,7 @@ static RenderPipeline* CreateGraphicsPipelineInRenderThread(PipelineState pipeli
         pipeline = CreateGraphicsPipeline(pipelineState);
 
 #ifdef ASYNC_PSO_DEBUG
-        bool loading = *reinterpret_cast<bool*>(g_memory.Translate(0x83367A4C));
+        bool loading = *SWA::SGlobals::ms_IsLoading;
 
         if (loading)
             ++g_pipelinesCreatedAsynchronously;
@@ -5407,7 +5407,7 @@ static void PipelineCompilerThread()
 #ifdef _WIN32
         int newThreadPriority = threadPriority;
 
-        bool loading = *reinterpret_cast<bool*>(g_memory.Translate(0x83367A4C));
+        bool loading = *SWA::SGlobals::ms_IsLoading;
         if (loading)
             newThreadPriority = THREAD_PRIORITY_HIGHEST;
         else
@@ -5468,7 +5468,7 @@ static void EnqueueGraphicsPipelineCompilation(
 
     if (shouldCompile)
     {
-        bool loading = *reinterpret_cast<bool*>(g_memory.Translate(0x83367A4C));
+        bool loading = *SWA::SGlobals::ms_IsLoading;
         if (!loading && isPrecompiledPipeline)
         {
             // We can just compile here during the logos.
@@ -5805,7 +5805,7 @@ static void CompileMeshPipeline(const Mesh& mesh, CompilationArgs& args)
 
             // We cannot rely on this being accurate during loading as SceneEffect.prm.xml gets loaded a bit later.
             bool planarReflectionEnabled = *reinterpret_cast<bool*>(g_memory.Translate(0x832FA0D8));
-            bool loading = *reinterpret_cast<bool*>(g_memory.Translate(0x83367A4C));
+            bool loading = *SWA::SGlobals::ms_IsLoading;
             bool compileNoMsaaPipeline = pipelineState.sampleCount != 1 && (loading || planarReflectionEnabled);
 
             auto noMsaaPipeline = pipelineState;

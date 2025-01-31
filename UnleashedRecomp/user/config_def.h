@@ -10,8 +10,8 @@ CONFIG_DEFINE_LOCALISED("System", bool, AchievementNotifications, true);
 CONFIG_DEFINE_ENUM_LOCALISED("System", ETimeOfDayTransition, TimeOfDayTransition, ETimeOfDayTransition::Xbox);
 CONFIG_DEFINE("System", bool, ShowConsole, false);
 
-CONFIG_DEFINE_LOCALISED("Input", bool, InvertCameraX, false);
-CONFIG_DEFINE_LOCALISED("Input", bool, InvertCameraY, false);
+CONFIG_DEFINE_ENUM_LOCALISED("Input", ECameraRotationMode, HorizontalCamera, ECameraRotationMode::Normal);
+CONFIG_DEFINE_ENUM_LOCALISED("Input", ECameraRotationMode, VerticalCamera, ECameraRotationMode::Normal);
 CONFIG_DEFINE_LOCALISED("Input", bool, Vibration, true);
 CONFIG_DEFINE_LOCALISED("Input", bool, AllowBackgroundInput, false);
 CONFIG_DEFINE_ENUM_LOCALISED("Input", EControllerIcons, ControllerIcons, EControllerIcons::Auto);
@@ -81,9 +81,9 @@ CONFIG_DEFINE_HIDDEN("Exports", bool, DisableDLCIcon, false);
 CONFIG_DEFINE_HIDDEN("Exports", bool, DisableDWMRoundedCorners, false);
 CONFIG_DEFINE_HIDDEN("Exports", bool, FixUnleashOutOfControlDrain, false);
 CONFIG_DEFINE_HIDDEN("Exports", bool, HomingAttackOnBoost, true);
+CONFIG_DEFINE_HIDDEN("Exports", bool, HUDToggleHotkey, false);
 CONFIG_DEFINE_HIDDEN("Exports", bool, SaveScoreAtCheckpoints, false);
 CONFIG_DEFINE_HIDDEN("Exports", bool, SkipIntroLogos, false);
 CONFIG_DEFINE_HIDDEN("Exports", bool, UseOfficialTitleOnTitleBar, false);
-CONFIG_DEFINE_HIDDEN("Exports", bool, HUDToggleHotkey, false);
 
 CONFIG_DEFINE("Update", time_t, LastChecked, 0);

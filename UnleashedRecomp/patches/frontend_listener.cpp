@@ -21,12 +21,9 @@ public:
             if (event->key.keysym.sym != SDLK_F8 || m_isF8KeyDown)
                 break;
 
-            // アプリケーション設定 / 開発用 / デバッグ / HUD / 全 HUD 描画
-            const auto ms_IsRenderHud = (bool*)g_memory.Translate(0x8328BB26);
+            *SWA::SGlobals::ms_IsRenderHud = !*SWA::SGlobals::ms_IsRenderHud;
 
-            *ms_IsRenderHud = !*ms_IsRenderHud;
-
-            LOGFN("HUD {}", *ms_IsRenderHud ? "ON" : "OFF");
+            LOGFN("HUD {}", *SWA::SGlobals::ms_IsRenderHud ? "ON" : "OFF");
 
             m_isF8KeyDown = true;
 
@@ -38,4 +35,5 @@ public:
             break;
         }
     }
-} g_frontendlistener;
+}
+g_frontendListener;

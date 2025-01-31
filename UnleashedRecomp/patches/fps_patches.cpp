@@ -94,7 +94,7 @@ bool LoadingUpdateMidAsmHook(PPCRegister& r31)
     g_ppcContext->f1.f64 = deltaTime;
     g_memory.FindFunction(update)(*g_ppcContext, base);
 
-    bool loading = PPC_LOAD_U8(0x83367A4C);
+    bool loading = *SWA::SGlobals::ms_IsLoading;
     if (loading)
     {
         now = std::chrono::steady_clock::now();

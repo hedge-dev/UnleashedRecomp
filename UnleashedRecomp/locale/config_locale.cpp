@@ -49,6 +49,52 @@ CONFIG_DEFINE_ENUM_LOCALE(ELanguage)
     }
 };
 
+CONFIG_DEFINE_ENUM_LOCALE(EVoiceLanguage)
+{
+    {
+        ELanguage::English,
+        {
+            { EVoiceLanguage::English,  { "ENGLISH", "" } },
+            { EVoiceLanguage::Japanese, { "JAPANESE", "" } }
+        }
+    },
+    {
+        ELanguage::Japanese,
+        {
+            { EVoiceLanguage::English,  { "英語", "" } },
+            { EVoiceLanguage::Japanese, { "日本語", "" } }
+        }
+    },
+    {
+        ELanguage::German,
+        {
+            { EVoiceLanguage::English,  { "ENGLISCH", "" } },
+            { EVoiceLanguage::Japanese, { "JAPANISCH", "" } }
+        }
+    },
+    {
+        ELanguage::French,
+        {
+            { EVoiceLanguage::English,  { "ANGLAIS", "" } },
+            { EVoiceLanguage::Japanese, { "JAPONAIS", "" } }
+        }
+    },
+    {
+        ELanguage::Spanish,
+        {
+            { EVoiceLanguage::English,  { "INGLÉS", "" } },
+            { EVoiceLanguage::Japanese, { "JAPONÉS", "" } }
+        }
+    },
+    {
+        ELanguage::Italian,
+        {
+            { EVoiceLanguage::English,  { "INGLESE", "" } },
+            { EVoiceLanguage::Japanese, { "GIAPPONESE", "" } }
+        }
+    },
+};
+
 CONFIG_DEFINE_LOCALE(Hints)
 {
     { ELanguage::English, { "Hints", "Show hint rings in stages." } }
@@ -97,14 +143,25 @@ CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
     }
 };
 
-CONFIG_DEFINE_LOCALE(InvertCameraX)
+CONFIG_DEFINE_LOCALE(HorizontalCamera)
 {
-    { ELanguage::English, { "Invert Camera X", "Toggle between inverted left and right camera movement." } }
+    { ELanguage::English, { "Horizontal Camera", "Change how the camera moves left and right." } }
 };
 
-CONFIG_DEFINE_LOCALE(InvertCameraY)
+CONFIG_DEFINE_LOCALE(VerticalCamera)
 {
-    { ELanguage::English, { "Invert Camera Y", "Toggle between inverted up and down camera movement." } }
+    { ELanguage::English, { "Vertical Camera", "Change how the camera moves up and down." } }
+};
+
+CONFIG_DEFINE_ENUM_LOCALE(ECameraRotationMode)
+{
+    {
+        ELanguage::English,
+        {
+            { ECameraRotationMode::Normal,  { "NORMAL", "" } },
+            { ECameraRotationMode::Reverse, { "REVERSE", "" } }
+        }
+    }
 };
 
 CONFIG_DEFINE_LOCALE(Vibration)
@@ -156,17 +213,6 @@ CONFIG_DEFINE_ENUM_LOCALE(EChannelConfiguration)
 CONFIG_DEFINE_LOCALE(VoiceLanguage)
 {
     { ELanguage::English, { "Voice Language", "Change the language used for character voices." } }
-};
-
-CONFIG_DEFINE_ENUM_LOCALE(EVoiceLanguage)
-{
-    {
-        ELanguage::English,
-        {
-            { EVoiceLanguage::English,  { "ENGLISH", "" } },
-            { EVoiceLanguage::Japanese, { "日本語", "" } }
-        }
-    }
 };
 
 CONFIG_DEFINE_LOCALE(Subtitles)

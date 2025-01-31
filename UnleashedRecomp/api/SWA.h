@@ -62,6 +62,7 @@
 #include "SWA/Camera/Camera.h"
 #include "SWA/Camera/CameraController.h"
 #include "SWA/CharacterUtility/CharacterProxy.h"
+#include "SWA/Globals.h"
 #include "SWA/HUD/GeneralWindow/GeneralWindow.h"
 #include "SWA/HUD/Loading/Loading.h"
 #include "SWA/HUD/Pause/HudPause.h"

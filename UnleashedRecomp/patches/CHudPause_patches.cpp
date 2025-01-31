@@ -161,9 +161,7 @@ PPC_FUNC(sub_824B0930)
     {
         g_achievementMenuIntroTime = 0;
 
-        const auto ms_IsRenderHud = (bool*)g_memory.Translate(0x8328BB26);
-
-        if (*ms_IsRenderHud && pHudPause->m_IsShown && !pHudPause->m_Submenu && pHudPause->m_Transition == SWA::eTransitionType_Undefined)
+        if (*SWA::SGlobals::ms_IsRenderHud && pHudPause->m_IsShown && !pHudPause->m_Submenu && pHudPause->m_Transition == SWA::eTransitionType_Undefined)
         {
             ButtonGuide::Open(Button(Localise("Achievements_Name"), EButtonIcon::Back, EButtonAlignment::Left, EFontQuality::Low));
             g_isClosed = false;
