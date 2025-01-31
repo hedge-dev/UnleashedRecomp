@@ -15,11 +15,16 @@
 #include <user/registry.h>
 #include <kernel/xdbf.h>
 #include <install/installer.h>
+#include <install/update_checker.h>
 #include <os/logger.h>
 #include <os/process.h>
 #include <os/registry.h>
 #include <ui/installer_wizard.h>
 #include <mod/mod_loader.h>
+
+#ifdef _WIN32
+#include <timeapi.h>
+#endif
 
 const size_t XMAIOBegin = 0x7FEA0000;
 const size_t XMAIOEnd = XMAIOBegin + 0x0000FFFF;
@@ -171,6 +176,18 @@ int main(int argc, char *argv[])
     }
 
     Config::Load();
+
+    // Check the time since the last time an update was checked. Store the new time if the difference is more than six hours.
+    constexpr double TimeBetweenUpdateChecksInSeconds = 6 * 60 * 60;
+    time_t timeNow = std::time(nullptr);
+    double timeDifferenceSeconds = difftime(timeNow, Config::LastChecked);
+    if (timeDifferenceSeconds > TimeBetweenUpdateChecksInSeconds)
+    {
+        UpdateChecker::initialize();
+        UpdateChecker::start();
+        Config::LastChecked = timeNow;
+        Config::Save();
+    }
 
     if (Config::ShowConsole)
         os::process::ShowConsole();

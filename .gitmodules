@@ -61,3 +61,12 @@
 [submodule "thirdparty/implot"]
 	path = thirdparty/implot
 	url = https://github.com/epezent/implot.git
+[submodule "thirdparty/json"]
+	path = thirdparty/json
+	url = https://github.com/nlohmann/json
+[submodule "thirdparty/cpp-httplib"]
+	path = thirdparty/cpp-httplib
+	url = https://github.com/yhirose/cpp-httplib
+[submodule "thirdparty/curl"]
+	path = thirdparty/curl
+	url = https://github.com/curl/curl

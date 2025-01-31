@@ -10,6 +10,7 @@
             "platform": "windows"
         },
         "directx-dxc",
-        "freetype"
+        "freetype",
+        "curl"
     ]
 }
