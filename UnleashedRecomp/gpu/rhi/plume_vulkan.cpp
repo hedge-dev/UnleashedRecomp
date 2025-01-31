@@ -705,6 +705,21 @@ namespace plume {
         }
     }
 
+    static RenderDeviceType toDeviceType(VkPhysicalDeviceType type) {
+        switch (type) {
+        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+            return RenderDeviceType::INTEGRATED;
+        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+            return RenderDeviceType::DISCRETE;
+        case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+            return RenderDeviceType::VIRTUAL;
+        case VK_PHYSICAL_DEVICE_TYPE_CPU:
+            return RenderDeviceType::CPU;
+        default:
+            return RenderDeviceType::UNKNOWN;
+        }
+    }
+
     static void setObjectName(VkDevice device, VkDebugReportObjectTypeEXT objectType, uint64_t object, const std::string &name) {
 #   ifdef VULKAN_OBJECT_NAMES_ENABLED
         VkDebugMarkerObjectNameInfoEXT nameInfo = {};
@@ -3496,6 +3511,7 @@ namespace plume {
             if (preferOption) {
                 physicalDevice = physicalDevices[i];
                 description.name = std::string(deviceProperties.deviceName);
+                description.type = toDeviceType(deviceProperties.deviceType);
                 description.driverVersion = deviceProperties.driverVersion;
                 currentDeviceTypeScore = deviceTypeScore;
             }

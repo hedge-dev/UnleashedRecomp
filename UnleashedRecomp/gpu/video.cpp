@@ -1480,6 +1480,29 @@ static void BeginCommandList()
     commandList->setGraphicsDescriptorSet(g_samplerDescriptorSet.get(), 3);
 }
 
+template<typename T>
+static void ApplyLowEndDefault(ConfigDef<T> &configDef, T newDefault, bool &changed)
+{
+    if (configDef.IsDefaultValue() && !configDef.IsLoadedFromConfig)
+    {
+        configDef = newDefault;
+        changed = true;
+    }
+}
+
+static void ApplyLowEndDefaults()
+{
+    bool changed = false;
+
+    ApplyLowEndDefault(Config::AntiAliasing, EAntiAliasing::MSAA2x, changed);
+    ApplyLowEndDefault(Config::ShadowResolution, EShadowResolution::Original, changed);
+    ApplyLowEndDefault(Config::TransparencyAntiAliasing, false, changed);
+
+    if (changed) {
+        Config::Save();
+    }
+}
+
 bool Video::CreateHostDevice(const char *sdlVideoDriver)
 {
     for (uint32_t i = 0; i < 16; i++)
@@ -1528,6 +1551,16 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     }
 
     LoadEmbeddedResources();
+
+    constexpr uint64_t LowEndMemoryLimit = 2048ULL * 1024ULL * 1024ULL;
+    RenderDeviceDescription deviceDescription = g_device->getDescription();
+    bool lowEndType = deviceDescription.type != RenderDeviceType::UNKNOWN && deviceDescription.type != RenderDeviceType::DISCRETE;
+    bool lowEndMemory = deviceDescription.dedicatedVideoMemory < LowEndMemoryLimit;
+    if (lowEndType || lowEndMemory)
+    {
+        // Switch to low end defaults if a non-discrete GPU was detected or a low amount of VRAM was detected.
+        ApplyLowEndDefaults();
+    }
 
     g_capabilities = g_device->getCapabilities();
 

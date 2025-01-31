@@ -475,6 +475,14 @@ namespace plume {
 
     typedef uint32_t RenderSampleCounts;
 
+    enum class RenderDeviceType {
+        UNKNOWN,
+        INTEGRATED,
+        DISCRETE,
+        VIRTUAL,
+        CPU
+    };
+
     // Global functions.
 
     constexpr uint32_t RenderFormatSize(RenderFormat format) {
@@ -1754,6 +1762,7 @@ namespace plume {
 
     struct RenderDeviceDescription {
         std::string name = "Unknown";
+        RenderDeviceType type = RenderDeviceType::UNKNOWN;
         uint32_t driverVersion = 0;
         uint64_t dedicatedVideoMemory = 0;
     };
