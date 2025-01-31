@@ -12,7 +12,7 @@
 class GameWindow
 {
 public:
-    static inline SDL_Window* s_pWindow;
+    static inline SDL_Window* s_pWindow = nullptr;
     static inline plume::RenderWindow s_renderWindow;
 
     static inline int s_x;

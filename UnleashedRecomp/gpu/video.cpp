@@ -95,6 +95,14 @@ namespace plume
 #else
     extern std::unique_ptr<RenderInterface> CreateVulkanInterface();
 #endif
+
+    static std::unique_ptr<RenderInterface> CreateVulkanInterfaceWrapper() {
+#ifdef SDL_VULKAN_ENABLED
+        return CreateVulkanInterface(GameWindow::s_renderWindow);
+#else
+        return CreateVulkanInterface();
+#endif
+    }
 }
 
 #pragma pack(push, 1)
@@ -1472,7 +1480,7 @@ static void BeginCommandList()
     commandList->setGraphicsDescriptorSet(g_samplerDescriptorSet.get(), 3);
 }
 
-void Video::CreateHostDevice(const char *sdlVideoDriver)
+bool Video::CreateHostDevice(const char *sdlVideoDriver)
 {
     for (uint32_t i = 0; i < 16; i++)
         g_inputSlots[i].index = i;
@@ -1487,20 +1495,39 @@ void Video::CreateHostDevice(const char *sdlVideoDriver)
     g_vulkan = DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan;
 #endif
 
-    LoadEmbeddedResources();
+    // Attempt to create the possible backends using a vector of function pointers. Whichever succeeds first will be the chosen API.
+    using RenderInterfaceFunction = std::unique_ptr<RenderInterface>(void);
+    std::vector<RenderInterfaceFunction *> interfaceFunctions;
 
-    if (g_vulkan)
-#ifdef SDL_VULKAN_ENABLED
-        g_interface = CreateVulkanInterface(GameWindow::s_renderWindow);
-#else
-        g_interface = CreateVulkanInterface();
-#endif
 #ifdef UNLEASHED_RECOMP_D3D12
-    else
-        g_interface = CreateD3D12Interface();
+    interfaceFunctions.push_back(g_vulkan ? CreateVulkanInterfaceWrapper : CreateD3D12Interface);
+    interfaceFunctions.push_back(g_vulkan ? CreateD3D12Interface : CreateVulkanInterfaceWrapper);
+#else
+    interfaceFunctions.push_back(CreateVulkanInterfaceWrapper);
 #endif
 
-    g_device = g_interface->createDevice();
+    for (RenderInterfaceFunction *interfaceFunction : interfaceFunctions)
+    {
+        g_interface = interfaceFunction();
+        if (g_interface != nullptr)
+        {
+            g_device = g_interface->createDevice();
+            if (g_device != nullptr)
+            {
+#ifdef UNLEASHED_RECOMP_D3D12
+                g_vulkan = (interfaceFunction == CreateVulkanInterfaceWrapper);
+#endif
+                break;
+            }
+        }
+    }
+
+    if (g_device == nullptr)
+    {
+        return false;
+    }
+
+    LoadEmbeddedResources();
 
     g_capabilities = g_device->getCapabilities();
 
@@ -1712,6 +1739,8 @@ void Video::CreateHostDevice(const char *sdlVideoDriver)
         blankTextureBarriers[i] = RenderTextureBarrier(g_blankTextures[i].get(), RenderTextureLayout::SHADER_READ);
 
     g_commandLists[g_frame]->barriers(RenderBarrierStage::NONE, blankTextureBarriers, std::size(blankTextureBarriers));
+
+    return true;
 }
 
 void Video::WaitForGPU()
@@ -2067,6 +2096,10 @@ static void DrawProfiler()
         ImGui::Text("Present Wait: %s", g_capabilities.presentWait ? "Supported" : "Unsupported");
         ImGui::Text("Triangle Fan: %s", g_capabilities.triangleFan ? "Supported" : "Unsupported");
         ImGui::NewLine();
+
+        ImGui::Text("API: %s", g_vulkan ? "Vulkan" : "D3D12");
+        ImGui::Text("Device: %s", g_device->getDescription().name.c_str());
+        ImGui::Text("VRAM: %.2f MiB", (double)(g_device->getDescription().dedicatedVideoMemory) / (1024.0 * 1024.0));
 
         const char* sdlVideoDriver = SDL_GetCurrentVideoDriver();
         if (sdlVideoDriver != nullptr)
