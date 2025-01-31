@@ -6061,9 +6061,7 @@ static void CompileParticleMaterialPipeline(const Hedgehog::Sparkle::CParticleMa
     }
 }
 
-#ifdef _DEBUG
 static std::thread::id g_mainThreadId = std::this_thread::get_id();
-#endif
 
 // SWA::CGameModeStage::ExitLoading
 PPC_FUNC_IMPL(__imp__sub_825369A0);
