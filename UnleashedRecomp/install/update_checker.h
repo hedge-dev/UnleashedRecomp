@@ -2,7 +2,7 @@
 
 struct UpdateChecker
 {
-    enum Result
+    enum class Result
     {
         NotStarted,
         InProgress,

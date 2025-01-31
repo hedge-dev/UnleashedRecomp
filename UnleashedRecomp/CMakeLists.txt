@@ -164,6 +164,7 @@ set(UNLEASHED_RECOMP_INSTALL_CXX_SOURCES
     "install/installer.cpp"
     "install/iso_file_system.cpp"
     "install/memory_mapped_file.cpp"
+    "install/update_checker.cpp"
     "install/xcontent_file_system.cpp"
     "install/xex_patcher.cpp"
     "install/hashes/apotos_shamar.cpp"

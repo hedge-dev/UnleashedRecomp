@@ -19,7 +19,7 @@ static const char *USER_AGENT = "UnleashedRecomp-Agent";
 
 static std::atomic<bool> g_updateCheckerInProgress = false;
 static std::atomic<bool> g_updateCheckerFinished = false;
-static UpdateChecker::Result g_updateCheckerResult = UpdateChecker::NotStarted;
+static UpdateChecker::Result g_updateCheckerResult = UpdateChecker::Result::NotStarted;
 
 size_t updateCheckerWriteCallback(void *contents, size_t size, size_t nmemb, std::string *output)
 {
@@ -130,7 +130,6 @@ bool UpdateChecker::start()
 
     g_updateCheckerInProgress = true;
     g_updateCheckerFinished = false;
-    g_updateCheckerResult = InProgress;
     std::thread thread(&updateCheckerThread);
     thread.detach();
 
@@ -145,11 +144,11 @@ UpdateChecker::Result UpdateChecker::check()
     }
     else if (g_updateCheckerInProgress)
     {
-        return UpdateChecker::InProgress;
+        return UpdateChecker::Result::InProgress;
     }
     else
     {
-        return UpdateChecker::NotStarted;
+        return UpdateChecker::Result::NotStarted;
     }
 }
 
