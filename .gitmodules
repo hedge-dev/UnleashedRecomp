@@ -64,6 +64,3 @@
 [submodule "thirdparty/json"]
 	path = thirdparty/json
 	url = https://github.com/nlohmann/json
-[submodule "thirdparty/curl"]
-	path = thirdparty/curl
-	url = https://github.com/curl/curl
