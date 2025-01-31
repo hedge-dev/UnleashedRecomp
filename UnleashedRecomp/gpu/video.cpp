@@ -2149,6 +2149,7 @@ static void DrawProfiler()
 
         ImGui::Text("Present Wait: %s", g_capabilities.presentWait ? "Supported" : "Unsupported");
         ImGui::Text("Triangle Fan: %s", g_capabilities.triangleFan ? "Supported" : "Unsupported");
+        ImGui::Text("Dynamic Depth Bias: %s", g_capabilities.dynamicDepthBias ? "Supported" : "Unsupported");
         ImGui::NewLine();
 
         ImGui::Text("API: %s", g_vulkan ? "Vulkan" : "D3D12");
