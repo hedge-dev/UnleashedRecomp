@@ -18,6 +18,7 @@
 #include <os/logger.h>
 #include <os/process.h>
 #include <os/registry.h>
+#include <ui/game_window.h>
 #include <ui/installer_wizard.h>
 #include <mod/mod_loader.h>
 
@@ -182,7 +183,11 @@ int main(int argc, char *argv[])
     bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
     if (runInstallerWizard)
     {
-        Video::CreateHostDevice(sdlVideoDriver);
+        if (!Video::CreateHostDevice(sdlVideoDriver))
+        {
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
+            return 1;
+        }
 
         if (!InstallerWizard::Run(GAME_INSTALL_DIRECTORY, isGameInstalled && forceDLCInstaller))
         {
@@ -197,7 +202,13 @@ int main(int argc, char *argv[])
     uint32_t entry = LdrLoadModule(modulePath);
 
     if (!runInstallerWizard)
-        Video::CreateHostDevice(sdlVideoDriver);
+    {
+        if (!Video::CreateHostDevice(sdlVideoDriver))
+        {
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
+            return 1;
+        }
+    }
 
     Video::StartPipelinePrecompilation();
 

@@ -378,6 +378,12 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         }
     },
     {
+        "Video_BackendError",
+        {
+            { ELanguage::English, "Unable to create a D3D12 (Windows) or Vulkan backend.\n\nPlease make sure that:\n\n- Your system meets the minimum requirements.\n- Your GPU drivers are up to date.\n- Your operating system is on the latest version available." },
+        }
+    },
+    {
         "Common_On",
         {
             { ELanguage::English,  "ON" },
