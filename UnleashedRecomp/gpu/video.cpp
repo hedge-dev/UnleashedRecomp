@@ -1499,7 +1499,8 @@ static void ApplyLowEndDefaults()
     ApplyLowEndDefault(Config::TransparencyAntiAliasing, false, changed);
     ApplyLowEndDefault(Config::GITextureFiltering, EGITextureFiltering::Bilinear, changed);
 
-    if (changed) {
+    if (changed) 
+    {
         Config::Save();
     }
 }
@@ -1550,6 +1551,8 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     {
         return false;
     }
+    
+    g_capabilities = g_device->getCapabilities();
 
     LoadEmbeddedResources();
 
@@ -1557,13 +1560,13 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     RenderDeviceDescription deviceDescription = g_device->getDescription();
     bool lowEndType = deviceDescription.type != RenderDeviceType::UNKNOWN && deviceDescription.type != RenderDeviceType::DISCRETE;
     bool lowEndMemory = deviceDescription.dedicatedVideoMemory < LowEndMemoryLimit;
-    if (lowEndType || lowEndMemory)
+    bool lowEndUMA = deviceDescription.type == RenderDeviceType::UNKNOWN && g_capabilities.uma;
+    if (lowEndType || lowEndMemory || lowEndUMA)
     {
         // Switch to low end defaults if a non-discrete GPU was detected or a low amount of VRAM was detected.
+        // Checking for UMA on D3D12 seems to be a reliable way to detect integrated GPUs.
         ApplyLowEndDefaults();
     }
-
-    g_capabilities = g_device->getCapabilities();
 
     g_queue = g_device->createCommandQueue(RenderCommandListType::DIRECT);
 

@@ -1789,6 +1789,9 @@ namespace plume {
         // Draw.
         bool triangleFan = false;
         bool dynamicDepthBias = false;
+
+        // UMA.
+        bool uma = false;
     };
 
     struct RenderInterfaceCapabilities {

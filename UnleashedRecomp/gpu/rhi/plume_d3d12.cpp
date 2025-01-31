@@ -3324,6 +3324,14 @@ namespace plume {
                 dynamicDepthBiasOption = d3d12Options16.DynamicDepthBiasSupported;
             }
 
+            // Check if the architecture has UMA.
+            bool uma = false;
+            D3D12_FEATURE_DATA_ARCHITECTURE1 architecture1 = {};
+            res = deviceOption->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &architecture1, sizeof(architecture1));
+            if (SUCCEEDED(res)) {
+                uma = architecture1.UMA;
+            }
+
             // Pick this adapter and device if it has better feature support than the current one.
             bool preferOverNothing = (adapter == nullptr) || (d3d == nullptr);
             bool preferVideoMemory = adapterDesc.DedicatedVideoMemory > description.dedicatedVideoMemory;
@@ -3346,6 +3354,7 @@ namespace plume {
                 capabilities.sampleLocations = samplePositionsOption;
                 capabilities.triangleFan = triangleFanSupportOption;
                 capabilities.dynamicDepthBias = dynamicDepthBiasOption;
+                capabilities.uma = uma;
                 description.name = Utf16ToUtf8(adapterDesc.Description);
                 description.dedicatedVideoMemory = adapterDesc.DedicatedVideoMemory;
 
