@@ -160,6 +160,7 @@ static PipelineState g_pipelineState;
 static int32_t g_depthBias;
 static float g_slopeScaledDepthBias;
 static SharedConstants g_sharedConstants;
+static GuestTexture* g_textures[16];
 static RenderSamplerDesc g_samplerDescs[16];
 static bool g_scissorTestEnable = false;
 static RenderRect g_scissorRect;
@@ -681,6 +682,9 @@ enum class CsdFilterState
 
 static CsdFilterState g_csdFilterState;
 
+static ankerl::unordered_dense::set<GuestSurface*> g_pendingSurfaceCopies;
+static ankerl::unordered_dense::set<GuestSurface*> g_pendingMsaaResolves;
+
 enum class RenderCommandType
 {
     SetRenderState,
@@ -694,6 +698,7 @@ enum class RenderCommandType
     StretchRect,
     SetRenderTarget,
     SetDepthStencilSurface,
+    ExecutePendingStretchRectCommands,
     Clear,
     SetViewport,
     SetTexture,
@@ -710,7 +715,7 @@ enum class RenderCommandType
     SetVertexShader,
     SetStreamSource,
     SetIndices,
-    SetPixelShader
+    SetPixelShader,
 };
 
 struct RenderCommand
@@ -1464,6 +1469,8 @@ static void BeginCommandList()
         g_sharedConstants.texture3DIndices[i] = TEXTURE_DESCRIPTOR_NULL_TEXTURE_3D;
         g_sharedConstants.textureCubeIndices[i] = TEXTURE_DESCRIPTOR_NULL_TEXTURE_CUBE;
     }
+
+    memset(g_textures, 0, sizeof(g_textures));
 
     if (Config::GITextureFiltering == EGITextureFiltering::Bicubic)
         g_pipelineState.specConstants |= SPEC_CONSTANT_BICUBIC_GI_FILTER;
@@ -2409,9 +2416,12 @@ static std::atomic<bool> g_executedCommandList;
 
 void Video::Present() 
 {
+    RenderCommand cmd;
+    cmd.type = RenderCommandType::ExecutePendingStretchRectCommands;
+    g_renderQueue.enqueue(cmd);
+
     DrawImGui();
 
-    RenderCommand cmd;
     cmd.type = RenderCommandType::ExecuteCommandList;
     g_renderQueue.enqueue(cmd);
 
@@ -2496,8 +2506,52 @@ static void SetRootDescriptor(const UploadAllocation& allocation, size_t index)
         commandList->setGraphicsRootDescriptor(allocation.buffer->at(allocation.offset), index);
 }
 
-static void ProcExecuteCommandList(const RenderCommand& cmd)
+static bool PopulateBarriersForStretchRect(GuestSurface* renderTarget, GuestSurface* depthStencil)
 {
+    bool addedAny = false;
+
+    for (const auto surface : { renderTarget, depthStencil })
+    {
+        if (surface != nullptr && !surface->destinationTextures.empty())
+        {
+            const bool multiSampling = surface->sampleCount != RenderSampleCount::COUNT_1;
+
+            RenderTextureLayout srcLayout;
+            RenderTextureLayout dstLayout;
+
+            if (multiSampling)
+            {
+                if (surface == depthStencil)
+                {
+                    srcLayout = RenderTextureLayout::SHADER_READ;
+                    dstLayout = RenderTextureLayout::DEPTH_WRITE;
+                }
+                else
+                {
+                    srcLayout = RenderTextureLayout::RESOLVE_SOURCE;
+                    dstLayout = RenderTextureLayout::RESOLVE_DEST;
+                }
+            }
+            else
+            {
+                srcLayout = RenderTextureLayout::COPY_SOURCE;
+                dstLayout = RenderTextureLayout::COPY_DEST;
+            }
+
+            AddBarrier(surface, srcLayout);
+
+            for (const auto texture : surface->destinationTextures)
+                AddBarrier(texture, dstLayout);
+
+            addedAny = true;
+        }
+    }
+
+    return addedAny;
+}
+
+static void ProcExecuteCommandList(const RenderCommand& cmd)
+{    
     if (g_swapChainValid)
     {
         auto swapChainTexture = g_swapChain->getTexture(g_backBufferIndex);
@@ -2795,16 +2849,13 @@ static GuestSurface* CreateSurface(uint32_t width, uint32_t height, uint32_t for
     surface->guestFormat = format;
     surface->sampleCount = desc.multisampling.sampleCount;
 
-    if (desc.multisampling.sampleCount != RenderSampleCount::COUNT_1 && desc.format == RenderFormat::D32_FLOAT)
-    {
-        RenderTextureViewDesc viewDesc;
-        viewDesc.dimension = RenderTextureViewDimension::TEXTURE_2D;
-        viewDesc.format = RenderFormat::D32_FLOAT;
-        viewDesc.mipLevels = 1;
-        surface->textureView = surface->textureHolder->createTextureView(viewDesc);
-        surface->descriptorIndex = g_textureDescriptorAllocator.allocate();
-        g_textureDescriptorSet->setTexture(surface->descriptorIndex, surface->textureHolder.get(), RenderTextureLayout::SHADER_READ, surface->textureView.get());
-    }
+    RenderTextureViewDesc viewDesc;
+    viewDesc.dimension = RenderTextureViewDimension::TEXTURE_2D;
+    viewDesc.format = desc.format;
+    viewDesc.mipLevels = 1;
+    surface->textureView = surface->textureHolder->createTextureView(viewDesc);
+    surface->descriptorIndex = g_textureDescriptorAllocator.allocate();
+    g_textureDescriptorSet->setTexture(surface->descriptorIndex, surface->textureHolder.get(), RenderTextureLayout::SHADER_READ, surface->textureView.get());
 
 #ifdef _DEBUG 
     surface->texture->setName(fmt::format("{} {:X}", desc.flags & RenderTextureFlag::RENDER_TARGET ? "Render Target" : "Depth Stencil", g_memory.MapVirtual(surface)));
@@ -2864,105 +2915,44 @@ static void StretchRect(GuestDevice* device, uint32_t flags, uint32_t, GuestText
     g_renderQueue.enqueue(cmd);
 }
 
+static void SetTextureInRenderThread(uint32_t index, GuestTexture* texture);
+
+static void SetSurface(uint32_t index, GuestSurface* surface);
+
 static void ProcStretchRect(const RenderCommand& cmd)
 {
     const auto& args = cmd.stretchRect;
 
     const bool isDepthStencil = (args.flags & 0x4) != 0;
     const auto surface = isDepthStencil ? g_depthStencil : g_renderTarget;
-    const bool multiSampling = surface->sampleCount != RenderSampleCount::COUNT_1;
 
-    RenderTextureLayout srcLayout;
-    RenderTextureLayout dstLayout;
+    // Erase previous pending command so it doesn't cause the texture to be overriden.
+    if (args.texture->sourceSurface != nullptr)
+        args.texture->sourceSurface->destinationTextures.erase(args.texture);
 
-    if (multiSampling)
+    args.texture->sourceSurface = surface;
+    surface->destinationTextures.emplace(args.texture);
+
+    // If the texture is assigned to any slots, set it again. This'll also push the barrier.
+    for (uint32_t i = 0; i < std::size(g_textures); i++)
     {
-        if (isDepthStencil)
+        if (g_textures[i] == args.texture)
         {
-            srcLayout = RenderTextureLayout::SHADER_READ;
-            dstLayout = RenderTextureLayout::DEPTH_WRITE;
-        }
-        else
-        {
-            srcLayout = RenderTextureLayout::RESOLVE_SOURCE;
-            dstLayout = RenderTextureLayout::RESOLVE_DEST;
-        }
-    }
-    else
-    {
-        srcLayout = RenderTextureLayout::COPY_SOURCE;
-        dstLayout = RenderTextureLayout::COPY_DEST;
-    }
-
-    AddBarrier(surface, srcLayout);
-    AddBarrier(args.texture, dstLayout);
-    FlushBarriers();
-
-    auto& commandList = g_commandLists[g_frame];
-    if (multiSampling)
-    {
-        if (isDepthStencil)
-        {
-            uint32_t pipelineIndex = 0;
-
-            switch (g_depthStencil->sampleCount)
+            // Set the original texture for MSAA textures as they always get resolved.
+            if (surface->sampleCount != RenderSampleCount::COUNT_1)
             {
-            case RenderSampleCount::COUNT_2:
-                pipelineIndex = 0;
-                break;
-            case RenderSampleCount::COUNT_4:
-                pipelineIndex = 1;
-                break;
-            case RenderSampleCount::COUNT_8:
-                pipelineIndex = 2;
-                break;
-            default:
-                assert(false && "Unsupported MSAA sample count");
-                break;
+                SetTextureInRenderThread(i, args.texture);
+                g_pendingMsaaResolves.emplace(surface);
             }
-
-            if (args.texture->framebuffer == nullptr)
+            else
             {
-                RenderFramebufferDesc desc;
-                desc.depthAttachment = args.texture->texture;
-                args.texture->framebuffer = g_device->createFramebuffer(desc);
+                SetSurface(i, surface);
             }
-
-            if (g_framebuffer != args.texture->framebuffer.get())
-            {
-                commandList->setFramebuffer(args.texture->framebuffer.get());
-                g_framebuffer = args.texture->framebuffer.get();
-            }
-
-            bool oldHalfPixel = SetHalfPixel(false);
-            FlushViewport();
-
-            commandList->setPipeline(g_resolveMsaaDepthPipelines[pipelineIndex].get());
-            commandList->setGraphicsPushConstants(0, &g_depthStencil->descriptorIndex, 0, sizeof(uint32_t));
-            commandList->drawInstanced(6, 1, 0, 0);
-
-            g_dirtyStates.renderTargetAndDepthStencil = true;
-            g_dirtyStates.pipelineState = true;
-
-            if (g_vulkan)
-            {
-                g_dirtyStates.depthBias = true; // Static depth bias in MSAA pipeline invalidates dynamic depth bias.
-                g_dirtyStates.vertexShaderConstants = true;
-            }
-
-            SetHalfPixel(oldHalfPixel);
-        }
-        else
-        {
-            commandList->resolveTexture(args.texture->texture, surface->texture);
         }
     }
-    else
-    {
-        commandList->copyTexture(args.texture->texture, surface->texture);
-    }
 
-    AddBarrier(args.texture, RenderTextureLayout::SHADER_READ);
+    // Remember to clear later.
+    g_pendingSurfaceCopies.emplace(surface);
 }
 
 static void SetDefaultViewport(GuestDevice* device, GuestSurface* surface)
@@ -3026,6 +3016,121 @@ static void ProcSetDepthStencilSurface(const RenderCommand& cmd)
 
     SetDirtyValue(g_dirtyStates.renderTargetAndDepthStencil, g_depthStencil, args.depthStencil);
     SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.depthStencilFormat, args.depthStencil != nullptr ? args.depthStencil->format : RenderFormat::UNKNOWN);
+}
+
+static void ExecutePendingStretchRectCommands(GuestSurface* renderTarget, GuestSurface* depthStencil)
+{
+    auto& commandList = g_commandLists[g_frame];
+
+    for (const auto surface : { renderTarget, depthStencil })
+    {
+        if (surface != nullptr && !surface->destinationTextures.empty())
+        {
+            const bool multiSampling = surface->sampleCount != RenderSampleCount::COUNT_1;
+
+            for (const auto texture : surface->destinationTextures)
+            {
+                if (multiSampling)
+                {
+                    if (surface == depthStencil)
+                    {
+                        uint32_t pipelineIndex = 0;
+
+                        switch (surface->sampleCount)
+                        {
+                        case RenderSampleCount::COUNT_2:
+                            pipelineIndex = 0;
+                            break;
+                        case RenderSampleCount::COUNT_4:
+                            pipelineIndex = 1;
+                            break;
+                        case RenderSampleCount::COUNT_8:
+                            pipelineIndex = 2;
+                            break;
+                        default:
+                            assert(false && "Unsupported MSAA sample count");
+                            break;
+                        }
+
+                        if (texture->framebuffer == nullptr)
+                        {
+                            RenderFramebufferDesc desc;
+                            desc.depthAttachment = texture->texture;
+                            texture->framebuffer = g_device->createFramebuffer(desc);
+                        }
+
+                        if (g_framebuffer != texture->framebuffer.get())
+                        {
+                            commandList->setFramebuffer(texture->framebuffer.get());
+                            g_framebuffer = texture->framebuffer.get();
+                        }
+
+                        bool oldHalfPixel = SetHalfPixel(false);
+                        FlushViewport();
+
+                        commandList->setPipeline(g_resolveMsaaDepthPipelines[pipelineIndex].get());
+                        commandList->setGraphicsPushConstants(0, &surface->descriptorIndex, 0, sizeof(uint32_t));
+                        commandList->drawInstanced(6, 1, 0, 0);
+
+                        g_dirtyStates.renderTargetAndDepthStencil = true;
+                        g_dirtyStates.pipelineState = true;
+
+                        if (g_vulkan)
+                        {
+                            g_dirtyStates.depthBias = true; // Static depth bias in MSAA pipeline invalidates dynamic depth bias.
+                            g_dirtyStates.vertexShaderConstants = true;
+                        }
+
+                        SetHalfPixel(oldHalfPixel);
+                    }
+                    else
+                    {
+                        commandList->resolveTexture(texture->texture, surface->texture);
+                    }
+                }
+                else
+                {
+                    commandList->copyTexture(texture->texture, surface->texture);
+                }
+
+                texture->sourceSurface = nullptr;
+
+                // Check if any texture slots had this texture assigned, and make it point back at the original texture.
+                for (uint32_t i = 0; i < std::size(g_textures); i++)
+                {
+                    if (g_textures[i] == texture)
+                        SetTextureInRenderThread(i, texture);
+                }
+            }
+
+            surface->destinationTextures.clear();
+        }
+    }
+}
+
+static void ProcExecutePendingStretchRectCommands(const RenderCommand& cmd)
+{
+    bool foundAny = false;
+
+    for (const auto surface : g_pendingSurfaceCopies)
+    {
+        bool isDepthStencil = (surface->format == RenderFormat::D32_FLOAT);
+        foundAny |= PopulateBarriersForStretchRect(isDepthStencil ? nullptr : surface, isDepthStencil ? surface : nullptr);
+    }
+
+    if (foundAny)
+    {
+        FlushBarriers();
+
+        for (const auto surface : g_pendingSurfaceCopies)
+        {
+            bool isDepthStencil = (surface->format == RenderFormat::D32_FLOAT);
+            ExecutePendingStretchRectCommands(isDepthStencil ? nullptr : surface, isDepthStencil ? surface : nullptr);
+        }
+    }
+
+    g_pendingSurfaceCopies.clear();
+    g_pendingMsaaResolves.clear();
 }
 
 static void SetFramebuffer(GuestSurface* renderTarget, GuestSurface* depthStencil, bool settingForClear)
@@ -3105,6 +3210,12 @@ static void Clear(GuestDevice* device, uint32_t flags, uint32_t, be<float>* colo
 static void ProcClear(const RenderCommand& cmd)
 {
     const auto& args = cmd.clear;
+
+    if (PopulateBarriersForStretchRect(g_renderTarget, g_depthStencil))
+    {
+        FlushBarriers();
+        ExecutePendingStretchRectCommands(g_renderTarget, g_depthStencil);
+    }
 
     AddBarrier(g_renderTarget, RenderTextureLayout::COLOR_WRITE);
     AddBarrier(g_depthStencil, RenderTextureLayout::DEPTH_WRITE);
@@ -3194,22 +3305,55 @@ static void SetTexture(GuestDevice* device, uint32_t index, GuestTexture* textur
     g_renderQueue.enqueue(cmd);
 }
 
+static void SetTextureInRenderThread(uint32_t index, GuestTexture* texture)
+{
+    AddBarrier(texture, RenderTextureLayout::SHADER_READ);
+
+    auto viewDimension = texture != nullptr ? texture->viewDimension : RenderTextureViewDimension::UNKNOWN;
+
+    SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.texture2DIndices[index],
+        viewDimension == RenderTextureViewDimension::TEXTURE_2D ? texture->descriptorIndex : TEXTURE_DESCRIPTOR_NULL_TEXTURE_2D);
+
+    SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.texture3DIndices[index], texture != nullptr &&
+        viewDimension == RenderTextureViewDimension::TEXTURE_3D ? texture->descriptorIndex : TEXTURE_DESCRIPTOR_NULL_TEXTURE_3D);
+
+    SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.textureCubeIndices[index], texture != nullptr &&
+        viewDimension == RenderTextureViewDimension::TEXTURE_CUBE ? texture->descriptorIndex : TEXTURE_DESCRIPTOR_NULL_TEXTURE_CUBE);
+}
+
+static void SetSurface(uint32_t index, GuestSurface* surface)
+{
+    AddBarrier(surface, RenderTextureLayout::SHADER_READ);
+
+    SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.texture2DIndices[index], surface->descriptorIndex);
+    SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.texture3DIndices[index], uint32_t(TEXTURE_DESCRIPTOR_NULL_TEXTURE_3D));
+    SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.textureCubeIndices[index], uint32_t(TEXTURE_DESCRIPTOR_NULL_TEXTURE_CUBE));
+}
+
 static void ProcSetTexture(const RenderCommand& cmd)
 {
     const auto& args = cmd.setTexture;
 
-    AddBarrier(args.texture, RenderTextureLayout::SHADER_READ);
-
-    auto viewDimension = args.texture != nullptr ? args.texture->viewDimension : RenderTextureViewDimension::UNKNOWN;
-
-    SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.texture2DIndices[args.index],
-        viewDimension == RenderTextureViewDimension::TEXTURE_2D ? args.texture->descriptorIndex : TEXTURE_DESCRIPTOR_NULL_TEXTURE_2D);
-
-    SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.texture3DIndices[args.index], args.texture != nullptr &&
-        viewDimension == RenderTextureViewDimension::TEXTURE_3D ? args.texture->descriptorIndex : TEXTURE_DESCRIPTOR_NULL_TEXTURE_3D); 
+    // If a pending copy operation is detected, set the source surface. The indices will be fixed later if flushing is necessary.
+    bool shouldSetTexture = true;
+    if (args.texture != nullptr && args.texture->sourceSurface != nullptr)
+    {
+        // MSAA surfaces need to be resolved and cannot be used directly.
+        if (args.texture->sourceSurface->sampleCount != RenderSampleCount::COUNT_1)
+        {
+            g_pendingMsaaResolves.emplace(args.texture->sourceSurface);
+        }
+        else
+        {
+            SetSurface(args.index, args.texture->sourceSurface);
+            shouldSetTexture = false;
+        }
+    }
     
-    SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.textureCubeIndices[args.index], args.texture != nullptr &&
-        viewDimension == RenderTextureViewDimension::TEXTURE_CUBE ? args.texture->descriptorIndex : TEXTURE_DESCRIPTOR_NULL_TEXTURE_CUBE);
+    if (shouldSetTexture)
+        SetTextureInRenderThread(args.index, args.texture);
+    
+    g_textures[args.index] = args.texture;
 }
 
 static void SetScissorRect(GuestDevice* device, GuestRect* rect)
@@ -3815,9 +3959,34 @@ static void FlushRenderStateForRenderThread()
     auto renderTarget = g_pipelineState.colorWriteEnable ? g_renderTarget : nullptr;
     auto depthStencil = g_pipelineState.zEnable ? g_depthStencil : nullptr;
 
+    bool foundAny = PopulateBarriersForStretchRect(renderTarget, depthStencil);
+
+    for (const auto surface : g_pendingMsaaResolves)
+    {
+        bool isDepthStencil = (surface->format == RenderFormat::D32_FLOAT);
+        foundAny |= PopulateBarriersForStretchRect(isDepthStencil ? nullptr : surface, isDepthStencil ? surface : nullptr);
+    }
+
+    if (foundAny)
+    {
+        FlushBarriers();
+        ExecutePendingStretchRectCommands(renderTarget, depthStencil);
+
+        for (const auto surface : g_pendingMsaaResolves)
+        {
+            bool isDepthStencil = (surface->format == RenderFormat::D32_FLOAT);
+            ExecutePendingStretchRectCommands(isDepthStencil ? nullptr : surface, isDepthStencil ? surface : nullptr);
+        }
+    }
+
+    if (!g_pendingMsaaResolves.empty())
+        g_pendingMsaaResolves.clear();
+
     AddBarrier(renderTarget, RenderTextureLayout::COLOR_WRITE);
     AddBarrier(depthStencil, RenderTextureLayout::DEPTH_WRITE);
+
     FlushBarriers();
+
     SetFramebuffer(renderTarget, depthStencil, false);
     FlushViewport();
 
@@ -4580,35 +4749,36 @@ static std::thread g_renderThread([]
                 auto& cmd = commands[i];
                 switch (cmd.type)
                 {
-                case RenderCommandType::SetRenderState:           ProcSetRenderState(cmd); break;
-                case RenderCommandType::DestructResource:         ProcDestructResource(cmd); break;
-                case RenderCommandType::UnlockTextureRect:        ProcUnlockTextureRect(cmd); break;
-                case RenderCommandType::UnlockBuffer16:           ProcUnlockBuffer16(cmd); break;
-                case RenderCommandType::UnlockBuffer32:           ProcUnlockBuffer32(cmd); break;
-                case RenderCommandType::DrawImGui:                ProcDrawImGui(cmd); break;
-                case RenderCommandType::ExecuteCommandList:       ProcExecuteCommandList(cmd); break;
-                case RenderCommandType::BeginCommandList:         ProcBeginCommandList(cmd); break;
-                case RenderCommandType::StretchRect:              ProcStretchRect(cmd); break;
-                case RenderCommandType::SetRenderTarget:          ProcSetRenderTarget(cmd); break;
-                case RenderCommandType::SetDepthStencilSurface:   ProcSetDepthStencilSurface(cmd); break;
-                case RenderCommandType::Clear:                    ProcClear(cmd); break;
-                case RenderCommandType::SetViewport:              ProcSetViewport(cmd); break;
-                case RenderCommandType::SetTexture:               ProcSetTexture(cmd); break;
-                case RenderCommandType::SetScissorRect:           ProcSetScissorRect(cmd); break;
-                case RenderCommandType::SetSamplerState:          ProcSetSamplerState(cmd); break;
-                case RenderCommandType::SetBooleans:              ProcSetBooleans(cmd); break;
-                case RenderCommandType::SetVertexShaderConstants: ProcSetVertexShaderConstants(cmd); break;
-                case RenderCommandType::SetPixelShaderConstants:  ProcSetPixelShaderConstants(cmd); break;
-                case RenderCommandType::AddPipeline:              ProcAddPipeline(cmd); break;
-                case RenderCommandType::DrawPrimitive:            ProcDrawPrimitive(cmd); break;
-                case RenderCommandType::DrawIndexedPrimitive:     ProcDrawIndexedPrimitive(cmd); break;
-                case RenderCommandType::DrawPrimitiveUP:          ProcDrawPrimitiveUP(cmd); break;
-                case RenderCommandType::SetVertexDeclaration:     ProcSetVertexDeclaration(cmd); break;
-                case RenderCommandType::SetVertexShader:          ProcSetVertexShader(cmd); break;
-                case RenderCommandType::SetStreamSource:          ProcSetStreamSource(cmd); break;
-                case RenderCommandType::SetIndices:               ProcSetIndices(cmd); break;
-                case RenderCommandType::SetPixelShader:           ProcSetPixelShader(cmd); break;
-                default:                                          assert(false && "Unrecognized render command type."); break;
+                case RenderCommandType::SetRenderState:                    ProcSetRenderState(cmd); break;
+                case RenderCommandType::DestructResource:                  ProcDestructResource(cmd); break;
+                case RenderCommandType::UnlockTextureRect:                 ProcUnlockTextureRect(cmd); break;
+                case RenderCommandType::UnlockBuffer16:                    ProcUnlockBuffer16(cmd); break;
+                case RenderCommandType::UnlockBuffer32:                    ProcUnlockBuffer32(cmd); break;
+                case RenderCommandType::DrawImGui:                         ProcDrawImGui(cmd); break;
+                case RenderCommandType::ExecuteCommandList:                ProcExecuteCommandList(cmd); break;
+                case RenderCommandType::BeginCommandList:                  ProcBeginCommandList(cmd); break;
+                case RenderCommandType::StretchRect:                       ProcStretchRect(cmd); break;
+                case RenderCommandType::SetRenderTarget:                   ProcSetRenderTarget(cmd); break;
+                case RenderCommandType::SetDepthStencilSurface:            ProcSetDepthStencilSurface(cmd); break;
+                case RenderCommandType::ExecutePendingStretchRectCommands: ProcExecutePendingStretchRectCommands(cmd); break;
+                case RenderCommandType::Clear:                             ProcClear(cmd); break;
+                case RenderCommandType::SetViewport:                       ProcSetViewport(cmd); break;
+                case RenderCommandType::SetTexture:                        ProcSetTexture(cmd); break;
+                case RenderCommandType::SetScissorRect:                    ProcSetScissorRect(cmd); break;
+                case RenderCommandType::SetSamplerState:                   ProcSetSamplerState(cmd); break;
+                case RenderCommandType::SetBooleans:                       ProcSetBooleans(cmd); break;
+                case RenderCommandType::SetVertexShaderConstants:          ProcSetVertexShaderConstants(cmd); break;
+                case RenderCommandType::SetPixelShaderConstants:           ProcSetPixelShaderConstants(cmd); break;
+                case RenderCommandType::AddPipeline:                       ProcAddPipeline(cmd); break;
+                case RenderCommandType::DrawPrimitive:                     ProcDrawPrimitive(cmd); break;
+                case RenderCommandType::DrawIndexedPrimitive:              ProcDrawIndexedPrimitive(cmd); break;
+                case RenderCommandType::DrawPrimitiveUP:                   ProcDrawPrimitiveUP(cmd); break;
+                case RenderCommandType::SetVertexDeclaration:              ProcSetVertexDeclaration(cmd); break;
+                case RenderCommandType::SetVertexShader:                   ProcSetVertexShader(cmd); break;
+                case RenderCommandType::SetStreamSource:                   ProcSetStreamSource(cmd); break;
+                case RenderCommandType::SetIndices:                        ProcSetIndices(cmd); break;
+                case RenderCommandType::SetPixelShader:                    ProcSetPixelShader(cmd); break;
+                default:                                                   assert(false && "Unrecognized render command type."); break;
                 }
             }
 

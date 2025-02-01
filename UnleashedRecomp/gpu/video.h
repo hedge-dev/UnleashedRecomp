@@ -158,6 +158,7 @@ struct GuestTexture : GuestBaseTexture
     void* mappedMemory = nullptr;
     std::unique_ptr<RenderFramebuffer> framebuffer;
     std::unique_ptr<GuestTexture> patchedTexture;
+    struct GuestSurface* sourceSurface = nullptr;
 };
 
 struct GuestLockedRect
@@ -205,6 +206,7 @@ struct GuestSurface : GuestBaseTexture
     uint32_t guestFormat = 0;
     ankerl::unordered_dense::map<const RenderTexture*, std::unique_ptr<RenderFramebuffer>> framebuffers;
     RenderSampleCounts sampleCount = RenderSampleCount::COUNT_1;
+    ankerl::unordered_dense::set<GuestTexture*> destinationTextures;
 };
 
 enum GuestDeclType
