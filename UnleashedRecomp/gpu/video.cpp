@@ -3114,8 +3114,9 @@ static void ProcExecutePendingStretchRectCommands(const RenderCommand& cmd)
 
     for (const auto surface : g_pendingSurfaceCopies)
     {
-        bool isDepthStencil = (surface->format == RenderFormat::D32_FLOAT);
-        foundAny |= PopulateBarriersForStretchRect(isDepthStencil ? nullptr : surface, isDepthStencil ? surface : nullptr);
+        // Depth stencil textures in this game are guaranteed to be transient.
+        if (surface->format != RenderFormat::D32_FLOAT)
+            foundAny |= PopulateBarriersForStretchRect(surface, nullptr);
     }
 
     if (foundAny)
@@ -3124,8 +3125,13 @@ static void ProcExecutePendingStretchRectCommands(const RenderCommand& cmd)
 
         for (const auto surface : g_pendingSurfaceCopies)
         {
-            bool isDepthStencil = (surface->format == RenderFormat::D32_FLOAT);
-            ExecutePendingStretchRectCommands(isDepthStencil ? nullptr : surface, isDepthStencil ? surface : nullptr);
+            if (surface->format != RenderFormat::D32_FLOAT)
+                ExecutePendingStretchRectCommands(surface, nullptr);
+
+            for (const auto texture : surface->destinationTextures)
+                texture->sourceSurface = nullptr;
+
+            surface->destinationTextures.clear();
         }
     }
 
