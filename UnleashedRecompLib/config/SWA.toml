@@ -914,3 +914,7 @@ jump_address = 0x82AE2774
 name = "ApplicationFrameLimiterMidAsmHook"
 address = 0x822C1064
 jump_address = 0x822C111C
+
+[[midasm_hook]]
+name = "PressStartSaveLoadThreadMidAsmHook"
+address = 0x822C4358

@@ -8,7 +8,7 @@
 #include <user/paths.h>
 #include <app.h>
 
-static bool g_faderBegun = false;
+static std::atomic<bool> g_faderBegun = false;
 
 bool g_quitMessageOpen = false;
 static int g_quitMessageResult = -1;
@@ -16,39 +16,29 @@ static int g_quitMessageResult = -1;
 static std::atomic<bool> g_corruptSaveMessageOpen = false;
 static int g_corruptSaveMessageResult = -1;
 
-static bool g_corruptAchievementsMessageOpen = false;
+static std::atomic<bool> g_corruptAchievementsMessageOpen = false;
 static int g_corruptAchievementsMessageResult = -1;
 
-static bool g_updateAvailableMessageOpen = false;
+static std::atomic<bool> g_updateAvailableMessageOpen = false;
 static int g_updateAvailableMessageResult = -1;
 
 static bool ProcessQuitMessage()
 {
-    if (g_corruptSaveMessageOpen)
-        return false;
-
     if (!g_quitMessageOpen)
         return false;
-
-    if (g_faderBegun)
-        return true;
 
     std::array<std::string, 2> options = { Localise("Common_Yes"), Localise("Common_No") };
 
     if (MessageWindow::Open(Localise("Title_Message_Quit"), &g_quitMessageResult, options, 1) == MSG_CLOSED)
     {
-        switch (g_quitMessageResult)
+        if (!g_quitMessageResult)
         {
-            case 0:
-                Fader::FadeOut(1, []() { App::Exit(); });
-                g_faderBegun = true;
-                break;
-
-            case 1:
-                g_quitMessageOpen = false;
-                g_quitMessageResult = -1;
-                break;
+            Fader::FadeOut(1, []() { App::Exit(); });
+            g_faderBegun = true;
         }
+
+        g_quitMessageOpen = false;
+        g_quitMessageResult = -1;
     }
 
     return true;
@@ -86,6 +76,7 @@ static bool ProcessCorruptAchievementsMessage()
             AchievementManager::Save(true);
 
         g_corruptAchievementsMessageOpen = false;
+        g_corruptAchievementsMessageOpen.notify_one();
         g_corruptAchievementsMessageResult = -1;
     }
 
@@ -96,9 +87,6 @@ static bool ProcessUpdateAvailableMessage()
 {
     if (!g_updateAvailableMessageOpen)
         return false;
-
-    if (g_faderBegun)
-        return true;
 
     std::array<std::string, 2> options = { Localise("Common_Yes"), Localise("Common_No") };
 
@@ -119,6 +107,7 @@ static bool ProcessUpdateAvailableMessage()
         }
 
         g_updateAvailableMessageOpen = false;
+        g_updateAvailableMessageOpen.notify_one();
         g_updateAvailableMessageResult = -1;
     }
 
@@ -137,6 +126,24 @@ PPC_FUNC(sub_822C55B0)
     ctx.r3.u32 = 0;
 }
 
+void PressStartSaveLoadThreadMidAsmHook()
+{
+    if (UpdateChecker::check() == UpdateChecker::Result::UpdateAvailable)
+    {
+        g_updateAvailableMessageOpen = true;
+        g_updateAvailableMessageOpen.wait(true);
+        g_faderBegun.wait(true);
+    }
+
+    AchievementManager::Load();
+
+    if (AchievementManager::Status != EAchStatus::Success)
+    {
+        g_corruptAchievementsMessageOpen = true;
+        g_corruptAchievementsMessageOpen.wait(true);
+    }
+}
+
 // SWA::CTitleStateIntro::Update
 PPC_FUNC_IMPL(__imp__sub_82587E50);
 PPC_FUNC(sub_82587E50)
@@ -151,21 +158,7 @@ PPC_FUNC(sub_82587E50)
     {
         if (auto pInputState = SWA::CInputState::GetInstance())
         {
-            auto& rPadState = pInputState->GetPadState();
-            auto isAccepted = rPadState.IsTapped(SWA::eKeyState_A) || rPadState.IsTapped(SWA::eKeyState_Start);
-            auto isDeclined = rPadState.IsTapped(SWA::eKeyState_B);
-
-            if (isAccepted)
-            {
-                g_updateAvailableMessageOpen = UpdateChecker::check() == UpdateChecker::Result::UpdateAvailable;
-
-                AchievementManager::Load();
-
-                if (AchievementManager::Status != EAchStatus::Success)
-                    g_corruptAchievementsMessageOpen = true;
-            }
-
-            if (isDeclined)
+            if (pInputState->GetPadState().IsTapped(SWA::eKeyState_B))
                 g_quitMessageOpen = true;
         }
 
