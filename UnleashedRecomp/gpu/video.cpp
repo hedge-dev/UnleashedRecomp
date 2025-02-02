@@ -6948,6 +6948,52 @@ PPC_FUNC(sub_825E2F78)
     __imp__sub_825E2F78(ctx, base);
 }
 
+// Game shares surfaces with identical descriptions. We don't want to share shadow maps,
+// so we can set its format to a depth format that still resolves to the same type in recomp,
+// but manages to keep the surfaces actually separated in guest code.
+void FxShadowMapInitMidAsmHook(PPCRegister& r11)
+{
+    uint8_t* base = g_memory.base;
+
+    uint32_t surface = PPC_LOAD_U32(PPC_LOAD_U32(PPC_LOAD_U32(r11.u32 + 0x24) + 0x4));
+    PPC_STORE_U32(surface + 0x20, D3DFMT_D24FS8);
+}
+
+// Re-render objects in the terrain shadow map instead of copying the texture.
+static bool g_jumpOverStretchRect;
+
+void FxShadowMapNoTerrainMidAsmHook(PPCRegister& r4, PPCRegister& r30)
+{
+    // Set the no terrain shadow map as the render target.
+    uint8_t* base = g_memory.base;
+    r4.u64 = PPC_LOAD_U32(r30.u32 + 0x58);
+}
+
+bool FxShadowMapMidAsmHook(PPCRegister& r4, PPCRegister& r5, PPCRegister& r6, PPCRegister& r30)
+{
+    if (g_jumpOverStretchRect)
+    {
+        // Reset for the next time shadow maps get rendered.
+        g_jumpOverStretchRect = false;
+
+        // Jump over the stretch rect call.
+        return false;
+    }
+    else
+    {
+        // Mark to jump over the stretch call the next time.
+        g_jumpOverStretchRect = true;
+
+        // Jump to the beginning. Set registers accordingly to set the terrain shadow map as the render target.
+        uint8_t* base = g_memory.base;
+        r6.u64 = 0;
+        r5.u64 = 0;
+        r4.u64 = PPC_LOAD_U32(r30.u32 + 0x50);
+
+        return true;
+    }
+}
+
 GUEST_FUNCTION_HOOK(sub_82BD99B0, CreateDevice);
 
 GUEST_FUNCTION_HOOK(sub_82BE6230, DestructResource);

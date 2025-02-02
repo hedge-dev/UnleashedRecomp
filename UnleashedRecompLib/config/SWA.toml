@@ -918,3 +918,21 @@ jump_address = 0x822C111C
 [[midasm_hook]]
 name = "PressStartSaveLoadThreadMidAsmHook"
 address = 0x822C4358
+
+[[midasm_hook]]
+name = "FxShadowMapInitMidAsmHook"
+address = 0x82BAD8F4
+registers = ["r11"]
+
+[[midasm_hook]]
+name = "FxShadowMapNoTerrainMidAsmHook"
+address = 0x82BAD9EC
+registers = ["r4", "r30"]
+after_instruction = true
+
+[[midasm_hook]]
+name = "FxShadowMapMidAsmHook"
+address = 0x82BADADC
+registers = ["r4", "r5", "r6", "r30"]
+jump_address_on_true = 0x82BAD9F0
+jump_address_on_false = 0x82BADAFC
