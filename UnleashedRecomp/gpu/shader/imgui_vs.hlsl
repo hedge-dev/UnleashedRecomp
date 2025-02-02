@@ -7,7 +7,8 @@ void main(in float2 position : POSITION, in float2 uv : TEXCOORD, in float4 colo
         if (position.y < g_PushConstants.Origin.y)
             position.x += g_PushConstants.Scale.x;
     }
-    else if (g_PushConstants.ShaderModifier != IMGUI_SHADER_MODIFIER_MARQUEE_FADE)
+    else if (g_PushConstants.ShaderModifier != IMGUI_SHADER_MODIFIER_HORIZONTAL_MARQUEE_FADE && 
+        g_PushConstants.ShaderModifier != IMGUI_SHADER_MODIFIER_VERTICAL_MARQUEE_FADE)
     {
         position.xy = g_PushConstants.Origin + (position.xy - g_PushConstants.Origin) * g_PushConstants.Scale;
     }

@@ -797,7 +797,7 @@ static void DrawDescriptionContainer()
         ImVec2 textMin = { g_aspectRatioOffsetX + Scale(CONTAINER_X), textPos.y };
         ImVec2 textMax = { g_aspectRatioOffsetX + Scale(CONTAINER_X) + Scale(CONTAINER_WIDTH), g_aspectRatioOffsetY + Scale(CONTAINER_Y) + Scale(CONTAINER_HEIGHT) };
 
-        SetMarqueeFade(textMin, textMax, Scale(32));
+        SetHorizontalMarqueeFade(textMin, textMax, Scale(32));
         DrawTextWithMarquee(g_seuratFont, fontSize, textPos, textMin, textMax, colWhite, g_creditsStr.c_str(), g_installerEndTime, 0.9, Scale(200));
         ResetMarqueeFade();
     }

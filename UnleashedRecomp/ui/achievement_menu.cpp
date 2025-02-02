@@ -197,7 +197,7 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
     ImVec2 marqueeMin = { textMarqueeX, min.y };
     ImVec2 marqueeMax = { max.x - Scale(10) /* timestamp margin X */, max.y };
 
-    SetMarqueeFade(marqueeMin, marqueeMax, Scale(32));
+    SetHorizontalMarqueeFade(marqueeMin, marqueeMax, Scale(32));
 
     if (isSelected && textX + textSize.x >= max.x - Scale(10))
     {

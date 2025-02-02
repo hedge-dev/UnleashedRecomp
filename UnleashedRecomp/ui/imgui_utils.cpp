@@ -80,7 +80,7 @@ void ResetTextSkew()
     SetScale({ 1.0f, 1.0f });
 }
 
-void SetMarqueeFade(ImVec2 min, ImVec2 max, float fadeScale)
+void SetHorizontalMarqueeFade(ImVec2 min, ImVec2 max, float fadeScale)
 {
     auto callbackData = AddImGuiCallback(ImGuiCallback::SetMarqueeFade);
     callbackData->setMarqueeFade.boundsMin[0] = min.x;
@@ -88,8 +88,20 @@ void SetMarqueeFade(ImVec2 min, ImVec2 max, float fadeScale)
     callbackData->setMarqueeFade.boundsMax[0] = max.x;
     callbackData->setMarqueeFade.boundsMax[1] = max.y;
 
-    SetShaderModifier(IMGUI_SHADER_MODIFIER_MARQUEE_FADE);
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_HORIZONTAL_MARQUEE_FADE);
     SetScale({ fadeScale, 1.0f });
+}
+
+void SetVerticalMarqueeFade(ImVec2 min, ImVec2 max, float fadeScale)
+{
+    auto callbackData = AddImGuiCallback(ImGuiCallback::SetMarqueeFade);
+    callbackData->setMarqueeFade.boundsMin[0] = min.x;
+    callbackData->setMarqueeFade.boundsMin[1] = min.y;
+    callbackData->setMarqueeFade.boundsMax[0] = max.x;
+    callbackData->setMarqueeFade.boundsMax[1] = max.y;
+
+    SetShaderModifier(IMGUI_SHADER_MODIFIER_VERTICAL_MARQUEE_FADE);
+    SetScale({ 1.0f, fadeScale });
 }
 
 void ResetMarqueeFade()

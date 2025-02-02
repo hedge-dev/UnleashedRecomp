@@ -135,10 +135,18 @@ float4 main(in Interpolators interpolators) : SV_Target
         }
     }
     
-    if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_MARQUEE_FADE)
+    if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_HORIZONTAL_MARQUEE_FADE)
     {
         float minAlpha = saturate((interpolators.Position.x - g_PushConstants.BoundsMin.x) / g_PushConstants.Scale.x);
         float maxAlpha = saturate((g_PushConstants.BoundsMax.x - interpolators.Position.x) / g_PushConstants.Scale.x);
+        
+        color.a *= minAlpha;
+        color.a *= maxAlpha;
+    }
+    else if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_VERTICAL_MARQUEE_FADE)
+    {
+        float minAlpha = saturate((interpolators.Position.y - g_PushConstants.BoundsMin.y) / g_PushConstants.Scale.y);
+        float maxAlpha = saturate((g_PushConstants.BoundsMax.y - interpolators.Position.y) / g_PushConstants.Scale.y);
         
         color.a *= minAlpha;
         color.a *= maxAlpha;
