@@ -155,7 +155,6 @@ static GuestSurface* g_renderTarget;
 static GuestSurface* g_depthStencil;
 static RenderFramebuffer* g_framebuffer;
 static RenderViewport g_viewport(0.0f, 0.0f, 1280.0f, 720.0f);
-static bool g_halfPixel = true;
 static PipelineState g_pipelineState;
 static int32_t g_depthBias;
 static float g_slopeScaledDepthBias;
@@ -2827,11 +2826,8 @@ static void FlushViewport()
     if (g_dirtyStates.viewport)
     {
         auto viewport = g_viewport;
-        if (g_halfPixel)
-        {
-            viewport.x += 0.5f;
-            viewport.y += 0.5f;
-        }
+        viewport.x += 0.5f;
+        viewport.y += 0.5f;
 
         if (viewport.minDepth > viewport.maxDepth)
             std::swap(viewport.minDepth, viewport.maxDepth);
@@ -2855,13 +2851,6 @@ static void FlushViewport()
     }
 }
 
-static bool SetHalfPixel(bool enable)
-{
-    bool oldValue = g_halfPixel;
-    SetDirtyValue(g_dirtyStates.viewport, g_halfPixel, enable);
-    return oldValue;
-}
-
 static void StretchRect(GuestDevice* device, uint32_t flags, uint32_t, GuestTexture* texture)
 {
     RenderCommand cmd;
@@ -2872,7 +2861,6 @@ static void StretchRect(GuestDevice* device, uint32_t flags, uint32_t, GuestText
 }
 
 static void SetTextureInRenderThread(uint32_t index, GuestTexture* texture);
-
 static void SetSurface(uint32_t index, GuestSurface* surface);
 
 static void ProcStretchRect(const RenderCommand& cmd)
@@ -3065,23 +3053,22 @@ static void ExecutePendingStretchRectCommands(GuestSurface* renderTarget, GuestS
                             g_framebuffer = texture->framebuffer.get();
                         }
 
-                        bool oldHalfPixel = SetHalfPixel(false);
-                        FlushViewport();
-
                         commandList->setPipeline(g_resolveMsaaDepthPipelines[pipelineIndex].get());
+                        commandList->setViewports(RenderViewport(0.0f, 0.0f, float(texture->width), float(texture->height), 0.0f, 1.0f));
+                        commandList->setScissors(RenderRect(0, 0, texture->width, texture->height));
                         commandList->setGraphicsPushConstants(0, &surface->descriptorIndex, 0, sizeof(uint32_t));
                         commandList->drawInstanced(6, 1, 0, 0);
 
                         g_dirtyStates.renderTargetAndDepthStencil = true;
+                        g_dirtyStates.viewport = true;
                         g_dirtyStates.pipelineState = true;
+                        g_dirtyStates.scissorRect = true;
 
                         if (g_vulkan)
                         {
                             g_dirtyStates.depthBias = true; // Static depth bias in MSAA pipeline invalidates dynamic depth bias.
                             g_dirtyStates.vertexShaderConstants = true;
                         }
-
-                        SetHalfPixel(oldHalfPixel);
                     }
                     else
                     {
