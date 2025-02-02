@@ -563,7 +563,8 @@ static void DestructTempResources()
             if (texture->mappedMemory != nullptr)
                 g_userHeap.Free(texture->mappedMemory);
 
-            g_textureDescriptorAllocator.free(texture->descriptorIndex);
+            if (texture->descriptorIndex != NULL)
+                g_textureDescriptorAllocator.free(texture->descriptorIndex);
 
             if (texture->patchedTexture != nullptr)
                 g_textureDescriptorAllocator.free(texture->patchedTexture->descriptorIndex);
@@ -2702,27 +2703,47 @@ static RenderFormat ConvertFormat(uint32_t format)
     }
 }
 
-static GuestTexture* CreateTexture(uint32_t width, uint32_t height, uint32_t depth, uint32_t levels, uint32_t usage, uint32_t format, uint32_t pool, uint32_t type) 
+void GuestTexture::CreateTexture()
 {
-    const auto texture = g_userHeap.AllocPhysical<GuestTexture>(type == 17 ? ResourceType::VolumeTexture : ResourceType::Texture);
-
     RenderTextureDesc desc;
-    desc.dimension = texture->type == ResourceType::VolumeTexture ? RenderTextureDimension::TEXTURE_3D : RenderTextureDimension::TEXTURE_2D;
+    desc.dimension = type == ResourceType::VolumeTexture ? RenderTextureDimension::TEXTURE_3D : RenderTextureDimension::TEXTURE_2D;
     desc.width = width;
     desc.height = height;
     desc.depth = depth;
     desc.mipLevels = levels;
     desc.arraySize = 1;
-    desc.format = ConvertFormat(format);
+    desc.format = format;
     desc.flags = (desc.format == RenderFormat::D32_FLOAT) ? RenderTextureFlag::DEPTH_TARGET : RenderTextureFlag::NONE;
 
-    texture->textureHolder = g_device->createTexture(desc);
-    texture->texture = texture->textureHolder.get();
+    textureHolder = g_device->createTexture(desc);
+    texture = textureHolder.get();
 
     RenderTextureViewDesc viewDesc;
     viewDesc.format = desc.format;
-    viewDesc.dimension = texture->type == ResourceType::VolumeTexture ? RenderTextureViewDimension::TEXTURE_3D : RenderTextureViewDimension::TEXTURE_2D;
+    viewDesc.dimension = type == ResourceType::VolumeTexture ? RenderTextureViewDimension::TEXTURE_3D : RenderTextureViewDimension::TEXTURE_2D;
     viewDesc.mipLevels = levels;
+
+    textureView = texture->createTextureView(viewDesc);
+    viewDimension = viewDesc.dimension;
+
+    descriptorIndex = g_textureDescriptorAllocator.allocate();
+
+    g_textureDescriptorSet->setTexture(descriptorIndex, texture, RenderTextureLayout::SHADER_READ, textureView.get());
+
+#ifdef _DEBUG 
+    texture->setName(fmt::format("Texture {:X}", g_memory.MapVirtual(this)));
+#endif
+}
+
+static GuestTexture* CreateTexture(uint32_t width, uint32_t height, uint32_t depth, uint32_t levels, uint32_t usage, uint32_t format, uint32_t pool, uint32_t type) 
+{
+    const auto texture = g_userHeap.AllocPhysical<GuestTexture>(type == 17 ? ResourceType::VolumeTexture : ResourceType::Texture);
+
+    texture->width = width;
+    texture->height = height;
+    texture->depth = depth;
+    texture->levels = levels;
+    texture->format = ConvertFormat(format);
 
     switch (format)
     {
@@ -2730,28 +2751,17 @@ static GuestTexture* CreateTexture(uint32_t width, uint32_t height, uint32_t dep
     case D3DFMT_D24S8:
     case D3DFMT_L8:
     case D3DFMT_L8_2:
-        viewDesc.componentMapping = RenderComponentMapping(RenderSwizzle::R, RenderSwizzle::R, RenderSwizzle::R, RenderSwizzle::ONE);
+        texture->componentMapping = RenderComponentMapping(RenderSwizzle::R, RenderSwizzle::R, RenderSwizzle::R, RenderSwizzle::ONE);
         break;
 
     case D3DFMT_X8R8G8B8:
-        viewDesc.componentMapping = RenderComponentMapping(RenderSwizzle::G, RenderSwizzle::B, RenderSwizzle::A, RenderSwizzle::ONE);
+        texture->componentMapping = RenderComponentMapping(RenderSwizzle::G, RenderSwizzle::B, RenderSwizzle::A, RenderSwizzle::ONE);
         break;
     }
 
-    texture->textureView = texture->texture->createTextureView(viewDesc);
-
-    texture->width = width;
-    texture->height = height;
-    texture->depth = depth;
-    texture->format = desc.format;
-    texture->viewDimension = viewDesc.dimension;
-    texture->descriptorIndex = g_textureDescriptorAllocator.allocate();
-
-    g_textureDescriptorSet->setTexture(texture->descriptorIndex, texture->texture, RenderTextureLayout::SHADER_READ, texture->textureView.get());
-   
-#ifdef _DEBUG 
-    texture->texture->setName(fmt::format("Texture {:X}", g_memory.MapVirtual(texture)));
-#endif
+    // Render targets/depth stencil textures are lazily created to have VRAM savings when the copy bypass optimization manages to work.
+    if (usage == 0)
+        texture->CreateTexture();
 
     return texture;
 }
@@ -2997,7 +3007,13 @@ static bool PopulateBarriersForStretchRect(GuestSurface* renderTarget, GuestSurf
             AddBarrier(surface, srcLayout);
 
             for (const auto texture : surface->destinationTextures)
+            {
+                // Need to create here...
+                if (texture->textureHolder == nullptr)
+                    texture->CreateTexture();
+
                 AddBarrier(texture, dstLayout);
+            }
 
             addedAny = true;
         }
@@ -3018,6 +3034,9 @@ static void ExecutePendingStretchRectCommands(GuestSurface* renderTarget, GuestS
 
             for (const auto texture : surface->destinationTextures)
             {
+                // The texture doesn't need to be created at this point,
+                // since the barrier call would have already done it.
+
                 if (multiSampling)
                 {
                     if (surface == depthStencil)
@@ -3300,6 +3319,10 @@ static void SetTexture(GuestDevice* device, uint32_t index, GuestTexture* textur
 
 static void SetTextureInRenderThread(uint32_t index, GuestTexture* texture)
 {
+    // Only may happen for render target/depth stencil textures.
+    if (texture != nullptr && texture->textureHolder == nullptr)
+        texture->CreateTexture();
+
     AddBarrier(texture, RenderTextureLayout::SHADER_READ);
 
     auto viewDimension = texture != nullptr ? texture->viewDimension : RenderTextureViewDimension::UNKNOWN;

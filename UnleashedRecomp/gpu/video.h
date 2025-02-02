@@ -154,11 +154,15 @@ struct GuestBaseTexture : GuestResource
 struct GuestTexture : GuestBaseTexture
 {
     uint32_t depth = 0;
+    uint32_t levels = 0;
     RenderTextureViewDimension viewDimension = RenderTextureViewDimension::UNKNOWN;
+    RenderComponentMapping componentMapping;
     void* mappedMemory = nullptr;
     std::unique_ptr<RenderFramebuffer> framebuffer;
     std::unique_ptr<GuestTexture> patchedTexture;
     struct GuestSurface* sourceSurface = nullptr;
+
+    void CreateTexture();
 };
 
 struct GuestLockedRect
