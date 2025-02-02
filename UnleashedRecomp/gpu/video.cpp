@@ -2506,50 +2506,6 @@ static void SetRootDescriptor(const UploadAllocation& allocation, size_t index)
         commandList->setGraphicsRootDescriptor(allocation.buffer->at(allocation.offset), index);
 }
 
-static bool PopulateBarriersForStretchRect(GuestSurface* renderTarget, GuestSurface* depthStencil)
-{
-    bool addedAny = false;
-
-    for (const auto surface : { renderTarget, depthStencil })
-    {
-        if (surface != nullptr && !surface->destinationTextures.empty())
-        {
-            const bool multiSampling = surface->sampleCount != RenderSampleCount::COUNT_1;
-
-            RenderTextureLayout srcLayout;
-            RenderTextureLayout dstLayout;
-
-            if (multiSampling)
-            {
-                if (surface == depthStencil)
-                {
-                    srcLayout = RenderTextureLayout::SHADER_READ;
-                    dstLayout = RenderTextureLayout::DEPTH_WRITE;
-                }
-                else
-                {
-                    srcLayout = RenderTextureLayout::RESOLVE_SOURCE;
-                    dstLayout = RenderTextureLayout::RESOLVE_DEST;
-                }
-            }
-            else
-            {
-                srcLayout = RenderTextureLayout::COPY_SOURCE;
-                dstLayout = RenderTextureLayout::COPY_DEST;
-            }
-
-            AddBarrier(surface, srcLayout);
-
-            for (const auto texture : surface->destinationTextures)
-                AddBarrier(texture, dstLayout);
-
-            addedAny = true;
-        }
-    }
-
-    return addedAny;
-}
-
 static void ProcExecuteCommandList(const RenderCommand& cmd)
 {    
     if (g_swapChainValid)
@@ -3016,6 +2972,50 @@ static void ProcSetDepthStencilSurface(const RenderCommand& cmd)
 
     SetDirtyValue(g_dirtyStates.renderTargetAndDepthStencil, g_depthStencil, args.depthStencil);
     SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.depthStencilFormat, args.depthStencil != nullptr ? args.depthStencil->format : RenderFormat::UNKNOWN);
+}
+
+static bool PopulateBarriersForStretchRect(GuestSurface* renderTarget, GuestSurface* depthStencil)
+{
+    bool addedAny = false;
+
+    for (const auto surface : { renderTarget, depthStencil })
+    {
+        if (surface != nullptr && !surface->destinationTextures.empty())
+        {
+            const bool multiSampling = surface->sampleCount != RenderSampleCount::COUNT_1;
+
+            RenderTextureLayout srcLayout;
+            RenderTextureLayout dstLayout;
+
+            if (multiSampling)
+            {
+                if (surface == depthStencil)
+                {
+                    srcLayout = RenderTextureLayout::SHADER_READ;
+                    dstLayout = RenderTextureLayout::DEPTH_WRITE;
+                }
+                else
+                {
+                    srcLayout = RenderTextureLayout::RESOLVE_SOURCE;
+                    dstLayout = RenderTextureLayout::RESOLVE_DEST;
+                }
+            }
+            else
+            {
+                srcLayout = RenderTextureLayout::COPY_SOURCE;
+                dstLayout = RenderTextureLayout::COPY_DEST;
+            }
+
+            AddBarrier(surface, srcLayout);
+
+            for (const auto texture : surface->destinationTextures)
+                AddBarrier(texture, dstLayout);
+
+            addedAny = true;
+        }
+    }
+
+    return addedAny;
 }
 
 static void ExecutePendingStretchRectCommands(GuestSurface* renderTarget, GuestSurface* depthStencil)
