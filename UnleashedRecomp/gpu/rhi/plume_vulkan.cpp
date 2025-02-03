@@ -3074,12 +3074,13 @@ namespace plume {
     }
 
     void VulkanCommandList::resolveTexture(const RenderTexture *dstTexture, const RenderTexture *srcTexture) {
-        resolveTextureRegion(dstTexture, 0, 0, srcTexture, nullptr);
+        resolveTextureRegion(dstTexture, 0, 0, srcTexture, nullptr, RenderResolveMode::AVERAGE);
     }
 
-    void VulkanCommandList::resolveTextureRegion(const RenderTexture *dstTexture, uint32_t dstX, uint32_t dstY, const RenderTexture *srcTexture, const RenderRect *srcRect) {
+    void VulkanCommandList::resolveTextureRegion(const RenderTexture *dstTexture, uint32_t dstX, uint32_t dstY, const RenderTexture *srcTexture, const RenderRect *srcRect, RenderResolveMode resolveMode) {
         assert(dstTexture != nullptr);
         assert(srcTexture != nullptr);
+        assert(resolveMode == RenderResolveMode::AVERAGE && "Vulkan only supports AVERAGE resolve mode.");
 
         thread_local std::vector<VkImageResolve> imageResolves;
         imageResolves.clear();

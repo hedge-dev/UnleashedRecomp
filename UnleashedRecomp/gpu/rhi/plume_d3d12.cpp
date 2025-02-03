@@ -27,6 +27,8 @@
 //#   define D3D12_DEBUG_LAYER_GPU_BASED_VALIDATION_ENABLED
 #endif
 
+//#define D3D12_DEBUG_SET_STABLE_POWER_STATE
+
 // Old Windows SDK versions don't provide this macro, so we workaround it by making sure it is defined.
 #ifndef D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE
 #define D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE (D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)
@@ -690,6 +692,20 @@ namespace plume {
             toD3D12(componentMapping.b, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_2),
             toD3D12(componentMapping.a, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_3)
         );
+    }
+
+    static D3D12_RESOLVE_MODE toD3D12(RenderResolveMode resolveMode) {
+        switch (resolveMode) {
+        case RenderResolveMode::MIN:
+            return D3D12_RESOLVE_MODE_MIN;
+        case RenderResolveMode::MAX:
+            return D3D12_RESOLVE_MODE_MAX;
+        case RenderResolveMode::AVERAGE:
+            return D3D12_RESOLVE_MODE_AVERAGE;
+        default:
+            assert(false && "Unknown resolve mode.");
+            return D3D12_RESOLVE_MODE_AVERAGE;
+        }
     }
 
     static void setObjectName(ID3D12Object *object, const std::string &name) {
@@ -1916,7 +1932,7 @@ namespace plume {
         resetSamplePositions();
     }
 
-    void D3D12CommandList::resolveTextureRegion(const RenderTexture *dstTexture, uint32_t dstX, uint32_t dstY, const RenderTexture *srcTexture, const RenderRect *srcRect) {
+    void D3D12CommandList::resolveTextureRegion(const RenderTexture *dstTexture, uint32_t dstX, uint32_t dstY, const RenderTexture *srcTexture, const RenderRect *srcRect, RenderResolveMode resolveMode) {
         assert(dstTexture != nullptr);
         assert(srcTexture != nullptr);
 
@@ -1931,7 +1947,7 @@ namespace plume {
         }
 
         setSamplePositions(interfaceDstTexture);
-        d3d->ResolveSubresourceRegion(interfaceDstTexture->d3d, 0, dstX, dstY, interfaceSrcTexture->d3d, 0, (srcRect != nullptr) ? &rect : nullptr, toDXGI(interfaceDstTexture->desc.format), D3D12_RESOLVE_MODE_AVERAGE);
+        d3d->ResolveSubresourceRegion(interfaceDstTexture->d3d, 0, dstX, dstY, interfaceSrcTexture->d3d, 0, (srcRect != nullptr) ? &rect : nullptr, toDXGI(interfaceDstTexture->desc.format), toD3D12(resolveMode));
         resetSamplePositions();
     }
 
@@ -3372,6 +3388,10 @@ namespace plume {
             fprintf(stderr, "Unable to create a D3D12 device with the required features.\n");
             return;
         }
+
+        #ifdef D3D12_DEBUG_SET_STABLE_POWER_STATE
+            d3d->SetStablePowerState(TRUE);
+        #endif
 
         D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
         allocatorDesc.pDevice = d3d;

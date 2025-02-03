@@ -483,6 +483,12 @@ namespace plume {
         CPU
     };
 
+    enum class RenderResolveMode {
+        MIN,
+        MAX,
+        AVERAGE
+    };
+
     // Global functions.
 
     constexpr uint32_t RenderFormatSize(RenderFormat format) {
