@@ -55,6 +55,8 @@ static constexpr float SETTINGS_NARROW_GRID_COUNT = 70.0f;
 static constexpr float INFO_NARROW_GRID_COUNT = 34.0f;
 static constexpr float PADDING_NARROW_GRID_COUNT = 1.0f;
 
+static constexpr float INFO_TEXT_MARQUEE_DELAY = 1.2f;
+
 static constexpr int32_t g_categoryCount = 4;
 static int32_t g_categoryIndex;
 static ImVec2 g_categoryAnimMin;
@@ -1358,7 +1360,7 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
         }
         else
         {
-            // Specialised description for resolution scale
+            // Specialised description for resolution scale.
             if (g_selectedItem == &Config::ResolutionScale)
             {
                 char buf[100];
@@ -1374,51 +1376,128 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
             desc += "\n\n" + g_selectedItem->GetValueDescription(Config::Language);
         }
 
+        clipRectMin = { clipRectMin.x, thumbnailMax.y };
+
         auto fontSize = Scale(28.0f);
         auto annotationFontSize = fontSize * ANNOTATION_FONT_SIZE_MODIFIER;
 
-        // Extra padding between the start of the description text and the bottom of the thumbnail
-        float offsetY = Scale(24.0f);
-        
-        float textX = clipRectMin.x - Scale(0.5f);
-        float textY = thumbnailMax.y + offsetY;
+        /* Extra padding between the start
+           of the description text and the
+           bottom of the thumbnail. */
+        auto offsetY = Scale(24.0f);
+
+        auto textX = clipRectMin.x - Scale(0.5f);
+        auto textY = thumbnailMax.y + offsetY;
+        auto textSize = MeasureCentredParagraph(g_seuratFont, fontSize, clipRectMax.x - clipRectMin.x, 5.0f, desc.c_str());
 
         if (Config::Language == ELanguage::Japanese)
         {
-            // Removing some padding of the applied due to the inclusion of annotation for Japanese
+            /* Removing some padding of the applied due
+               to the inclusion of annotation for Japanese. */
             textY -= Scale(8.0f);
 
-            // The annotation (and thus the Japanese) can be drawn above the edges of the info panel thus the clip needs to be extended a bit
+            /* The annotation (and thus the Japanese) can be
+               drawn above the edges of the info panel thus the
+               clip needs to be extended a bit. */
             clipRectMin.x -= annotationFontSize;
-            clipRectMin.y -= annotationFontSize;
             clipRectMax.x += annotationFontSize;
-            clipRectMax.y += annotationFontSize;
 
             textY += annotationFontSize;
         }
 
         drawList->PushClipRect(clipRectMin, clipRectMax, false);
 
+        static auto isScrolling = false;
+        static auto isManualScrolling = false;
+        static auto scrollOffset = 0.0f;
+        static auto scrollTimer = 0.0f;
+        static auto scrollDirection = 1.0f;
+        auto scrollMax = textSize.y - (clipRectMax.y - textY);
+        auto scrollSpeed = Scale(50);
+
+        if (scrollMax > 0.0f)
+        {
+            if (auto pInputState = SWA::CInputState::GetInstance())
+            {
+                auto& rPadState = pInputState->GetPadState();
+                auto& vert = rPadState.RightStickVertical;
+        
+                if (fabs(vert) > 0.25f)
+                {
+                    isManualScrolling = true;
+                    scrollOffset += vert * scrollSpeed * App::s_deltaTime;
+                }
+                else if (isManualScrolling && fabs(vert) <= 0.25f)
+                {
+                    isManualScrolling = false;
+                }
+            }
+        
+            if (!isManualScrolling)
+            {
+                if (!isScrolling)
+                {
+                    scrollTimer += App::s_deltaTime;
+            
+                    if (scrollTimer >= INFO_TEXT_MARQUEE_DELAY)
+                        isScrolling = true;
+                }
+            
+                if (isScrolling)
+                {
+                    scrollOffset += scrollSpeed * scrollDirection * App::s_deltaTime;
+            
+                    if (scrollOffset >= scrollMax)
+                    {
+                        isScrolling = false;
+                        scrollOffset = scrollMax;
+                        scrollTimer = 0.0f;
+                        scrollDirection = -1.0f;
+                    }
+                    else if (scrollOffset <= 0.0f)
+                    {
+                        isScrolling = false;
+                        scrollOffset = 0;
+                        scrollTimer = 0.0f;
+                        scrollDirection = 1.0f;
+                    }
+                }
+            }
+        
+            scrollOffset = std::clamp(scrollOffset, 0.0f, scrollMax);
+        }
+
+        SetVerticalMarqueeFade(clipRectMin, clipRectMax, Scale(24), Lerp(Scale(24), 0.0f, scrollOffset / scrollMax));
+
         DrawRubyAnnotatedText
         (
             g_seuratFont,
             fontSize,
             clipRectMax.x - clipRectMin.x,
-            { textX, textY },
+            { textX, textY - scrollOffset },
             5.0f,
             desc.c_str(),
-
             [=](const char* str, ImVec2 pos)
             {
-                DrawTextBasic(g_seuratFont, fontSize, pos, IM_COL32(255, 255, 255, 255), str);
+                DrawTextBasic(g_seuratFont, fontSize, pos, IM_COL32_WHITE, str);
             },
             [=](const char* str, float size, ImVec2 pos)
             {
-                DrawTextBasic(g_seuratFont, size, pos, IM_COL32(255, 255, 255, 255), str);
+                DrawTextBasic(g_seuratFont, size, pos, IM_COL32_WHITE, str);
             }
         );
 
+        ResetMarqueeFade();
+
         drawList->PopClipRect();
+
+        // Reset parameters on new selected row.
+        if (ImGui::GetTime() - g_rowSelectionTime <= 0.0f)
+        {
+            isScrolling = false;
+            scrollOffset = 0.0f;
+            scrollTimer = 0.0f;
+        }
     }
 
     ResetProceduralOrigin();
