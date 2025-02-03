@@ -40,6 +40,8 @@
 #ifdef UNLEASHED_RECOMP_D3D12
 #include "shader/blend_color_alpha_ps.hlsl.dxil.h"
 #include "shader/copy_vs.hlsl.dxil.h"
+#include "shader/copy_color_ps.hlsl.dxil.h"
+#include "shader/copy_depth_ps.hlsl.dxil.h"
 #include "shader/csd_filter_ps.hlsl.dxil.h"
 #include "shader/csd_no_tex_vs.hlsl.dxil.h"
 #include "shader/csd_vs.hlsl.dxil.h"
@@ -53,6 +55,9 @@
 #include "shader/imgui_vs.hlsl.dxil.h"
 #include "shader/movie_ps.hlsl.dxil.h"
 #include "shader/movie_vs.hlsl.dxil.h"
+#include "shader/resolve_msaa_color_2x.hlsl.dxil.h"
+#include "shader/resolve_msaa_color_4x.hlsl.dxil.h"
+#include "shader/resolve_msaa_color_8x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_2x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_4x.hlsl.dxil.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.dxil.h"
@@ -60,6 +65,8 @@
 
 #include "shader/blend_color_alpha_ps.hlsl.spirv.h"
 #include "shader/copy_vs.hlsl.spirv.h"
+#include "shader/copy_color_ps.hlsl.spirv.h"
+#include "shader/copy_depth_ps.hlsl.spirv.h"
 #include "shader/csd_filter_ps.hlsl.spirv.h"
 #include "shader/csd_no_tex_vs.hlsl.spirv.h"
 #include "shader/csd_vs.hlsl.spirv.h"
@@ -73,6 +80,9 @@
 #include "shader/imgui_vs.hlsl.spirv.h"
 #include "shader/movie_ps.hlsl.spirv.h"
 #include "shader/movie_vs.hlsl.spirv.h"
+#include "shader/resolve_msaa_color_2x.hlsl.spirv.h"
+#include "shader/resolve_msaa_color_4x.hlsl.spirv.h"
+#include "shader/resolve_msaa_color_8x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_2x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_4x.hlsl.spirv.h"
 #include "shader/resolve_msaa_depth_8x.hlsl.spirv.h"
@@ -1139,6 +1149,14 @@ static const std::pair<GuestRenderState, PPCFunc*> g_setRenderStateFunctions[] =
     { D3DRS_COLORWRITEENABLE, HostToGuestFunction<SetRenderState<D3DRS_COLORWRITEENABLE>> }
 };
 
+static std::unique_ptr<RenderShader> g_copyShader;
+
+static std::unique_ptr<RenderShader> g_copyColorShader;
+static ankerl::unordered_dense::map<RenderFormat, std::unique_ptr<RenderPipeline>> g_copyColorPipelines;
+static std::unique_ptr<RenderPipeline> g_copyDepthPipeline;
+
+static std::unique_ptr<RenderShader> g_resolveMsaaColorShaders[3];
+static ankerl::unordered_dense::map<RenderFormat, std::array<std::unique_ptr<RenderPipeline>, 3>> g_resolveMsaaColorPipelines;
 static std::unique_ptr<RenderPipeline> g_resolveMsaaDepthPipelines[3];
 
 enum
@@ -1711,7 +1729,23 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     
     g_pipelineLayout = pipelineLayoutBuilder.create(g_device.get());
 
-    auto copyShader = CREATE_SHADER(copy_vs);
+    g_copyShader = CREATE_SHADER(copy_vs);
+    g_copyColorShader = CREATE_SHADER(copy_color_ps);
+    auto copyDepthShader = CREATE_SHADER(copy_depth_ps);
+
+    RenderGraphicsPipelineDesc desc;
+    desc.pipelineLayout = g_pipelineLayout.get();
+    desc.vertexShader = g_copyShader.get();
+    desc.pixelShader = copyDepthShader.get();
+    desc.depthFunction = RenderComparisonFunction::ALWAYS;
+    desc.depthEnabled = true;
+    desc.depthWriteEnabled = true;
+    desc.depthTargetFormat = RenderFormat::D32_FLOAT;
+    g_copyDepthPipeline = g_device->createGraphicsPipeline(desc);
+
+    g_resolveMsaaColorShaders[0] = CREATE_SHADER(resolve_msaa_color_2x);
+    g_resolveMsaaColorShaders[1] = CREATE_SHADER(resolve_msaa_color_4x);
+    g_resolveMsaaColorShaders[2] = CREATE_SHADER(resolve_msaa_color_8x);
 
     for (size_t i = 0; i < std::size(g_resolveMsaaDepthPipelines); i++)
     {
@@ -1729,9 +1763,9 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
             break;
         }
 
-        RenderGraphicsPipelineDesc desc;
+        desc = {};
         desc.pipelineLayout = g_pipelineLayout.get();
-        desc.vertexShader = copyShader.get();
+        desc.vertexShader = g_copyShader.get();
         desc.pixelShader = pixelShader.get();
         desc.depthFunction = RenderComparisonFunction::ALWAYS;
         desc.depthEnabled = true;
@@ -1758,9 +1792,9 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
 
     auto gammaCorrectionShader = CREATE_SHADER(gamma_correction_ps);
 
-    RenderGraphicsPipelineDesc desc;
+    desc = {};
     desc.pipelineLayout = g_pipelineLayout.get();
-    desc.vertexShader = copyShader.get();
+    desc.vertexShader = g_copyShader.get();
     desc.pixelShader = gammaCorrectionShader.get();
     desc.renderTargetFormat[0] = BACKBUFFER_FORMAT;
     desc.renderTargetBlend[0] = RenderBlendDesc::Copy();
@@ -2714,7 +2748,13 @@ static GuestTexture* CreateTexture(uint32_t width, uint32_t height, uint32_t dep
     desc.mipLevels = levels;
     desc.arraySize = 1;
     desc.format = ConvertFormat(format);
-    desc.flags = (desc.format == RenderFormat::D32_FLOAT) ? RenderTextureFlag::DEPTH_TARGET : RenderTextureFlag::NONE;
+
+    if (desc.format == RenderFormat::D32_FLOAT)
+        desc.flags = RenderTextureFlag::DEPTH_TARGET;
+    else if (usage != 0)
+        desc.flags = RenderTextureFlag::RENDER_TARGET;
+    else
+        desc.flags = RenderTextureFlag::NONE;
 
     texture->textureHolder = g_device->createTexture(desc);
     texture->texture = texture->textureHolder.get();
@@ -2970,34 +3010,10 @@ static bool PopulateBarriersForStretchRect(GuestSurface* renderTarget, GuestSurf
     {
         if (surface != nullptr && !surface->destinationTextures.empty())
         {
-            const bool multiSampling = surface->sampleCount != RenderSampleCount::COUNT_1;
-
-            RenderTextureLayout srcLayout;
-            RenderTextureLayout dstLayout;
-
-            if (multiSampling)
-            {
-                if (surface == depthStencil)
-                {
-                    srcLayout = RenderTextureLayout::SHADER_READ;
-                    dstLayout = RenderTextureLayout::DEPTH_WRITE;
-                }
-                else
-                {
-                    srcLayout = RenderTextureLayout::RESOLVE_SOURCE;
-                    dstLayout = RenderTextureLayout::RESOLVE_DEST;
-                }
-            }
-            else
-            {
-                srcLayout = RenderTextureLayout::COPY_SOURCE;
-                dstLayout = RenderTextureLayout::COPY_DEST;
-            }
-
-            AddBarrier(surface, srcLayout);
+            AddBarrier(surface, RenderTextureLayout::SHADER_READ);
 
             for (const auto texture : surface->destinationTextures)
-                AddBarrier(texture, dstLayout);
+                AddBarrier(texture, texture->format == RenderFormat::D32_FLOAT ? RenderTextureLayout::DEPTH_WRITE : RenderTextureLayout::COLOR_WRITE);
 
             addedAny = true;
         }
@@ -3018,66 +3034,113 @@ static void ExecutePendingStretchRectCommands(GuestSurface* renderTarget, GuestS
 
             for (const auto texture : surface->destinationTextures)
             {
+                RenderPipeline* pipeline = nullptr;
+
                 if (multiSampling)
                 {
-                    if (surface == depthStencil)
+                    uint32_t pipelineIndex = 0;
+
+                    switch (surface->sampleCount)
                     {
-                        uint32_t pipelineIndex = 0;
+                    case RenderSampleCount::COUNT_2:
+                        pipelineIndex = 0;
+                        break;
+                    case RenderSampleCount::COUNT_4:
+                        pipelineIndex = 1;
+                        break;
+                    case RenderSampleCount::COUNT_8:
+                        pipelineIndex = 2;
+                        break;
+                    default:
+                        assert(false && "Unsupported MSAA sample count");
+                        break;
+                    }
 
-                        switch (surface->sampleCount)
-                        {
-                        case RenderSampleCount::COUNT_2:
-                            pipelineIndex = 0;
-                            break;
-                        case RenderSampleCount::COUNT_4:
-                            pipelineIndex = 1;
-                            break;
-                        case RenderSampleCount::COUNT_8:
-                            pipelineIndex = 2;
-                            break;
-                        default:
-                            assert(false && "Unsupported MSAA sample count");
-                            break;
-                        }
-
-                        if (texture->framebuffer == nullptr)
-                        {
-                            RenderFramebufferDesc desc;
-                            desc.depthAttachment = texture->texture;
-                            texture->framebuffer = g_device->createFramebuffer(desc);
-                        }
-
-                        if (g_framebuffer != texture->framebuffer.get())
-                        {
-                            commandList->setFramebuffer(texture->framebuffer.get());
-                            g_framebuffer = texture->framebuffer.get();
-                        }
-
-                        commandList->setPipeline(g_resolveMsaaDepthPipelines[pipelineIndex].get());
-                        commandList->setViewports(RenderViewport(0.0f, 0.0f, float(texture->width), float(texture->height), 0.0f, 1.0f));
-                        commandList->setScissors(RenderRect(0, 0, texture->width, texture->height));
-                        commandList->setGraphicsPushConstants(0, &surface->descriptorIndex, 0, sizeof(uint32_t));
-                        commandList->drawInstanced(6, 1, 0, 0);
-
-                        g_dirtyStates.renderTargetAndDepthStencil = true;
-                        g_dirtyStates.viewport = true;
-                        g_dirtyStates.pipelineState = true;
-                        g_dirtyStates.scissorRect = true;
-
-                        if (g_vulkan)
-                        {
-                            g_dirtyStates.depthBias = true; // Static depth bias in MSAA pipeline invalidates dynamic depth bias.
-                            g_dirtyStates.vertexShaderConstants = true;
-                        }
+                    if (texture->format == RenderFormat::D32_FLOAT)
+                    {
+                        pipeline = g_resolveMsaaDepthPipelines[pipelineIndex].get();
                     }
                     else
                     {
-                        commandList->resolveTexture(texture->texture, surface->texture);
+                        auto& resolveMsaaColorPipeline = g_resolveMsaaColorPipelines[surface->format][pipelineIndex];
+                        if (resolveMsaaColorPipeline == nullptr)
+                        {
+                            RenderGraphicsPipelineDesc desc;
+                            desc.pipelineLayout = g_pipelineLayout.get();
+                            desc.vertexShader = g_copyShader.get();
+                            desc.pixelShader = g_resolveMsaaColorShaders[pipelineIndex].get();
+                            desc.renderTargetFormat[0] = texture->format;
+                            desc.renderTargetBlend[0] = RenderBlendDesc::Copy();
+                            desc.renderTargetCount = 1;
+                            resolveMsaaColorPipeline = g_device->createGraphicsPipeline(desc);
+                        }
+
+                        pipeline = resolveMsaaColorPipeline.get();
                     }
                 }
                 else
                 {
-                    commandList->copyTexture(texture->texture, surface->texture);
+                    if (texture->format == RenderFormat::D32_FLOAT)
+                    {
+                        pipeline = g_copyDepthPipeline.get();
+                    }
+                    else
+                    {
+                        auto& copyColorPipeline = g_copyColorPipelines[surface->format];
+                        if (copyColorPipeline == nullptr)
+                        {
+                            RenderGraphicsPipelineDesc desc;
+                            desc.pipelineLayout = g_pipelineLayout.get();
+                            desc.vertexShader = g_copyShader.get();
+                            desc.pixelShader = g_copyColorShader.get();
+                            desc.renderTargetFormat[0] = texture->format;
+                            desc.renderTargetBlend[0] = RenderBlendDesc::Copy();
+                            desc.renderTargetCount = 1;
+                            copyColorPipeline = g_device->createGraphicsPipeline(desc);
+                        }
+
+                        pipeline = copyColorPipeline.get();
+                    }
+                }
+
+                if (texture->framebuffer == nullptr)
+                {
+                    if (texture->format == RenderFormat::D32_FLOAT)
+                    {
+                        RenderFramebufferDesc desc;
+                        desc.depthAttachment = texture->texture;
+                        texture->framebuffer = g_device->createFramebuffer(desc);
+                    }
+                    else
+                    {
+                        RenderFramebufferDesc desc;
+                        desc.colorAttachments = const_cast<const RenderTexture**>(&texture->texture);
+                        desc.colorAttachmentsCount = 1;
+                        texture->framebuffer = g_device->createFramebuffer(desc);
+                    }
+                }
+
+                if (g_framebuffer != texture->framebuffer.get())
+                {
+                    commandList->setFramebuffer(texture->framebuffer.get());
+                    g_framebuffer = texture->framebuffer.get();
+                }
+
+                commandList->setPipeline(pipeline);
+                commandList->setViewports(RenderViewport(0.0f, 0.0f, float(texture->width), float(texture->height), 0.0f, 1.0f));
+                commandList->setScissors(RenderRect(0, 0, texture->width, texture->height));
+                commandList->setGraphicsPushConstants(0, &surface->descriptorIndex, 0, sizeof(uint32_t));
+                commandList->drawInstanced(6, 1, 0, 0);
+
+                g_dirtyStates.renderTargetAndDepthStencil = true;
+                g_dirtyStates.viewport = true;
+                g_dirtyStates.pipelineState = true;
+                g_dirtyStates.scissorRect = true;
+
+                if (g_vulkan)
+                {
+                    g_dirtyStates.depthBias = true; // Static depth bias in copy pipeline invalidates dynamic depth bias.
+                    g_dirtyStates.vertexShaderConstants = true;
                 }
 
                 texture->sourceSurface = nullptr;
