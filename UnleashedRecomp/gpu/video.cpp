@@ -146,6 +146,14 @@ struct PipelineState
 };
 #pragma pack(pop)
 
+struct UploadAllocation
+{
+    const RenderBuffer* buffer;
+    uint64_t offset;
+    uint8_t* memory;
+    uint64_t deviceAddress;
+};
+
 struct SharedConstants
 {
     uint32_t texture2DIndices[16]{};
@@ -168,6 +176,8 @@ static RenderViewport g_viewport(0.0f, 0.0f, 1280.0f, 720.0f);
 static PipelineState g_pipelineState;
 static int32_t g_depthBias;
 static float g_slopeScaledDepthBias;
+static UploadAllocation g_vertexShaderConstants;
+static UploadAllocation g_pixelShaderConstants;
 static SharedConstants g_sharedConstants;
 static GuestTexture* g_textures[16];
 static RenderSamplerDesc g_samplerDescs[16];
@@ -388,14 +398,6 @@ struct UploadBuffer
     std::unique_ptr<RenderBuffer> buffer;
     uint8_t* memory = nullptr;
     uint64_t deviceAddress = 0;
-};
-
-struct UploadAllocation
-{
-    const RenderBuffer* buffer;
-    uint64_t offset;
-    uint8_t* memory;
-    uint64_t deviceAddress;
 };
 
 struct UploadAllocator
@@ -1480,6 +1482,9 @@ static void BeginCommandList()
 
     g_backBuffer->layout = RenderTextureLayout::UNKNOWN;
 
+    g_vertexShaderConstants = {};
+    g_pixelShaderConstants = {};
+
     for (size_t i = 0; i < 16; i++)
     {
         g_sharedConstants.texture2DIndices[i] = TEXTURE_DESCRIPTOR_NULL_TEXTURE_2D;
@@ -2524,6 +2529,15 @@ void Video::Present()
     g_presentProfiler.Reset();
 }
 
+static void Present(GuestDevice* device)
+{
+    Video::Present();
+
+    // Invalidate vertex/pixel shader constants.
+    device->dirtyFlags[0] = ~0;
+    device->dirtyFlags[1] = ~0;
+}
+
 void Video::StartPipelinePrecompilation()
 {
     g_shouldPrecompilePipelines = true;
@@ -3139,8 +3153,8 @@ static void ExecutePendingStretchRectCommands(GuestSurface* renderTarget, GuestS
 
                 if (g_vulkan)
                 {
+                    g_dirtyStates.vertexShaderConstants = true; // The push constant call invalidates vertex shader constants.
                     g_dirtyStates.depthBias = true; // Static depth bias in copy pipeline invalidates dynamic depth bias.
-                    g_dirtyStates.vertexShaderConstants = true;
                 }
 
                 texture->sourceSurface = nullptr;
@@ -3904,7 +3918,7 @@ static void FlushRenderStateForMainThread(GuestDevice* device, LocalRenderComman
         }
     }
 
-    if (g_dirtyStates.vertexShaderConstants || device->dirtyFlags[0] != 0)
+    if (device->dirtyFlags[0] != 0)
     {
         auto& cmd = queue.enqueue();
         cmd.type = RenderCommandType::SetVertexShaderConstants;
@@ -3913,7 +3927,7 @@ static void FlushRenderStateForMainThread(GuestDevice* device, LocalRenderComman
         device->dirtyFlags[0] = 0;
     }
 
-    if (g_dirtyStates.pixelShaderConstants || device->dirtyFlags[1] != 0)
+    if (device->dirtyFlags[1] != 0)
     {
         auto& cmd = queue.enqueue();
         cmd.type = RenderCommandType::SetPixelShaderConstants;
@@ -3978,12 +3992,14 @@ static void ProcSetSamplerState(const RenderCommand& cmd)
 
 static void ProcSetVertexShaderConstants(const RenderCommand& cmd)
 {
-    SetRootDescriptor(cmd.setVertexShaderConstants.allocation, 0);
+    g_vertexShaderConstants = cmd.setVertexShaderConstants.allocation;
+    g_dirtyStates.vertexShaderConstants = true;
 }
 
 static void ProcSetPixelShaderConstants(const RenderCommand& cmd)
 {
-    SetRootDescriptor(cmd.setPixelShaderConstants.allocation, 1);
+    g_pixelShaderConstants = cmd.setPixelShaderConstants.allocation;
+    g_dirtyStates.pixelShaderConstants = true;
 }
 
 static void ProcAddPipeline(const RenderCommand& cmd)
@@ -4072,6 +4088,12 @@ static void FlushRenderStateForRenderThread()
 
     if (g_dirtyStates.depthBias && g_capabilities.dynamicDepthBias)
         commandList->setDepthBias(g_depthBias, 0.0f, g_slopeScaledDepthBias);
+
+    if (g_dirtyStates.vertexShaderConstants)
+        SetRootDescriptor(g_vertexShaderConstants, 0);
+
+    if (g_dirtyStates.pixelShaderConstants)
+        SetRootDescriptor(g_pixelShaderConstants, 1);
 
     if (g_dirtyStates.sharedConstants)
     {
@@ -7064,7 +7086,7 @@ GUEST_FUNCTION_HOOK(sub_82BE96F0, GetSurfaceDesc);
 GUEST_FUNCTION_HOOK(sub_82BE04B0, GetVertexDeclaration);
 GUEST_FUNCTION_HOOK(sub_82BE0530, HashVertexDeclaration);
 
-GUEST_FUNCTION_HOOK(sub_82BDA8C0, Video::Present);
+GUEST_FUNCTION_HOOK(sub_82BDA8C0, Present);
 GUEST_FUNCTION_HOOK(sub_82BDD330, GetBackBuffer);
 
 GUEST_FUNCTION_HOOK(sub_82BE9498, CreateTexture);
