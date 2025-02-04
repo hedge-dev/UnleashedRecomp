@@ -297,14 +297,14 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         // Notes: message appears when clicking the "Add Files" option for the first time.
         "Installer_Message_FilePickerTutorial",
         {
-            { ELanguage::English, "Select a digital dump.\n\nFor choosing a folder with\nextracted and unmodified\ngame files, use the\n\"Add Folder\" option instead." },
+            { ELanguage::English, "Select a digital dump with content\nfrom the game.\n\nThese files can be obtained by following\nthe instructions on the GitHub page and\ncopying them from your Xbox 360's\nhard disk to your PC.\n\nFor choosing a folder with extracted\nand unmodified game files, use\nthe \"Add Folder\" option instead." },
         }
     },
     {
         // Notes: message appears when clicking the "Add Folder" option for the first time.
         "Installer_Message_FolderPickerTutorial",
         {
-            { ELanguage::English, "Select a folder that contains\nthe unmodified files that have\nbeen extracted from the game.\n\nFor choosing a digital dump,\nuse the\"Add Files\" option instead." },
+            { ELanguage::English, "Select a folder that contains the\nunmodified files that have been extracted\nfrom the game.\n\nYou can use this option to copy the\nfolders that were created by an emulator\nduring the game's installation.\n\nFor choosing a digital dump,\nuse the\"Add Files\" option instead." },
         }
     },
     {
