@@ -1225,7 +1225,7 @@ static void DrawSourcePickers()
     std::list<std::filesystem::path> paths;
     if (g_currentPage == WizardPage::SelectGameAndUpdate || g_currentPage == WizardPage::SelectDLC)
     {
-        constexpr float ADD_BUTTON_MAX_TEXT_WIDTH = 124.0f;
+        constexpr float ADD_BUTTON_MAX_TEXT_WIDTH = 168.0f;
         const std::string &addFilesText = Localise("Installer_Button_AddFiles");
         float squashRatio;
         ImVec2 textSize = ComputeTextSize(g_dfsogeistdFont, addFilesText.c_str(), 20.0f, squashRatio, ADD_BUTTON_MAX_TEXT_WIDTH);
@@ -1367,7 +1367,7 @@ static void DrawNavigationButton()
     }
 
     float squashRatio;
-    constexpr float NAV_BUTTON_MAX_TEXT_WIDTH = 72.0f;
+    constexpr float NAV_BUTTON_MAX_TEXT_WIDTH = 90.0f;
     const char *nextButtonKey = "Installer_Button_Next";
     if (skipButton)
     {
