@@ -203,12 +203,12 @@ int main(int argc, char *argv[])
         if (!Video::CreateHostDevice(sdlVideoDriver))
         {
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
-            return 1;
+            std::_Exit(1);
         }
 
         if (!InstallerWizard::Run(GAME_INSTALL_DIRECTORY, isGameInstalled && forceDLCInstaller))
         {
-            return 1;
+            std::_Exit(1);
         }
     }
 
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
         if (!Video::CreateHostDevice(sdlVideoDriver))
         {
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
-            return 1;
+            std::_Exit(1);
         }
     }
 
