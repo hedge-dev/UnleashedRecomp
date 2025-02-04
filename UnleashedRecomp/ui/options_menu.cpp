@@ -339,7 +339,7 @@ static float AlignToNextGrid(float value)
     return round(value / GRID_SIZE) * GRID_SIZE;
 }
 
-static void DrawContainer(ImVec2 min, ImVec2 max)
+static void DrawContainer(ImVec2 min, ImVec2 max, bool drawRightOutline)
 {
     double containerHeight = g_isStage ? 1.0 : ComputeMotion(g_appearTime, 0.0, CONTAINER_LINE_ANIMATION_DURATION);
 
@@ -365,10 +365,10 @@ static void DrawContainer(ImVec2 min, ImVec2 max)
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_CHECKERBOARD);
 
-    drawList->AddRectFilled(min, { min.x + gridSize, max.y }, outerColor); // Container outline left
-    drawList->AddRectFilled({ max.x - gridSize, min.y }, max, outerColor); // Container outline right
-    drawList->AddRectFilled({ min.x + gridSize, min.y }, { max.x - gridSize, min.y + gridSize }, outerColor); // Container outline top
-    drawList->AddRectFilled({ min.x + gridSize, max.y - gridSize }, { max.x - gridSize, max.y }, outerColor); // Container outline bottom
+    drawList->AddRectFilled({ min.x, min.y + gridSize }, { min.x + gridSize, max.y - gridSize }, outerColor); // Container outline left
+    drawList->AddRectFilled({ max.x - gridSize, min.y + gridSize }, { max.x, max.y - gridSize }, drawRightOutline ? outerColor : innerColor); // Container outline right
+    drawList->AddRectFilled(min, { max.x, min.y + gridSize }, outerColor); // Container outline top
+    drawList->AddRectFilled({ min.x, max.y - gridSize }, max, outerColor); // Container outline bottom
 
     drawList->AddRectFilled({ min.x + gridSize, min.y + gridSize }, { max.x - gridSize, max.y - gridSize }, innerColor); // Inner container
 
@@ -1310,7 +1310,7 @@ static void DrawSettingsPanel(ImVec2 settingsMin, ImVec2 settingsMax)
     auto drawList = ImGui::GetForegroundDrawList();
 
     SetProceduralOrigin(settingsMin);
-    DrawContainer(settingsMin, settingsMax);
+    DrawContainer(settingsMin, settingsMax, true);
 
     if (DrawCategories())
     {
@@ -1334,7 +1334,7 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
     auto drawList = ImGui::GetForegroundDrawList();
 
     SetProceduralOrigin(infoMin);
-    DrawContainer(infoMin, infoMax);
+    DrawContainer(infoMin, infoMax, false);
 
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
