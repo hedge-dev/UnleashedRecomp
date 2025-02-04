@@ -624,7 +624,7 @@ ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMar
         x = std::max(x, textSize.x);
         y += textSize.y + Scale(lineMargin);
 
-        if (paragraph.annotated)
+        if (paragraph.annotated && i != (annotationRemovedLines.size() - 1))
             y += fontSize * ANNOTATION_FONT_SIZE_MODIFIER;
     }
 
