@@ -1373,7 +1373,11 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
                 desc = buf;
             }
 
-            desc += "\n\n" + g_selectedItem->GetValueDescription(Config::Language);
+            const auto& valueDescription = g_selectedItem->GetValueDescription(Config::Language);
+            if (!valueDescription.empty())
+            {
+                desc += "\n\n" + valueDescription;
+            }
         }
 
         clipRectMin = { clipRectMin.x, thumbnailMax.y };
@@ -1388,7 +1392,6 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
 
         auto textX = clipRectMin.x - Scale(0.5f);
         auto textY = thumbnailMax.y + offsetY;
-        auto textSize = MeasureCentredParagraph(g_seuratFont, fontSize, clipRectMax.x - clipRectMin.x, 5.0f, desc.c_str());
 
         if (Config::Language == ELanguage::Japanese)
         {
@@ -1404,6 +1407,8 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
 
             textY += annotationFontSize;
         }
+
+        auto textSize = MeasureCentredParagraph(g_seuratFont, fontSize, clipRectMax.x - clipRectMin.x, 5.0f, desc.c_str());
 
         drawList->PushClipRect(clipRectMin, clipRectMax, false);
 

@@ -292,9 +292,9 @@ void MessageWindow::Draw()
     if (Config::Language == ELanguage::Japanese)
     {
         textMarginX -= Scale(2.5f);
-        textMarginY -= Scale(7.5f);
+        textMarginY -= Scale(2.0f);
 
-        textY += Scale(lines.size() % 2 == 0 ? 8.5f : 15.5f);
+        textY += Scale(lines.size() % 2 == 0 ? 1.5f : 8.0f);
     }
 
     bool isController = hid::IsInputDeviceController();
