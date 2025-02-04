@@ -1239,22 +1239,62 @@ static void DrawConfigOptions()
 
     int32_t prevSelectedRowIndex = g_selectedRowIndex;
 
+    auto time = ImGui::GetTime();
+    auto fastScroll = (time - g_lastTappedTime) > 0.6;
+    auto fastScrollSpeed = 1.0 / 3.5;
+    auto fastScrollEncounteredEdge = false;
+    static auto fastScrollSpeedUp = false;
+
+    if (scrollUp || scrollDown)
+        g_lastTappedTime = time;
+
+    if (!upIsHeld && !downIsHeld)
+        fastScrollSpeedUp = false;
+
+    if (fastScrollSpeedUp)
+        fastScrollSpeed /= 2;
+
+    if (fastScroll)
+    {
+        if ((time - g_lastIncrementTime) < fastScrollSpeed)
+        {
+            fastScroll = false;
+        }
+        else
+        {
+            g_lastIncrementTime = time;
+
+            scrollUp = upIsHeld;
+            scrollDown = downIsHeld;
+        }
+    }
+
     if (scrollUp)
     {
         --g_selectedRowIndex;
+
         if (g_selectedRowIndex < 0)
-            g_selectedRowIndex = rowCount - 1;
+        {
+            g_selectedRowIndex = fastScroll ? 0 : rowCount - 1;
+            fastScrollEncounteredEdge = fastScroll;
+            fastScrollSpeedUp = false;
+        }
     }
     else if (scrollDown)
     {
         ++g_selectedRowIndex;
+
         if (g_selectedRowIndex >= rowCount)
-            g_selectedRowIndex = 0;
+        {
+            g_selectedRowIndex = fastScroll ? rowCount - 1 : 0;
+            fastScrollEncounteredEdge = fastScroll;
+            fastScrollSpeedUp = false;
+        }
     }
 
-    if (scrollUp || scrollDown)
+    if ((scrollUp || scrollDown) && !fastScrollEncounteredEdge)
     {
-        g_rowSelectionTime = ImGui::GetTime();
+        g_rowSelectionTime = time;
         g_prevSelectedRowIndex = prevSelectedRowIndex;
         Game_PlaySound("sys_worldmap_cursor");
     }
@@ -1270,12 +1310,18 @@ static void DrawConfigOptions()
     {
         g_firstVisibleRowIndex = g_selectedRowIndex;
         disableMoveAnimation = true;
+
+        if (g_selectedRowIndex > 0)
+            fastScrollSpeedUp = true;
     }
 
     if (g_firstVisibleRowIndex + visibleRowCount - 1 < g_selectedRowIndex)
     {
         g_firstVisibleRowIndex = std::max(0, g_selectedRowIndex - visibleRowCount + 1);
         disableMoveAnimation = true;
+
+        if (g_selectedRowIndex < rowCount - 1)
+            fastScrollSpeedUp = true;
     }
 
     if (disableMoveAnimation)
