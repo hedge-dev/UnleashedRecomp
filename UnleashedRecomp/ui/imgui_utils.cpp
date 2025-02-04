@@ -633,7 +633,13 @@ ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float lineMar
 
 ImVec2 MeasureCentredParagraph(const ImFont* font, float fontSize, float maxWidth, float lineMargin, const char* text)
 {
-    return MeasureCentredParagraph(font, fontSize, lineMargin, Split(text, font, fontSize, maxWidth));
+    const auto input = RemoveRubyAnnotations(text);
+    auto lines = Split(input.first.c_str(), font, fontSize, maxWidth);
+
+    for (auto& line : lines)
+        line = ReAddRubyAnnotations(line, input.second);
+
+    return MeasureCentredParagraph(font, fontSize, lineMargin, lines);
 }
 
 void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, const ImVec2& pos, float lineMargin, const char* text, std::function<void(const char*, ImVec2)> drawMethod, std::function<void(const char*, float, ImVec2)> annotationDrawMethod, bool isCentred)
