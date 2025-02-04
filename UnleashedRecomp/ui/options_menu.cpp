@@ -1388,7 +1388,6 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
 
         auto textX = clipRectMin.x - Scale(0.5f);
         auto textY = thumbnailMax.y + offsetY;
-        auto textSize = MeasureCentredParagraph(g_seuratFont, fontSize, clipRectMax.x - clipRectMin.x, 5.0f, desc.c_str());
 
         if (Config::Language == ELanguage::Japanese)
         {
@@ -1404,6 +1403,14 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
 
             textY += annotationFontSize;
         }
+
+        const auto input = RemoveRubyAnnotations(desc.c_str());
+        auto lines = Split(input.first.c_str(), g_seuratFont, fontSize, clipRectMax.x - clipRectMin.x);
+
+        for (auto& line : lines)
+            line = ReAddRubyAnnotations(line, input.second);
+
+        auto textSize = MeasureCentredParagraph(g_seuratFont, fontSize, 5.0f, lines);
 
         drawList->PushClipRect(clipRectMin, clipRectMax, false);
 
