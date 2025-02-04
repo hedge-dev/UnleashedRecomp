@@ -54,6 +54,7 @@ static constexpr double CONTAINER_INNER_TIME = SCANLINES_ANIMATION_DURATION + CO
 static constexpr double CONTAINER_INNER_DURATION = 15.0;
 
 static constexpr double ALL_ANIMATIONS_FULL_DURATION = CONTAINER_INNER_TIME + CONTAINER_INNER_DURATION;
+static constexpr double QUITTING_EXTRA_DURATION = 60.0;
 
 static constexpr double INSTALL_ICONS_FADE_IN_ANIMATION_TIME = 0.0;
 static constexpr double INSTALL_ICONS_FADE_IN_ANIMATION_DURATION = 15.0;
@@ -1730,7 +1731,13 @@ void InstallerWizard::Draw()
 
     if (g_isDisappearing)
     {
-        const double disappearDuration = ALL_ANIMATIONS_FULL_DURATION / 60.0;
+        double disappearDuration = ALL_ANIMATIONS_FULL_DURATION / 60.0;
+        if (g_isQuitting)
+        {
+            // Add some extra waiting time when quitting the application altogether.
+            disappearDuration += QUITTING_EXTRA_DURATION / 60.0;
+        }
+
         if (ImGui::GetTime() > (g_disappearTime + disappearDuration))
         {
             s_isVisible = false;
