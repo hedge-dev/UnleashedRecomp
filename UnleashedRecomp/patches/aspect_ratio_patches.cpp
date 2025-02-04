@@ -3,6 +3,7 @@
 #include <app.h>
 #include <ui/game_window.h>
 #include <gpu/video.h>
+#include <xxHashMap.h>
 
 #include "aspect_ratio_patches.h"
 #include "camera_patches.h"
@@ -348,7 +349,7 @@ struct CsdModifier
     uint32_t cornerIndex{};
 };
 
-static const ankerl::unordered_dense::map<XXH64_hash_t, CsdModifier> g_modifiers =
+static const xxHashMap<CsdModifier> g_modifiers =
 {
     // ui_balloon
     { HashStr("ui_balloon/window/bg"), { STRETCH } },
@@ -1147,8 +1148,8 @@ PPC_FUNC(sub_830D1EF0)
             y = g_aspectRatioOffsetY + (y + 0.5f) * g_aspectRatioScale;
         }
 
-        vertex[i].x = ((x - 0.5f) / Video::s_viewportWidth) * 2.0f - 1.0f;
-        vertex[i].y = ((y - 0.5f) / Video::s_viewportHeight) * -2.0f + 1.0f;
+        vertex[i].x = ((round(x) - 0.5f) / Video::s_viewportWidth) * 2.0f - 1.0f;
+        vertex[i].y = ((round(y) - 0.5f) / Video::s_viewportHeight) * -2.0f + 1.0f;
     }
 
     bool letterboxTop = PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x1);

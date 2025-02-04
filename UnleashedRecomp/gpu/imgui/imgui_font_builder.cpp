@@ -221,6 +221,8 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
     for (size_t i = 0; i < atlas->ConfigData.size(); i++)
     {
         auto& config = atlas->ConfigData[i];
+        bool increaseSpacing = strstr(config.Name, "Seurat") != nullptr;
+
         auto& [index, count] = ranges[i];
         for (size_t j = 0; j < count; j++)
         {
@@ -228,6 +230,11 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
             double x0, y0, x1, y1, u0, v0, u1, v1;
             glyph.getQuadPlaneBounds(x0, y0, x1, y1);
             glyph.getQuadAtlasBounds(u0, v0, u1, v1);
+
+            double advance = glyph.getAdvance();
+            if (increaseSpacing && glyph.getCodepoint() == ' ')
+                advance *= 1.5;
+
             config.DstFont->AddGlyph(
                 &config,
                 glyph.getCodepoint(),
@@ -239,7 +246,7 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
                 v1 / packer.height, 
                 u1 / packer.width, 
                 v0 / packer.height, 
-                glyph.getAdvance());
+                advance);
         }
 
         config.DstFont->BuildLookupTable();
