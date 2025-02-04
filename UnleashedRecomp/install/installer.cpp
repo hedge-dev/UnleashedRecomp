@@ -435,7 +435,7 @@ bool Installer::parseSources(const Input &input, Journal &journal, Sources &sour
     return true;
 }
 
-bool Installer::install(const Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, const std::function<bool()> &progressCallback)
+bool Installer::install(const Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, std::chrono::seconds endWaitTime, const std::function<bool()> &progressCallback)
 {
     // Install files in reverse order of importance. In case of a process crash or power outage, this will increase the likelihood of the installation
     // missing critical files required for the game to run. These files are used as the way to detect if the game is installed.
@@ -504,11 +504,20 @@ bool Installer::install(const Sources &sources, const std::filesystem::path &tar
     // Update the progress with the artificial amount attributed to the patching.
     journal.progressCounter += PatcherContribution;
     
-    if (!progressCallback())
+    for (uint32_t i = 0; i < 2; i++)
     {
-        journal.lastResult = Journal::Result::Cancelled;
-        journal.lastErrorMessage = "Installation was cancelled.";
-        return false;
+        if (!progressCallback())
+        {
+            journal.lastResult = Journal::Result::Cancelled;
+            journal.lastErrorMessage = "Installation was cancelled.";
+            return false;
+        }
+
+        if (i == 0)
+        {
+            // Wait the specified amount of time to allow the consumer of the callbacks to animate, halt or cancel the installation for a while after it's finished.
+            std::this_thread::sleep_for(endWaitTime);
+        }
     }
 
     return true;

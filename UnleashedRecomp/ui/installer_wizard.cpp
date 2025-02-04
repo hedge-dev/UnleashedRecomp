@@ -1286,7 +1286,7 @@ static void DrawInstallingProgress()
 
 static void InstallerThread()
 {
-    if (!Installer::install(g_installerSources, g_installPath, false, g_installerJournal, [&]() {
+    if (!Installer::install(g_installerSources, g_installPath, false, g_installerJournal, std::chrono::seconds(1), [&]() {
         g_installerProgressRatioTarget = float(double(g_installerJournal.progressCounter) / double(g_installerJournal.progressTotal));
 
         // If user is being asked for confirmation on cancelling the installation, halt the installer from progressing further.
@@ -1303,8 +1303,6 @@ static void InstallerThread()
         Installer::rollback(g_installerJournal);
     }
 
-    // Rest for a bit after finishing the installation, the device is tired
-    std::this_thread::sleep_for(std::chrono::seconds(1));
     g_installerFinished = true;
     g_installerCancelled = false;
 }
