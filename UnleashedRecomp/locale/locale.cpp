@@ -189,8 +189,8 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
     {
         "Installer_Page_CheckSpace",
         {
-            { ELanguage::English, "The content will be installed to the program's folder.\n\nPlease confirm that you have enough free space.\n\n" },
-            { ELanguage::Italian, "Il contenuto verrà installato nella cartella di questo programma. Assicurati di avere abbastanza spazio libero sul tuo hard disk.\n\n" }
+            { ELanguage::English, "The content will be installed to the program's folder.\n\n" },
+            { ELanguage::Italian, "Il contenuto verrà installato nella cartella di questo programma.\n\n" }
         }
     },
     {
