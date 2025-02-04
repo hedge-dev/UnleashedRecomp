@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
 
         if (!InstallerWizard::Run(GAME_INSTALL_DIRECTORY, isGameInstalled && forceDLCInstaller))
         {
-            std::_Exit(1);
+            std::_Exit(0);
         }
     }
 
