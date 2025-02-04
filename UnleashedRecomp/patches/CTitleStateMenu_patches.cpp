@@ -1,9 +1,12 @@
 #include <api/SWA.h>
+#include <cpu/guest_stack_var.h>
 #include <locale/locale.h>
+#include <os/logger.h>
 #include <ui/button_guide.h>
 #include <ui/fader.h>
 #include <ui/message_window.h>
 #include <ui/options_menu.h>
+#include <user/achievement_manager.h>
 #include <user/paths.h>
 #include <app.h>
 #include <exports.h>
@@ -50,12 +53,14 @@ PPC_FUNC_IMPL(__imp__sub_825882B8);
 PPC_FUNC(sub_825882B8)
 {
     auto pTitleState = (SWA::CTitleStateBase*)g_memory.Translate(ctx.r3.u32);
+    auto pGameDocument = SWA::CGameDocument::GetInstance();
 
     auto pInputState = SWA::CInputState::GetInstance();
     auto& pPadState = pInputState->GetPadState();
     auto isAccepted = pPadState.IsTapped(SWA::eKeyState_A) || pPadState.IsTapped(SWA::eKeyState_Start);
 
     auto pContext = pTitleState->GetContextBase<SWA::CTitleStateBase::CTitleStateContext>();
+    auto isNewGameIndex = pContext->m_pTitleMenu->m_CursorIndex == 0;
     auto isOptionsIndex = pContext->m_pTitleMenu->m_CursorIndex == 2;
     auto isInstallIndex = pContext->m_pTitleMenu->m_CursorIndex == 3;
 
@@ -63,7 +68,17 @@ PPC_FUNC(sub_825882B8)
     if (App::s_isSaveDataCorrupt && pContext->m_pTitleMenu->m_CursorIndex == 1)
         pContext->m_pTitleMenu->m_CursorIndex = 0;
 
-    if (!OptionsMenu::s_isVisible && isOptionsIndex)
+    if (isNewGameIndex && isAccepted)
+    {
+        if (pContext->m_pTitleMenu->m_IsDeleteCheckMessageOpen &&
+            pGameDocument->m_pMember->m_pGeneralWindow->m_SelectedIndex == 1)
+        {
+            LOGN("Resetting achievements...");
+
+            AchievementManager::Reset();
+        }
+    }
+    else if (!OptionsMenu::s_isVisible && isOptionsIndex)
     {
         if (OptionsMenu::s_isRestartRequired)
         {
@@ -76,7 +91,6 @@ PPC_FUNC(sub_825882B8)
         {
             Game_PlaySound("sys_worldmap_window");
             Game_PlaySound("sys_worldmap_decide");
-
             OptionsMenu::Open();
         }
     }
@@ -93,7 +107,6 @@ PPC_FUNC(sub_825882B8)
         if (OptionsMenu::CanClose() && pPadState.IsTapped(SWA::eKeyState_B))
         {
             Game_PlaySound("sys_worldmap_cansel");
-
             OptionsMenu::Close();
         }
     }

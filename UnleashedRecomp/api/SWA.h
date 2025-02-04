@@ -102,6 +102,7 @@
 #include "SWA/System/GameMode/Title/TitleMenu.h"
 #include "SWA/System/GameMode/Title/TitleStateBase.h"
 #include "SWA/System/GameMode/Title/TitleStateIntro.h"
+#include "SWA/System/GameMode/Title/TitleStateMenu.h"
 #include "SWA/System/GameMode/Title/TitleStateWorldMap.h"
 #include "SWA/System/GameMode/WorldMap/WorldMapCamera.h"
 #include "SWA/System/GameMode/WorldMap/WorldMapCursor.h"

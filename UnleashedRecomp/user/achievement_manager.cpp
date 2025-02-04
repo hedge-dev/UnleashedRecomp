@@ -67,9 +67,15 @@ void AchievementManager::Unlock(uint16_t id)
         AchievementOverlay::Open(id);
 }
 
-void AchievementManager::Load()
+void AchievementManager::Reset()
 {
     Data = {};
+}
+
+void AchievementManager::Load()
+{
+    AchievementManager::Reset();
+
     Status = EAchStatus::Success;
 
     auto dataPath = GetDataPath(true);

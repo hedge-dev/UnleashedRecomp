@@ -27,6 +27,7 @@ public:
     static size_t GetTotalRecords();
     static bool IsUnlocked(uint16_t id);
     static void Unlock(uint16_t id);
+    static void Reset();
     static void Load();
     static void Save(bool ignoreStatus = false);
 };
