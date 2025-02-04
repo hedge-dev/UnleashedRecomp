@@ -98,6 +98,7 @@ static double g_arrowCircleCurrentRotation = 0.0;
 static double g_appearTime = 0.0;
 static double g_disappearTime = DBL_MAX;
 static bool g_isDisappearing = false;
+static bool g_isQuitting = false;
 
 static std::filesystem::path g_installPath;
 static std::filesystem::path g_gameSourcePath;
@@ -118,6 +119,8 @@ static double g_installerEndTime = DBL_MAX;
 static float g_installerProgressRatioCurrent = 0.0f;
 static std::atomic<float> g_installerProgressRatioTarget = 0.0f;
 static std::atomic<bool> g_installerFinished = false;
+static std::atomic<bool> g_installerHalted = false;
+static std::atomic<bool> g_installerCancelled = false;
 static bool g_installerFailed = false;
 static std::string g_installerErrorMessage;
 
@@ -133,9 +136,17 @@ enum class WizardPage
     InstallFailed,
 };
 
+enum class MessagePromptSource
+{
+    Unknown,
+    Next,
+    Back
+};
+
 static WizardPage g_firstPage = WizardPage::SelectLanguage;
 static WizardPage g_currentPage = g_firstPage;
 static std::string g_currentMessagePrompt = "";
+static MessagePromptSource g_currentMessagePromptSource = MessagePromptSource::Unknown;
 static bool g_currentMessagePromptConfirmation = false;
 static std::list<std::filesystem::path> g_currentPickerResults;
 static std::atomic<bool> g_currentPickerResultsReady = false;
@@ -151,6 +162,7 @@ static ImVec2 g_joypadAxis = {};
 static int g_currentCursorIndex = -1;
 static int g_currentCursorDefault = 0;
 static bool g_currentCursorAccepted = false;
+static bool g_currentCursorBack = false;
 static std::vector<std::pair<ImVec2, ImVec2>> g_currentCursorRects;
 static std::string g_creditsStr;
 
@@ -185,6 +197,9 @@ public:
                     case SDL_SCANCODE_KP_ENTER:
                         g_currentCursorAccepted = (g_currentCursorIndex >= 0);
                         break;
+                    case SDL_SCANCODE_ESCAPE:
+                        g_currentCursorBack = true;
+                        break;
                 }
 
                 break;
@@ -208,6 +223,9 @@ public:
                         break;
                     case SDL_CONTROLLER_BUTTON_A:
                         g_currentCursorAccepted = (g_currentCursorIndex >= 0);
+                        break;
+                    case SDL_CONTROLLER_BUTTON_B:
+                        g_currentCursorBack = true;
                         break;
                 }
 
@@ -807,15 +825,43 @@ static void DrawDescriptionContainer()
     DrawContainer(sideMin, sideMax, false);
     drawList->PopClipRect();
 
+    EButtonIcon backIcon;
+    EButtonIcon selectIcon;
+    if (hid::IsInputDeviceController())
+    {
+        backIcon = EButtonIcon::B;
+        selectIcon = EButtonIcon::A;
+    }
+    else if (hid::g_inputDevice == hid::EInputDevice::Keyboard)
+    {
+        backIcon = EButtonIcon::Escape;
+        selectIcon = EButtonIcon::Enter;
+    }
+    else
+    {
+        backIcon = EButtonIcon::Escape;
+        selectIcon = EButtonIcon::LMB;
+    }
+
     if (g_currentPage != WizardPage::Installing && textAlpha >= 1.0)
     {
-        auto icon = hid::IsInputDeviceController()
-            ? EButtonIcon::A
-            : hid::g_inputDevice == hid::EInputDevice::Keyboard
-                ? EButtonIcon::Enter
-                : EButtonIcon::LMB;
+        const char *backKey = "Common_Back";
+        if ((g_currentPage == g_firstPage) || (g_currentPage == WizardPage::InstallFailed))
+        {
+            backKey = "Common_Quit";
+        }
 
-        ButtonGuide::Open(Button(Localise("Common_Select"), icon));
+        std::array<Button, 2> buttons =
+        {
+            Button(Localise("Common_Select"), selectIcon),
+            Button(Localise(backKey), backIcon)
+        };
+
+        ButtonGuide::Open(buttons);
+    }
+    else if (g_currentPage == WizardPage::Installing)
+    {
+        ButtonGuide::Open(Button(Localise("Common_Cancel"), backIcon));
     }
     else
     {
@@ -1178,27 +1224,23 @@ static void DrawSourcePickers()
     std::list<std::filesystem::path> paths;
     if (g_currentPage == WizardPage::SelectGameAndUpdate || g_currentPage == WizardPage::SelectDLC)
     {
-        constexpr float ADD_BUTTON_MAX_TEXT_WIDTH = 160.0f;
+        constexpr float ADD_BUTTON_MAX_TEXT_WIDTH = 124.0f;
         const std::string &addFilesText = Localise("Installer_Button_AddFiles");
         float squashRatio;
         ImVec2 textSize = ComputeTextSize(g_dfsogeistdFont, addFilesText.c_str(), 20.0f, squashRatio, ADD_BUTTON_MAX_TEXT_WIDTH);
-        textSize.x += BUTTON_TEXT_GAP;
-
         ImVec2 min = { g_aspectRatioOffsetX + Scale(CONTAINER_X + BOTTOM_X_GAP), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP) };
-        ImVec2 max = { g_aspectRatioOffsetX + Scale(CONTAINER_X + BOTTOM_X_GAP + textSize.x * squashRatio), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
+        ImVec2 max = { g_aspectRatioOffsetX + Scale(CONTAINER_X + BOTTOM_X_GAP + textSize.x * squashRatio + BUTTON_TEXT_GAP), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
         DrawButton(min, max, addFilesText.c_str(), false, true, buttonPressed, ADD_BUTTON_MAX_TEXT_WIDTH);
         if (buttonPressed)
         {
             PickerShow(false);
         }
 
-        min.x += Scale(BOTTOM_X_GAP + textSize.x * squashRatio);
+        min.x += Scale(BOTTOM_X_GAP + textSize.x * squashRatio + BUTTON_TEXT_GAP);
 
         const std::string &addFolderText = Localise("Installer_Button_AddFolder");
         textSize = ComputeTextSize(g_dfsogeistdFont, addFolderText.c_str(), 20.0f, squashRatio, ADD_BUTTON_MAX_TEXT_WIDTH);
-        textSize.x += BUTTON_TEXT_GAP;
-
-        max.x = min.x + Scale(textSize.x * squashRatio);
+        max.x = min.x + Scale(textSize.x * squashRatio + BUTTON_TEXT_GAP);
         DrawButton(min, max, addFolderText.c_str(), false, true, buttonPressed, ADD_BUTTON_MAX_TEXT_WIDTH);
         if (buttonPressed)
         {
@@ -1246,6 +1288,12 @@ static void InstallerThread()
 {
     if (!Installer::install(g_installerSources, g_installPath, false, g_installerJournal, [&]() {
         g_installerProgressRatioTarget = float(double(g_installerJournal.progressCounter) / double(g_installerJournal.progressTotal));
+
+        // If user is being asked for confirmation on cancelling the installation, halt the installer from progressing further.
+        g_installerHalted.wait(true);
+
+        // If user has confirmed they wish to cancel the installation, return false to indicate the installer should fail and stop.
+        return !g_installerCancelled.load();
     }))
     {
         g_installerFailed = true;
@@ -1258,6 +1306,7 @@ static void InstallerThread()
     // Rest for a bit after finishing the installation, the device is tired
     std::this_thread::sleep_for(std::chrono::seconds(1));
     g_installerFinished = true;
+    g_installerCancelled = false;
 }
 
 static void InstallerStart()
@@ -1298,104 +1347,162 @@ static bool InstallerParseSources(std::string &errorMessage)
     return sourcesParsed;
 }
 
-static void DrawNextButton()
+static void DrawNavigationButton()
 {
-    if (g_currentPage != WizardPage::Installing)
+    if (g_currentPage == WizardPage::Installing)
     {
-        bool nextButtonEnabled = !g_isDisappearing;
-        if (nextButtonEnabled && g_currentPage == WizardPage::SelectGameAndUpdate)
+        // Navigation buttons are not offered during installation at the moment.
+        return;
+    }
+
+    bool nextButtonEnabled = !g_isDisappearing && (g_currentPage != WizardPage::Installing);
+    if (nextButtonEnabled && g_currentPage == WizardPage::SelectGameAndUpdate)
+    {
+        nextButtonEnabled = !g_gameSourcePath.empty() && !g_updateSourcePath.empty();
+    }
+
+    bool skipButton = false;
+    if (g_currentPage == WizardPage::SelectDLC)
+    {
+        skipButton = std::all_of(g_dlcSourcePaths.begin(), g_dlcSourcePaths.end(), [](const std::filesystem::path &path) { return path.empty(); });
+    }
+
+    float squashRatio;
+    constexpr float NAV_BUTTON_MAX_TEXT_WIDTH = 72.0f;
+    const char *nextButtonKey = "Installer_Button_Next";
+    if (skipButton)
+    {
+        nextButtonKey = "Installer_Button_Skip";
+    }
+    else if (g_currentPage == WizardPage::InstallFailed)
+    {
+        nextButtonKey = "Installer_Button_Retry";
+    }
+
+    const std::string &nextButtonText = Localise(nextButtonKey);
+    ImVec2 nextTextSize = ComputeTextSize(g_newRodinFont, nextButtonText.c_str(), 20.0f, squashRatio, NAV_BUTTON_MAX_TEXT_WIDTH);
+    ImVec2 min = { g_aspectRatioOffsetX + Scale(CONTAINER_X + CONTAINER_WIDTH - nextTextSize.x * squashRatio - BOTTOM_X_GAP - BUTTON_TEXT_GAP), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP) };
+    ImVec2 max = { g_aspectRatioOffsetX + Scale(CONTAINER_X + CONTAINER_WIDTH - BOTTOM_X_GAP), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
+
+    bool buttonPressed = false;
+    DrawButton(min, max, nextButtonText.c_str(), false, nextButtonEnabled, buttonPressed, NAV_BUTTON_MAX_TEXT_WIDTH);
+
+    if (buttonPressed)
+    {
+        XexPatcher::Result patcherResult;
+        if (g_currentPage == WizardPage::SelectGameAndUpdate && (patcherResult = Installer::checkGameUpdateCompatibility(g_gameSourcePath, g_updateSourcePath), patcherResult != XexPatcher::Result::Success))
         {
-            nextButtonEnabled = !g_gameSourcePath.empty() && !g_updateSourcePath.empty();
+            g_currentMessagePrompt = Localise("Installer_Message_IncompatibleGameData");
+            g_currentMessagePromptConfirmation = false;
         }
-
-        bool skipButton = false;
-        if (g_currentPage == WizardPage::SelectDLC)
+        else if (g_currentPage == WizardPage::SelectDLC)
         {
-            skipButton = std::all_of(g_dlcSourcePaths.begin(), g_dlcSourcePaths.end(), [](const std::filesystem::path &path) { return path.empty(); });
-        }
-
-        float squashRatio;
-        constexpr float NEXT_BUTTON_MAX_TEXT_WIDTH = 100.0f;
-        const std::string &buttonText = Localise(skipButton ? "Installer_Button_Skip" : "Installer_Button_Next");
-        ImVec2 textSize = ComputeTextSize(g_newRodinFont, buttonText.c_str(), 20.0f, squashRatio, NEXT_BUTTON_MAX_TEXT_WIDTH);
-        textSize.x += BUTTON_TEXT_GAP;
-
-        ImVec2 min = { g_aspectRatioOffsetX + Scale(CONTAINER_X + CONTAINER_WIDTH - textSize.x * squashRatio - BOTTOM_X_GAP), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP) };
-        ImVec2 max = { g_aspectRatioOffsetX + Scale(CONTAINER_X + CONTAINER_WIDTH - BOTTOM_X_GAP), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
-
-        bool buttonPressed = false;
-        DrawButton(min, max, buttonText.c_str(), false, nextButtonEnabled, buttonPressed, NEXT_BUTTON_MAX_TEXT_WIDTH);
-
-        if (buttonPressed)
-        {
-            XexPatcher::Result patcherResult;
-            if (g_currentPage == WizardPage::SelectGameAndUpdate && (patcherResult = Installer::checkGameUpdateCompatibility(g_gameSourcePath, g_updateSourcePath), patcherResult != XexPatcher::Result::Success))
+            // Check if any of the DLC was not specified.
+            bool dlcIncomplete = false;
+            for (int i = 0; (i < int(DLC::Count)) && !dlcIncomplete; i++)
             {
-                g_currentMessagePrompt = Localise("Installer_Message_IncompatibleGameData");
+                if (g_dlcSourcePaths[i].empty() && !g_dlcInstalled[i])
+                {
+                    dlcIncomplete = true;
+                }
+            }
+
+            bool dlcInstallerMode = g_gameSourcePath.empty();
+            std::string sourcesErrorMessage;
+            if (!InstallerParseSources(sourcesErrorMessage))
+            {
+                // Some of the sources that were provided to the installer are not valid. Restart the file selection process.
+                std::stringstream stringStream;
+                stringStream << Localise("Installer_Message_InvalidFiles");
+                if (!sourcesErrorMessage.empty()) {
+                    stringStream << std::endl << std::endl << sourcesErrorMessage;
+                }
+
+                g_currentMessagePrompt = stringStream.str();
                 g_currentMessagePromptConfirmation = false;
+                g_currentPage = dlcInstallerMode ? WizardPage::SelectDLC : WizardPage::SelectGameAndUpdate;
             }
-            else if (g_currentPage == WizardPage::SelectDLC)
+            else if (dlcIncomplete && !dlcInstallerMode)
             {
-                // Check if any of the DLC was not specified.
-                bool dlcIncomplete = false;
-                for (int i = 0; (i < int(DLC::Count)) && !dlcIncomplete; i++)
-                {
-                    if (g_dlcSourcePaths[i].empty() && !g_dlcInstalled[i])
-                    {
-                        dlcIncomplete = true;
-                    }
-                }
-
-                bool dlcInstallerMode = g_gameSourcePath.empty();
-                std::string sourcesErrorMessage;
-                if (!InstallerParseSources(sourcesErrorMessage))
-                {
-                    // Some of the sources that were provided to the installer are not valid. Restart the file selection process.
-                    std::stringstream stringStream;
-                    stringStream << Localise("Installer_Message_InvalidFiles");
-                    if (!sourcesErrorMessage.empty()) {
-                        stringStream << std::endl << std::endl << sourcesErrorMessage;
-                    }
-
-                    g_currentMessagePrompt = stringStream.str();
-                    g_currentMessagePromptConfirmation = false;
-                    g_currentPage = dlcInstallerMode ? WizardPage::SelectDLC : WizardPage::SelectGameAndUpdate;
-                }
-                else if (dlcIncomplete && !dlcInstallerMode)
-                {
-                    // Not all the DLC was specified, we show a prompt and await a confirmation before starting the installer.
-                    g_currentMessagePrompt = Localise("Installer_Message_DLCWarning");
-                    g_currentMessagePromptConfirmation = true;
-                }
-                else if (skipButton && dlcInstallerMode)
-                {
-                    // Nothing was selected and the installer was in DLC mode, just close it.
-                    g_isDisappearing = true;
-                    g_disappearTime = ImGui::GetTime();
-                }
-                else
-                {
-                    g_currentPage = WizardPage::CheckSpace;
-                }
+                // Not all the DLC was specified, we show a prompt and await a confirmation before starting the installer.
+                g_currentMessagePrompt = Localise("Installer_Message_DLCWarning");
+                g_currentMessagePromptSource = MessagePromptSource::Next;
+                g_currentMessagePromptConfirmation = true;
             }
-            else if (g_currentPage == WizardPage::CheckSpace)
+            else if (skipButton && dlcInstallerMode)
             {
-                InstallerStart();
-            }
-            else if (g_currentPage == WizardPage::InstallSucceeded)
-            {
+                // Nothing was selected and the installer was in DLC mode, just close it.
                 g_isDisappearing = true;
                 g_disappearTime = ImGui::GetTime();
             }
-            else if (g_currentPage == WizardPage::InstallFailed)
-            {
-                g_currentPage = g_firstPage;
-            }
             else
             {
-                g_currentPage = WizardPage(int(g_currentPage) + 1);
+                g_currentPage = WizardPage::CheckSpace;
             }
         }
+        else if (g_currentPage == WizardPage::CheckSpace)
+        {
+            InstallerStart();
+        }
+        else if (g_currentPage == WizardPage::InstallSucceeded)
+        {
+            g_isDisappearing = true;
+            g_disappearTime = ImGui::GetTime();
+        }
+        else if (g_currentPage == WizardPage::InstallFailed)
+        {
+            g_currentPage = g_firstPage;
+        }
+        else
+        {
+            g_currentPage = WizardPage(int(g_currentPage) + 1);
+        }
+    }
+}
+
+static void CheckCancelAction()
+{
+    if (!g_currentCursorBack)
+    {
+        return;
+    }
+    
+    g_currentCursorBack = false;
+
+    if (g_currentPage == WizardPage::InstallSucceeded)
+    {
+        // Nothing to back out on this page.
+        return;
+    }
+    if (g_currentPage == WizardPage::Installing && g_installerCancelled)
+    {
+        // Installer's already been cancelled, no need for more confirmations.
+        return;
+    }
+
+    Game_PlaySound("sys_actstg_pausecansel");
+
+    if (g_currentPage == g_firstPage || g_currentPage == WizardPage::InstallFailed)
+    {
+        // Ask for confirmation if user wants to quit the installer.
+        g_currentMessagePrompt = Localise("Installer_Message_Quit");
+        g_currentMessagePromptSource = MessagePromptSource::Back;
+        g_currentMessagePromptConfirmation = true;
+    }
+    else if (g_currentPage == WizardPage::Installing)
+    {
+        // Ask for confirmation if the user wants to cancel the installation.
+        g_currentMessagePrompt = Localise("Installer_Message_Cancel");
+        g_currentMessagePromptSource = MessagePromptSource::Back;
+        g_currentMessagePromptConfirmation = true;
+
+        // Indicate to the installer that all progress should stop until the user confirms if they wish to cancel.
+        g_installerHalted = true;
+    }
+    else if (int(g_currentPage) > 0)
+    {
+        // Just go back to the previous page.
+        g_currentPage = WizardPage(int(g_currentPage) - 1);
     }
 }
 
@@ -1492,14 +1599,49 @@ static void DrawMessagePrompt()
 
     if (messageWindowReturned)
     {
-        if (g_currentMessagePromptConfirmation && (g_currentMessageResult == 0) && (g_currentPage == WizardPage::SelectDLC))
+        if (g_currentMessagePromptConfirmation && (g_currentMessageResult == 0))
         {
-            // If user confirms the message prompt that they wish to skip installing the DLC, proceed to the next step.
-            g_currentPage = WizardPage::CheckSpace;
+            if (g_currentMessagePromptSource == MessagePromptSource::Back)
+            {
+                if (g_currentPage == WizardPage::Installing)
+                {
+                    // If user confirms they wish to cancel the installation, notify the installation thread it must finish as soon as possible.
+                    g_installerCancelled = true;
+                }
+                else
+                {
+                    // In all cases, proceed to just quit the application.
+                    g_isQuitting = true;
+                    g_isDisappearing = true;
+                    g_disappearTime = ImGui::GetTime();
+                }
+            }
+            else if (g_currentPage == WizardPage::SelectDLC)
+            {
+                // If user confirms the message prompt that they wish to skip installing the DLC, proceed to the next step.
+                g_currentPage = WizardPage::CheckSpace;
+            }
+        }
+
+        if (g_currentMessagePromptSource == MessagePromptSource::Back)
+        {
+            // Regardless of the confirmation, the installation thread must be resumed.
+            g_installerHalted = false;
+            g_installerHalted.notify_all();
         }
 
         g_currentMessagePrompt.clear();
+        g_currentMessagePromptSource = MessagePromptSource::Unknown;
         g_currentMessageResult = -1;
+    }
+}
+
+static void PickerDrawForeground()
+{
+    if (g_currentPickerVisible)
+    {
+        auto drawList = ImGui::GetForegroundDrawList();
+        drawList->AddRectFilled({ 0.0f, 0.0f }, ImGui::GetIO().DisplaySize, IM_COL32(0, 0, 0, 190));
     }
 }
 
@@ -1580,9 +1722,11 @@ void InstallerWizard::Draw()
     DrawSourcePickers();
     DrawSources();
     DrawInstallingProgress();
-    DrawNextButton();
+    DrawNavigationButton();
+    CheckCancelAction();
     DrawBorders();
     DrawMessagePrompt();
+    PickerDrawForeground();
     PickerCheckTutorial();
     PickerCheckResults();
 
@@ -1670,5 +1814,5 @@ bool InstallerWizard::Run(std::filesystem::path installPath, bool skipGame)
     InstallerWizard::Shutdown();
     EmbeddedPlayer::Shutdown();
 
-    return true;
+    return !g_isQuitting;
 }

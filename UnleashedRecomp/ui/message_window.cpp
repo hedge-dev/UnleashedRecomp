@@ -296,7 +296,7 @@ void MessageWindow::Draw()
 
         textY += Scale(lines.size() % 2 == 0 ? 1.5f : 8.0f);
     }
-
+    
     bool isController = hid::IsInputDeviceController();
     bool isKeyboard = hid::g_inputDevice == hid::EInputDevice::Keyboard;
 
@@ -397,19 +397,24 @@ void MessageWindow::Draw()
                     g_upWasHeld = upIsHeld;
                     g_downWasHeld = downIsHeld;
 
-                    if (isController || (isKeyboard && App::s_isInit))
+                    EButtonIcon selectIcon = EButtonIcon::A;
+                    EButtonIcon backIcon = EButtonIcon::B;
+                    if (isController || isKeyboard)
                     {
+                        if (isKeyboard && !App::s_isInit)
+                        {
+                            // Only display keyboard prompt during installer.
+                            selectIcon = EButtonIcon::Enter;
+                            backIcon = EButtonIcon::Escape;
+                        }
+
                         std::array<Button, 2> buttons =
                         {
-                            Button(Localise("Common_Select"), EButtonIcon::A),
-                            Button(Localise("Common_Back"), EButtonIcon::B),
+                            Button(Localise("Common_Select"), selectIcon),
+                            Button(Localise("Common_Back"), backIcon),
                         };
 
                         ButtonGuide::Open(buttons);
-                    }
-                    else // Only display keyboard prompt during installer.
-                    {
-                        ButtonGuide::Open(Button(Localise("Common_Select"), EButtonIcon::Enter));
                     }
 
                     if (g_isDeclined)
@@ -448,7 +453,13 @@ void MessageWindow::Draw()
                         }
                     }
 
-                    ButtonGuide::Open(Button(Localise("Common_Select"), EButtonIcon::LMB));
+                    std::array<Button, 2> buttons =
+                    {
+                        Button(Localise("Common_Select"), EButtonIcon::LMB),
+                        Button(Localise("Common_Back"), EButtonIcon::Escape),
+                    };
+
+                    ButtonGuide::Open(buttons);
                 }
 
                 if (g_selectedRowIndex != -1 && g_isAccepted)

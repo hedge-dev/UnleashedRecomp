@@ -22,6 +22,7 @@ struct Journal
     enum class Result
     {
         Success,
+        Cancelled,
         VirtualFileSystemFailed,
         DirectoryCreationFailed,
         FileMissing,
@@ -75,10 +76,10 @@ struct Installer
     static bool checkDLCInstall(const std::filesystem::path &baseDirectory, DLC dlc);
     static bool checkAllDLC(const std::filesystem::path &baseDirectory);
     static bool computeTotalSize(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, Journal &journal, uint64_t &totalSize);
-    static bool copyFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, const std::string &validationFile, bool skipHashChecks, Journal &journal, const std::function<void()> &progressCallback);
+    static bool copyFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, const std::string &validationFile, bool skipHashChecks, Journal &journal, const std::function<bool()> &progressCallback);
     static bool parseContent(const std::filesystem::path &sourcePath, std::unique_ptr<VirtualFileSystem> &targetVfs, Journal &journal);
     static bool parseSources(const Input &input, Journal &journal, Sources &sources);
-    static bool install(const Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, const std::function<void()> &progressCallback);
+    static bool install(const Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, const std::function<bool()> &progressCallback);
     static void rollback(Journal &journal);
 
     // Convenience method for checking if the specified file contains the game. This should be used when the user selects the file.

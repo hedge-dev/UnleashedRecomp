@@ -260,6 +260,12 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         }
     },
     {
+        "Installer_Button_Retry",
+        {
+            { ELanguage::English, "RETRY" }
+        }
+    },
+    {
         "Installer_Button_AddFiles",
         {
             { ELanguage::English, "ADD FILES" },
@@ -337,6 +343,20 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English, "This restarts the game to\nallow you to install any DLC\nthat you may be missing.\n\nYou are not currently\nmissing any DLC.\n\nWould you like to proceed\nanyway?" },
             { ELanguage::Italian, "Questa opzione riavviera il gioco\nper farti installare qualsiasi DLC\nche non hai installato.\n\nHai già installato tutti i DLC.\n\nVuoi procedere comunque?" }
+        }
+    },
+    {
+        // Notes: message appears when user chooses "Quit" on the first available installation screen.
+        "Installer_Message_Quit",
+        {
+            { ELanguage::English, "Are you sure you want to quit?" },
+        }
+    },
+    {
+        // Notes: message appears when user chooses "Cancel" during installation.
+        "Installer_Message_Cancel",
+        {
+            { ELanguage::English, "Are you sure you want to cancel the installation?" },
         }
     },
     {
@@ -444,6 +464,18 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English, "Back" },
             { ELanguage::Italian, "Indietro" }
+        }
+    },
+    {
+        "Common_Quit",
+        {
+            { ELanguage::English, "Quit" },
+        }
+    },
+    {
+        "Common_Cancel",
+        {
+            { ELanguage::English, "Cancel" }
         }
     },
     {

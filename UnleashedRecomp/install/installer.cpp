@@ -67,7 +67,7 @@ static std::unique_ptr<VirtualFileSystem> createFileSystemFromPath(const std::fi
     }
 }
 
-static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, bool skipHashChecks, std::vector<uint8_t> &fileData, Journal &journal, const std::function<void()> &progressCallback) {
+static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, bool skipHashChecks, std::vector<uint8_t> &fileData, Journal &journal, const std::function<bool()> &progressCallback) {
     const std::string filename(pair.first);
     const uint32_t hashCount = pair.second;
     if (!sourceVfs.exists(filename))
@@ -139,7 +139,13 @@ static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFi
     }
 
     journal.progressCounter += fileData.size();
-    progressCallback();
+    
+    if (!progressCallback())
+    {
+        journal.lastResult = Journal::Result::Cancelled;
+        journal.lastErrorMessage = "Installation was cancelled.";
+        return false;
+    }
 
     return true;
 }
@@ -266,7 +272,7 @@ bool Installer::computeTotalSize(std::span<const FilePair> filePairs, const uint
     return true;
 }
 
-bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, const std::string &validationFile, bool skipHashChecks, Journal &journal, const std::function<void()> &progressCallback)
+bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, const std::string &validationFile, bool skipHashChecks, Journal &journal, const std::function<bool()> &progressCallback)
 {
     std::error_code ec;
     if (!std::filesystem::exists(targetDirectory) && !std::filesystem::create_directories(targetDirectory, ec))
@@ -429,7 +435,7 @@ bool Installer::parseSources(const Input &input, Journal &journal, Sources &sour
     return true;
 }
 
-bool Installer::install(const Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, const std::function<void()> &progressCallback)
+bool Installer::install(const Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, const std::function<bool()> &progressCallback)
 {
     // Install files in reverse order of importance. In case of a process crash or power outage, this will increase the likelihood of the installation
     // missing critical files required for the game to run. These files are used as the way to detect if the game is installed.
@@ -497,7 +503,13 @@ bool Installer::install(const Sources &sources, const std::filesystem::path &tar
 
     // Update the progress with the artificial amount attributed to the patching.
     journal.progressCounter += PatcherContribution;
-    progressCallback();
+    
+    if (!progressCallback())
+    {
+        journal.lastResult = Journal::Result::Cancelled;
+        journal.lastErrorMessage = "Installation was cancelled.";
+        return false;
+    }
 
     return true;
 }

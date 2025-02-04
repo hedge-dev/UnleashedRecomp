@@ -20,7 +20,8 @@ enum class EButtonIcon
 
     // Keyboard + Mouse (temporary)
     LMB,
-    Enter
+    Enter,
+    Escape
 };
 
 enum class EButtonAlignment
