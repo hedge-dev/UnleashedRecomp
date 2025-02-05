@@ -1705,7 +1705,7 @@ void InstallerWizard::Init()
     for (int i = 0; i < g_creditsSize; i++)
     {
         g_creditsStr += g_credits[i];
-        g_creditsStr += "   ";
+        g_creditsStr += "  ";
     }
 }
 
