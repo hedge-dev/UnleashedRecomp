@@ -844,7 +844,11 @@ static void DrawDescriptionContainer()
         selectIcon = EButtonIcon::LMB;
     }
 
-    if (g_currentPage != WizardPage::Installing && textAlpha >= 1.0)
+    if (g_currentPage == WizardPage::InstallSucceeded && textAlpha >= 1.0)
+    {
+        ButtonGuide::Open(Button(Localise("Common_Select"), selectIcon));
+    }
+    else if (g_currentPage != WizardPage::Installing && textAlpha >= 1.0)
     {
         const char *backKey = "Common_Back";
         if ((g_currentPage == g_firstPage) || (g_currentPage == WizardPage::InstallFailed))
