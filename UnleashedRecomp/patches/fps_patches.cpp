@@ -115,10 +115,7 @@ PPC_FUNC(sub_8312DBF8)
     constexpr auto INTERVAL = 1000000000ns / 60;
     auto next = now + (INTERVAL - now.time_since_epoch() % INTERVAL);
 
-    std::this_thread::sleep_for(std::chrono::floor<std::chrono::milliseconds>(next - now - 1ms));
-
-    while (std::chrono::steady_clock::now() < next)
-        std::this_thread::yield();
+    std::this_thread::sleep_until(next);
 }
 
 void WaitVsyncMidAsmHook()

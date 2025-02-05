@@ -176,8 +176,8 @@ static RenderViewport g_viewport(0.0f, 0.0f, 1280.0f, 720.0f);
 static PipelineState g_pipelineState;
 static int32_t g_depthBias;
 static float g_slopeScaledDepthBias;
-static UploadAllocation g_vertexShaderConstants;
-static UploadAllocation g_pixelShaderConstants;
+static uint32_t g_vertexShaderConstants[0x400];
+static uint32_t g_pixelShaderConstants[0x380];
 static SharedConstants g_sharedConstants;
 static GuestTexture* g_textures[16];
 static RenderSamplerDesc g_samplerDescs[16];
@@ -408,12 +408,9 @@ struct UploadAllocator
     std::vector<UploadBuffer> buffers;
     uint32_t index = 0;
     uint32_t offset = 0;
-    Mutex mutex;
 
     UploadAllocation allocate(uint32_t size, uint32_t alignment)
     {
-        std::lock_guard lock(mutex);
-
         assert(size <= UploadBuffer::SIZE);
 
         offset = (offset + alignment - 1) & ~(alignment - 1);
@@ -473,6 +470,53 @@ struct UploadAllocator
 };
 
 static UploadAllocator g_uploadAllocators[NUM_FRAMES];
+
+struct IntermediaryUploadAllocator
+{
+    static constexpr size_t SIZE = 16 * 1024 * 1024;
+
+    std::vector<std::unique_ptr<uint8_t[]>> buffers;
+    uint32_t index = 0;
+    uint32_t offset = 0;
+
+    uint8_t* allocate(uint32_t size)
+    {
+        assert(size <= SIZE);
+
+        if (offset + size > SIZE)
+        {
+            ++index;
+            offset = 0;
+        }
+
+        if (buffers.size() <= index)
+            buffers.resize(index + 1);
+
+        auto& buffer = buffers[index];
+        if (buffer == nullptr)
+            buffer = std::make_unique_for_overwrite<uint8_t[]>(SIZE);
+
+        auto result = buffer.get() + offset;
+        offset += ((size + 0xF) & ~0xF);
+
+        return result;
+    }
+
+    uint8_t* allocate(const void* memory, uint32_t size)
+    {
+        auto result = allocate(size);
+        memcpy(result, memory, size);
+        return result;
+    }
+
+    void reset()
+    {
+        index = 0;
+        offset = 0;
+    }
+};
+
+static IntermediaryUploadAllocator g_intermediaryUploadAllocator;
 
 static std::vector<GuestResource*> g_tempResources[NUM_FRAMES];
 static std::vector<std::unique_ptr<RenderBuffer>> g_tempBuffers[NUM_FRAMES];
@@ -821,12 +865,16 @@ struct RenderCommand
 
         struct
         {
-            UploadAllocation allocation;
+            uint8_t* memory;
+            uint32_t index;
+            uint32_t size;
         } setVertexShaderConstants;  
         
         struct
         {
-            UploadAllocation allocation;
+            uint8_t* memory;
+            uint32_t index;
+            uint32_t size;
         } setPixelShaderConstants;
 
         struct
@@ -854,7 +902,8 @@ struct RenderCommand
         {
             uint32_t primitiveType;
             uint32_t primitiveCount; 
-            UploadAllocation vertexStreamZeroData; 
+            uint8_t* vertexStreamZeroData;
+            uint32_t vertexStreamZeroSize;
             uint32_t vertexStreamZeroStride;
             CsdFilterState csdFilterState;
         } drawPrimitiveUP;
@@ -1484,9 +1533,6 @@ static void BeginCommandList()
     }
 
     g_backBuffer->layout = RenderTextureLayout::UNKNOWN;
-
-    g_vertexShaderConstants = {};
-    g_pixelShaderConstants = {};
 
     for (size_t i = 0; i < 16; i++)
     {
@@ -2498,6 +2544,7 @@ void Video::Present()
 
     g_dirtyStates = DirtyStates(true);
     g_uploadAllocators[g_frame].reset();
+    g_intermediaryUploadAllocator.reset();
     g_triangleFanIndexData.reset();
     g_quadIndexData.reset();
 
@@ -2530,15 +2577,6 @@ void Video::Present()
     }
 
     g_presentProfiler.Reset();
-}
-
-static void Present(GuestDevice* device)
-{
-    Video::Present();
-
-    // Invalidate vertex/pixel shader constants.
-    device->dirtyFlags[0] = ~0;
-    device->dirtyFlags[1] = ~0;
 }
 
 void Video::StartPipelinePrecompilation()
@@ -3966,20 +4004,38 @@ static void FlushRenderStateForMainThread(GuestDevice* device, LocalRenderComman
         }
     }
 
-    if (device->dirtyFlags[0] != 0)
+    uint64_t dirtyFlags = device->dirtyFlags[0].get();
+    if (dirtyFlags != 0)
     {
+        int startRegister = std::countl_zero(dirtyFlags);
+        int endRegister = 64 - std::countr_zero(dirtyFlags);
+
+        uint32_t index = startRegister * 16;
+        uint32_t size = (endRegister - startRegister) * 64;
+
         auto& cmd = queue.enqueue();
         cmd.type = RenderCommandType::SetVertexShaderConstants;
-        cmd.setVertexShaderConstants.allocation = g_uploadAllocators[g_frame].allocate<true>(device->vertexShaderFloatConstants, 0x1000, 0x100);
+        cmd.setVertexShaderConstants.memory = g_intermediaryUploadAllocator.allocate(&device->vertexShaderFloatConstants[index], size);
+        cmd.setVertexShaderConstants.index = index;
+        cmd.setVertexShaderConstants.size = size;
 
         device->dirtyFlags[0] = 0;
     }
 
-    if (device->dirtyFlags[1] != 0)
+    dirtyFlags = device->dirtyFlags[1].get();
+    if (dirtyFlags != 0)
     {
+        int startRegister = std::countl_zero(dirtyFlags);
+        int endRegister = std::min(56, 64 - std::countr_zero(dirtyFlags));
+
+        uint32_t index = startRegister * 16;
+        uint32_t size = (endRegister - startRegister) * 64;
+
         auto& cmd = queue.enqueue();
         cmd.type = RenderCommandType::SetPixelShaderConstants;
-        cmd.setPixelShaderConstants.allocation = g_uploadAllocators[g_frame].allocate<true>(device->pixelShaderFloatConstants, 0xE00, 0x100);
+        cmd.setPixelShaderConstants.memory = g_intermediaryUploadAllocator.allocate(&device->pixelShaderFloatConstants[index], size);
+        cmd.setPixelShaderConstants.index = index;
+        cmd.setPixelShaderConstants.size = size;
 
         device->dirtyFlags[1] = 0;
     }
@@ -4040,13 +4096,19 @@ static void ProcSetSamplerState(const RenderCommand& cmd)
 
 static void ProcSetVertexShaderConstants(const RenderCommand& cmd)
 {
-    g_vertexShaderConstants = cmd.setVertexShaderConstants.allocation;
+    auto& args = cmd.setVertexShaderConstants;
+    assert((args.index * sizeof(uint32_t) + args.size) <= sizeof(g_vertexShaderConstants));
+
+    memcpy(&g_vertexShaderConstants[args.index], args.memory, args.size);
     g_dirtyStates.vertexShaderConstants = true;
 }
 
 static void ProcSetPixelShaderConstants(const RenderCommand& cmd)
 {
-    g_pixelShaderConstants = cmd.setPixelShaderConstants.allocation;
+    auto& args = cmd.setPixelShaderConstants;
+    assert((args.index * sizeof(uint32_t) + args.size) <= sizeof(g_pixelShaderConstants));
+
+    memcpy(&g_pixelShaderConstants[args.index], args.memory, args.size);
     g_dirtyStates.pixelShaderConstants = true;
 }
 
@@ -4138,10 +4200,16 @@ static void FlushRenderStateForRenderThread()
         commandList->setDepthBias(g_depthBias, 0.0f, g_slopeScaledDepthBias);
 
     if (g_dirtyStates.vertexShaderConstants)
-        SetRootDescriptor(g_vertexShaderConstants, 0);
+    {
+        auto vertexShaderConstants = g_uploadAllocators[g_frame].allocate<true>(g_vertexShaderConstants, sizeof(g_vertexShaderConstants), 0x100);
+        SetRootDescriptor(vertexShaderConstants, 0);
+    }
 
     if (g_dirtyStates.pixelShaderConstants)
-        SetRootDescriptor(g_pixelShaderConstants, 1);
+    {
+        auto pixelShaderConstants = g_uploadAllocators[g_frame].allocate<true>(g_pixelShaderConstants, sizeof(g_pixelShaderConstants), 0x100);
+        SetRootDescriptor(pixelShaderConstants, 1);
+    }
 
     if (g_dirtyStates.sharedConstants)
     {
@@ -4302,7 +4370,8 @@ static void DrawPrimitiveUP(GuestDevice* device, uint32_t primitiveType, uint32_
     cmd.type = RenderCommandType::DrawPrimitiveUP;
     cmd.drawPrimitiveUP.primitiveType = primitiveType;
     cmd.drawPrimitiveUP.primitiveCount = primitiveCount;
-    cmd.drawPrimitiveUP.vertexStreamZeroData = g_uploadAllocators[g_frame].allocate<true>(reinterpret_cast<uint32_t*>(vertexStreamZeroData), primitiveCount * vertexStreamZeroStride, 0x4);
+    cmd.drawPrimitiveUP.vertexStreamZeroData = g_intermediaryUploadAllocator.allocate(vertexStreamZeroData, primitiveCount * vertexStreamZeroStride);
+    cmd.drawPrimitiveUP.vertexStreamZeroSize = primitiveCount * vertexStreamZeroStride;
     cmd.drawPrimitiveUP.vertexStreamZeroStride = vertexStreamZeroStride;
     cmd.drawPrimitiveUP.csdFilterState = g_csdFilterState;
     
@@ -4320,9 +4389,11 @@ static void ProcDrawPrimitiveUP(const RenderCommand& cmd)
     SetPrimitiveType(args.primitiveType);
     SetDirtyValue(g_dirtyStates.pipelineState, g_pipelineState.vertexStrides[0], uint8_t(args.vertexStreamZeroStride));
 
+    auto allocation = g_uploadAllocators[g_frame].allocate<true>(reinterpret_cast<const uint32_t*>(args.vertexStreamZeroData), args.vertexStreamZeroSize, 0x4);
+
     auto& vertexBufferView = g_vertexBufferViews[0];
     vertexBufferView.size = args.primitiveCount * args.vertexStreamZeroStride;
-    vertexBufferView.buffer = args.vertexStreamZeroData.buffer->at(args.vertexStreamZeroData.offset);
+    vertexBufferView.buffer = allocation.buffer->at(allocation.offset);
     g_inputSlots[0].stride = args.vertexStreamZeroStride;
     g_dirtyStates.vertexStreamFirst = 0;
 
@@ -7132,7 +7203,7 @@ GUEST_FUNCTION_HOOK(sub_82BE96F0, GetSurfaceDesc);
 GUEST_FUNCTION_HOOK(sub_82BE04B0, GetVertexDeclaration);
 GUEST_FUNCTION_HOOK(sub_82BE0530, HashVertexDeclaration);
 
-GUEST_FUNCTION_HOOK(sub_82BDA8C0, Present);
+GUEST_FUNCTION_HOOK(sub_82BDA8C0, Video::Present);
 GUEST_FUNCTION_HOOK(sub_82BDD330, GetBackBuffer);
 
 GUEST_FUNCTION_HOOK(sub_82BE9498, CreateTexture);
