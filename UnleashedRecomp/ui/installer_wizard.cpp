@@ -78,7 +78,7 @@ constexpr float CONTAINER_HEIGHT = 246.0f;
 constexpr float SIDE_CONTAINER_WIDTH = CONTAINER_WIDTH / 2.0f;
 
 constexpr float BOTTOM_X_GAP = 4.0f;
-constexpr float BOTTOM_Y_GAP = 6.0f;
+constexpr float BOTTOM_Y_GAP = 5.0f;
 constexpr float CONTAINER_BUTTON_WIDTH = 250.0f;
 constexpr float CONTAINER_BUTTON_GAP = 9.0f;
 constexpr float BUTTON_HEIGHT = 22.0f;
@@ -1017,9 +1017,9 @@ static void DrawProgressBar(float progressRatio)
     float alpha = 1.0;
     const uint32_t innerColor0 = IM_COL32(0, 65, 0, 255 * alpha);
     const uint32_t innerColor1 = IM_COL32(0, 32, 0, 255 * alpha);
-    float xPadding = Scale(6.0f);
-    float yPadding = Scale(3.0f);
-    ImVec2 min = { g_aspectRatioOffsetX + Scale(CONTAINER_X) + BOTTOM_X_GAP, g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP) };
+    float xPadding = Scale(4);
+    float yPadding = Scale(3);
+    ImVec2 min = { g_aspectRatioOffsetX + Scale(CONTAINER_X) + BOTTOM_X_GAP + Scale(1), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP)};
     ImVec2 max = { g_aspectRatioOffsetX + Scale(CONTAINER_X + CONTAINER_WIDTH - BOTTOM_X_GAP), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
 
     DrawButtonContainer(min, max, 0, 0, alpha);
@@ -1036,8 +1036,8 @@ static void DrawProgressBar(float progressRatio)
 
     const uint32_t sliderColor0 = IM_COL32(57, 241, 0, 255 * alpha);
     const uint32_t sliderColor1 = IM_COL32(2, 106, 0, 255 * alpha);
-    xPadding += Scale(1.0f);
-    yPadding += Scale(1.0f);
+    xPadding += Scale(1.5f);
+    yPadding += Scale(1.5f);
 
     ImVec2 sliderMin = { min.x + xPadding, min.y + yPadding };
     ImVec2 sliderMax = { max.x - xPadding, max.y - yPadding };
@@ -1702,7 +1702,7 @@ void InstallerWizard::Init()
     g_pulseInstall = LOAD_ZSTD_TEXTURE(g_pulse_install);
     g_upHedgeDev = LOAD_ZSTD_TEXTURE(g_hedgedev);
 
-    for (int i = 0; i < g_creditsSize; i++)
+    for (int i = 0; i < g_credits.size(); i++)
     {
         g_creditsStr += g_credits[i];
         g_creditsStr += "  ";

@@ -1,20 +1,19 @@
 #pragma once
 
-inline const char* g_credits[] =
+inline std::array<const char*, 14> g_credits =
 {
     "Skyth",
     "Hyper",
     "Darío",
     "Sajid",
+    "DeaThProj",
     "RadiantDerg",
     "PTKay",
-    "DeaThProj",
     "SuperSonic16",
     "NextinHKRY",
-    "M&M",
     "saguinee",
     "LadyLunanova",
-    "LJSTAR"
+    "LJSTAR",
+    "Goalringmod27",
+    "M&M"
 };
-
-inline size_t g_creditsSize = 12;
