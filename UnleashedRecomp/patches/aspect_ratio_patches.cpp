@@ -2,6 +2,7 @@
 #include <api/SWA.h>
 #include <app.h>
 #include <ui/game_window.h>
+#include <ui/black_bar.h>
 #include <gpu/video.h>
 #include <xxHashMap.h>
 
@@ -340,6 +341,9 @@ enum
     REPEAT_LEFT = 1 << 15,
 
     TORNADO_DEFENSE = 1 << 16,
+
+    LOADING_BLACK_BAR_MIN = 1 << 17,
+    LOADING_BLACK_BAR_MAX = 1 << 18,
 };
 
 struct CsdModifier
@@ -403,6 +407,10 @@ static const xxHashMap<CsdModifier> g_modifiers =
     { HashStr("ui_loading/n_2_d/letterbox/letterbox_top"), { STRETCH } },
     { HashStr("ui_loading/n_2_d/letterbox/black_l"), { EXTEND_LEFT | STRETCH_VERTICAL } },
     { HashStr("ui_loading/n_2_d/letterbox/black_r"), { EXTEND_RIGHT | STRETCH_VERTICAL } },
+    { HashStr("ui_loading/event_viewer/black/black_top"), { LOADING_BLACK_BAR_MIN } },
+    { HashStr("ui_loading/event_viewer/black/black_under"), { LOADING_BLACK_BAR_MAX } },
+    { HashStr("ui_loading/pda/pda_frame/L"), { LOADING_BLACK_BAR_MIN } },
+    { HashStr("ui_loading/pda/pda_frame/R"), { LOADING_BLACK_BAR_MAX } },
 
     // ui_mediaroom
     { HashStr("ui_mediaroom/header/bg/img_1"), { EXTEND_LEFT } },
@@ -1022,6 +1030,18 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         position[1] = round(y);
     }
 
+    if ((modifier.flags & LOADING_BLACK_BAR_MIN) != 0)
+    {
+        auto position = getPosition(0);
+        BlackBar::g_loadingBlackBarMin = ImVec2{ position[0], position[1] };
+        BlackBar::g_loadingBlackBarAlpha = *(base + ctx.r1.u32 + 0xB);
+    }
+    else if ((modifier.flags & LOADING_BLACK_BAR_MAX) != 0)
+    {
+        auto position = getPosition(3);
+        BlackBar::g_loadingBlackBarMax = ImVec2{ position[0], position[1] };
+    }
+
     if ((modifier.flags & REPEAT_LEFT) != 0)
     {
         float width = *getPosition(2) - *getPosition(0);
@@ -1363,6 +1383,12 @@ PPC_FUNC(sub_82B8AA40)
 
     // Restore the original letterbox value.
     PPC_STORE_U8(r3.u32, letterbox);
+
+    if (letterbox)
+    {
+        // Would be nice to also push this as a 2D primitive but I really cannot be bothered right now...
+        BlackBar::g_inspirePillarbox = Config::CutsceneAspectRatio != ECutsceneAspectRatio::Unlocked && g_aspectRatio > WIDE_ASPECT_RATIO;
+    }
 }
 
 void InspireLetterboxTopMidAsmHook(PPCRegister& r3)

@@ -26,6 +26,7 @@
 #include <ui/message_window.h>
 #include <ui/options_menu.h>
 #include <ui/game_window.h>
+#include <ui/black_bar.h>
 #include <patches/aspect_ratio_patches.h>
 #include <user/config.h>
 #include <sdl_listener.h>
@@ -2318,6 +2319,7 @@ static void DrawImGui()
     MessageWindow::Draw();
     ButtonGuide::Draw();
     Fader::Draw();
+    BlackBar::Draw();
 
     assert(ImGui::GetForegroundDrawList()->_ClipRectStack.Size == 1 && "Some clip rects were not removed from the stack!");
 

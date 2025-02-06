@@ -150,6 +150,7 @@ set(UNLEASHED_RECOMP_PATCHES_CXX_SOURCES
 set(UNLEASHED_RECOMP_UI_CXX_SOURCES
     "ui/achievement_menu.cpp"
     "ui/achievement_overlay.cpp"
+    "ui/black_bar.cpp"
     "ui/button_guide.cpp"
     "ui/fader.cpp"
     "ui/game_window.cpp"
