@@ -196,7 +196,7 @@ CONFIG_DEFINE_LOCALE(MusicAttenuation)
 
 CONFIG_DEFINE_LOCALE(ChannelConfiguration)
 {
-    { ELanguage::English, { "Channel Configuration", "" } }
+    { ELanguage::English, { "Channel Configuration", "Change the output mode for your playback device." } }
 };
 
 CONFIG_DEFINE_ENUM_LOCALE(EChannelConfiguration)
@@ -245,8 +245,10 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
     {
         ELanguage::English,
         {
-            { EAspectRatio::Auto, { "AUTO", "Auto: the aspect ratio will dynamically adjust to the window size." } },
-            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "" } }
+            { EAspectRatio::Auto, { "AUTO", "Auto: The aspect ratio will dynamically adjust to the window size." } },
+            { EAspectRatio::Wide, { "16:9", "Locked 16:9: Introduces letterboxing when needed." } },
+            { EAspectRatio::Narrow, { "4:3", "Locked 4:3: Introduces pillarboxing when needed." } },
+            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: Introduces pillarboxing while maintaining various UI quirks from the original." } }
         }
     }
 };
@@ -273,7 +275,7 @@ CONFIG_DEFINE_LOCALE(FPS)
 
 CONFIG_DEFINE_LOCALE(Brightness)
 {
-    { ELanguage::English, { "Brightness", "Adjust the brightness level of the game." } }
+    { ELanguage::English, { "Brightness", "Adjust the brightness level until the symbol on the left is barely visible." } }
 };
 
 CONFIG_DEFINE_LOCALE(AntiAliasing)
