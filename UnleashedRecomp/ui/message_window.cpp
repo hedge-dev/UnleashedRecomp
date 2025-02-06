@@ -48,10 +48,10 @@ int g_cancelButtonIndex;
 class SDLEventListenerForMessageWindow : public SDLEventListener
 {
 public:
-    void OnSDLEvent(SDL_Event* event) override
+    bool OnSDLEvent(SDL_Event* event) override
     {
         if (App::s_isInit || !MessageWindow::s_isVisible || !hid::IsInputAllowed())
-            return;
+            return false;
 
         constexpr float axisValueRange = 32767.0f;
         constexpr float axisTapRange = 0.5f;
@@ -142,6 +142,8 @@ public:
                 break;
             }
         }
+
+        return false;
     }
 }
 g_sdlEventListenerForMessageWindow;

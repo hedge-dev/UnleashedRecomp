@@ -9,10 +9,10 @@ static class FrontendListener : public SDLEventListener
     bool m_isF8KeyDown = false;
 
 public:
-    void OnSDLEvent(SDL_Event* event) override
+    bool OnSDLEvent(SDL_Event* event) override
     {
         if (!Config::HUDToggleHotkey || OptionsMenu::s_isVisible)
-            return;
+            return false;
 
         switch (event->type)
         {
@@ -34,6 +34,8 @@ public:
             m_isF8KeyDown = event->key.keysym.sym != SDLK_F8;
             break;
         }
+
+        return false;
     }
 }
 g_frontendListener;

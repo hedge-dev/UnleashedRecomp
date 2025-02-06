@@ -121,10 +121,10 @@ public:
         }
     }
 
-    void OnSDLEvent(SDL_Event* event) override
+    bool OnSDLEvent(SDL_Event* event) override
     {
         if (!hid::IsInputAllowed())
-            return;
+            return false;
 
         switch (event->type)
         {
@@ -202,6 +202,8 @@ public:
                 ms_touchpadFingerCount--;
                 break;
         }
+
+        return false;
     }
 }
 g_sdlEventListenerForInputPatches;

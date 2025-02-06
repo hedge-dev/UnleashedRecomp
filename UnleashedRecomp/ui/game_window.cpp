@@ -24,7 +24,12 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
         ImGui_ImplSDL2_ProcessEvent(event);
 
     for (auto listener : GetEventListeners())
-        listener->OnSDLEvent(event);
+    {
+        if (listener->OnSDLEvent(event))
+        {
+            return 0;
+        }
+    }
 
     switch (event->type)
     {
