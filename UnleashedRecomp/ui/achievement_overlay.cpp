@@ -167,7 +167,7 @@ void AchievementOverlay::Draw()
 
 void AchievementOverlay::Open(int id)
 {
-    if (s_isVisible)
+    if (s_isVisible && !g_isClosing)
     {
         s_queue.emplace(id);
         return;
