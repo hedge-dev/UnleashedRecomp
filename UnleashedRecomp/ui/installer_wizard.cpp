@@ -175,19 +175,19 @@ public:
         if (!InstallerWizard::s_isVisible)
             return false;
 
-        bool inputAllowed = g_currentMessagePrompt.empty() && !g_currentPickerVisible && hid::IsInputAllowed();
+        bool noModals = g_currentMessagePrompt.empty() && !g_currentPickerVisible;
         if (event->type == SDL_QUIT && g_currentPage == WizardPage::Installing)
         {
             // Pretend the back button was pressed if the user tried quitting during installation.
             // This condition is above the rest of the event processing as we want to block the exit
             // button while there's confirmation message is open as well.
-            if (inputAllowed)
+            if (noModals)
                 g_currentCursorBack = true;
 
             return true;
         }
 
-        if (!inputAllowed)
+        if (!noModals || !hid::IsInputAllowed())
             return false;
 
         constexpr float AxisValueRange = 32767.0f;
