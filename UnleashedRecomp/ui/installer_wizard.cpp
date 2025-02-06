@@ -1275,8 +1275,9 @@ static void DrawInstallingProgress()
 {
     if (g_currentPage == WizardPage::Installing)
     {
+        constexpr float ProgressSpeed = 0.1f;
         float ratioTarget = g_installerProgressRatioTarget.load();
-        g_installerProgressRatioCurrent += (4.0f * ImGui::GetIO().DeltaTime * (ratioTarget - g_installerProgressRatioCurrent));
+        g_installerProgressRatioCurrent += std::min(ratioTarget - g_installerProgressRatioCurrent, ProgressSpeed * ImGui::GetIO().DeltaTime);
         DrawProgressBar(g_installerProgressRatioCurrent);
 
         if (g_installerFinished)
