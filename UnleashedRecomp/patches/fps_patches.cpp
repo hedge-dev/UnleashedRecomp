@@ -125,3 +125,37 @@ void WaitVsyncMidAsmHook()
 void ApplicationFrameLimiterMidAsmHook()
 {
 }
+
+// Tornado Defense boss increments timers without respecting delta time.
+// We run the update function with a 30 FPS time step to ensure all timers update at the correct rate.
+static constexpr size_t EX_STAGE_BOSS_STATE_BATTLE_SIZE = 0x70;
+
+void CExStageBossCStateBattleAllocMidAsmHook(PPCRegister& r3)
+{
+    r3.u32 += sizeof(float);
+}
+
+void CExStageBossCStateBattleCtorMidAsmHook(PPCRegister& r3)
+{
+    new (g_memory.base + r3.u32 + EX_STAGE_BOSS_STATE_BATTLE_SIZE) float(0);
+}
+
+// SWA::CExStageBoss::CStateBattle::Update
+PPC_FUNC_IMPL(__imp__sub_82B00D00);
+PPC_FUNC(sub_82B00D00)
+{
+    constexpr auto referenceDeltaTime = 1.0f / 30.0f;
+    constexpr auto deltaTimeTolerance = 0.0001f;
+
+    auto pElapsedTime = (float*)(base + ctx.r3.u32 + EX_STAGE_BOSS_STATE_BATTLE_SIZE);
+
+    *pElapsedTime += std::min(App::s_deltaTime, 1.0 / 15.0);
+
+    if ((*pElapsedTime + deltaTimeTolerance) > referenceDeltaTime)
+    {
+        __imp__sub_82B00D00(ctx, base);
+        *pElapsedTime -= referenceDeltaTime;
+    }
+
+    *pElapsedTime = std::max(*pElapsedTime, 0.0f);
+}

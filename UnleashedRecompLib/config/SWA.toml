@@ -936,3 +936,14 @@ address = 0x82BADADC
 registers = ["r4", "r5", "r6", "r30"]
 jump_address_on_true = 0x82BAD9F0
 jump_address_on_false = 0x82BADAFC
+
+[[midasm_hook]]
+name = "CExStageBossCStateBattleAllocMidAsmHook"
+address = 0x82B026DC
+registers = ["r3"]
+after_instruction = true
+
+[[midasm_hook]]
+name = "CExStageBossCStateBattleCtorMidAsmHook"
+address = 0x82B026E4
+registers = ["r3"]
