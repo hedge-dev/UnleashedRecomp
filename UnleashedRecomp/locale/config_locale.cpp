@@ -245,10 +245,10 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
     {
         ELanguage::English,
         {
-            { EAspectRatio::Auto, { "AUTO", "Auto: The aspect ratio will dynamically adjust to the window size." } },
-            { EAspectRatio::Wide, { "16:9", "Locked 16:9: Introduces letterboxing when needed." } },
-            { EAspectRatio::Narrow, { "4:3", "Locked 4:3: Introduces pillarboxing when needed." } },
-            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: Introduces pillarboxing while maintaining various UI quirks from the original." } }
+            { EAspectRatio::Auto, { "AUTO", "Auto: the aspect ratio will dynamically adjust to the window size." } },
+            { EAspectRatio::Wide, { "16:9", "16:9: locks the game to a widescreen aspect ratio." } },
+            { EAspectRatio::Narrow, { "4:3", "4:3: locks the game to a narrow aspect ratio." } },
+            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: locks the game to a narrow aspect ratio and retains parity with the game's original implementation." } }
         }
     }
 };
