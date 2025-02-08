@@ -58,7 +58,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Category_System",
         {
             { ELanguage::English,  "SYSTEM" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "SYSTEM" },
             { ELanguage::German,   "SYSTEM" },
             { ELanguage::French,   "SYSTÈME" },
             { ELanguage::Spanish,  "SISTEMA" },
@@ -69,6 +69,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Category_Input",
         {
             { ELanguage::English,  "INPUT" },
+            { ELanguage::Japanese, "INPUT" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "EINGABE" },
             { ELanguage::French,   "COMMANDES" },
@@ -80,7 +81,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Category_Audio",
         {
             { ELanguage::English,  "AUDIO" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "AUDIO" },
             { ELanguage::German,   "AUDIO" },
             { ELanguage::French,   "SON" },
             { ELanguage::Spanish,  "AUDIO" },
@@ -91,7 +92,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Category_Video",
         {
             { ELanguage::English,  "VIDEO" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "VIDEO" },
             { ELanguage::German,   "VIDEO" },
             { ELanguage::French,   "AFFICHAGE" },
             { ELanguage::Spanish,  "VÍDEO" },
@@ -103,7 +104,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Value_Max",
         {
             { ELanguage::English,  "MAX" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "MAX" },
             { ELanguage::German,   "MAX" },
             { ELanguage::French,   "MAX" },
             { ELanguage::Spanish,  "MÁX" },
@@ -114,7 +115,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Name_WindowSize",
         {
             { ELanguage::English,  "Window Size" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "ウインドウサイズ" },
             { ELanguage::German,   "Fenstergröße" },
             { ELanguage::French,   "Taille de la fenêtre" },
             { ELanguage::Spanish,  "Tamaño de ventana" },
@@ -221,7 +222,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Achievements_Name",
         {
             { ELanguage::English,  "Achievements" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "実績" },
             { ELanguage::German,   "Erfolge" },
             { ELanguage::French,   "Succès" },
             { ELanguage::Spanish,  "Logros" },
@@ -233,6 +234,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Achievements_Name_Uppercase",
         {
             { ELanguage::English,  "ACHIEVEMENTS" },
+            { ELanguage::Japanese, "実績" }
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "ERFOLGE" },
             { ELanguage::French,   "SUCCÈS" },
@@ -255,7 +257,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Header_Installer",
         {
             { ELanguage::English,  "INSTALLER" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "INSTALL" },
             { ELanguage::German,   "INSTALLATION" },
             { ELanguage::French,   "INSTALLATEUR" },
             { ELanguage::Spanish,  "INSTALADOR" },
@@ -266,7 +268,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Header_Installing",
         {
             { ELanguage::English,  "INSTALLING" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "INSTALL" },
             { ELanguage::German,   "INSTALLATION" },
             { ELanguage::French,   "INSTALLATION" },
             { ELanguage::Spanish,  "INSTALANDO" },
@@ -365,7 +367,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Step_Game",
         {
             { ELanguage::English,  "GAME" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "ゲーム" },
             { ELanguage::German,   "SPIEL" },
             { ELanguage::French,   "JEU" },
             { ELanguage::Spanish,  "JUEGO" },
@@ -376,7 +378,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Step_Update",
         {
             { ELanguage::English,  "UPDATE" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, " アップデート" },
             { ELanguage::German,   "UPDATE" },
             { ELanguage::French,   "MISE À JOUR" },
             { ELanguage::Spanish,  "ACTUALIZACIÓN" },
@@ -387,7 +389,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Step_RequiredSpace",
         {
             { ELanguage::English,  "Required space: %2.2f GiB" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, ": %2.2f GiB" },
             { ELanguage::German,   "Benötigter Speicherplatz:\n%2.2f GiB" },
             { ELanguage::French,   "Espace nécessaire :\n%2.2f Gio" },
             { ELanguage::Spanish,  "Espacio necesario: %2.2f GiB" },
@@ -398,7 +400,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Step_AvailableSpace",
         {
             { ELanguage::English,  "Available space: %2.2f GiB" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, ": %2.2f GiB" },
             { ELanguage::German,   "Verfügbarer Speicherplatz:\n%2.2f GiB" },
             { ELanguage::French,   "Espace disponible :\n%2.2f Gio" },
             { ELanguage::Spanish,  "Espacio disponible: %2.2f GiB" },
@@ -409,7 +411,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Button_Next",
         {
             { ELanguage::English,  "NEXT" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "次へ" },
             { ELanguage::German,   "WEITER" },
             { ELanguage::French,   "SUIVANT" },
             { ELanguage::Spanish,  "SIGUIENTE" },
@@ -420,7 +422,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Button_Skip",
         {
             { ELanguage::English,  "SKIP" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "スキップ" },
             { ELanguage::German,   "ÜBERSPRINGEN" },
             { ELanguage::French,   "IGNORER" },
             { ELanguage::Spanish,  "SALTAR" },
@@ -431,6 +433,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Button_Retry",
         {
             { ELanguage::English,  "RETRY" },
+            { ELanguage::Japanese, "リトライ" }
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "ERNEUT VERSUCHEN" },
             { ELanguage::French,   "RÉESSAYER" },
@@ -680,7 +683,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Common_Yes",
         {
             { ELanguage::English,  "Yes" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "はい" },
             { ELanguage::German,   "Ja" },
             { ELanguage::French,   "Oui" },
             { ELanguage::Spanish, "Sí" },
@@ -691,7 +694,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Common_No",
         {
             { ELanguage::English,  "No" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "いいえ" },
             { ELanguage::German,   "Nein" },
             { ELanguage::French,   "Non" },
             { ELanguage::Spanish,  "No" },
@@ -702,7 +705,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Common_Next",
         {
             { ELanguage::English,  "Next" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "次へ" },
             { ELanguage::German,   "Weiter" },
             { ELanguage::French,   "Suivant" },
             { ELanguage::Spanish, "Siguiente" },
@@ -713,7 +716,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Common_Select",
         {
             { ELanguage::English,  "Select" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "決定" },
             { ELanguage::German,   "Auswählen" },
             { ELanguage::French,   "Choisir" },
             { ELanguage::Spanish,  "Seleccionar" },
@@ -724,7 +727,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Common_Back",
         {
             { ELanguage::English,  "Back" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "もどる" },
             { ELanguage::German,   "Zurück" },
             { ELanguage::French,   "Retour" },
             { ELanguage::Spanish,  "Atrás" },
@@ -735,7 +738,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Common_Quit",
         {
             { ELanguage::English,  "Quit" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "終了" },
             { ELanguage::German,   "Verlassen" },
             { ELanguage::French,   "Quitter" },
             { ELanguage::Spanish,  "Salir" },
@@ -746,7 +749,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Common_Cancel",
         {
             { ELanguage::English,  "Cancel" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "キャンセル" },
             { ELanguage::German,   "Abbrechen" },
             { ELanguage::French,   "Annuler" },
             { ELanguage::Spanish,  "Cancelar" },
@@ -757,7 +760,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Common_Reset",
         {
             { ELanguage::English,  "Reset" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "リセット" },
             { ELanguage::German,   "Zurücksetzen" },
             { ELanguage::French,   "Par défaut" },
             { ELanguage::Spanish,  "Reiniciar" },
@@ -768,7 +771,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Common_Switch",
         {
             { ELanguage::English,  "Switch" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "きりかえ" },
             { ELanguage::German,   "Wechseln" },
             { ELanguage::French,   "Changer" },
             { ELanguage::Spanish,  "Cambiar" },
