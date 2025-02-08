@@ -1501,3 +1501,55 @@ void YggdrasillRenderQuadMidAsmHook(PPCRegister& r3, PPCRegister& r6)
         }
     }
 }
+
+// Explicit CSD set position calls don't seem to care about the
+// viewport size. This causes them to appear shifted by 1.5x,
+// as the backbuffer resolution is 640x480 at 4:3. We need to account
+// for this manually to make the positioning match with the original game.
+static constexpr uint32_t EVIL_HUD_GUIDE_BYTE_SIZE = 0x154;
+
+void EvilHudGuideAllocMidAsmHook(PPCRegister& r3)
+{
+    r3.u32 += sizeof(float);
+}
+
+// SWA::Player::CEvilHudGuide::CEvilHudGuide
+PPC_FUNC_IMPL(__imp__sub_82448CF0);
+PPC_FUNC(sub_82448CF0)
+{
+    *reinterpret_cast<float*>(base + ctx.r3.u32 + EVIL_HUD_GUIDE_BYTE_SIZE) = 0.0f;
+    __imp__sub_82448CF0(ctx, base);
+}
+
+void EvilHudGuideUpdateMidAsmHook(PPCRegister& r30, PPCRegister& f30)
+{
+    *reinterpret_cast<float*>(g_memory.base + r30.u32 + EVIL_HUD_GUIDE_BYTE_SIZE) = f30.f64;
+}
+
+// SWA::Player::CEvilHudGuide::Update
+PPC_FUNC_IMPL(__imp__sub_82449088);
+PPC_FUNC(sub_82449088)
+{
+    auto r3 = ctx.r3;
+    __imp__sub_82449088(ctx, base);
+
+    float positionX = *reinterpret_cast<float*>(base + r3.u32 + EVIL_HUD_GUIDE_BYTE_SIZE);
+    constexpr uint32_t OFFSETS[] = { 312, 320 };
+
+    for (const auto offset : OFFSETS)
+    {
+        uint32_t scene = PPC_LOAD_U32(r3.u32 + offset + 0x4);
+        if (scene != NULL)
+        {
+            scene = PPC_LOAD_U32(scene + 0x4);
+            if (scene != NULL)
+            {
+                ctx.r3.u32 = scene;
+                ctx.f1.f64 = (1.5 - 0.5 * g_aspectRatioNarrowScale) * positionX;
+                ctx.f2.f64 = 0.0;
+
+                sub_830BB3D0(ctx, base);
+            }
+        }
+    }
+}

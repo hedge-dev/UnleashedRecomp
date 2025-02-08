@@ -947,3 +947,13 @@ after_instruction = true
 name = "CExStageBossCStateBattleCtorMidAsmHook"
 address = 0x82B026E4
 registers = ["r3"]
+
+[[midasm_hook]]
+name = "EvilHudGuideAllocMidAsmHook"
+address = 0x823B6908
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "EvilHudGuideUpdateMidAsmHook"
+address = 0x82449800
+registers = ["r30", "f30"]
