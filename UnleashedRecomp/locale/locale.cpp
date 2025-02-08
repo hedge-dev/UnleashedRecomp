@@ -59,7 +59,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "SYSTEM" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "SYSTEM" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -70,7 +70,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "INPUT" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "EINGABE" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -81,6 +81,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "AUDIO" },
             { ELanguage::Japanese, "" },
+			{ ELanguage::German,   "AUDIO" }
             { ELanguage::German,   "" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
@@ -92,7 +93,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "VIDEO" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "VIDEO" }
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -104,7 +105,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "MAX" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "MAX" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -115,7 +116,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Window Size" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Fenstergröße" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -126,7 +127,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Adjust the size of the game window in windowed mode." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Passe die Fenstergröße des Spiels im Fenstermodus an." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -138,7 +139,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "This option is not available at this location." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Diese Option ist an diesem Ort nicht verfügbar." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -150,7 +151,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "This option is not available in fullscreen mode." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Diese Option ist im Vollbildmodus nicht verfügbar." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -162,7 +163,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "This option is not available in windowed mode." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Diese Option ist im Fenstermodus nicht verfügbar." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -174,7 +175,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "This option is not available with your current hardware configuration." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Diese Option ist mit deiner momentanen Hardwarekonfiguration nicht verfügbar." }
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -186,7 +187,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "This option is not available without MSAA." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Diese Option ist ohne MSAA nicht verfügbar." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -198,7 +199,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "This option is not supported by your operating system." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Diese Option wird von deinem Betriebssystem nicht unterstützt." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -210,7 +211,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "The game will now restart." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Das Spiel wird jetzt neu starten." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -222,7 +223,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Achievements" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Erfolge" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -234,7 +235,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "ACHIEVEMENTS" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "ERFOLGE" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -245,7 +246,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Achievement Unlocked!" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Erfolg Freigeschaltet!" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -256,7 +257,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "INSTALLER" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "INSTALLATION" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "INSTALADOR" },
             { ELanguage::Italian,  "INSTALLATORE" },
@@ -267,7 +268,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "INSTALLING" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "INSTALLATION" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "INSTALANDO" },
             { ELanguage::Italian,  "INSTALLANDO" },
@@ -278,7 +279,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Please select a language." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Bitte wähle eine Sprache." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Seleziona una lingua." }
@@ -289,10 +290,10 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Welcome to\nUnleashed Recompiled!\n\nYou'll need an Xbox 360 copy\nof Sonic Unleashed in order to proceed with the installation." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Willkommen zu \nUnleashed Recompiled!\n\nDu brauchst eine Xbox 360 Kopie\nvon Sonic Unleashed um mit der Installation fortfahren zu können." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Benvenuto a\nUnleashed Recompiled!\n\nDovrai avere una copia di\nSonic Unleashed per la Xbox 360\nper proseguire con l'installazione." }
+            { ELanguage::Italian,  "Benvenuto a\nUnleashed Recompiled!\n\nDovrai avere una copia di\nSonic Unleashed per la Xbox 360\nper proseguire con l'installazione." },
         }
     },
     {
@@ -300,7 +301,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Add the sources for the game and its title update." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Füge die Quellen für das Spiel und dessen Update hinzu." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -311,7 +312,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Add the sources for the DLC." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Füge die Quellen für die Erweiterungen hinzu." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -322,10 +323,10 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "The content will be installed to the program's folder.\n\n" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Der Inhalt wird in dem Ordner des Programms installiert.\n\n" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Il contenuto verrà installato nella cartella di questo programma.\n\n" }
+            { ELanguage::Italian,  "Il contenuto verrà installato nella cartella di questo programma.\n\n" },
         }
     },
     {
@@ -333,10 +334,10 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Please wait while the content is being installed..." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Bitte warten. Der Inhalt wird installiert..." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Attendi mentre il contenuto viene installato... " }
+            { ELanguage::Italian,  "Attendi mentre il contenuto viene installato... " },
         }
     },
     {
@@ -344,7 +345,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Installation complete!\nThis project is brought to you by:" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Installation abgeschlossen!\nDieses Projekt wird präsentiert von:" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -355,10 +356,10 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Installation failed.\n\nError:\n\n" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Installation fehlgeschlagen\n\nFehler:\n\n" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Installazione fallita.\n\nErrore:\n\n" }
+            { ELanguage::Italian,  "Installazione fallita.\n\nErrore:\n\n" },
         }
     },
     {
@@ -366,10 +367,10 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "GAME" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "SPIEL" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "GIOCO" }
+            { ELanguage::Italian,  "GIOCO" },
         }
     },
     {
@@ -377,10 +378,10 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "UPDATE" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "UPDATE" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "AGGIORNAMENTO" }
+            { ELanguage::Italian,  "AGGIORNAMENTO" },
         }
     },
     {
@@ -388,10 +389,10 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Required space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Benötigter Speicherplatz: %2.2f GiB" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Spazio necessario: %2.2f GiB" }
+            { ELanguage::Italian,  "Spazio necessario: %2.2f GiB" },
         }
     },
     {
@@ -399,10 +400,10 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Available space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Verfügbarer Speicherplatz: %2.2f GiB" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Spazio disponibile: %2.2f GiB" }
+            { ELanguage::Italian,  "Spazio disponibile: %2.2f GiB" },
         }
     },
     {
@@ -432,7 +433,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "RETRY" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "ERNEUT AUSFÜHREN" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -466,10 +467,10 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "The following selected files are invalid:" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Die folgenden Dateien sind unzulässig: " },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "I seguenti file non sono validi:" }
+            { ELanguage::Italian,  "I seguenti file non sono validi:" },
         }
     },
     {
@@ -478,10 +479,10 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Some of the files that have\nbeen provided are not valid.\n\nPlease make sure all the\nspecified files are correct\nand try again." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Einige Dateien, die bereitgestellt\nwurden sind unzulässig.\n\nBitte stelle sicher, dass\ndie angegebenen Dateien korrekt\nsind und versuche es erneut." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Alcuni dei file che sono stati\nselezionati non sono validi.\n\nAssicurati che tutti\ni file sono quelli corretti\ne riprova." }
+            { ELanguage::Italian,  "Alcuni dei file che sono stati\nselezionati non sono validi.\n\nAssicurati che tutti\ni file sono quelli corretti\ne riprova." },
         }
     },
     {
@@ -490,7 +491,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Select a digital dump with\ncontent from the game.\n\nThese files can be obtained from\nyour Xbox 360 hard drive by\nfollowing the instructions on\nthe GitHub page.\n\nFor choosing a folder with extracted\nand unmodified game files, use\nthe \"Add Folder\" option instead." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Wähle einen digitalen Dump\nmit Inhalten von dem Spiel.\n\nDie entsprechenden Dateien\nkönnen über die Festplatte deiner\nXbox 360 erlangt werden.\nFolge hierfür den Anweisungen\nauf der GitHub Seite.\n\nUm einen Ordner mit\nden unmodifizierten extrahierten\nSpieldateien auszuwählen, benutze\ndie \"Ordner Hinzufügen\" Option\nstattdessen." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -681,7 +682,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Yes" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Ja" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Sì" }
@@ -692,7 +693,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "No" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Nein" }
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "No" }
@@ -703,7 +704,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Next" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Weiter" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Continua" }
@@ -714,7 +715,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Select" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Auswählen" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Seleziona" }
@@ -725,7 +726,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Back" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Zurück" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Indietro" }
@@ -736,7 +737,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Quit" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Verlassen" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -747,7 +748,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Cancel" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Abbrechen" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -758,7 +759,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Reset" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Zurücksetzen" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Ripristina" }
@@ -769,7 +770,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Switch" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "" },
+			{ ELanguage::German,   "Wechseln" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Cambia" }
