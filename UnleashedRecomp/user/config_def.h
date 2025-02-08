@@ -98,15 +98,15 @@ CONFIG_DEFINE_LOCALISED("Video", bool, XboxColorCorrection, false);
 CONFIG_DEFINE_ENUM_LOCALISED("Video", ECutsceneAspectRatio, CutsceneAspectRatio, ECutsceneAspectRatio::Original);
 CONFIG_DEFINE_ENUM_LOCALISED("Video", EUIAlignmentMode, UIAlignmentMode, EUIAlignmentMode::Edge);
 
-CONFIG_DEFINE_HIDDEN("Exports", bool, AllowCancellingUnleash, false);
-CONFIG_DEFINE_HIDDEN("Exports", bool, DisableAutoSaveWarning, false);
-CONFIG_DEFINE_HIDDEN("Exports", bool, DisableDLCIcon, false);
-CONFIG_DEFINE_HIDDEN("Exports", bool, DisableDWMRoundedCorners, false);
-CONFIG_DEFINE_HIDDEN("Exports", bool, FixUnleashOutOfControlDrain, false);
-CONFIG_DEFINE_HIDDEN("Exports", bool, HomingAttackOnBoost, true);
-CONFIG_DEFINE_HIDDEN("Exports", bool, HUDToggleHotkey, false);
-CONFIG_DEFINE_HIDDEN("Exports", bool, SaveScoreAtCheckpoints, false);
-CONFIG_DEFINE_HIDDEN("Exports", bool, SkipIntroLogos, false);
-CONFIG_DEFINE_HIDDEN("Exports", bool, UseOfficialTitleOnTitleBar, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, AllowCancellingUnleash, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, DisableAutoSaveWarning, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, DisableDLCIcon, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, DisableDWMRoundedCorners, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, FixUnleashOutOfControlDrain, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, HomingAttackOnJump, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, HUDToggleKey, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, SaveScoreAtCheckpoints, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, SkipIntroLogos, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, UseOfficialTitleOnTitleBar, false);
 
 CONFIG_DEFINE("Update", time_t, LastChecked, 0);

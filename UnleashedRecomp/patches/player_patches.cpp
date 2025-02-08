@@ -97,7 +97,7 @@ void PostUnleashMidAsmHook(PPCRegister& r30)
 
 void SetXButtonHomingMidAsmHook(PPCRegister& r30)
 {
-    r30.u32 = Config::HomingAttackOnBoost;
+    r30.u32 = !Config::HomingAttackOnJump;
 }
 
 // SWA::Player::CEvilSonicContext

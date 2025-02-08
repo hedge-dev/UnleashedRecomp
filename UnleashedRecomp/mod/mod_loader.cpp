@@ -5,7 +5,9 @@
 #include <cpu/guest_stack_var.h>
 #include <kernel/function.h>
 #include <kernel/heap.h>
+#include <user/config.h>
 #include <user/paths.h>
+#include <os/logger.h>
 #include <os/process.h>
 #include <xxHashMap.h>
 
@@ -207,6 +209,42 @@ void ModLoader::Init()
 
         if (!mod.includeDirs.empty())
             g_mods.emplace_back(std::move(mod));
+    }
+
+    auto codeCount = modsDbIni.get<size_t>("Codes", "CodeCount", 0);
+
+    if (codeCount)
+    {
+        std::vector<std::string> codes{};
+
+        for (size_t i = 0; i < codeCount; i++)
+        {
+            auto name = modsDbIni.getString("Codes", fmt::format("Code{}", i), "");
+
+            if (name.empty())
+                continue;
+
+            codes.push_back(name);
+        }
+
+        for (auto& def : g_configDefinitions)
+        {
+            if (!def->IsHidden() || def->GetSection() != "Codes")
+                continue;
+
+            /* NOTE: this is inefficient, but it happens
+               once on boot for a handful of codes at release
+               and is temporary until we support real code mods. */
+            for (size_t i = 0; i < codes.size(); i++)
+            {
+                if (def->GetName() == codes[i])
+                {
+                    LOGFN("Loaded code: {}", codes[i]);
+                    *(bool*)def->GetValue() = true;
+                    break;
+                }
+            }
+        }
     }
 }
 

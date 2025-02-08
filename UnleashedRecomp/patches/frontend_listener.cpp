@@ -11,7 +11,7 @@ static class FrontendListener : public SDLEventListener
 public:
     bool OnSDLEvent(SDL_Event* event) override
     {
-        if (!Config::HUDToggleHotkey || OptionsMenu::s_isVisible)
+        if (!Config::HUDToggleKey || OptionsMenu::s_isVisible)
             return false;
 
         switch (event->type)
