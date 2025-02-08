@@ -159,3 +159,11 @@ PPC_FUNC(sub_82B00D00)
 
     *pElapsedTime = std::max(*pElapsedTime, 0.0f);
 }
+
+bool SparkleLocusMidAsmHook()
+{
+    // There is an epsilon check in sparkle locus particle code that seems to never pass at high frame rates, which causes vertex corruption.
+    // Checking for equality doesn't fix it either, so we can fix it by forcing it to always execute instead.
+    // This has the side effect of the locus particle eventually snapping to the rest position during pause, but it's better than vertices exploding.
+    return App::s_deltaTime < (1.0 / 60.0);
+}

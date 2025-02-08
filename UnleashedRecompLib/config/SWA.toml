@@ -957,3 +957,8 @@ registers = ["r3"]
 name = "EvilHudGuideUpdateMidAsmHook"
 address = 0x82449800
 registers = ["r30", "f30"]
+
+[[midasm_hook]]
+name = "SparkleLocusMidAsmHook"
+address = 0x82E96804
+jump_address_on_true = 0x82E96808
