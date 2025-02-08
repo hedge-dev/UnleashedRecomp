@@ -163,7 +163,7 @@ PPC_FUNC(sub_824B0930)
 
         if (*SWA::SGlobals::ms_IsRenderHud && pHudPause->m_IsShown && !pHudPause->m_Submenu && pHudPause->m_Transition == SWA::eTransitionType_Undefined)
         {
-            ButtonGuide::Open(Button(Localise("Achievements_Name"), EButtonIcon::Back, EButtonAlignment::Left, EFontQuality::Low));
+            ButtonGuide::Open(Button("Achievements_Name", EButtonIcon::Back, EButtonAlignment::Left, EFontQuality::Low));
             g_isClosed = false;
         }
         else if (!g_isClosed)

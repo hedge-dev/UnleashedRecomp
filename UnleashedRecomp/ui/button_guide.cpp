@@ -260,9 +260,10 @@ void ButtonGuide::Draw()
         if (btn.Visibility && !*btn.Visibility)
             continue;
 
+        auto str = Localise(btn.Name.c_str()).c_str();
         auto iconWidth = Scale(g_iconWidths[btn.Icon]);
         auto iconHeight = Scale(g_iconHeights[btn.Icon]);
-        auto textSize = g_fntNewRodin->CalcTextSizeA(fontSize, FLT_MAX, 0, btn.Name.c_str());
+        auto textSize = g_fntNewRodin->CalcTextSizeA(fontSize, FLT_MAX, 0, str);
 
         if (i > 0)
             offsetLeft += textSize.x + iconWidth + textMarginX;
@@ -270,7 +271,7 @@ void ButtonGuide::Draw()
         ImVec2 iconMin = { regionMin.x + offsetLeft - iconWidth - iconMarginX, regionMin.y };
         ImVec2 iconMax = { regionMin.x + offsetLeft - iconMarginX, regionMin.y + iconHeight };
 
-        DrawGuide(&offsetLeft, regionMin, regionMax, btn.Icon, btn.Alignment, iconMin, iconMax, btn.FontQuality, textSize, fontSize, btn.Name.c_str());
+        DrawGuide(&offsetLeft, regionMin, regionMax, btn.Icon, btn.Alignment, iconMin, iconMax, btn.FontQuality, textSize, fontSize, str);
     }
 
     // Draw right aligned icons.
@@ -284,9 +285,10 @@ void ButtonGuide::Draw()
         if (btn.Visibility && !*btn.Visibility)
             continue;
 
+        auto str = Localise(btn.Name.c_str()).c_str();
         auto iconWidth = Scale(g_iconWidths[btn.Icon]);
         auto iconHeight = Scale(g_iconHeights[btn.Icon]);
-        auto textSize = g_fntNewRodin->CalcTextSizeA(fontSize, FLT_MAX, 0, btn.Name.c_str());
+        auto textSize = g_fntNewRodin->CalcTextSizeA(fontSize, FLT_MAX, 0, str);
 
         if (i < g_buttons.size() - 1)
             offsetRight += textSize.x + iconWidth + textMarginX;
@@ -294,7 +296,7 @@ void ButtonGuide::Draw()
         ImVec2 iconMin = { regionMax.x - offsetRight - iconWidth - iconMarginX, regionMin.y };
         ImVec2 iconMax = { regionMax.x - offsetRight - iconMarginX, regionMin.y + iconHeight };
 
-        DrawGuide(&offsetRight, regionMin, regionMax, btn.Icon, btn.Alignment, iconMin, iconMax, btn.FontQuality, textSize, fontSize, btn.Name.c_str());
+        DrawGuide(&offsetRight, regionMin, regionMax, btn.Icon, btn.Alignment, iconMin, iconMax, btn.FontQuality, textSize, fontSize, str);
     }
 }
 

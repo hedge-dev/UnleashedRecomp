@@ -245,7 +245,7 @@ void DrawNextButtonGuide(bool isController, bool isKeyboard)
     if (App::s_isInit)
         icon = EButtonIcon::A;
 
-    ButtonGuide::Open(Button(Localise("Common_Next"), icon));
+    ButtonGuide::Open(Button("Common_Next", icon));
 }
 
 static void ResetSelection()
@@ -425,8 +425,8 @@ void MessageWindow::Draw()
 
                         std::array<Button, 2> buttons =
                         {
-                            Button(Localise("Common_Select"), selectIcon),
-                            Button(Localise("Common_Back"), backIcon),
+                            Button("Common_Select", selectIcon),
+                            Button("Common_Back", backIcon),
                         };
 
                         ButtonGuide::Open(buttons);
