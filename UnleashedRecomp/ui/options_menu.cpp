@@ -587,7 +587,7 @@ static bool DrawCategories()
 
     if (g_isStage || (ImGui::GetTime() - g_appearTime) >= (CONTAINER_FULL_DURATION / 60.0))
     {
-        drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, { clipRectMax.x - gridSize, clipRectMax.y - gridSize - Scale(5.0f) });
+        drawList->PushClipRect({ clipRectMin.x, clipRectMin.y + gridSize * 6.0f }, { clipRectMax.x - gridSize, clipRectMax.y - gridSize });
         return true;
     }
 
@@ -1157,6 +1157,8 @@ static void DrawConfigOptions()
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
+    drawList->PushClipRect({ clipRectMin.x, clipRectMin.y }, { clipRectMax.x, clipRectMax.y - Scale(5.0f) });
+
     g_selectedItem = nullptr;
 
     float gridSize = Scale(GRID_SIZE);
@@ -1332,6 +1334,8 @@ static void DrawConfigOptions()
 
     if (disableMoveAnimation)
         g_prevSelectedRowIndex = g_selectedRowIndex;
+
+    drawList->PopClipRect();
 
     // Pop clip rect from DrawCategories
     drawList->PopClipRect();
