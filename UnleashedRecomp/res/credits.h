@@ -1,6 +1,6 @@
 #pragma once
 
-inline std::array<const char*, 14> g_credits =
+inline std::array<const char*, 15> g_credits =
 {
     "Skyth",
     "Hyper",
@@ -15,5 +15,6 @@ inline std::array<const char*, 14> g_credits =
     "LadyLunanova",
     "LJSTAR",
     "Goalringmod27",
-    "M&M"
+    "M&M",
+    "DaGuAr",
 };
