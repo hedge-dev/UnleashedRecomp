@@ -585,8 +585,10 @@ static const xxHashMap<CsdModifier> g_modifiers =
     { HashStr("ui_playscreen_ev_hit/chance_attack"), { ALIGN_RIGHT | SCALE } },
 
     // ui_playscreen_su
-    { HashStr("ui_playscreen_su/su_sonic_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
-    { HashStr("ui_playscreen_su/gaia_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
+    { HashStr("ui_playscreen_su/su_sonic_gauge"), { ALIGN_BOTTOM_LEFT | SCALE | OFFSET_SCALE_LEFT, 632.0f } },
+    { HashStr("ui_playscreen_su/su_sonic_gauge/position/C/R"), { ALIGN_BOTTOM_LEFT | SCALE | STORE_RIGHT_CORNER } },
+    { HashStr("ui_playscreen_su/gaia_gauge"), { ALIGN_BOTTOM_LEFT | SCALE | OFFSET_SCALE_LEFT, 632.0f } },
+    { HashStr("ui_playscreen_su/gaia_gauge/position/C/R"), { ALIGN_BOTTOM_LEFT | SCALE | STORE_RIGHT_CORNER } },
     { HashStr("ui_playscreen_su/footer"), { ALIGN_BOTTOM_RIGHT | SCALE } },
 
     // ui_prov_playscreen
