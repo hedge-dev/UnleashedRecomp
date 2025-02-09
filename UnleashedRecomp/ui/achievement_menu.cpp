@@ -608,7 +608,6 @@ static void DrawContentContainer()
     auto time = ImGui::GetTime();
     auto fastScroll = (time - g_lastTappedTime) > 0.6;
     auto fastScrollSpeed = 1.0 / 3.5;
-    auto fastScrollEncounteredEdge = false;
     static auto fastScrollSpeedUp = false;
 
     if (scrollUp || scrollDown)
@@ -632,33 +631,24 @@ static void DrawContentContainer()
 
             scrollUp = upIsHeld;
             scrollDown = downIsHeld;
+            fastScrollSpeedUp = true;
         }
     }
 
     if (scrollUp)
     {
         --g_selectedRowIndex;
-
         if (g_selectedRowIndex < 0)
-        {
-            g_selectedRowIndex = fastScroll ? 0 : rowCount - 1;
-            fastScrollEncounteredEdge = fastScroll;
-            fastScrollSpeedUp = false;
-        }
+            g_selectedRowIndex = rowCount - 1;
     }
     else if (scrollDown)
     {
         ++g_selectedRowIndex;
-
         if (g_selectedRowIndex >= rowCount)
-        {
-            g_selectedRowIndex = fastScroll ? rowCount - 1 : 0;
-            fastScrollEncounteredEdge = fastScroll;
-            fastScrollSpeedUp = false;
-        }
+            g_selectedRowIndex = 0;
     }
 
-    if ((scrollUp || scrollDown) && !fastScrollEncounteredEdge)
+    if (scrollUp || scrollDown)
     {
         g_rowSelectionTime = time;
         Game_PlaySound("sys_actstg_pausecursor");
@@ -670,20 +660,10 @@ static void DrawContentContainer()
     int visibleRowCount = int(floor((clipRectMax.y - clipRectMin.y) / itemHeight));
 
     if (g_firstVisibleRowIndex > g_selectedRowIndex)
-    {
         g_firstVisibleRowIndex = g_selectedRowIndex;
 
-        if (g_selectedRowIndex > 0)
-            fastScrollSpeedUp = true;
-    }
-
     if (g_firstVisibleRowIndex + visibleRowCount - 1 < g_selectedRowIndex)
-    {
         g_firstVisibleRowIndex = std::max(0, g_selectedRowIndex - visibleRowCount + 1);
-
-        if (g_selectedRowIndex < rowCount - 1)
-            fastScrollSpeedUp = true;
-    }
 
     // Pop clip rect from DrawContentContainer
     drawList->PopClipRect();
