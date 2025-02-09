@@ -317,6 +317,12 @@ void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, I
 
     offset = Scale(offset);
 
+    // Original 4:3 has thicker text shadows.
+    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
+    {
+        radius *= 1.5f;
+    }
+
     SetOutline(radius);
     drawList->AddText(font, fontSize, { pos.x + offset, pos.y + offset }, shadowColour, text);
     ResetOutline();
