@@ -33,6 +33,8 @@ namespace hid
     extern EInputDeviceExplicit g_inputDeviceExplicit;
 
     extern uint16_t g_prohibitedButtons;
+    extern bool g_isLeftStickProhibited;
+    extern bool g_isRightStickProhibited;
 
     void Init();
 
@@ -40,7 +42,7 @@ namespace hid
     uint32_t SetState(uint32_t dwUserIndex, XAMINPUT_VIBRATION* pVibration);
     uint32_t GetCapabilities(uint32_t dwUserIndex, XAMINPUT_CAPABILITIES* pCaps);
 
-    void SetProhibitedButtons(uint16_t wButtons);
+    void SetProhibitedInputs(uint16_t wButtons = 0, bool leftStick = false, bool rightStick = false);
     bool IsInputAllowed();
     bool IsInputDeviceController();
     std::string GetInputDeviceName();

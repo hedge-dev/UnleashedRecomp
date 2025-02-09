@@ -18,6 +18,7 @@
 #include <app.h>
 #include <decompressor.h>
 #include <exports.h>
+#include <sdl_listener.h>
 
 #include <res/images/options_menu/miles_electric.dds.h>
 
@@ -100,6 +101,24 @@ static bool g_titleAnimBegin = true;
 static double g_appearTime = 0.0;
 
 static std::unique_ptr<GuestTexture> g_upMilesElectric;
+
+static float g_rightStickY;
+
+class SDLEventListenerForOptionsMenu : public SDLEventListener
+{
+public:
+    bool OnSDLEvent(SDL_Event* event) override
+    {
+        if (!OptionsMenu::s_isVisible || !hid::IsInputAllowed())
+            return false;
+
+        if (event->type == SDL_CONTROLLERAXISMOTION && event->caxis.axis == SDL_CONTROLLER_AXIS_RIGHTY)
+            g_rightStickY = event->caxis.value / 32767.0f;
+
+        return false;
+    }
+}
+g_sdlEventListenerForOptionsMenu;
 
 static void DrawTitle()
 {
@@ -1476,23 +1495,19 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
 
         if (scrollMax > 0.0f)
         {
-            if (auto pInputState = SWA::CInputState::GetInstance())
-            {
-                auto& rPadState = pInputState->GetPadState();
-                auto& vert = rPadState.RightStickVertical;
+            auto vert = -g_rightStickY;
         
-                if (fabs(vert) > 0.25f)
-                {
-                    isManualScrolling = true;
-                    scrollOffset += vert * scrollSpeed * App::s_deltaTime;
-                }
-                else if (isManualScrolling && fabs(vert) <= 0.25f)
-                {
-                    isScrolling = false;
-                    isManualScrolling = false;
-                    scrollTimer = 0.0f;
-                    scrollDirection = vert > 0.0f ? 1.0f : -1.0f;
-                }
+            if (fabs(vert) > 0.25f)
+            {
+                isManualScrolling = true;
+                scrollOffset += vert * scrollSpeed * App::s_deltaTime;
+            }
+            else if (isManualScrolling && fabs(vert) <= 0.25f)
+            {
+                isScrolling = false;
+                isManualScrolling = false;
+                scrollTimer = 0.0f;
+                scrollDirection = vert > 0.0f ? 1.0f : -1.0f;
             }
         
             if (!isManualScrolling)
@@ -1750,7 +1765,7 @@ void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
     ButtonGuide::Open(buttons);
     ButtonGuide::SetSideMargins(250);
 
-    hid::SetProhibitedButtons(XAMINPUT_GAMEPAD_START);
+    hid::SetProhibitedInputs(XAMINPUT_GAMEPAD_START, false, true);
 }
 
 void OptionsMenu::Close()
@@ -1764,7 +1779,7 @@ void OptionsMenu::Close()
         ButtonGuide::Close();
         Config::Save();
 
-        hid::SetProhibitedButtons(0);
+        hid::SetProhibitedInputs();
     }
 
     // Skip Miles Electric animation at main menu.

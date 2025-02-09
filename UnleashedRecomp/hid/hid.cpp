@@ -7,10 +7,14 @@ hid::EInputDevice hid::g_inputDeviceController;
 hid::EInputDeviceExplicit hid::g_inputDeviceExplicit;
 
 uint16_t hid::g_prohibitedButtons;
+bool hid::g_isLeftStickProhibited;
+bool hid::g_isRightStickProhibited;
 
-void hid::SetProhibitedButtons(uint16_t wButtons)
+void hid::SetProhibitedInputs(uint16_t wButtons, bool leftStick, bool rightStick)
 {
     hid::g_prohibitedButtons = wButtons;
+    hid::g_isLeftStickProhibited = leftStick;
+    hid::g_isRightStickProhibited = rightStick;
 }
 
 bool hid::IsInputAllowed()

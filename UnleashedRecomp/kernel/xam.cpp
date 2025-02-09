@@ -466,6 +466,18 @@ uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_STATE* st
 
     state->Gamepad.wButtons &= ~hid::g_prohibitedButtons;
 
+    if (hid::g_isLeftStickProhibited)
+    {
+        state->Gamepad.sThumbLX = 0;
+        state->Gamepad.sThumbLY = 0;
+    }
+
+    if (hid::g_isRightStickProhibited)
+    {
+        state->Gamepad.sThumbRX = 0;
+        state->Gamepad.sThumbRY = 0;
+    }
+
     ByteSwapInplace(state->Gamepad.wButtons);
     ByteSwapInplace(state->Gamepad.sThumbLX);
     ByteSwapInplace(state->Gamepad.sThumbLY);

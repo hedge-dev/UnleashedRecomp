@@ -783,7 +783,7 @@ void AchievementMenu::Open()
     ResetSelection();
     Game_PlaySound("sys_actstg_pausewinopen");
 
-    hid::SetProhibitedButtons(XAMINPUT_GAMEPAD_START);
+    hid::SetProhibitedInputs(XAMINPUT_GAMEPAD_START);
 }
 
 void AchievementMenu::Close()
@@ -793,7 +793,7 @@ void AchievementMenu::Close()
         g_appearTime = ImGui::GetTime();
         g_isClosing = true;
 
-        hid::SetProhibitedButtons(0);
+        hid::SetProhibitedInputs();
     }
 
     ButtonGuide::Close();
