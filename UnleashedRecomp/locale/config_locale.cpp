@@ -151,7 +151,7 @@ CONFIG_DEFINE_LOCALE(ControlTutorial)
 CONFIG_DEFINE_LOCALE(AchievementNotifications)
 {
     { ELanguage::English,  { "Achievement Notifications", "Show notifications for unlocking achievements.\n\nAchievements will still be rewarded with notifications disabled." } },
-    { ELanguage::Japanese, { "Achievement Notifications", "\n\n" } },
+    { ELanguage::Japanese, { "[実績通知:じっせきつうち]", "\n\n" } }
     { ELanguage::German,   { "Erfolgsbenachrichtigungen", "Zeige Benachrichtigungen für das Freischalten von Erfolgen.\n\nErfolge werden weiterhin freigeschaltet, auch wenn die Benachrichtigungen ausgeschaltet sind." } },
     { ELanguage::French,   { "Notification des succès", "Affiche les notifications pour le déverrouillage des succès.\n\nLes succès seront toujours obtenus même si les notifications sont désactivées." } },
     { ELanguage::Spanish,  { "Notificaciones de logros", "Muestra notificaciones al desbloquear logros.\n\nLos logros se seguirán obteniendo aunque las notificaciones estén desactivadas." } },
