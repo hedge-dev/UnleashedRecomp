@@ -1198,8 +1198,14 @@ PPC_FUNC(sub_830D1EF0)
             y = g_aspectRatioOffsetY + (y + 0.5f) * g_aspectRatioScale;
         }
 
-        vertex[i].x = ((round(x) - 0.5f) / Video::s_viewportWidth) * 2.0f - 1.0f;
-        vertex[i].y = ((round(y) - 0.5f) / Video::s_viewportHeight) * -2.0f + 1.0f;
+        if (Config::AspectRatio != EAspectRatio::OriginalNarrow)
+        {
+            x = round(x);
+            y = round(y);
+        }
+
+        vertex[i].x = ((x - 0.5f) / Video::s_viewportWidth) * 2.0f - 1.0f;
+        vertex[i].y = ((y - 0.5f) / Video::s_viewportHeight) * -2.0f + 1.0f;
     }
 
     bool letterboxTop = PPC_LOAD_U8(r3.u32 + PRIMITIVE_2D_PADDING_OFFSET + 0x1);
@@ -1551,5 +1557,40 @@ PPC_FUNC(sub_82449088)
                 sub_830BB3D0(ctx, base);
             }
         }
+    }
+}
+
+// The shadow offseting is buggy for FCO text just like Werehog button guide,
+// making them appear thicker than they actually are.
+PPC_FUNC_IMPL(__imp__sub_82E54950);
+PPC_FUNC(sub_82E54950)
+{
+    if (Config::AspectRatio == EAspectRatio::OriginalNarrow)
+    {
+        // Luckily, they have shadow offset scale values that are only used in this function.
+        uint32_t x = PPC_LOAD_U32(0x8332B7B8);
+        uint32_t y = PPC_LOAD_U32(0x8332B7BC);
+
+        PPCRegister scaled;
+
+        // X
+        scaled.u32 = x;
+        scaled.f32 *= 1.5f;
+        PPC_STORE_U32(0x8332B7B8, scaled.u32);
+
+        // Y
+        scaled.u32 = y;
+        scaled.f32 *= 1.5f;
+        PPC_STORE_U32(0x8332B7BC, scaled.u32);
+
+        __imp__sub_82E54950(ctx, base);
+
+        // Restore old values.
+        PPC_STORE_U32(0x8332B7B8, x);
+        PPC_STORE_U32(0x8332B7BC, y);
+    }
+    else
+    {
+        __imp__sub_82E54950(ctx, base);
     }
 }
