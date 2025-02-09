@@ -155,7 +155,7 @@ static void DrawGuide(float* offset, ImVec2 regionMin, ImVec2 regionMax, EButton
     EButtonAlignment alignment, ImVec2 iconMin, ImVec2 iconMax, EFontQuality fontQuality,
     ImVec2 textSize, float fontSize, const char* text)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto _icon = icon;
     auto iconWidth = Scale(g_iconWidths[icon]);
     auto dualIconMarginX = Scale(25);
@@ -235,7 +235,7 @@ void ButtonGuide::Draw()
     if (!s_isVisible)
         return;
 
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
 
     ImVec2 regionMin = { g_aspectRatioOffsetX + Scale(g_sideMargins), g_aspectRatioOffsetY * 2.0f + Scale(720.0f - 102.0f) };

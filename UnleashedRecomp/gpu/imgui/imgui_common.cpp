@@ -11,7 +11,7 @@ ImGuiCallbackData* AddImGuiCallback(ImGuiCallback callback)
     auto& callbackData = g_callbackData[g_callbackDataIndex];
     ++g_callbackDataIndex;
 
-    ImGui::GetForegroundDrawList()->AddCallback(reinterpret_cast<ImDrawCallback>(callback), callbackData.get());
+    ImGui::GetBackgroundDrawList()->AddCallback(reinterpret_cast<ImDrawCallback>(callback), callbackData.get());
 
     return callbackData.get();
 }

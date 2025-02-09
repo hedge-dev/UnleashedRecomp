@@ -169,7 +169,7 @@ double ComputeMotion(double duration, double offset, double total)
 
 void DrawPauseContainer(ImVec2 min, ImVec2 max, float alpha)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     auto commonWidth = Scale(35);
     auto commonHeight = Scale(35);
@@ -200,7 +200,7 @@ void DrawPauseContainer(ImVec2 min, ImVec2 max, float alpha)
 
 void DrawPauseHeaderContainer(ImVec2 min, ImVec2 max, float alpha)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     auto commonWidth = Scale(35);
 
@@ -217,14 +217,14 @@ void DrawPauseHeaderContainer(ImVec2 min, ImVec2 max, float alpha)
 
 void DrawTextBasic(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     drawList->AddText(font, fontSize, pos, colour, text, nullptr);
 }
 
 void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& position, const ImVec2& min, const ImVec2& max, ImU32 color, const char* text, double time, double delay, double speed)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto rectWidth = max.x - min.x;
     auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
     auto textX = position.x - fmodf(std::max(0.0, ImGui::GetTime() - (time + delay)) * speed, textSize.x + rectWidth);
@@ -278,7 +278,7 @@ void DrawTextWithMarquee(const ImFont* font, float fontSize, const ImVec2& posit
 
 void DrawTextWithMarqueeShadow(const ImFont* font, float fontSize, const ImVec2& pos, const ImVec2& min, const ImVec2& max, ImU32 colour, const char* text, double time, double delay, double speed, float offset, float radius, ImU32 shadowColour)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto rectWidth = max.x - min.x;
     auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
     auto textX = pos.x - fmodf(std::max(0.0, ImGui::GetTime() - (time + delay)) * speed, textSize.x + rectWidth);
@@ -296,7 +296,7 @@ void DrawTextWithMarqueeShadow(const ImFont* font, float fontSize, const ImVec2&
 
 void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 color, const char* text, float outlineSize, ImU32 outlineColor, uint32_t shaderModifier)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     SetOutline(outlineSize);
     drawList->AddText(font, fontSize, pos, outlineColor, text);
@@ -313,7 +313,7 @@ void DrawTextWithOutline(const ImFont* font, float fontSize, const ImVec2& pos, 
 
 void DrawTextWithShadow(const ImFont* font, float fontSize, const ImVec2& pos, ImU32 colour, const char* text, float offset, float radius, ImU32 shadowColour)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     offset = Scale(offset);
 
@@ -732,7 +732,7 @@ ImU32 ColourLerp(ImU32 c0, ImU32 c1, float t)
 
 void DrawVersionString(const ImFont* font, const ImU32 col)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
     auto fontSize = Scale(12);
     auto textMargin = Scale(2);
@@ -743,7 +743,7 @@ void DrawVersionString(const ImFont* font, const ImU32 col)
 
 void DrawSelectionContainer(ImVec2 min, ImVec2 max, bool fadeTop)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     static auto breatheStart = ImGui::GetTime();
     auto alpha = BREATHE_MOTION(1.0f, 0.55f, breatheStart, 0.92f);
@@ -787,7 +787,7 @@ void DrawSelectionContainer(ImVec2 min, ImVec2 max, bool fadeTop)
 
 void DrawToggleLight(ImVec2 pos, bool isEnabled, float alpha)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto lightSize = Scale(14);
     auto lightCol = IM_COL32(255, 255, 255, 255 * alpha);
 

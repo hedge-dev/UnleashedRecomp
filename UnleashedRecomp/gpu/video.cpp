@@ -2321,7 +2321,7 @@ static void DrawImGui()
     Fader::Draw();
     BlackBar::Draw();
 
-    assert(ImGui::GetForegroundDrawList()->_ClipRectStack.Size == 1 && "Some clip rects were not removed from the stack!");
+    assert(ImGui::GetBackgroundDrawList()->_ClipRectStack.Size == 1 && "Some clip rects were not removed from the stack!");
 
     DrawProfiler();
     ImGui::Render();

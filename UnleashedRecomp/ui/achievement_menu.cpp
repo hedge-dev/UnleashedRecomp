@@ -67,7 +67,7 @@ static void ResetSelection()
 
 static void DrawContainer(ImVec2 min, ImVec2 max, ImU32 gradientTop, ImU32 gradientBottom, float alpha = 1, float cornerRadius = 25)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     DrawPauseContainer(min, max, alpha);
 
@@ -76,7 +76,7 @@ static void DrawContainer(ImVec2 min, ImVec2 max, ImU32 gradientTop, ImU32 gradi
 
 static void DrawHeaderContainer(const char* text)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto fontSize = Scale(24);
     auto textSize = g_fntNewRodinUB->CalcTextSizeA(fontSize, FLT_MAX, 0, text);
     auto cornerRadius = 23;
@@ -124,7 +124,7 @@ static void DrawHeaderContainer(const char* text)
 
 static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievement, bool isUnlocked)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
@@ -339,7 +339,7 @@ static void DrawAchievement(int rowIndex, float yOffset, Achievement& achievemen
 
 static void DrawTrophySparkles(ImVec2 min, ImVec2 max, int recordCount, int trophyFrameIndex)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     constexpr auto recordsHalfTotal = ACH_RECORDS / 2;
 
@@ -427,7 +427,7 @@ static void DrawTrophySparkles(ImVec2 min, ImVec2 max, int recordCount, int trop
 
 static void DrawAchievementTotal(ImVec2 min, ImVec2 max)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     // Transparency fade animation.
     auto alpha = Cubic(0, 1, ComputeMotion(g_appearTime, COUNTER_INTRO_FADE_START, COUNTER_INTRO_FADE_END));
@@ -511,7 +511,7 @@ static void DrawAchievementTotal(ImVec2 min, ImVec2 max)
 
 static void DrawContentContainer()
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     // Expand/retract animation.
     auto motion = g_isClosing

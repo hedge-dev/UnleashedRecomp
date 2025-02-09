@@ -127,7 +127,7 @@ static void DrawTitle()
         g_titleAnimBegin = false;
     }
 
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto x = Scale(122);
     auto y = Scale(56);
 
@@ -238,7 +238,7 @@ static void DrawScanlineBars()
     float height = Scale(105.0f);
 
     auto& res = ImGui::GetIO().DisplaySize;
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     if (OptionsMenu::s_pauseMenuType != SWA::eMenuType_WorldMap)
     {
@@ -350,7 +350,7 @@ static void DrawContainer(ImVec2 min, ImVec2 max, bool drawRightOutline)
     max.y = Lerp(center, max.y, containerHeight);
 
     auto& res = ImGui::GetIO().DisplaySize;
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     double outerAlpha = g_isStage ? 1.0 : ComputeMotion(g_appearTime, CONTAINER_OUTER_TIME, CONTAINER_OUTER_DURATION);
     double innerAlpha = g_isStage ? 1.0 : ComputeMotion(g_appearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
@@ -454,7 +454,7 @@ static bool DrawCategories()
         Game_PlaySound("sys_actstg_score");
     }
 
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
@@ -601,7 +601,7 @@ static void DrawSelectionArrows(ImVec2 min, ImVec2 max, bool isLeftTapped, bool 
     static bool isLeftArrowMotion = false;
     static bool isRightArrowMotion = false;
 
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto gridSize = Scale(GRID_SIZE);
     auto width = gridSize * 2.5f;
     auto padding = gridSize;
@@ -725,7 +725,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     bool isAccessible, std::string* inaccessibleReason = nullptr,
     T valueMin = T(0), T valueCenter = T(0.5), T valueMax = T(1), bool isSlider = true)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
     auto& padState = SWA::CInputState::GetInstance()->GetPadState();
@@ -1153,7 +1153,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
 static void DrawConfigOptions()
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
@@ -1363,7 +1363,7 @@ static void DrawConfigOptions()
 
 static void DrawSettingsPanel(ImVec2 settingsMin, ImVec2 settingsMax)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     SetProceduralOrigin(settingsMin);
     DrawContainer(settingsMin, settingsMax, true);
@@ -1387,7 +1387,7 @@ static void DrawSettingsPanel(ImVec2 settingsMin, ImVec2 settingsMax)
 
 static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     SetProceduralOrigin(infoMin);
     DrawContainer(infoMin, infoMax, false);
@@ -1584,7 +1584,7 @@ static void SetOptionsMenuVisible(bool isVisible)
 
 static bool DrawMilesElectric()
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
 
     // Compensate for the lack of CSD UI dimming the background.
@@ -1637,7 +1637,7 @@ static bool DrawMilesElectric()
 
 static bool DrawFadeTransition()
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
 
     auto scaleMotion = ComputeMotion(g_appearTime, 0, MILES_ELECTRIC_SCALE_DURATION);
@@ -1682,7 +1682,7 @@ void OptionsMenu::Draw()
 
     if (!g_isClosing)
     {
-        auto drawList = ImGui::GetForegroundDrawList();
+        auto drawList = ImGui::GetBackgroundDrawList();
         auto& res = ImGui::GetIO().DisplaySize;
 
         if (g_isStage)

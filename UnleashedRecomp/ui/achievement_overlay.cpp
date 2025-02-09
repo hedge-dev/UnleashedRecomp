@@ -30,7 +30,7 @@ static ImFont* g_fntSeurat;
 
 static bool DrawContainer(ImVec2 min, ImVec2 max, float cornerRadius = 25)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     // Expand/retract animation.
     auto containerMotion = ComputeMotion(g_appearTime, OVERLAY_CONTAINER_COMMON_MOTION_START, OVERLAY_CONTAINER_COMMON_MOTION_END);
@@ -88,7 +88,7 @@ void AchievementOverlay::Draw()
     if (ImGui::GetTime() - g_appearTime >= OVERLAY_DURATION)
         AchievementOverlay::Close();
 
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
 
     auto strAchievementUnlocked = Localise("Achievements_Unlock").c_str();

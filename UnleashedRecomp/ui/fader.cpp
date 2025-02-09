@@ -45,7 +45,7 @@ void Fader::Draw()
 
     auto colour = IM_COL32(g_colour & 0xFF, (g_colour >> 8) & 0xFF, (g_colour >> 16) & 0xFF, 255 * alpha);
 
-    ImGui::GetForegroundDrawList()->AddRectFilled({ 0, 0 }, ImGui::GetIO().DisplaySize, colour);
+    ImGui::GetBackgroundDrawList()->AddRectFilled({ 0, 0 }, ImGui::GetIO().DisplaySize, colour);
 }
 
 static void DoFade(bool isFadeIn, float duration, std::function<void()> endCallback, float endCallbackDelay)

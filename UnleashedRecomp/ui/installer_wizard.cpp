@@ -464,7 +464,7 @@ static void ResetCursorRects()
 static void DrawBackground()
 {
     auto &res = ImGui::GetIO().DisplaySize;
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     drawList->AddRectFilled({ 0.0, 0.0 }, res, IM_COL32_BLACK);
 }
 
@@ -483,7 +483,7 @@ static void DrawLeftImage()
     int a = std::lround(255.0 * imageAlpha);
     GuestTexture *guestTexture = g_installTextures[installTextureIndex % g_installTextures.size()].get();
     auto &res = ImGui::GetIO().DisplaySize;
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     ImVec2 min = { g_aspectRatioOffsetX + Scale(IMAGE_X), g_aspectRatioOffsetY + Scale(IMAGE_Y) };
     ImVec2 max = { min.x + Scale(IMAGE_WIDTH), min.y + Scale(IMAGE_HEIGHT) };
     drawList->AddImage(guestTexture, min, max, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, a));
@@ -491,7 +491,7 @@ static void DrawLeftImage()
 
 static void DrawHeaderIconsForInstallPhase(double iconsPosX, double iconsPosY, double iconsScale)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     // Arrow Circle Icon
     ImVec2 arrowCircleMin = { g_aspectRatioOffsetX + Scale(iconsPosX - iconsScale / 2), Scale(iconsPosY - iconsScale / 2) };
@@ -546,7 +546,7 @@ static void DrawHeaderIconsForInstallPhase(double iconsPosX, double iconsPosY, d
 
 static void DrawHeaderIcons()
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     float iconsPosX = 256.0f;
     float iconsPosY = 80.0f;
@@ -582,7 +582,7 @@ static void DrawScanlineBars()
     }
 
     auto &res = ImGui::GetIO().DisplaySize;
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE);
 
@@ -680,7 +680,7 @@ static void DrawScanlineBars()
 static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
 {   
     auto &res = ImGui::GetIO().DisplaySize;
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     double gridAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, 
         isTextArea ? CONTAINER_INNER_TIME : CONTAINER_OUTER_TIME,
@@ -711,7 +711,7 @@ static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
 static void DrawDescriptionContainer()
 {
     auto &res = ImGui::GetIO().DisplaySize;
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto fontSize = Scale(28.0f);
     auto annotationFontSize = fontSize * ANNOTATION_FONT_SIZE_MODIFIER;
 
@@ -896,7 +896,7 @@ static void DrawDescriptionContainer()
 static void DrawButtonContainer(ImVec2 min, ImVec2 max, int baser, int baseg, float alpha)
 {
     auto &res = ImGui::GetIO().DisplaySize;
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     SetShaderModifier(IMGUI_SHADER_MODIFIER_SCANLINE_BUTTON);
     drawList->AddRectFilledMultiColor(min, max, IM_COL32(baser, baseg + 130, 0, 223 * alpha), IM_COL32(baser, baseg + 130, 0, 178 * alpha), IM_COL32(baser, baseg + 130, 0, 223 * alpha), IM_COL32(baser, baseg + 130, 0, 178 * alpha));
     drawList->AddRectFilledMultiColor(min, max, IM_COL32(baser, baseg, 0, 13 * alpha), IM_COL32(baser, baseg, 0, 0), IM_COL32(baser, baseg, 0, 55 * alpha), IM_COL32(baser, baseg, 0, 6 * alpha));
@@ -924,7 +924,7 @@ static void DrawButton(ImVec2 min, ImVec2 max, const char *buttonText, bool sour
     buttonPressed = false;
 
     auto &res = ImGui::GetIO().DisplaySize;
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     float alpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
     if (!buttonEnabled)
     {
@@ -1030,7 +1030,7 @@ static void DrawSourceButton(ButtonColumn buttonColumn, float yRatio, const char
 static void DrawProgressBar(float progressRatio)
 {
     auto &res = ImGui::GetIO().DisplaySize;
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     float alpha = 1.0;
     const uint32_t innerColor0 = IM_COL32(0, 65, 0, 255 * alpha);
     const uint32_t innerColor1 = IM_COL32(0, 32, 0, 255 * alpha);
@@ -1532,7 +1532,7 @@ static void DrawHorizontalBorder(bool bottomBorder)
     const uint32_t FADE_COLOR_LEFT = IM_COL32(155, 155, 155, 0);
     const uint32_t SOLID_COLOR = IM_COL32(155, 200, 155, 255);
     const uint32_t FADE_COLOR_RIGHT = IM_COL32(155, 225, 155, 0);
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     double borderScale = 1.0 - ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_LINE_ANIMATION_TIME, CONTAINER_LINE_ANIMATION_DURATION);
     float midX = g_aspectRatioOffsetX + Scale(CONTAINER_X + CONTAINER_WIDTH / 5);
     float minX = std::lerp(g_aspectRatioOffsetX + Scale(CONTAINER_X - BORDER_SIZE - BORDER_OVERSHOOT), midX, borderScale);
@@ -1564,7 +1564,7 @@ static void DrawVerticalBorder(bool rightBorder)
 {
     const uint32_t SOLID_COLOR = IM_COL32(155, rightBorder ? 225 : 155, 155, 255);
     const uint32_t FADE_COLOR = IM_COL32(155, rightBorder ? 225 : 155, 155, 0);
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     double borderScale = 1.0 - ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_LINE_ANIMATION_TIME, CONTAINER_LINE_ANIMATION_DURATION);
     float minX = g_aspectRatioOffsetX + (rightBorder ? Scale(CONTAINER_X + CONTAINER_WIDTH) : Scale(CONTAINER_X - BORDER_SIZE));
     float maxX = minX + Scale(BORDER_SIZE);
@@ -1661,7 +1661,7 @@ static void PickerDrawForeground()
 {
     if (g_currentPickerVisible)
     {
-        auto drawList = ImGui::GetForegroundDrawList();
+        auto drawList = ImGui::GetBackgroundDrawList();
         drawList->AddRectFilled({ 0.0f, 0.0f }, ImGui::GetIO().DisplaySize, IM_COL32(0, 0, 0, 190));
     }
 }

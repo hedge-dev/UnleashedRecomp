@@ -150,7 +150,7 @@ g_sdlEventListenerForMessageWindow;
 
 bool DrawContainer(float appearTime, ImVec2 centre, ImVec2 max, bool isForeground = true)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     ImVec2 _min = { centre.x - max.x, centre.y - max.y };
     ImVec2 _max = { centre.x + max.x, centre.y + max.y };
@@ -201,7 +201,7 @@ bool DrawContainer(float appearTime, ImVec2 centre, ImVec2 max, bool isForegroun
 
 void DrawButton(int rowIndex, float yOffset, float width, float height, std::string& text)
 {
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
 
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
@@ -275,7 +275,7 @@ void MessageWindow::Draw()
     if (!s_isVisible)
         return;
 
-    auto drawList = ImGui::GetForegroundDrawList();
+    auto drawList = ImGui::GetBackgroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
 
     ImVec2 centre = { res.x / 2, res.y / 2 };
