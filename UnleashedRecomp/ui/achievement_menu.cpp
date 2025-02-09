@@ -48,13 +48,11 @@ static std::unique_ptr<GuestTexture> g_upTrophyIcon;
 static int g_firstVisibleRowIndex;
 static int g_selectedRowIndex;
 static double g_rowSelectionTime;
+static double g_lastTappedTime;
+static double g_lastIncrementTime;
 
 static bool g_upWasHeld;
 static bool g_downWasHeld;
-static bool g_leftWasHeld;
-static bool g_rightWasHeld;
-static bool g_upRSWasHeld;
-static bool g_downRSWasHeld;
 
 static void ResetSelection()
 {
@@ -601,81 +599,91 @@ static void DrawContentContainer()
     bool downIsHeld = inputState->GetPadState().IsDown(SWA::eKeyState_DpadDown) ||
         inputState->GetPadState().LeftStickVertical < -0.5f;
 
-    bool leftIsHeld = inputState->GetPadState().IsDown(SWA::eKeyState_DpadLeft) ||
-        inputState->GetPadState().LeftStickHorizontal < -0.5f;
-
-    bool rightIsHeld = inputState->GetPadState().IsDown(SWA::eKeyState_DpadRight) ||
-        inputState->GetPadState().LeftStickHorizontal > 0.5f;
-
-    bool upRSIsHeld = inputState->GetPadState().RightStickVertical > 0.5f;
-    bool downRSIsHeld = inputState->GetPadState().RightStickVertical < -0.5f;
-
     bool isReachedTop = g_selectedRowIndex == 0;
     bool isReachedBottom = g_selectedRowIndex == rowCount - 1;
 
     bool scrollUp = !g_upWasHeld && upIsHeld;
     bool scrollDown = !g_downWasHeld && downIsHeld;
-    bool scrollPageUp = !g_leftWasHeld && leftIsHeld && !isReachedTop;
-    bool scrollPageDown = !g_rightWasHeld && rightIsHeld && !isReachedBottom;
-    bool jumpToTop = !g_upRSWasHeld && upRSIsHeld && !isReachedTop;
-    bool jumpToBottom = !g_downRSWasHeld && downRSIsHeld && !isReachedBottom;
 
-    int prevSelectedRowIndex = g_selectedRowIndex;
+    auto time = ImGui::GetTime();
+    auto fastScroll = (time - g_lastTappedTime) > 0.6;
+    auto fastScrollSpeed = 1.0 / 3.5;
+    auto fastScrollEncounteredEdge = false;
+    static auto fastScrollSpeedUp = false;
+
+    if (scrollUp || scrollDown)
+        g_lastTappedTime = time;
+
+    if (!upIsHeld && !downIsHeld)
+        fastScrollSpeedUp = false;
+
+    if (fastScrollSpeedUp)
+        fastScrollSpeed /= 2;
+
+    if (fastScroll)
+    {
+        if ((time - g_lastIncrementTime) < fastScrollSpeed)
+        {
+            fastScroll = false;
+        }
+        else
+        {
+            g_lastIncrementTime = time;
+
+            scrollUp = upIsHeld;
+            scrollDown = downIsHeld;
+        }
+    }
 
     if (scrollUp)
     {
         --g_selectedRowIndex;
+
         if (g_selectedRowIndex < 0)
-            g_selectedRowIndex = rowCount - 1;
+        {
+            g_selectedRowIndex = fastScroll ? 0 : rowCount - 1;
+            fastScrollEncounteredEdge = fastScroll;
+            fastScrollSpeedUp = false;
+        }
     }
     else if (scrollDown)
     {
         ++g_selectedRowIndex;
+
         if (g_selectedRowIndex >= rowCount)
-            g_selectedRowIndex = 0;
-    }
-    else if (scrollPageUp)
-    {
-        g_selectedRowIndex -= 3;
-        if (g_selectedRowIndex < 0)
-            g_selectedRowIndex = 0;
-    }
-    else if (scrollPageDown)
-    {
-        g_selectedRowIndex += 3;
-        if (g_selectedRowIndex >= rowCount)
-            g_selectedRowIndex = rowCount - 1;
-    }
-    else if (jumpToTop)
-    {
-        g_selectedRowIndex = 0;
-    }
-    else if (jumpToBottom)
-    {
-        g_selectedRowIndex = rowCount - 1;
+        {
+            g_selectedRowIndex = fastScroll ? rowCount - 1 : 0;
+            fastScrollEncounteredEdge = fastScroll;
+            fastScrollSpeedUp = false;
+        }
     }
 
-    // lol
-    if (scrollUp || scrollDown || scrollPageUp || scrollPageDown || jumpToTop || jumpToBottom)
+    if ((scrollUp || scrollDown) && !fastScrollEncounteredEdge)
     {
-        g_rowSelectionTime = ImGui::GetTime();
+        g_rowSelectionTime = time;
         Game_PlaySound("sys_actstg_pausecursor");
     }
 
     g_upWasHeld = upIsHeld;
     g_downWasHeld = downIsHeld;
-    g_leftWasHeld = leftIsHeld;
-    g_rightWasHeld = rightIsHeld;
-    g_upRSWasHeld = upRSIsHeld;
-    g_downRSWasHeld = downRSIsHeld;
 
     int visibleRowCount = int(floor((clipRectMax.y - clipRectMin.y) / itemHeight));
 
     if (g_firstVisibleRowIndex > g_selectedRowIndex)
+    {
         g_firstVisibleRowIndex = g_selectedRowIndex;
 
+        if (g_selectedRowIndex > 0)
+            fastScrollSpeedUp = true;
+    }
+
     if (g_firstVisibleRowIndex + visibleRowCount - 1 < g_selectedRowIndex)
+    {
         g_firstVisibleRowIndex = std::max(0, g_selectedRowIndex - visibleRowCount + 1);
+
+        if (g_selectedRowIndex < rowCount - 1)
+            fastScrollSpeedUp = true;
+    }
 
     // Pop clip rect from DrawContentContainer
     drawList->PopClipRect();
