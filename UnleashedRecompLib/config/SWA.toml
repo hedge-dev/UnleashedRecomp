@@ -817,6 +817,12 @@ name = "AddPrimitive2DMidAsmHook"
 address = 0x82581C2C
 registers = ["r3"]
 
+# Shop
+[[midasm_hook]]
+name = "AddPrimitive2DMidAsmHook"
+address = 0x82B2BCD8
+registers = ["r3"]
+
 [[midasm_hook]]
 name = "ObjGetItemFieldOfViewMidAsmHook"
 address = 0x82692934
