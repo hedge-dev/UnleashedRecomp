@@ -69,9 +69,9 @@ PPC_FUNC(sub_822C1130)
     {
         SDL_PumpEvents();
         SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+        GameWindow::Update();
     }
 
-    GameWindow::Update();
     AudioPatches::Update(App::s_deltaTime);
     InspirePatches::Update();
 
