@@ -241,7 +241,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
     {
         ELanguage::Japanese,
         {
-            { EControllerIcons::Auto,        { "AUTO", "Auto: " } },
+            { EControllerIcons::Auto,        { "自動検出", "自動検出: " } },
             { EControllerIcons::Xbox,        { "XBOX", "Xbox: " } },
             { EControllerIcons::PlayStation, { "PLAYSTATION", "Xbox: " } }
         }
@@ -407,7 +407,7 @@ CONFIG_DEFINE_LOCALE(EffectsVolume)
 CONFIG_DEFINE_LOCALE(MusicAttenuation)
 {
     { ELanguage::English,  { "Music Attenuation", "Fade out the game's music when external media is playing." } },
-    { ELanguage::Japanese, { "Music Attenuation", "" } },
+    { ELanguage::Japanese, { "BGM減衰", "" } }
     { ELanguage::German,   { "Musikdämpfung", "Stelle die Musik des Spiels stumm während externe Medien abgespielt werden." } },
     { ELanguage::French,   { "Atténuation audio", "Abaisse le volume des musiques du jeu lorsqu'un média externe est en cours de lecture." } },
     { ELanguage::Spanish,  { "Atenuación de música", "Atenúa la música del juego cuando un reproductor multimedia se encuentra activo." } },
@@ -418,7 +418,7 @@ CONFIG_DEFINE_LOCALE(MusicAttenuation)
 CONFIG_DEFINE_LOCALE(ChannelConfiguration)
 {
     { ELanguage::English,  { "Channel Configuration", "Change the output mode for your audio device." } },
-    { ELanguage::Japanese, { "Channel Configuration", "" } },
+    { ELanguage::Japanese, { "チャンネル設定", "" } }
     { ELanguage::German,   { "Kanalkonfiguration", "Ändere den Ausgabemodus für dein Audioausgabegerät." } },
     { ELanguage::French,   { "Configuration sortie audio", "Modifie le mode de sortie pour votre périphérique audio." } },
     { ELanguage::Spanish,  { "Configuración de canales", "Cambia el modo de salida para tu dispositivo de audio." } },
@@ -437,8 +437,8 @@ CONFIG_DEFINE_ENUM_LOCALE(EChannelConfiguration)
     {
         ELanguage::Japanese,
         {
-            { EChannelConfiguration::Stereo,   { "STEREO", "" } },
-            { EChannelConfiguration::Surround, { "SURROUND", "" } }
+            { EChannelConfiguration::Stereo,   { "ステレオ", "" } },
+            { EChannelConfiguration::Surround, { "サラウンド", "" } }
         }
     },
     {
@@ -552,7 +552,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
     {
         ELanguage::Japanese,
         {
-            { EAspectRatio::Auto, { "AUTO", "Auto: " } },
+            { EAspectRatio::Auto, { "自動検出", "自動検出: " } },
             { EAspectRatio::Wide, { "16:9", "16:9: " } },
             { EAspectRatio::Narrow, { "4:3", "4:3: " } },
             { EAspectRatio::OriginalNarrow, { "オリジナル 4:3", "オリジナル 4:3:" } }
@@ -922,7 +922,7 @@ CONFIG_DEFINE_ENUM_LOCALE(ECutsceneAspectRatio)
         ELanguage::Japanese,
         {
             { ECutsceneAspectRatio::Original, { "オリジナル", "オリジナル: " } },
-            { ECutsceneAspectRatio::Unlocked, { "UNLOCKED", "Unlocked: \n\nWARNING: " } },
+            { ECutsceneAspectRatio::Unlocked, { "解除", "解除: \n\nWARNING: " } },
         }
     },
     {
