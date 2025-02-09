@@ -113,3 +113,27 @@ PPC_FUNC(sub_8260BBF8)
     SetDefaultMaterialParameters(reinterpret_cast<GuestDevice*>(base + PPC_LOAD_U32(PPC_LOAD_U32(ctx.r4.u32))));
     __imp__sub_8260BBF8(ctx, base);
 }
+
+// The pedestal in Gaia Temple is placed on an opaque mesh slot, despite using additive blending.
+// This somehow works. Except when the delta time is too stable, it flashes black for one frame.
+// We can fix it by detecting the asset runtime, and swapping the mesh slots to transparent by hand.
+
+// Hedgehog::Mirage::CModelData::Make
+PPC_FUNC_IMPL(__imp__sub_82E38650);
+PPC_FUNC(sub_82E38650)
+{
+    if (ctx.r5.u32 == 0xBB90 && XXH3_64bits(base + ctx.r4.u32, ctx.r5.u32) == 0xB524C8C3B80C3F54)
+    {
+        // Mesh Count
+        std::swap(
+            *reinterpret_cast<uint32_t*>(base + ctx.r4.u32 + 0x18),
+            *reinterpret_cast<uint32_t*>(base + ctx.r4.u32 + 0x20));
+
+        // Mesh Offset
+        std::swap(
+            *reinterpret_cast<uint32_t*>(base + ctx.r4.u32 + 0x1C),
+            *reinterpret_cast<uint32_t*>(base + ctx.r4.u32 + 0x24));
+    }
+
+    __imp__sub_82E38650(ctx, base);
+}
