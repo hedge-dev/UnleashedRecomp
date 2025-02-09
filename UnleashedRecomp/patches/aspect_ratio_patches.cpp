@@ -728,7 +728,7 @@ static const xxHashMap<CsdModifier> g_modifiers =
     { HashStr("ui_townscreen/time_effect"), { ALIGN_TOP_RIGHT | SCALE } },
     { HashStr("ui_townscreen/info"), { ALIGN_TOP_LEFT | SCALE } },
     { HashStr("ui_townscreen/cam"), { ALIGN_TOP_RIGHT | SCALE } },
-    { HashStr("ui_townscreen/footer"), { ALIGN_BOTTOM } },
+    { HashStr("ui_townscreen/footer"), { ALIGN_BOTTOM_RIGHT | SCALE } },
 
     // ui_worldmap
     { HashStr("ui_worldmap/contents/choices/cts_choices_bg"), { STRETCH } },
