@@ -76,8 +76,12 @@ PPC_FUNC(sub_830D25D8)
     auto device = reinterpret_cast<GuestDevice*>(base + PPC_LOAD_U32(ctx.r4.u32));
 
     // Set first sampler to use linear filtering.
-    device->samplerStates[0].data[3] = (device->samplerStates[0].data[3].get() & ~0x1f80000) | 0x1280000;
-    device->dirtyFlags[3] = device->dirtyFlags[3].get() | 0x80000000ull;
+    // NOTE: We only check for height here since all 2D primitives get centered.
+    if (Video::s_viewportHeight > 720)
+    {
+        device->samplerStates[0].data[3] = (device->samplerStates[0].data[3].get() & ~0x1f80000) | 0x1280000;
+        device->dirtyFlags[3] = device->dirtyFlags[3].get() | 0x80000000ull;
+    }
 
     __imp__sub_830D25D8(ctx, base);
 }

@@ -1198,12 +1198,6 @@ PPC_FUNC(sub_830D1EF0)
             y = g_aspectRatioOffsetY + (y + 0.5f) * g_aspectRatioScale;
         }
 
-        if (Config::AspectRatio != EAspectRatio::OriginalNarrow)
-        {
-            x = round(x);
-            y = round(y);
-        }
-
         vertex[i].x = ((x - 0.5f) / Video::s_viewportWidth) * 2.0f - 1.0f;
         vertex[i].y = ((y - 0.5f) / Video::s_viewportHeight) * -2.0f + 1.0f;
     }
