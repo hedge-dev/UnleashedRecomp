@@ -260,7 +260,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Achievements_Unlock",
         {
             { ELanguage::English,  "Achievement Unlocked!" },
-            { ELanguage::Japanese, "実績のろっくが解除されました" },
+            { ELanguage::Japanese, "実績のロックが解除されました" },
             { ELanguage::German,   "Erfolg Freigeschaltet!" },
             { ELanguage::French,   "Succès déverrouillé !" },
             { ELanguage::Spanish,  "¡Logro desbloqueado!" },
