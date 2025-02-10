@@ -344,6 +344,8 @@ enum
 
     LOADING_BLACK_BAR_MIN = 1 << 17,
     LOADING_BLACK_BAR_MAX = 1 << 18,
+
+    UNSTRETCH_HORIZONTAL = 1 << 19,
 };
 
 struct CsdModifier
@@ -364,6 +366,10 @@ static const xxHashMap<CsdModifier> g_modifiers =
     { HashStr("ui_boss_gauge/gauge_2"), { ALIGN_TOP_RIGHT | SCALE } },
     { HashStr("ui_boss_gauge/gauge_1"), { ALIGN_TOP_RIGHT | SCALE } },
     { HashStr("ui_boss_gauge/gauge_breakpoint"), { ALIGN_TOP_RIGHT | SCALE } },
+
+    // ui_boss_name
+    { HashStr("ui_boss_name/name_so/bg"), { UNSTRETCH_HORIZONTAL } },
+    { HashStr("ui_boss_name/name_so/pale"), { UNSTRETCH_HORIZONTAL } },
 
     // ui_exstage
     { HashStr("ui_exstage/shield/L_gauge"), { ALIGN_BOTTOM_LEFT | SCALE } },
@@ -944,7 +950,9 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     float scaleX = 1.0f;
     float scaleY = 1.0f;
 
-    if (squash || ((modifier.flags & STRETCH_HORIZONTAL) != 0 && g_aspectRatio >= WIDE_ASPECT_RATIO))
+    bool needsStretch = g_aspectRatio >= WIDE_ASPECT_RATIO;
+
+    if (squash || (needsStretch && (modifier.flags & STRETCH_HORIZONTAL) != 0))
     {
         scaleX = Video::s_viewportWidth / 1280.0f;
     }
@@ -952,28 +960,36 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     {
         scaleX = g_aspectRatioScale;
 
-        if ((modifier.flags & ALIGN_RIGHT) != 0)
-            offsetX = g_aspectRatioOffsetX * 2.0f;
-        else if ((modifier.flags & ALIGN_LEFT) == 0)
-            offsetX = g_aspectRatioOffsetX;
-
-        if ((modifier.flags & SCALE) != 0)
+        if (needsStretch && (modifier.flags & UNSTRETCH_HORIZONTAL) != 0)
         {
-            scaleX *= g_aspectRatioGameplayScale;
-            pivotX = g_scenePositionX;
-
-            if ((modifier.flags & ALIGN_RIGHT) != 0)
-                offsetX += 1280.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
-            else if ((modifier.flags & ALIGN_LEFT) == 0)
-                offsetX += 640.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
-
-            offsetX += pivotX * g_aspectRatioScale;
+            pivotX = *getPosition(0);
+            offsetX = pivotX * Video::s_viewportWidth / 1280.0f;
         }
-
-        if ((modifier.flags & WORLD_MAP) != 0)
+        else
         {
-            if ((modifier.flags & ALIGN_LEFT) != 0)
-                offsetX += (1.0f - g_aspectRatioNarrowScale) * g_aspectRatioScale * -20.0f;
+            if ((modifier.flags & ALIGN_RIGHT) != 0)
+                offsetX = g_aspectRatioOffsetX * 2.0f;
+            else if ((modifier.flags & ALIGN_LEFT) == 0)
+                offsetX = g_aspectRatioOffsetX;
+
+            if ((modifier.flags & SCALE) != 0)
+            {
+                scaleX *= g_aspectRatioGameplayScale;
+                pivotX = g_scenePositionX;
+
+                if ((modifier.flags & ALIGN_RIGHT) != 0)
+                    offsetX += 1280.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
+                else if ((modifier.flags & ALIGN_LEFT) == 0)
+                    offsetX += 640.0f * (1.0f - g_aspectRatioGameplayScale) * g_aspectRatioScale;
+
+                offsetX += pivotX * g_aspectRatioScale;
+            }
+
+            if ((modifier.flags & WORLD_MAP) != 0)
+            {
+                if ((modifier.flags & ALIGN_LEFT) != 0)
+                    offsetX += (1.0f - g_aspectRatioNarrowScale) * g_aspectRatioScale * -20.0f;
+            }
         }
     }
 
