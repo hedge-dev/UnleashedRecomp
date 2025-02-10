@@ -378,10 +378,10 @@ static const xxHashMap<CsdModifier> g_modifiers =
     { HashStr("ui_exstage/energy/R_gauge"), { ALIGN_BOTTOM_RIGHT | SCALE } },
     { HashStr("ui_exstage/energy/R_gauge_effect"), { ALIGN_BOTTOM_RIGHT | SCALE } },
     { HashStr("ui_exstage/energy/R_gauge_effect_2"), { ALIGN_BOTTOM_RIGHT | SCALE } },
-    { HashStr("ui_exstage/hit/hit_counter_bg"), { ALIGN_RIGHT | SCALE } },
+    { HashStr("ui_exstage/hit/hit_counter_bg"), { ALIGN_RIGHT | SCALE | OFFSET_SCALE_RIGHT, 986.0f } },
     { HashStr("ui_exstage/hit/hit_counter_bg/C"), { ALIGN_RIGHT | SCALE | EXTEND_RIGHT } },
-    { HashStr("ui_exstage/hit/hit_counter_bg/C/L"), { ALIGN_RIGHT | SCALE } },
-    { HashStr("ui_exstage/hit/hit_counter_bg/C/R"), { SKIP } },
+    { HashStr("ui_exstage/hit/hit_counter_bg/C/L"), { SKIP } }, // L/R are mixed up
+    { HashStr("ui_exstage/hit/hit_counter_bg/C/R"), { ALIGN_RIGHT | SCALE | STORE_LEFT_CORNER } },
     { HashStr("ui_exstage/hit/hit_counter_num"), { ALIGN_RIGHT | SCALE } },
 
     // ui_gate
