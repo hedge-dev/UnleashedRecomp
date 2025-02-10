@@ -792,24 +792,41 @@ static void DrawDescriptionContainer()
     );
 
     drawList->PopClipRect();
-
     drawList->PopClipRect();
 
     if (g_currentPage == WizardPage::InstallSucceeded)
     {
+        auto descTextSize = MeasureCentredParagraph(g_seuratFont, fontSize, lineWidth, lineMargin, descriptionText);
+
         auto hedgeDevStr = "hedge-dev";
         auto hedgeDevTextSize = g_seuratFont->CalcTextSizeA(fontSize, FLT_MAX, 0, hedgeDevStr);
         auto hedgeDevTextMarginX = Scale(15);
 
-        auto imageScale = hedgeDevTextSize.x / 3;
-        auto imageMarginY = Scale(15);
-
         auto colWhite = IM_COL32(255, 255, 255, 255 * textAlpha);
+
+        auto containerLeft = g_aspectRatioOffsetX + Scale(CONTAINER_X);
+        auto containerTop = g_aspectRatioOffsetY + Scale(CONTAINER_Y);
+        auto containerRight = containerLeft + Scale(CONTAINER_WIDTH);
+        auto containerBottom = containerTop + Scale(CONTAINER_HEIGHT);
+
+        auto marqueeTextSize = g_seuratFont->CalcTextSizeA(fontSize, FLT_MAX, 0, g_creditsStr.c_str());
+        auto marqueeTextMarginX = Scale(5);
+        auto marqueeTextMarginY = Scale(15);
+
+        ImVec2 marqueeTextPos = { descriptionMax.x, containerBottom - marqueeTextSize.y - marqueeTextMarginY };
+        ImVec2 marqueeTextMin = { containerLeft, marqueeTextPos.y };
+        ImVec2 marqueeTextMax = { containerRight, containerBottom };
+
+        auto imageScale = hedgeDevTextSize.x / 3;
+        auto imageMarginY = Scale(2);
+
+        ImVec2 imageRegionMin = { containerLeft, textY + descTextSize.y };
+        ImVec2 imageRegionMax = { containerRight, containerBottom - (marqueeTextMax.y - marqueeTextMin.y) };
 
         ImVec2 imageMin = 
         {
-            /* X */ g_aspectRatioOffsetX + Scale(CONTAINER_X) + (Scale(CONTAINER_WIDTH) / 2) - (imageScale / 2) - (hedgeDevTextSize.x / 2) - hedgeDevTextMarginX,
-            /* Y */ g_aspectRatioOffsetY + Scale(CONTAINER_Y) + (Scale(CONTAINER_HEIGHT) / 2) - (imageScale / 2) + imageMarginY
+            /* X */ imageRegionMin.x + ((imageRegionMax.x - imageRegionMin.x) / 2) - (imageScale / 2) - (hedgeDevTextSize.x / 2) - hedgeDevTextMarginX,
+            /* Y */ imageRegionMin.y + ((imageRegionMax.y - imageRegionMin.y) / 2) - (imageScale / 2) - imageMarginY
         };
 
         ImVec2 imageMax = { imageMin.x + imageScale, imageMin.y + imageScale };
@@ -825,16 +842,8 @@ static void DrawDescriptionContainer()
             hedgeDevStr
         );
 
-        auto marqueeTextSize = g_seuratFont->CalcTextSizeA(fontSize, FLT_MAX, 0, g_creditsStr.c_str());
-        auto marqueeTextMarginX = Scale(5);
-        auto marqueeTextMarginY = Scale(15);
-
-        ImVec2 textPos = { descriptionMax.x, g_aspectRatioOffsetY + Scale(CONTAINER_Y) + Scale(CONTAINER_HEIGHT) - marqueeTextSize.y - marqueeTextMarginY };
-        ImVec2 textMin = { g_aspectRatioOffsetX + Scale(CONTAINER_X), textPos.y };
-        ImVec2 textMax = { g_aspectRatioOffsetX + Scale(CONTAINER_X) + Scale(CONTAINER_WIDTH), g_aspectRatioOffsetY + Scale(CONTAINER_Y) + Scale(CONTAINER_HEIGHT) };
-
-        SetHorizontalMarqueeFade(textMin, textMax, Scale(32));
-        DrawTextWithMarquee(g_seuratFont, fontSize, textPos, textMin, textMax, colWhite, g_creditsStr.c_str(), g_installerEndTime, 0.9, Scale(200));
+        SetHorizontalMarqueeFade(marqueeTextMin, marqueeTextMax, Scale(32));
+        DrawTextWithMarquee(g_seuratFont, fontSize, marqueeTextPos, marqueeTextMin, marqueeTextMax, colWhite, g_creditsStr.c_str(), g_installerEndTime, 0.9, Scale(200));
         ResetMarqueeFade();
     }
 
