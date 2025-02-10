@@ -1615,7 +1615,7 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
         g_interface = interfaceFunction();
         if (g_interface != nullptr)
         {
-            g_device = g_interface->createDevice();
+            g_device = g_interface->createDevice(Config::GraphicsDevice);
             if (g_device != nullptr)
             {
 #ifdef UNLEASHED_RECOMP_D3D12

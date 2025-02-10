@@ -46,6 +46,8 @@ CONFIG_DEFINE_ENUM_LOCALISED("Audio", EChannelConfiguration, ChannelConfiguratio
 CONFIG_DEFINE_LOCALISED("Audio", bool, MusicAttenuation, false);
 CONFIG_DEFINE_LOCALISED("Audio", bool, BattleTheme, true);
 
+CONFIG_DEFINE("Video", std::string, GraphicsDevice, "");
+
 #ifdef UNLEASHED_RECOMP_D3D12
 CONFIG_DEFINE_ENUM("Video", EGraphicsAPI, GraphicsAPI, EGraphicsAPI::D3D12);
 #else

@@ -472,7 +472,7 @@ void ConfigDef<T, isHidden>::ReadValue(toml::v3::ex::parse_result& toml)
 
         if constexpr (std::is_same<T, std::string>::value)
         {
-            Value = section[Name].value_or<std::string>(DefaultValue);
+            Value = section[Name].value_or(DefaultValue);
         }
         else if constexpr (std::is_enum_v<T>)
         {
