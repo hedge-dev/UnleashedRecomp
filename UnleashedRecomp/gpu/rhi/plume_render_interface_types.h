@@ -72,6 +72,13 @@ namespace plume {
 
     // Enums.
 
+    enum class RenderDeviceVendor {
+        UNKNOWN = 0x0,
+        AMD = 0x1002,
+        NVIDIA = 0x10DE,
+        INTEL = 0x8086
+    };
+
     enum class RenderFormat {
         UNKNOWN,
         R32G32B32A32_TYPELESS,
@@ -1769,7 +1776,8 @@ namespace plume {
     struct RenderDeviceDescription {
         std::string name = "Unknown";
         RenderDeviceType type = RenderDeviceType::UNKNOWN;
-        uint32_t driverVersion = 0;
+        RenderDeviceVendor vendor = RenderDeviceVendor::UNKNOWN;
+        uint64_t driverVersion = 0;
         uint64_t dedicatedVideoMemory = 0;
     };
 

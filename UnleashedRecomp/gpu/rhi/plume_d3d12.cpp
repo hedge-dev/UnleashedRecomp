@@ -3374,6 +3374,13 @@ namespace plume {
                 capabilities.uma = uma;
                 description.name = deviceName;
                 description.dedicatedVideoMemory = adapterDesc.DedicatedVideoMemory;
+                description.vendor = RenderDeviceVendor(adapterDesc.VendorId);
+
+                LARGE_INTEGER adapterVersion = {};
+                res = adapter->CheckInterfaceSupport(__uuidof(IDXGIDevice), &adapterVersion);
+                if (SUCCEEDED(res)) {
+                    description.driverVersion = adapterVersion.QuadPart;
+                }
 
                 if (preferUserChoice) {
                     break;

@@ -1610,6 +1610,7 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     interfaceFunctions.push_back(CreateVulkanInterfaceWrapper);
 #endif
 
+    bool driverWorkaroundsEnabled = Config::GraphicsAPI == EGraphicsAPI::Auto;
     for (RenderInterfaceFunction *interfaceFunction : interfaceFunctions)
     {
         g_interface = interfaceFunction();
@@ -1618,7 +1619,26 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
             g_device = g_interface->createDevice(Config::GraphicsDevice);
             if (g_device != nullptr)
             {
+                const RenderDeviceDescription &deviceDescription = g_device->getDescription();
+                
 #ifdef UNLEASHED_RECOMP_D3D12
+                if (interfaceFunction == CreateD3D12Interface)
+                {
+                    if (deviceDescription.vendor == RenderDeviceVendor::AMD)
+                    {
+                        // AMD Drivers before this version have a known issue where MSAA resolve targets will fail to work correctly.
+                        // If no specific graphics API was selected, we silently destroy this one and move to the next option as it'll
+                        // just work incorrectly otherwise and result in visual glitches and 3D rendering not working in general.
+                        constexpr uint64_t MinimumAMDDriverVersion = 0x1F00005DC2005CULL; // 31.0.24002.92
+                        if ((Config::GraphicsAPI == EGraphicsAPI::Auto) && (deviceDescription.driverVersion < MinimumAMDDriverVersion))
+                        {
+                            g_device.reset();
+                            g_interface.reset();
+                            continue;
+                        }
+                    }
+                }
+
                 g_vulkan = (interfaceFunction == CreateVulkanInterfaceWrapper);
 #endif
                 break;

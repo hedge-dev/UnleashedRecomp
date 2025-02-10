@@ -47,13 +47,7 @@ CONFIG_DEFINE_LOCALISED("Audio", bool, MusicAttenuation, false);
 CONFIG_DEFINE_LOCALISED("Audio", bool, BattleTheme, true);
 
 CONFIG_DEFINE("Video", std::string, GraphicsDevice, "");
-
-#ifdef UNLEASHED_RECOMP_D3D12
-CONFIG_DEFINE_ENUM("Video", EGraphicsAPI, GraphicsAPI, EGraphicsAPI::D3D12);
-#else
-CONFIG_DEFINE_ENUM("Video", EGraphicsAPI, GraphicsAPI, EGraphicsAPI::Vulkan);
-#endif
-
+CONFIG_DEFINE_ENUM("Video", EGraphicsAPI, GraphicsAPI, EGraphicsAPI::Auto);
 CONFIG_DEFINE("Video", int32_t, WindowX, WINDOWPOS_CENTRED);
 CONFIG_DEFINE("Video", int32_t, WindowY, WINDOWPOS_CENTRED);
 CONFIG_DEFINE_LOCALISED("Video", int32_t, WindowSize, -1);
