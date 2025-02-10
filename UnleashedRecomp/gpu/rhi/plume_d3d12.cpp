@@ -3259,7 +3259,7 @@ namespace plume {
 
     // D3D12Device
 
-    D3D12Device::D3D12Device(D3D12Interface *renderInterface) {
+    D3D12Device::D3D12Device(D3D12Interface *renderInterface, const std::string &preferredDeviceName) {
         assert(renderInterface != nullptr);
 
         this->renderInterface = renderInterface;
@@ -3349,9 +3349,10 @@ namespace plume {
             }
 
             // Pick this adapter and device if it has better feature support than the current one.
+            std::string deviceName = Utf16ToUtf8(adapterDesc.Description);
             bool preferOverNothing = (adapter == nullptr) || (d3d == nullptr);
             bool preferVideoMemory = adapterDesc.DedicatedVideoMemory > description.dedicatedVideoMemory;
-            bool preferUserChoice = false;//wcsstr(adapterDesc.Description, L"AMD") != nullptr;
+            bool preferUserChoice = preferredDeviceName == deviceName;
             bool preferOption = preferOverNothing || preferVideoMemory || preferUserChoice;
             if (preferOption) {
                 if (d3d != nullptr) {
@@ -3371,7 +3372,7 @@ namespace plume {
                 capabilities.triangleFan = triangleFanSupportOption;
                 capabilities.dynamicDepthBias = dynamicDepthBiasOption;
                 capabilities.uma = uma;
-                description.name = Utf16ToUtf8(adapterDesc.Description);
+                description.name = deviceName;
                 description.dedicatedVideoMemory = adapterDesc.DedicatedVideoMemory;
 
                 if (preferUserChoice) {
@@ -3767,6 +3768,21 @@ namespace plume {
 
         // Fill capabilities.
         capabilities.shaderFormat = RenderShaderFormat::DXIL;
+
+        // Fill device names.
+        UINT adapterIndex = 0;
+        IDXGIAdapter1 *adapterOption = nullptr;
+        while (dxgiFactory->EnumAdapters1(adapterIndex++, &adapterOption) != DXGI_ERROR_NOT_FOUND) {
+            DXGI_ADAPTER_DESC1 adapterDesc;
+            adapterOption->GetDesc1(&adapterDesc);
+
+            // Ignore remote or software adapters.
+            if ((adapterDesc.Flags & (DXGI_ADAPTER_FLAG_REMOTE | DXGI_ADAPTER_FLAG_SOFTWARE)) == 0) {
+                deviceNames.emplace_back(Utf16ToUtf8(adapterDesc.Description));
+            }
+
+            adapterOption->Release();
+        }
     }
 
     D3D12Interface::~D3D12Interface() {
@@ -3775,13 +3791,17 @@ namespace plume {
         }
     }
 
-    std::unique_ptr<RenderDevice> D3D12Interface::createDevice() {
-        std::unique_ptr<D3D12Device> createdDevice = std::make_unique<D3D12Device>(this);
+    std::unique_ptr<RenderDevice> D3D12Interface::createDevice(const std::string &preferredDeviceName) {
+        std::unique_ptr<D3D12Device> createdDevice = std::make_unique<D3D12Device>(this, preferredDeviceName);
         return createdDevice->isValid() ? std::move(createdDevice) : nullptr;
     }
 
     const RenderInterfaceCapabilities &D3D12Interface::getCapabilities() const {
         return capabilities;
+    }
+
+    const std::vector<std::string> &D3D12Interface::getDeviceNames() const {
+        return deviceNames;
     }
 
     bool D3D12Interface::isValid() const {

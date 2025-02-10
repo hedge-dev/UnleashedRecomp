@@ -391,7 +391,7 @@ namespace plume {
         VkPhysicalDeviceSampleLocationsPropertiesEXT sampleLocationProperties = {};
         bool loadStoreOpNoneSupported = false;
 
-        VulkanDevice(VulkanInterface *renderInterface);
+        VulkanDevice(VulkanInterface *renderInterface, const std::string &preferredDeviceName);
         ~VulkanDevice() override;
         std::unique_ptr<RenderCommandList> createCommandList(RenderCommandListType type) override;
         std::unique_ptr<RenderDescriptorSet> createDescriptorSet(const RenderDescriptorSetDesc &desc) override;
@@ -424,6 +424,7 @@ namespace plume {
         VkInstance instance = VK_NULL_HANDLE;
         VkApplicationInfo appInfo = {};
         RenderInterfaceCapabilities capabilities;
+        std::vector<std::string> deviceNames;
 
 #   if SDL_VULKAN_ENABLED
         VulkanInterface(RenderWindow sdlWindow);
@@ -432,8 +433,9 @@ namespace plume {
 #   endif
 
         ~VulkanInterface() override;
-        std::unique_ptr<RenderDevice> createDevice() override;
+        std::unique_ptr<RenderDevice> createDevice(const std::string &preferredDeviceName) override;
         const RenderInterfaceCapabilities &getCapabilities() const override;
+        const std::vector<std::string> &getDeviceNames() const override;
         bool isValid() const;
     };
 };

@@ -3473,7 +3473,7 @@ namespace plume {
 
     // VulkanDevice
     
-    VulkanDevice::VulkanDevice(VulkanInterface *renderInterface) {
+    VulkanDevice::VulkanDevice(VulkanInterface *renderInterface, const std::string &preferredDeviceName) {
         assert(renderInterface != nullptr);
 
         this->renderInterface = renderInterface;
@@ -3506,15 +3506,21 @@ namespace plume {
                 continue;
             }
 
+            std::string deviceName(deviceProperties.deviceName);
             uint32_t deviceTypeScore = deviceTypeScoreTable[deviceTypeIndex];
             bool preferDeviceTypeScore = (deviceTypeScore > currentDeviceTypeScore);
-            bool preferOption = preferDeviceTypeScore;
+            bool preferUserChoice = preferredDeviceName == deviceName;
+            bool preferOption = preferDeviceTypeScore || preferUserChoice;
             if (preferOption) {
                 physicalDevice = physicalDevices[i];
-                description.name = std::string(deviceProperties.deviceName);
+                description.name = deviceName;
                 description.type = toDeviceType(deviceProperties.deviceType);
                 description.driverVersion = deviceProperties.driverVersion;
                 currentDeviceTypeScore = deviceTypeScore;
+
+                if (preferUserChoice) {
+                    break;
+                }
             }
         }
 
@@ -4233,6 +4239,23 @@ namespace plume {
 
         // Fill capabilities.
         capabilities.shaderFormat = RenderShaderFormat::SPIRV;
+
+        // Fill device names.
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+        if (deviceCount > 0) {
+            std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
+            vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices.data());
+
+            for (uint32_t i = 0; i < deviceCount; i++) {
+                VkPhysicalDeviceProperties deviceProperties;
+                vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
+                uint32_t deviceTypeIndex = deviceProperties.deviceType;
+                if (deviceTypeIndex <= 4) {
+                    deviceNames.emplace_back(deviceProperties.deviceName);
+                }
+            }
+        }
     }
 
     VulkanInterface::~VulkanInterface() {
@@ -4241,13 +4264,17 @@ namespace plume {
         }
     }
 
-    std::unique_ptr<RenderDevice> VulkanInterface::createDevice() {
-        std::unique_ptr<VulkanDevice> createdDevice = std::make_unique<VulkanDevice>(this);
+    std::unique_ptr<RenderDevice> VulkanInterface::createDevice(const std::string &preferredDeviceName) {
+        std::unique_ptr<VulkanDevice> createdDevice = std::make_unique<VulkanDevice>(this, preferredDeviceName);
         return createdDevice->isValid() ? std::move(createdDevice) : nullptr;
     }
 
     const RenderInterfaceCapabilities &VulkanInterface::getCapabilities() const {
         return capabilities;
+    }
+
+    const std::vector<std::string> &VulkanInterface::getDeviceNames() const {
+        return deviceNames;
     }
 
     bool VulkanInterface::isValid() const {

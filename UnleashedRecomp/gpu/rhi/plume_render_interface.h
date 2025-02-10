@@ -237,7 +237,8 @@ namespace plume {
 
     struct RenderInterface {
         virtual ~RenderInterface() { }
-        virtual std::unique_ptr<RenderDevice> createDevice() = 0;
+        virtual std::unique_ptr<RenderDevice> createDevice(const std::string &preferredDeviceName = "") = 0;
+        virtual const std::vector<std::string> &getDeviceNames() const = 0;
         virtual const RenderInterfaceCapabilities &getCapabilities() const = 0;
     };
 

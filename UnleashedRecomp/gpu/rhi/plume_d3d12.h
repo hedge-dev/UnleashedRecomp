@@ -418,7 +418,7 @@ namespace plume {
         RenderDeviceCapabilities capabilities;
         RenderDeviceDescription description;
 
-        D3D12Device(D3D12Interface *renderInterface);
+        D3D12Device(D3D12Interface *renderInterface, const std::string &preferredDeviceName);
         ~D3D12Device() override;
         std::unique_ptr<RenderCommandList> createCommandList(RenderCommandListType type) override;
         std::unique_ptr<RenderDescriptorSet> createDescriptorSet(const RenderDescriptorSetDesc &desc) override;
@@ -450,11 +450,13 @@ namespace plume {
     struct D3D12Interface : RenderInterface {
         IDXGIFactory4 *dxgiFactory = nullptr;
         RenderInterfaceCapabilities capabilities;
+        std::vector<std::string> deviceNames;
 
         D3D12Interface();
         ~D3D12Interface() override;
-        std::unique_ptr<RenderDevice> createDevice() override;
+        std::unique_ptr<RenderDevice> createDevice(const std::string &preferredDeviceName) override;
         const RenderInterfaceCapabilities &getCapabilities() const override;
+        const std::vector<std::string> &getDeviceNames() const override;
         bool isValid() const;
     };
 };
