@@ -47,9 +47,8 @@
 #include <res/images/options_menu/thumbnails/time_transition_ps.dds.h>
 #include <res/images/options_menu/thumbnails/transparency_antialiasing_false.dds.h>
 #include <res/images/options_menu/thumbnails/transparency_antialiasing_true.dds.h>
-#include <res/images/options_menu/thumbnails/ui_alignment_mode.dds.h>
-#include <res/images/options_menu/thumbnails/ui_scale_centre.dds.h>
-#include <res/images/options_menu/thumbnails/ui_scale_edge.dds.h>
+#include <res/images/options_menu/thumbnails/ui_alignment_centre.dds.h>
+#include <res/images/options_menu/thumbnails/ui_alignment_edge.dds.h>
 #include <res/images/options_menu/thumbnails/vertical_camera.dds.h>
 #include <res/images/options_menu/thumbnails/voice_language.dds.h>
 #include <res/images/options_menu/thumbnails/vibration.dds.h>
@@ -73,7 +72,7 @@ static VALUE_THUMBNAIL_MAP(EGITextureFiltering) g_giTextureFilteringThumbnails;
 static VALUE_THUMBNAIL_MAP(EMotionBlur) g_motionBlurThumbnails;
 static VALUE_THUMBNAIL_MAP(bool) g_xboxColorCorrectionThumbnails;
 static VALUE_THUMBNAIL_MAP(ECutsceneAspectRatio) g_cutsceneAspectRatioThumbnails;
-static VALUE_THUMBNAIL_MAP(EUIScaleMode) g_uiScaleThumbnails;
+static VALUE_THUMBNAIL_MAP(EUIAlignmentMode) g_uiAlignmentThumbnails;
 
 void LoadThumbnails()
 {
@@ -139,16 +138,11 @@ void LoadThumbnails()
     g_motionBlurThumbnails[EMotionBlur::Original] = LOAD_ZSTD_TEXTURE(g_motion_blur_original);
     g_motionBlurThumbnails[EMotionBlur::Enhanced] = LOAD_ZSTD_TEXTURE(g_motion_blur_enhanced);
 
-    g_configThumbnails[&Config::UIAlignmentMode] = LOAD_ZSTD_TEXTURE(g_ui_alignment_mode);
-
     g_cutsceneAspectRatioThumbnails[ECutsceneAspectRatio::Original] = LOAD_ZSTD_TEXTURE(g_movie_scale_fit);
     g_cutsceneAspectRatioThumbnails[ECutsceneAspectRatio::Unlocked] = LOAD_ZSTD_TEXTURE(g_movie_scale_fill);
 
-    g_uiScaleThumbnails[EUIScaleMode::Centre] = LOAD_ZSTD_TEXTURE(g_ui_scale_centre);
-    g_uiScaleThumbnails[EUIScaleMode::Edge] = LOAD_ZSTD_TEXTURE(g_ui_scale_edge);
-
-    //g_xboxColorCorrectionThumbnails[false] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_false);
-    //g_xboxColorCorrectionThumbnails[true] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction_true);
+    g_uiAlignmentThumbnails[EUIAlignmentMode::Centre] = LOAD_ZSTD_TEXTURE(g_ui_alignment_centre);
+    g_uiAlignmentThumbnails[EUIAlignmentMode::Edge] = LOAD_ZSTD_TEXTURE(g_ui_alignment_edge);
 
     g_configThumbnails[&Config::XboxColorCorrection] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction);
 }
@@ -235,9 +229,9 @@ GuestTexture* GetThumbnail(const IConfigDef* cfg)
         {
             TryGetValueThumbnail<EChannelConfiguration>(cfg, &g_channelConfigurationThumbnails, &texture);
         }
-        else if (cfg == &Config::UIScaleMode)
+        else if (cfg == &Config::UIAlignmentMode)
         {
-            TryGetValueThumbnail<EUIScaleMode>(cfg, &g_uiScaleThumbnails, &texture);
+            TryGetValueThumbnail<EUIAlignmentMode>(cfg, &g_uiAlignmentThumbnails, &texture);
         }
 
         return texture;
