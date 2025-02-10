@@ -1610,7 +1610,6 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     interfaceFunctions.push_back(CreateVulkanInterfaceWrapper);
 #endif
 
-    bool driverWorkaroundsEnabled = Config::GraphicsAPI == EGraphicsAPI::Auto;
     for (RenderInterfaceFunction *interfaceFunction : interfaceFunctions)
     {
         g_interface = interfaceFunction();
