@@ -346,6 +346,8 @@ enum
     LOADING_BLACK_BAR_MAX = 1 << 18,
 
     UNSTRETCH_HORIZONTAL = 1 << 19,
+
+    CORNER_EXTRACT = 1 << 20
 };
 
 struct CsdModifier
@@ -609,37 +611,43 @@ static const xxHashMap<CsdModifier> g_modifiers =
     { HashStr("ui_result/main/result_title/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
     { HashStr("ui_result/main/result_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT} },
     { HashStr("ui_result/main/result_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
-    { HashStr("ui_result/main/result_num_1"), { OFFSET_SCALE_RIGHT, 669.0f } },
+    { HashStr("ui_result/main/result_num_1"), { CORNER_EXTRACT } },
+    { HashStr("ui_result/main/result_num_1/num_bg"), { OFFSET_SCALE_RIGHT, 669.0f } },
     { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1"), { EXTEND_RIGHT } },
     { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/h_light"), { EXTEND_RIGHT } },
     { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/left"), { STORE_LEFT_CORNER } },
     { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/right"), { SKIP } },
     { HashStr("ui_result/main/result_num_1/num_bg/position_1/center_1/right/h_light"), { SKIP } },  
-    { HashStr("ui_result/main/result_num_2"), { OFFSET_SCALE_RIGHT, 669.0f } },
+    { HashStr("ui_result/main/result_num_2"), { CORNER_EXTRACT } },
+    { HashStr("ui_result/main/result_num_2/num_bg"), { OFFSET_SCALE_RIGHT, 669.0f } },
     { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1"), { EXTEND_RIGHT } },
     { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1/h_light"), { EXTEND_RIGHT } },
     { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1/left"), { STORE_LEFT_CORNER } },
     { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1/right"), { SKIP } },
     { HashStr("ui_result/main/result_num_2/num_bg/position_2/center_1/right/h_light"), { SKIP } },   
-    { HashStr("ui_result/main/result_num_3"), { OFFSET_SCALE_RIGHT, 669.0f } },
+    { HashStr("ui_result/main/result_num_3"), { CORNER_EXTRACT } },
+    { HashStr("ui_result/main/result_num_3/num_bg"), { OFFSET_SCALE_RIGHT, 669.0f } },
     { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1"), { EXTEND_RIGHT } },
     { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1/h_light"), { EXTEND_RIGHT } },
     { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1/left"), { STORE_LEFT_CORNER } },
     { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1/right"), { SKIP } },
     { HashStr("ui_result/main/result_num_3/num_bg/position_3/center_1/right/h_light"), { SKIP } },  
-    { HashStr("ui_result/main/result_num_4"), { OFFSET_SCALE_RIGHT, 669.0f } },
+    { HashStr("ui_result/main/result_num_4"), { CORNER_EXTRACT } },
+    { HashStr("ui_result/main/result_num_4/num_bg"), { OFFSET_SCALE_RIGHT, 669.0f } },
     { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1"), { EXTEND_RIGHT } },
     { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1/h_light"), { EXTEND_RIGHT } },
     { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1/left"), { STORE_LEFT_CORNER } },
     { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1/right"), { SKIP } },
     { HashStr("ui_result/main/result_num_4/num_bg/position_4/center_1/right/h_light"), { SKIP } },   
-    { HashStr("ui_result/main/result_num_5"), { OFFSET_SCALE_RIGHT, 669.0f } },
+    { HashStr("ui_result/main/result_num_5"), { CORNER_EXTRACT } },
+    { HashStr("ui_result/main/result_num_5/num_bg"), { OFFSET_SCALE_RIGHT, 669.0f } },
     { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1"), { EXTEND_RIGHT } },
     { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1/h_light"), { EXTEND_RIGHT } },
     { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1/left"), { STORE_LEFT_CORNER } },
     { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1/right"), { SKIP } },
     { HashStr("ui_result/main/result_num_5/num_bg/position_5/center_1/right/h_light"), { SKIP } }, 
-    { HashStr("ui_result/main/result_num_6"), { OFFSET_SCALE_LEFT, 1094.0f } },
+    { HashStr("ui_result/main/result_num_6"), { CORNER_EXTRACT } },
+    { HashStr("ui_result/main/result_num_6/num_bg"), { OFFSET_SCALE_LEFT, 1094.0f } },
     { HashStr("ui_result/main/result_num_6/num_bg/position_6/center"), { EXTEND_LEFT } },
     { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/h_light"), { EXTEND_LEFT } },
     { HashStr("ui_result/main/result_num_6/num_bg/position_6/center/right"), { STORE_RIGHT_CORNER } },
@@ -845,7 +853,7 @@ PPC_FUNC(sub_830C6A00)
             g_scenePositionY = 0.0f;
         }
 
-        if ((g_sceneModifier->flags & (OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT)) != 0)
+        if (g_aspectRatio > WIDE_ASPECT_RATIO && (g_sceneModifier->flags & (OFFSET_SCALE_LEFT | OFFSET_SCALE_RIGHT | CORNER_EXTRACT)) != 0)
         {
             auto r3 = ctx.r3;
             auto r4 = ctx.r4;
