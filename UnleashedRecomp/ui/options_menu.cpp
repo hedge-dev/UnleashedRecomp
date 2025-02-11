@@ -495,16 +495,7 @@ static bool DrawCategories()
     for (size_t i = 0; i < g_categoryCount; i++)
     {
         textSizes[i] = g_dfsogeistdFont->CalcTextSizeA(size, FLT_MAX, 0.0f, GetCategory(i).c_str());
-
-        if (textSizes[i].x > maxTextWidth)
-        {
-            textSquashRatio[i] = maxTextWidth / textSizes[i].x;
-        }
-        else
-        {
-            textSquashRatio[i] = 1.0f;
-        }
-
+        textSquashRatio[i] = std::min(maxTextWidth / textSizes[i].x, 1.0f);
         tabWidthSum += textSizes[i].x * textSquashRatio[i];
     }
 
