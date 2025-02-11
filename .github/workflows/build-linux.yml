@@ -13,7 +13,7 @@ env:
 jobs:
   build:
     name: Build Linux
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout Repository
@@ -47,7 +47,7 @@ jobs:
       - name: Install Dependencies
         run: |-
           sudo apt update
-          sudo apt install -y ninja-build llvm-${{ env.LLVM_VERSION }}-dev ccache
+          sudo apt install -y ninja-build llvm-${{ env.LLVM_VERSION }}-dev
 
       - name: Cache ccache Directory
         uses: actions/cache@v4
