@@ -1562,13 +1562,13 @@ static void BeginCommandList()
 template<typename T>
 static void ApplyLowEndDefault(ConfigDef<T> &configDef, T newDefault, bool &changed)
 {
-    configDef.DefaultValue = newDefault;
-
     if (configDef.IsDefaultValue() && !configDef.IsLoadedFromConfig)
     {
-        configDef.MakeDefault();
+        configDef = newDefault;
         changed = true;
     }
+    
+    configDef.DefaultValue = newDefault;
 }
 
 static void ApplyLowEndDefaults()
