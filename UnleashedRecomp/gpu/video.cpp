@@ -270,6 +270,7 @@ struct Profiler
 static double g_applicationValues[PROFILER_VALUE_COUNT];
 static Profiler g_gpuFrameProfiler;
 static Profiler g_presentProfiler;
+static Profiler g_updateDirectorProfiler;
 static Profiler g_renderDirectorProfiler;
 static Profiler g_frameFenceProfiler;
 static Profiler g_presentWaitProfiler;
@@ -2229,6 +2230,7 @@ static void DrawProfiler()
         const double applicationAvg = std::accumulate(g_applicationValues, g_applicationValues + PROFILER_VALUE_COUNT, 0.0) / PROFILER_VALUE_COUNT;
         double gpuFrameAvg = g_gpuFrameProfiler.UpdateAndReturnAverage();
         double presentAvg = g_presentProfiler.UpdateAndReturnAverage();
+        double updateDirectorAvg = g_updateDirectorProfiler.UpdateAndReturnAverage();
         double renderDirectorAvg = g_renderDirectorProfiler.UpdateAndReturnAverage();
         double frameFenceAvg = g_frameFenceProfiler.UpdateAndReturnAverage();
         double presentWaitAvg = g_presentWaitProfiler.UpdateAndReturnAverage();
@@ -2241,6 +2243,7 @@ static void DrawProfiler()
             ImPlot::PlotLine<double>("Application", g_applicationValues, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
             ImPlot::PlotLine<double>("GPU Frame", g_gpuFrameProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
             ImPlot::PlotLine<double>("Present", g_presentProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
+            ImPlot::PlotLine<double>("Update Director", g_updateDirectorProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
             ImPlot::PlotLine<double>("Render Director", g_renderDirectorProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
             ImPlot::PlotLine<double>("Frame Fence", g_frameFenceProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
             ImPlot::PlotLine<double>("Present Wait", g_presentWaitProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
@@ -2253,6 +2256,7 @@ static void DrawProfiler()
         ImGui::Text("Current Application: %g ms (%g FPS)", App::s_deltaTime * 1000.0, 1.0 / App::s_deltaTime);
         ImGui::Text("Current GPU Frame: %g ms (%g FPS)", g_gpuFrameProfiler.value.load(), 1000.0 / g_gpuFrameProfiler.value.load());
         ImGui::Text("Current Present: %g ms (%g FPS)", g_presentProfiler.value.load(), 1000.0 / g_presentProfiler.value.load());
+        ImGui::Text("Current Update Director: %g ms (%g FPS)", g_updateDirectorProfiler.value.load(), 1000.0 / g_updateDirectorProfiler.value.load());
         ImGui::Text("Current Render Director: %g ms (%g FPS)", g_renderDirectorProfiler.value.load(), 1000.0 / g_renderDirectorProfiler.value.load());
         ImGui::Text("Current Frame Fence: %g ms", g_frameFenceProfiler.value.load());
         ImGui::Text("Current Present Wait: %g ms", g_presentWaitProfiler.value.load());
@@ -2263,6 +2267,7 @@ static void DrawProfiler()
         ImGui::Text("Average Application: %g ms (%g FPS)", applicationAvg, 1000.0 / applicationAvg);
         ImGui::Text("Average GPU Frame: %g ms (%g FPS)", gpuFrameAvg, 1000.0 / gpuFrameAvg);
         ImGui::Text("Average Present: %g ms (%g FPS)", presentAvg, 1000.0 / presentAvg);
+        ImGui::Text("Average Update Director: %g ms (%g FPS)", updateDirectorAvg, 1000.0 / updateDirectorAvg);
         ImGui::Text("Average Render Director: %g ms (%g FPS)", renderDirectorAvg, 1000.0 / renderDirectorAvg);
         ImGui::Text("Average Frame Fence: %g ms", frameFenceAvg);
         ImGui::Text("Average Present Wait: %g ms", presentWaitAvg);
@@ -5696,8 +5701,6 @@ PPC_FUNC(sub_8258C8A0)
 PPC_FUNC_IMPL(__imp__sub_8258CAE0);
 PPC_FUNC(sub_8258CAE0)
 {
-    g_renderDirectorProfiler.Begin();
-
     if (g_needsResize)
     {
         // Backup fade values. These get modified by cutscenes, 
@@ -5759,7 +5762,21 @@ PPC_FUNC(sub_8258CAE0)
     }
 
     __imp__sub_8258CAE0(ctx, base);
+}
 
+PPC_FUNC_IMPL(__imp__sub_824EB5B0);
+PPC_FUNC(sub_824EB5B0)
+{
+    g_updateDirectorProfiler.Begin();
+    __imp__sub_824EB5B0(ctx, base);
+    g_updateDirectorProfiler.End();
+}
+
+PPC_FUNC_IMPL(__imp__sub_824EB290);
+PPC_FUNC(sub_824EB290)
+{
+    g_renderDirectorProfiler.Begin();
+    __imp__sub_824EB290(ctx, base);
     g_renderDirectorProfiler.End();
 }
 
