@@ -69,6 +69,7 @@ namespace plume {
     struct RenderSampler;
     struct RenderShader;
     struct RenderTexture;
+    struct RenderQueryPool;
 
     // Enums.
 

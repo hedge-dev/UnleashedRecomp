@@ -271,6 +271,18 @@ namespace plume {
         bool contains(const VulkanTexture *attachment) const;
     };
 
+    struct VulkanQueryPool : RenderQueryPool {
+        VulkanDevice *device = nullptr;
+        std::vector<uint64_t> results;
+        VkQueryPool vk = VK_NULL_HANDLE;
+
+        VulkanQueryPool(VulkanDevice *device, uint32_t queryCount);
+        virtual ~VulkanQueryPool() override;
+        virtual void queryResults() override;
+        virtual const uint64_t *getResults() const override;
+        virtual uint32_t getCount() const override;
+    };
+
     struct VulkanCommandList : RenderCommandList {
         VkCommandBuffer vk = VK_NULL_HANDLE;
         VkCommandPool commandPool = VK_NULL_HANDLE;
@@ -319,6 +331,8 @@ namespace plume {
         void buildBottomLevelAS(const RenderAccelerationStructure *dstAccelerationStructure, RenderBufferReference scratchBuffer, const RenderBottomLevelASBuildInfo &buildInfo) override;
         void buildTopLevelAS(const RenderAccelerationStructure *dstAccelerationStructure, RenderBufferReference scratchBuffer, RenderBufferReference instancesBuffer, const RenderTopLevelASBuildInfo &buildInfo) override;
         void discardTexture(const RenderTexture* texture) override;
+        void resetQueryPool(const RenderQueryPool *queryPool, uint32_t queryFirstIndex, uint32_t queryCount) override;
+        void writeTimestamp(const RenderQueryPool *queryPool, uint32_t queryIndex) override;
         void checkActiveRenderPass();
         void endActiveRenderPass();
         void setDescriptorSet(VkPipelineBindPoint bindPoint, const VulkanPipelineLayout *pipelineLayout, const RenderDescriptorSet *descriptorSet, uint32_t setIndex);
@@ -409,6 +423,7 @@ namespace plume {
         std::unique_ptr<RenderCommandFence> createCommandFence() override;
         std::unique_ptr<RenderCommandSemaphore> createCommandSemaphore() override;
         std::unique_ptr<RenderFramebuffer> createFramebuffer(const RenderFramebufferDesc &desc) override;
+        std::unique_ptr<RenderQueryPool> createQueryPool(uint32_t queryCount) override;
         void setBottomLevelASBuildInfo(RenderBottomLevelASBuildInfo &buildInfo, const RenderBottomLevelASMesh *meshes, uint32_t meshCount, bool preferFastBuild, bool preferFastTrace) override;
         void setTopLevelASBuildInfo(RenderTopLevelASBuildInfo &buildInfo, const RenderTopLevelASInstance *instances, uint32_t instanceCount, bool preferFastBuild, bool preferFastTrace) override;
         void setShaderBindingTableInfo(RenderShaderBindingTableInfo &tableInfo, const RenderShaderBindingGroups &groups, const RenderPipeline *pipeline, RenderDescriptorSet **descriptorSets, uint32_t descriptorSetCount) override;

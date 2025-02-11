@@ -2522,6 +2522,80 @@ namespace plume {
         return (depthAttachment == attachment);
     }
 
+    // VulkanQueryPool
+
+    VulkanQueryPool::VulkanQueryPool(VulkanDevice *device, uint32_t queryCount) {
+        assert(device != nullptr);
+        assert(queryCount > 0);
+
+        this->device = device;
+
+        VkQueryPoolCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+        createInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+        createInfo.queryCount = queryCount;
+        
+        VkResult res = vkCreateQueryPool(device->vk, &createInfo, nullptr, &vk);
+        if (res != VK_SUCCESS) {
+            fprintf(stderr, "vkCreateQueryPool failed with error code 0x%X.\n", res);
+            return;
+        }
+        
+        results.resize(queryCount);
+    }
+
+    VulkanQueryPool::~VulkanQueryPool() {
+        vkDestroyQueryPool(device->vk, vk, nullptr);
+    }
+
+    void VulkanQueryPool::queryResults() {
+	    VkResult res = vkGetQueryPoolResults(device->vk, vk, 0, uint32_t(results.size()), sizeof(uint64_t) * results.size(), results.data(), sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
+        if (res != VK_SUCCESS) {
+            fprintf(stderr, "vkGetQueryPoolResults failed with error code 0x%X.\n", res);
+            return;
+        }
+
+        // Conversion sourced from Godot Engine's Vulkan Rendering Driver.
+        auto mult64to128 = [](uint64_t u, uint64_t v, uint64_t &h, uint64_t &l) {
+            uint64_t u1 = (u & 0xffffffff);
+            uint64_t v1 = (v & 0xffffffff);
+            uint64_t t = (u1 * v1);
+            uint64_t w3 = (t & 0xffffffff);
+            uint64_t k = (t >> 32);
+    
+            u >>= 32;
+            t = (u * v1) + k;
+            k = (t & 0xffffffff);
+            uint64_t w1 = (t >> 32);
+    
+            v >>= 32;
+            t = (u1 * v) + k;
+            k = (t >> 32);
+    
+            h = (u * v) + w1 + k;
+            l = (t << 32) + w3;
+        };
+
+        // Convert results to timestamps.
+        constexpr uint64_t shift_bits = 16;
+        double timestampPeriod = double(device->physicalDeviceProperties.limits.timestampPeriod);
+        uint64_t h = 0, l = 0;
+        for (size_t &result : results) {
+            mult64to128(result, uint64_t(timestampPeriod * double(1 << shift_bits)), h, l);
+            result = l;
+            result >>= shift_bits;
+            result |= h << (64 - shift_bits);
+        }
+    }
+
+    const uint64_t *VulkanQueryPool::getResults() const {
+        return results.data();
+    }
+
+    uint32_t VulkanQueryPool::getCount() const {
+        return uint32_t(results.size());
+    }
+
     // VulkanCommandList
 
     VulkanCommandList::VulkanCommandList(VulkanDevice *device, RenderCommandListType type) {
@@ -3210,6 +3284,20 @@ namespace plume {
         // Not required in Vulkan.
     }
 
+    void VulkanCommandList::resetQueryPool(const RenderQueryPool *queryPool, uint32_t queryFirstIndex, uint32_t queryCount) {
+        assert(queryPool != nullptr);
+
+        const VulkanQueryPool *interfaceQueryPool = static_cast<const VulkanQueryPool *>(queryPool);
+        vkCmdResetQueryPool(vk, interfaceQueryPool->vk, queryFirstIndex, queryCount);
+    }
+
+    void VulkanCommandList::writeTimestamp(const RenderQueryPool *queryPool, uint32_t queryIndex) {
+        assert(queryPool != nullptr);
+
+        const VulkanQueryPool *interfaceQueryPool = static_cast<const VulkanQueryPool *>(queryPool);
+        vkCmdWriteTimestamp(vk, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, interfaceQueryPool->vk, queryIndex);
+    }
+
     void VulkanCommandList::checkActiveRenderPass() {
         assert(targetFramebuffer != nullptr);
         
@@ -3889,6 +3977,10 @@ namespace plume {
 
     std::unique_ptr<RenderFramebuffer> VulkanDevice::createFramebuffer(const RenderFramebufferDesc &desc) {
         return std::make_unique<VulkanFramebuffer>(this, desc);
+    }
+
+    std::unique_ptr<RenderQueryPool> VulkanDevice::createQueryPool(uint32_t queryCount) {
+        return std::make_unique<VulkanQueryPool>(this, queryCount);
     }
 
     void VulkanDevice::setBottomLevelASBuildInfo(RenderBottomLevelASBuildInfo &buildInfo, const RenderBottomLevelASMesh *meshes, uint32_t meshCount, bool preferFastBuild, bool preferFastTrace) {

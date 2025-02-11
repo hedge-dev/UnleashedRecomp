@@ -230,6 +230,54 @@ static void SetDirtyValue(bool& dirtyState, T& dest, const T& src)
     }
 }
 
+static constexpr size_t PROFILER_VALUE_COUNT = 256;
+static size_t g_profilerValueIndex;
+
+struct Profiler
+{
+    std::atomic<double> value;
+    double values[PROFILER_VALUE_COUNT];
+    std::chrono::steady_clock::time_point start;
+
+    void Begin()
+    {
+        start = std::chrono::steady_clock::now();
+    }
+
+    void End()
+    {
+        value = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+    }
+
+    void Set(double v)
+    {
+        value = v;
+    }
+
+    void Reset()
+    {
+        End();
+        Begin();
+    }
+
+    double UpdateAndReturnAverage()
+    {
+        values[g_profilerValueIndex] = value;
+        return std::accumulate(values, values + PROFILER_VALUE_COUNT, 0.0) / PROFILER_VALUE_COUNT;
+    }
+};
+
+static double g_applicationValues[PROFILER_VALUE_COUNT];
+static Profiler g_gpuFrameProfiler;
+static Profiler g_presentProfiler;
+static Profiler g_renderDirectorProfiler;
+static Profiler g_frameFenceProfiler;
+static Profiler g_presentWaitProfiler;
+static Profiler g_swapChainAcquireProfiler;
+
+static bool g_profilerVisible;
+static bool g_profilerWasToggled;
+
 #ifdef UNLEASHED_RECOMP_D3D12
 static bool g_vulkan = false;
 #else
@@ -245,6 +293,7 @@ static std::unique_ptr<RenderDevice> g_device;
 static RenderDeviceCapabilities g_capabilities;
 
 static constexpr size_t NUM_FRAMES = 2;
+static constexpr size_t NUM_QUERIES = 2;
 
 static uint32_t g_frame = 0;
 static uint32_t g_nextFrame = 1;
@@ -252,6 +301,7 @@ static uint32_t g_nextFrame = 1;
 static std::unique_ptr<RenderCommandQueue> g_queue;
 static std::unique_ptr<RenderCommandList> g_commandLists[NUM_FRAMES];
 static std::unique_ptr<RenderCommandFence> g_commandFences[NUM_FRAMES];
+static std::unique_ptr<RenderQueryPool> g_queryPools[NUM_FRAMES];
 static bool g_commandListStates[NUM_FRAMES];
 
 static Mutex g_copyMutex;
@@ -1476,7 +1526,11 @@ static void CheckSwapChain()
     }
 
     if (g_swapChainValid)
+    {
+        g_swapChainAcquireProfiler.Begin();
         g_swapChainValid = g_swapChain->acquireTexture(g_acquireSemaphores[g_frame].get(), &g_backBufferIndex);
+        g_swapChainAcquireProfiler.End();
+    }
 
     if (g_needsResize)
         Video::ComputeViewportDimensions();
@@ -1552,6 +1606,8 @@ static void BeginCommandList()
     auto& commandList = g_commandLists[g_frame];
 
     commandList->begin();
+    commandList->resetQueryPool(g_queryPools[g_frame].get(), 0, NUM_QUERIES);
+    commandList->writeTimestamp(g_queryPools[g_frame].get(), 0);
     commandList->setGraphicsPipelineLayout(g_pipelineLayout.get());
     commandList->setGraphicsDescriptorSet(g_textureDescriptorSet.get(), 0);
     commandList->setGraphicsDescriptorSet(g_textureDescriptorSet.get(), 1);
@@ -1654,6 +1710,9 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
 
     for (auto& commandFence : g_commandFences)
         commandFence = g_device->createCommandFence();
+
+    for (auto& queryPool : g_queryPools)
+        queryPool = g_device->createQueryPool(NUM_QUERIES);
 
     g_copyQueue = g_device->createCommandQueue(RenderCommandListType::COPY);
     g_copyCommandList = g_device->createCommandList(RenderCommandListType::COPY);
@@ -1875,8 +1934,12 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     return true;
 }
 
+static uint32_t g_waitForGPUCount = 0;
+
 void Video::WaitForGPU()
 {
+    g_waitForGPUCount++;
+
     if (g_vulkan)
     {
         g_device->waitIdle();
@@ -2125,45 +2188,6 @@ static uint32_t HashVertexDeclaration(uint32_t vertexDeclaration)
     return vertexDeclaration;
 }
 
-static constexpr size_t PROFILER_VALUE_COUNT = 256;
-static size_t g_profilerValueIndex;
-
-struct Profiler
-{
-    std::atomic<double> value;
-    double values[PROFILER_VALUE_COUNT];
-    std::chrono::steady_clock::time_point start;
-
-    void Begin()
-    {
-        start = std::chrono::steady_clock::now();
-    }
-
-    void End()
-    {
-        value = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
-    }
-
-    void Reset()
-    {
-        End();
-        Begin();
-    }
-
-    double UpdateAndReturnAverage()
-    {
-        values[g_profilerValueIndex] = value;
-        return std::accumulate(values, values + PROFILER_VALUE_COUNT, 0.0) / PROFILER_VALUE_COUNT;
-    }
-};
-
-static double g_applicationValues[PROFILER_VALUE_COUNT];
-static Profiler g_presentProfiler;
-static Profiler g_renderDirectorProfiler;
-
-static bool g_profilerVisible;
-static bool g_profilerWasToggled;
-
 static const char *DeviceTypeName(RenderDeviceType type)
 {
     switch (type) 
@@ -2203,29 +2227,47 @@ static void DrawProfiler()
         g_applicationValues[g_profilerValueIndex] = App::s_deltaTime * 1000.0;
 
         const double applicationAvg = std::accumulate(g_applicationValues, g_applicationValues + PROFILER_VALUE_COUNT, 0.0) / PROFILER_VALUE_COUNT;
+        double gpuFrameAvg = g_gpuFrameProfiler.UpdateAndReturnAverage();
         double presentAvg = g_presentProfiler.UpdateAndReturnAverage();
         double renderDirectorAvg = g_renderDirectorProfiler.UpdateAndReturnAverage();
+        double frameFenceAvg = g_frameFenceProfiler.UpdateAndReturnAverage();
+        double presentWaitAvg = g_presentWaitProfiler.UpdateAndReturnAverage();
+        double swapChainAcquireAvg = g_swapChainAcquireProfiler.UpdateAndReturnAverage();
 
         if (ImPlot::BeginPlot("Frame Time"))
         {
             ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 20.0);
             ImPlot::SetupAxis(ImAxis_Y1, "ms", ImPlotAxisFlags_None);
             ImPlot::PlotLine<double>("Application", g_applicationValues, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
+            ImPlot::PlotLine<double>("GPU Frame", g_gpuFrameProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
             ImPlot::PlotLine<double>("Present", g_presentProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
             ImPlot::PlotLine<double>("Render Director", g_renderDirectorProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
+            ImPlot::PlotLine<double>("Frame Fence", g_frameFenceProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
+            ImPlot::PlotLine<double>("Present Wait", g_presentWaitProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
+            ImPlot::PlotLine<double>("Swap Chain Acquire", g_swapChainAcquireProfiler.values, PROFILER_VALUE_COUNT, 1.0, 0.0, ImPlotLineFlags_None, g_profilerValueIndex);
             ImPlot::EndPlot();
         }
 
         g_profilerValueIndex = (g_profilerValueIndex + 1) % PROFILER_VALUE_COUNT;
 
         ImGui::Text("Current Application: %g ms (%g FPS)", App::s_deltaTime * 1000.0, 1.0 / App::s_deltaTime);
+        ImGui::Text("Current GPU Frame: %g ms (%g FPS)", g_gpuFrameProfiler.value.load(), 1000.0 / g_gpuFrameProfiler.value.load());
         ImGui::Text("Current Present: %g ms (%g FPS)", g_presentProfiler.value.load(), 1000.0 / g_presentProfiler.value.load());
         ImGui::Text("Current Render Director: %g ms (%g FPS)", g_renderDirectorProfiler.value.load(), 1000.0 / g_renderDirectorProfiler.value.load());
+        ImGui::Text("Current Frame Fence: %g ms (%g FPS)", g_frameFenceProfiler.value.load(), 1000.0 / g_frameFenceProfiler.value.load());
+        ImGui::Text("Current Present Wait: %g ms (%g FPS)", g_presentWaitProfiler.value.load(), 1000.0 / g_presentWaitProfiler.value.load());
+        ImGui::Text("Current Swap Chain Acquire: %g ms (%g FPS)", g_swapChainAcquireProfiler.value.load(), 1000.0 / g_swapChainAcquireProfiler.value.load());
+
         ImGui::NewLine();
 
         ImGui::Text("Average Application: %g ms (%g FPS)", applicationAvg, 1000.0 / applicationAvg);
+        ImGui::Text("Average GPU Frame: %g ms (%g FPS)", gpuFrameAvg, 1000.0 / gpuFrameAvg);
         ImGui::Text("Average Present: %g ms (%g FPS)", presentAvg, 1000.0 / presentAvg);
         ImGui::Text("Average Render Director: %g ms (%g FPS)", renderDirectorAvg, 1000.0 / renderDirectorAvg);
+        ImGui::Text("Average Frame Fence: %g ms (%g FPS)", frameFenceAvg, 1000.0 / frameFenceAvg);
+        ImGui::Text("Average Present Wait: %g ms (%g FPS)", presentWaitAvg, 1000.0 / presentWaitAvg);
+        ImGui::Text("Average Swap Chain Acquire: %g ms (%g FPS)", swapChainAcquireAvg, 1000.0 / swapChainAcquireAvg);
+
         ImGui::NewLine();
 
         O1HeapDiagnostics diagnostics, physicalDiagnostics;
@@ -2240,6 +2282,7 @@ static void DrawProfiler()
 
         ImGui::Text("Heap Allocated: %d MB", int32_t(diagnostics.allocated / (1024 * 1024)));
         ImGui::Text("Physical Heap Allocated: %d MB", int32_t(physicalDiagnostics.allocated / (1024 * 1024)));
+        ImGui::Text("GPU Waits: %d", int32_t(g_waitForGPUCount));
         ImGui::NewLine();
 
         ImGui::Text("Present Wait: %s", g_capabilities.presentWait ? "Supported" : "Unsupported");
@@ -2509,7 +2552,11 @@ void Video::WaitOnSwapChain()
     if (g_pendingWaitOnSwapChain)
     {
         if (g_swapChainValid)
+        {
+            g_presentWaitProfiler.Begin();
             g_swapChain->wait();
+            g_presentWaitProfiler.End();
+        }
 
         g_pendingWaitOnSwapChain = false;
     }
@@ -2542,7 +2589,11 @@ void Video::Present()
     if (g_swapChainValid)
     {
         if (g_pendingWaitOnSwapChain)
+        {
+            g_presentWaitProfiler.Begin();
             g_swapChain->wait(); // Never gonna happen outside loading threads as explained above.
+            g_presentWaitProfiler.End();
+        }
 
         RenderCommandSemaphore* signalSemaphores[] = { g_renderSemaphores[g_frame].get() };
         g_swapChainValid = g_swapChain->present(g_backBufferIndex, signalSemaphores, std::size(signalSemaphores));
@@ -2555,8 +2606,15 @@ void Video::Present()
 
     if (g_commandListStates[g_frame])
     {
+        g_frameFenceProfiler.Begin();
         g_queue->waitForCommandFence(g_commandFences[g_frame].get());
+        g_frameFenceProfiler.End();
         g_commandListStates[g_frame] = false;
+
+        // Update the GPU profiler with the results from the timestamps of the frame.
+        g_queryPools[g_frame]->queryResults();
+        const uint64_t *frameTimestamps = g_queryPools[g_frame]->getResults();
+        g_gpuFrameProfiler.Set(double(frameTimestamps[1] - frameTimestamps[0]) / 1000000.0);
     }
 
     g_dirtyStates = DirtyStates(true);
@@ -2691,6 +2749,7 @@ static void ProcExecuteCommandList(const RenderCommand& cmd)
     }
 
     auto &commandList = g_commandLists[g_frame];
+    commandList->writeTimestamp(g_queryPools[g_frame].get(), 1);
     commandList->end();
 
     if (g_swapChainValid)
