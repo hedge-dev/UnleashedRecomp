@@ -144,6 +144,19 @@ namespace plume {
         uint32_t getHeight() const override;
     };
 
+    struct D3D12QueryPool : RenderQueryPool {
+        D3D12Device *device = nullptr;
+        ID3D12QueryHeap *d3d = nullptr;
+        std::vector<uint64_t> results;
+        std::unique_ptr<RenderBuffer> readbackBuffer;
+
+        D3D12QueryPool(D3D12Device *device, uint32_t queryCount);
+        virtual ~D3D12QueryPool() override;
+        virtual void queryResults() override;
+        virtual const uint64_t *getResults() const override;
+        virtual uint32_t getCount() const override;
+    };
+
     struct D3D12CommandList : RenderCommandList {
         ID3D12GraphicsCommandList9 *d3d = nullptr;
         ID3D12CommandAllocator *commandAllocator = nullptr;
@@ -196,6 +209,8 @@ namespace plume {
         void buildBottomLevelAS(const RenderAccelerationStructure *dstAccelerationStructure, RenderBufferReference scratchBuffer, const RenderBottomLevelASBuildInfo &buildInfo) override;
         void buildTopLevelAS(const RenderAccelerationStructure *dstAccelerationStructure, RenderBufferReference scratchBuffer, RenderBufferReference instancesBuffer, const RenderTopLevelASBuildInfo &buildInfo) override;
         void discardTexture(const RenderTexture* texture) override;
+        void resetQueryPool(const RenderQueryPool *queryPool, uint32_t queryFirstIndex, uint32_t queryCount) override;
+        void writeTimestamp(const RenderQueryPool *queryPool, uint32_t queryIndex) override;
         void checkDescriptorHeaps();
         void notifyDescriptorHeapWasChangedExternally();
         void checkTopology();
@@ -417,6 +432,7 @@ namespace plume {
         std::unique_ptr<D3D12DescriptorHeapAllocator> depthTargetHeapAllocator;
         RenderDeviceCapabilities capabilities;
         RenderDeviceDescription description;
+        uint64_t timestampFrequency = 1;
 
         D3D12Device(D3D12Interface *renderInterface, const std::string &preferredDeviceName);
         ~D3D12Device() override;
@@ -436,6 +452,7 @@ namespace plume {
         std::unique_ptr<RenderCommandFence> createCommandFence() override;
         std::unique_ptr<RenderCommandSemaphore> createCommandSemaphore() override;
         std::unique_ptr<RenderFramebuffer> createFramebuffer(const RenderFramebufferDesc &desc) override;
+        std::unique_ptr<RenderQueryPool> createQueryPool(uint32_t queryCount) override;
         void setBottomLevelASBuildInfo(RenderBottomLevelASBuildInfo &buildInfo, const RenderBottomLevelASMesh *meshes, uint32_t meshCount, bool preferFastBuild, bool preferFastTrace) override;
         void setTopLevelASBuildInfo(RenderTopLevelASBuildInfo &buildInfo, const RenderTopLevelASInstance *instances, uint32_t instanceCount, bool preferFastBuild, bool preferFastTrace) override;
         void setShaderBindingTableInfo(RenderShaderBindingTableInfo &tableInfo, const RenderShaderBindingGroups &groups, const RenderPipeline *pipeline, RenderDescriptorSet **descriptorSets, uint32_t descriptorSetCount) override;

@@ -1437,6 +1437,52 @@ namespace plume {
         return height;
     }
 
+    // D3D12QueryPool
+
+    D3D12QueryPool::D3D12QueryPool(D3D12Device *device, uint32_t queryCount) {
+        assert(device != nullptr);
+        assert(queryCount > 0);
+
+        this->device = device;
+
+        D3D12_QUERY_HEAP_DESC queryHeapDesc = {};
+        queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+        queryHeapDesc.Count = queryCount;
+
+        HRESULT res = device->d3d->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&d3d));
+        if (FAILED(res)) {
+            fprintf(stderr, "CreateQueryHeap failed with error code 0x%lX.\n", res);
+            return;
+        }
+
+        readbackBuffer = device->createBuffer(RenderBufferDesc::ReadbackBuffer(sizeof(uint64_t) * queryCount));
+        results.resize(queryCount);
+    }
+
+    D3D12QueryPool::~D3D12QueryPool() {
+        if (d3d != nullptr) {
+            d3d->Release();
+        }
+    }
+
+    void D3D12QueryPool::queryResults() {
+        void *readbackData = readbackBuffer->map();
+        memcpy(results.data(), readbackData, sizeof(uint64_t) * results.size());
+        readbackBuffer->unmap();
+
+        for (uint64_t &result : results) {
+            result = result / double(device->timestampFrequency) * 1000000000.0;
+        }
+    }
+
+    const uint64_t *D3D12QueryPool::getResults() const {
+        return results.data();
+    }
+
+    uint32_t D3D12QueryPool::getCount() const {
+        return uint32_t(results.size());
+    }
+
     // D3D12CommandList
 
     D3D12CommandList::D3D12CommandList(D3D12Device *device, RenderCommandListType type) {
@@ -2002,6 +2048,19 @@ namespace plume {
     void D3D12CommandList::discardTexture(const RenderTexture* texture) {
         const D3D12Texture* interfaceTexture = static_cast<const D3D12Texture*>(texture);
         d3d->DiscardResource(interfaceTexture->d3d, nullptr);
+    }
+
+    void D3D12CommandList::resetQueryPool(const RenderQueryPool *queryPool, uint32_t queryFirstIndex, uint32_t queryCount) {
+        // Do nothing.
+    }
+
+    void D3D12CommandList::writeTimestamp(const RenderQueryPool *queryPool, uint32_t queryIndex) {
+        assert(queryPool != nullptr);
+
+        const D3D12QueryPool *interfaceQueryPool = static_cast<const D3D12QueryPool *>(queryPool);
+        const D3D12Buffer *readbackBuffer = static_cast<const D3D12Buffer *>(interfaceQueryPool->readbackBuffer.get());
+        d3d->EndQuery(interfaceQueryPool->d3d, D3D12_QUERY_TYPE_TIMESTAMP, queryIndex);
+        d3d->ResolveQueryData(interfaceQueryPool->d3d, D3D12_QUERY_TYPE_TIMESTAMP, queryIndex, 1, readbackBuffer->d3d, queryIndex * sizeof(uint64_t));
     }
 
     void D3D12CommandList::checkDescriptorHeaps() {
@@ -3461,6 +3520,13 @@ namespace plume {
         samplerHeapAllocator = std::make_unique<D3D12DescriptorHeapAllocator>(this, SamplerDescriptorHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
         colorTargetHeapAllocator = std::make_unique<D3D12DescriptorHeapAllocator>(this, TargetDescriptorHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
         depthTargetHeapAllocator = std::make_unique<D3D12DescriptorHeapAllocator>(this, TargetDescriptorHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+        // Create a command queue only for retrieving the timestamp frequency. Delete it immediately afterwards.
+        std::unique_ptr<D3D12CommandQueue> timestampCommandQueue = std::make_unique<D3D12CommandQueue>(this, RenderCommandListType::DIRECT);
+        res = timestampCommandQueue->d3d->GetTimestampFrequency(&timestampFrequency);
+        if (FAILED(res)) {
+            fprintf(stderr, "GetTimestampFrequency failed with error code 0x%lX. Timestamps will be inaccurate.\n", res);
+        }
     }
 
     D3D12Device::~D3D12Device() {
@@ -3533,6 +3599,10 @@ namespace plume {
 
     std::unique_ptr<RenderFramebuffer> D3D12Device::createFramebuffer(const RenderFramebufferDesc &desc) {
         return std::make_unique<D3D12Framebuffer>(this, desc);
+    }
+
+    std::unique_ptr<RenderQueryPool> D3D12Device::createQueryPool(uint32_t queryCount) {
+        return std::make_unique<D3D12QueryPool>(this, queryCount);
     }
 
     void D3D12Device::setBottomLevelASBuildInfo(RenderBottomLevelASBuildInfo &buildInfo, const RenderBottomLevelASMesh *meshes, uint32_t meshCount, bool preferFastBuild, bool preferFastTrace) {

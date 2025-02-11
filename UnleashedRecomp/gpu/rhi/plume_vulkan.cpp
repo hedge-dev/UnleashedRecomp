@@ -2580,7 +2580,7 @@ namespace plume {
         constexpr uint64_t shift_bits = 16;
         double timestampPeriod = double(device->physicalDeviceProperties.limits.timestampPeriod);
         uint64_t h = 0, l = 0;
-        for (size_t &result : results) {
+        for (uint64_t &result : results) {
             mult64to128(result, uint64_t(timestampPeriod * double(1 << shift_bits)), h, l);
             result = l;
             result >>= shift_bits;

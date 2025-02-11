@@ -2254,9 +2254,9 @@ static void DrawProfiler()
         ImGui::Text("Current GPU Frame: %g ms (%g FPS)", g_gpuFrameProfiler.value.load(), 1000.0 / g_gpuFrameProfiler.value.load());
         ImGui::Text("Current Present: %g ms (%g FPS)", g_presentProfiler.value.load(), 1000.0 / g_presentProfiler.value.load());
         ImGui::Text("Current Render Director: %g ms (%g FPS)", g_renderDirectorProfiler.value.load(), 1000.0 / g_renderDirectorProfiler.value.load());
-        ImGui::Text("Current Frame Fence: %g ms (%g FPS)", g_frameFenceProfiler.value.load(), 1000.0 / g_frameFenceProfiler.value.load());
-        ImGui::Text("Current Present Wait: %g ms (%g FPS)", g_presentWaitProfiler.value.load(), 1000.0 / g_presentWaitProfiler.value.load());
-        ImGui::Text("Current Swap Chain Acquire: %g ms (%g FPS)", g_swapChainAcquireProfiler.value.load(), 1000.0 / g_swapChainAcquireProfiler.value.load());
+        ImGui::Text("Current Frame Fence: %g ms", g_frameFenceProfiler.value.load());
+        ImGui::Text("Current Present Wait: %g ms", g_presentWaitProfiler.value.load());
+        ImGui::Text("Current Swap Chain Acquire: %g ms", g_swapChainAcquireProfiler.value.load());
 
         ImGui::NewLine();
 
@@ -2264,9 +2264,9 @@ static void DrawProfiler()
         ImGui::Text("Average GPU Frame: %g ms (%g FPS)", gpuFrameAvg, 1000.0 / gpuFrameAvg);
         ImGui::Text("Average Present: %g ms (%g FPS)", presentAvg, 1000.0 / presentAvg);
         ImGui::Text("Average Render Director: %g ms (%g FPS)", renderDirectorAvg, 1000.0 / renderDirectorAvg);
-        ImGui::Text("Average Frame Fence: %g ms (%g FPS)", frameFenceAvg, 1000.0 / frameFenceAvg);
-        ImGui::Text("Average Present Wait: %g ms (%g FPS)", presentWaitAvg, 1000.0 / presentWaitAvg);
-        ImGui::Text("Average Swap Chain Acquire: %g ms (%g FPS)", swapChainAcquireAvg, 1000.0 / swapChainAcquireAvg);
+        ImGui::Text("Average Frame Fence: %g ms", frameFenceAvg);
+        ImGui::Text("Average Present Wait: %g ms", presentWaitAvg);
+        ImGui::Text("Average Swap Chain Acquire: %g ms", swapChainAcquireAvg);
 
         ImGui::NewLine();
 
