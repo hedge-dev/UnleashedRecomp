@@ -5,8 +5,9 @@
 #include <app.h>
 #include <sdl_events.h>
 
+std::string InspirePatches::s_sceneName;
+
 static SWA::Inspire::CScene* g_pScene;
-static std::string g_sceneName;
 static bool g_isFirstFrameChecked;
 static uint32_t g_eventDispatchCount;
 
@@ -49,7 +50,7 @@ PPC_FUNC(sub_82B98D30)
     __imp__sub_82B98D30(ctx, base);
 
     g_pScene = nullptr;
-    g_sceneName.clear();
+    InspirePatches::s_sceneName.clear();
 
     SDL_User_EvilSonic(App::s_isWerehog);
 }
@@ -59,7 +60,7 @@ PPC_FUNC(sub_82B9BA98)
 {
     auto sceneName = (Hedgehog::Base::CSharedString*)g_memory.Translate(ctx.r5.u32);
 
-    g_sceneName = sceneName->c_str();
+    InspirePatches::s_sceneName = sceneName->c_str();
 
     __imp__sub_82B9BA98(ctx, base);
 }
@@ -72,7 +73,7 @@ void InspirePatches::DrawDebug()
         return;
     }
 
-    ImGui::Text("Name: %s", g_sceneName.c_str());
+    ImGui::Text("Name: %s", InspirePatches::s_sceneName.c_str());
     ImGui::Text("Frame: %f", g_pScene->m_pData->Frame.get());
     ImGui::Text("Cut: %d", g_pScene->m_pData->Cut.get());
 
@@ -97,17 +98,17 @@ void InspirePatches::DrawDebug()
 
 void InspirePatches::Update()
 {
-    if (!g_pScene || !g_sceneName.size())
+    if (!g_pScene || !InspirePatches::s_sceneName.size())
         return;
 
-    if (!g_isFirstFrameChecked && std::find(g_alwaysEvilSonic.begin(), g_alwaysEvilSonic.end(), g_sceneName) != g_alwaysEvilSonic.end())
+    if (!g_isFirstFrameChecked && std::find(g_alwaysEvilSonic.begin(), g_alwaysEvilSonic.end(), InspirePatches::s_sceneName) != g_alwaysEvilSonic.end())
     {
         SDL_User_EvilSonic(true);
         g_isFirstFrameChecked = true;
         return;
     }
 
-    auto findResult = g_evilSonicTimings.find(g_sceneName);
+    auto findResult = g_evilSonicTimings.find(InspirePatches::s_sceneName);
 
     if (findResult != g_evilSonicTimings.end())
     {

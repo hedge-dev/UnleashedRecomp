@@ -5,6 +5,7 @@
 #include <kernel/heap.h>
 #include <kernel/memory.h>
 #include <ui/game_window.h>
+#include <patches/inspire_patches.h>
 
 void Game_PlaySound(const char* pName)
 {
@@ -14,8 +15,11 @@ void Game_PlaySound(const char* pName)
     }
     else
     {
+        // Use EVENT category in cutscenes since SYSTEM gets muted by the game.
+        uint32_t category = !InspirePatches::s_sceneName.empty() ? 10 : 7;
+
         guest_stack_var<boost::anonymous_shared_ptr> soundPlayer;
-        GuestToHostFunction<void>(sub_82B4DF50, soundPlayer.get(), ((be<uint32_t>*)g_memory.Translate(0x83367900))->get(), 7, 0, 0);
+        GuestToHostFunction<void>(sub_82B4DF50, soundPlayer.get(), ((be<uint32_t>*)g_memory.Translate(0x83367900))->get(), category, 0, 0);
 
         auto soundPlayerVtable = (be<uint32_t>*)g_memory.Translate(*(be<uint32_t>*)soundPlayer->get());
         uint32_t virtualFunction = *(soundPlayerVtable + 1);
