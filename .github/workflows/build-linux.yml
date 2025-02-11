@@ -56,7 +56,7 @@ jobs:
           key: ccache-${{ runner.os }}
 
       - name: Prepare Project
-        run: copy ./private/* ./UnleashedRecompLib/private
+        run: cp ./private/* ./UnleashedRecompLib/private
   
       - name: Configure Project
         env:
