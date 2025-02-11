@@ -356,6 +356,11 @@ address = 0x82B47728
 registers = ["r11"]
 
 [[midasm_hook]]
+name = "WerehogBattleMusicMidAsmHook"
+address = 0x82B47C58
+registers = ["r11"]
+
+[[midasm_hook]]
 name = "MotionBlurMidAsmHook"
 address = 0x82BA99D0
 jump_address_on_false = 0x82BAA544
