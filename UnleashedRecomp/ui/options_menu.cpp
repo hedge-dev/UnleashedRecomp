@@ -486,16 +486,33 @@ static bool DrawCategories()
 
     float size = Scale(32.0f);
     ImVec2 textSizes[g_categoryCount];
+    float textSquashRatio[g_categoryCount];
     float tabWidthSum = 0.0f;
+    float clipRectWidth = clipRectMax.x - clipRectMin.x;
+    float categoryTextPadding = textPadding * 2.0f * g_categoryCount;
+    float categoryTabPadding = tabPadding * (g_categoryCount - 1);
+    float maxTextWidth = (clipRectWidth - categoryTextPadding - categoryTabPadding) / float(g_categoryCount);
     for (size_t i = 0; i < g_categoryCount; i++)
     {
         textSizes[i] = g_dfsogeistdFont->CalcTextSizeA(size, FLT_MAX, 0.0f, GetCategory(i).c_str());
-        tabWidthSum += textSizes[i].x + textPadding * 2.0f;
+
+        if (textSizes[i].x > maxTextWidth)
+        {
+            textSquashRatio[i] = maxTextWidth / textSizes[i].x;
+        }
+        else
+        {
+            textSquashRatio[i] = 1.0f;
+        }
+
+        tabWidthSum += textSizes[i].x * textSquashRatio[i];
     }
-    tabWidthSum += (g_categoryCount - 1) * tabPadding;
+
+    tabWidthSum += categoryTextPadding;
+    tabWidthSum += categoryTabPadding;
 
     float tabHeight = gridSize * 4.0f;
-    float xOffset = ((clipRectMax.x - clipRectMin.x) - tabWidthSum) / 2.0f;
+    float xOffset = (clipRectWidth - tabWidthSum) / 2.0f;
     xOffset -= (1.0 - motion) * gridSize * 4.0;
 
     ImVec2 minVec[g_categoryCount];
@@ -504,7 +521,7 @@ static bool DrawCategories()
     {
         ImVec2 min = { clipRectMin.x + xOffset, clipRectMin.y };
 
-        xOffset += textSizes[i].x + textPadding * 2.0f;
+        xOffset += textSizes[i].x * textSquashRatio[i] + textPadding * 2.0f;
         ImVec2 max = { clipRectMin.x + xOffset, clipRectMin.y + tabHeight };
         xOffset += tabPadding;
 
@@ -580,7 +597,9 @@ static bool DrawCategories()
     {
         auto& min = minVec[i];
         uint8_t alpha = (i == g_categoryIndex ? 235 : 128) * motion;
-
+        
+        SetOrigin({ min.x, min.y });
+        SetScale({ textSquashRatio[i], 1.0f });
         SetGradient
         (
             min,
@@ -600,9 +619,11 @@ static bool DrawCategories()
             IM_COL32_BLACK,
             IMGUI_SHADER_MODIFIER_CATEGORY_BEVEL
         );
-
-        ResetGradient();
     }
+
+    SetScale({ 1.0f, 1.0f });
+    SetOrigin({ 0.0f, 0.0f });
+    ResetGradient();
 
     if (g_isStage || (ImGui::GetTime() - g_appearTime) >= (CONTAINER_FULL_DURATION / 60.0))
     {
