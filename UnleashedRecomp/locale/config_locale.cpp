@@ -244,7 +244,7 @@ CONFIG_DEFINE_LOCALE(Subtitles)
 
 CONFIG_DEFINE_LOCALE(BattleTheme)
 {
-    { ELanguage::English, { "Battle Theme", "Play the Werehog battle theme during combat.\n\nThis option will apply the next time you're in combat.\n\nRescue missions and boss themes will be unaffected." } }
+    { ELanguage::English, { "Battle Theme", "Play the Werehog battle theme during combat.\n\nThis option will apply the next time you're in combat.\n\nExorcism missions and miniboss themes will be unaffected." } }
 };
 
 CONFIG_DEFINE_LOCALE(WindowSize)
