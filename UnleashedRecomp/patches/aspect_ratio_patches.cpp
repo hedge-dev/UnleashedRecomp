@@ -398,11 +398,13 @@ static const xxHashMap<CsdModifier> g_modifiers =
 
     // ui_itemresult
     { HashStr("ui_itemresult/footer/result_footer"), { ALIGN_BOTTOM } },
-    { HashStr("ui_itemresult/main/iresult_title"), { ALIGN_TOP } },
     { HashStr("ui_itemresult/main/iresult_title"), { ALIGN_TOP | OFFSET_SCALE_LEFT, 688.0f } },
     { HashStr("ui_itemresult/main/iresult_title/title_bg/center"), { ALIGN_TOP | EXTEND_LEFT } },
     { HashStr("ui_itemresult/main/iresult_title/title_bg/center/h_light"), { ALIGN_TOP | EXTEND_LEFT } },
     { HashStr("ui_itemresult/main/iresult_title/title_bg/right"), { ALIGN_TOP | STORE_RIGHT_CORNER } },
+    { HashStr("ui_itemresult/main/iresult_title/title_brilliance1"), { ALIGN_TOP | STORE_RIGHT_CORNER | OFFSET_SCALE_LEFT, 632.25775f, 1 } },
+    { HashStr("ui_itemresult/main/iresult_title/title_brilliance2"), { ALIGN_TOP | STORE_RIGHT_CORNER | OFFSET_SCALE_LEFT, 830.0f, 2 } },
+    { HashStr("ui_itemresult/main/iresult_title/title_brilliance3"), { ALIGN_TOP | STORE_RIGHT_CORNER | OFFSET_SCALE_LEFT, 640.0f, 3 } },
 
     // ui_loading
     { HashStr("ui_loading/bg_1"), { STRETCH } },
