@@ -15,13 +15,16 @@ PPC_FUNC(sub_824DCF38)
 
     App::s_isLoading = true;
 
-    if (Config::TimeOfDayTransition == ETimeOfDayTransition::PlayStation)
+    if (ctx.r4.u32 == SWA::eLoadingDisplayType_WerehogMovie)
     {
-        if (ctx.r4.u32 == SWA::eLoadingDisplayType_WerehogMovie)
+        if (Config::TimeOfDayTransition == ETimeOfDayTransition::PlayStation)
         {
             ctx.r4.u32 = SWA::eLoadingDisplayType_ChangeTimeOfDay;
             pLoading->m_IsNightToDay = App::s_isWerehog;
         }
+
+        if (Config::UseArrowsForTimeOfDayTransition)
+            ctx.r4.u32 = SWA::eLoadingDisplayType_Arrows;
     }
 
     if (auto pGameDocument = SWA::CGameDocument::GetInstance())

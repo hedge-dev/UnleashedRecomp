@@ -1199,7 +1199,7 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::Hints, !isStage, cmnReason);
             DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, !isStage, cmnReason);
             DrawConfigOption(rowCount++, yOffset, &Config::AchievementNotifications, true);
-            DrawConfigOption(rowCount++, yOffset, &Config::TimeOfDayTransition, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::TimeOfDayTransition, !Config::UseArrowsForTimeOfDayTransition);
             break;
 
         case 1: // INPUT
