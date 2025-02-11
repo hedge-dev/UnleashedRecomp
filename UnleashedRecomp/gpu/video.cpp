@@ -2258,6 +2258,9 @@ static void DrawProfiler()
             ImGui::Text("SDL Video Driver: %s", sdlVideoDriver);
 
         ImGui::NewLine();
+        ImGui::Checkbox("Show FPS", &Config::ShowFPS.Value);
+        ImGui::NewLine();
+
         if (ImGui::TreeNode("Device Names"))
         {
             ImGui::Indent();
@@ -2276,6 +2279,36 @@ static void DrawProfiler()
 
     ImGui::PopFont();
     font->Scale = defaultScale;
+}
+
+static void DrawFPS()
+{
+    if (!Config::ShowFPS)
+        return;
+
+    double time = ImGui::GetTime();
+    static double updateTime = time;
+    static double fps = 0;
+
+    if (time - updateTime >= 1.0f)
+    {
+        fps = 1000.0 / g_presentProfiler.value.load();
+        updateTime = time;
+    }
+
+    auto drawList = ImGui::GetBackgroundDrawList();
+
+    auto fmt = fmt::format("FPS: {:.2f}", fps);
+    auto font = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
+    auto fontSize = Scale(10);
+    auto textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0, fmt.c_str());
+
+    ImVec2 min = { Scale(40), Scale(30) };
+    ImVec2 max = { min.x + std::max(Scale(75), textSize.x + Scale(10)), min.y + Scale(15) };
+    ImVec2 textPos = { min.x + Scale(2), CENTRE_TEXT_VERT(min, max, textSize) + Scale(0.2f) };
+
+    drawList->AddRectFilled(min, max, IM_COL32(0, 0, 0, 200));
+    drawList->AddText(font, fontSize, textPos, IM_COL32_WHITE, fmt.c_str());
 }
 
 static void DrawImGui()
@@ -2338,6 +2371,7 @@ static void DrawImGui()
 
     assert(ImGui::GetBackgroundDrawList()->_ClipRectStack.Size == 1 && "Some clip rects were not removed from the stack!");
 
+    DrawFPS();
     DrawProfiler();
     ImGui::Render();
 

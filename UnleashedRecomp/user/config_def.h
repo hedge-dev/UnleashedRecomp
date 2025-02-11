@@ -87,6 +87,7 @@ CONFIG_DEFINE_CALLBACK("Video", bool, Fullscreen, true,
 CONFIG_DEFINE_LOCALISED("Video", bool, VSync, true);
 CONFIG_DEFINE_ENUM("Video", ETripleBuffering, TripleBuffering, ETripleBuffering::Auto);
 CONFIG_DEFINE_LOCALISED("Video", int32_t, FPS, 60);
+CONFIG_DEFINE("Video", bool, ShowFPS, false);
 CONFIG_DEFINE("Video", uint32_t, MaxFrameLatency, 2);
 CONFIG_DEFINE_LOCALISED("Video", float, Brightness, 0.5f);
 CONFIG_DEFINE_ENUM_LOCALISED("Video", EAntiAliasing, AntiAliasing, EAntiAliasing::MSAA4x);
