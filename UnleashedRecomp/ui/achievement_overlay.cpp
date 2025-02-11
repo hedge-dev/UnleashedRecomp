@@ -10,6 +10,7 @@
 #include <app.h>
 #include <exports.h>
 #include <decompressor.h>
+#include <patches/inspire_patches.h>
 
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_START = 0;
 constexpr double OVERLAY_CONTAINER_COMMON_MOTION_END = 11;
@@ -80,13 +81,66 @@ void AchievementOverlay::Init()
     g_fntSeurat = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
 }
 
+// Dequeue achievements only when we can actually play sounds.
+// Loading thread does not update this object.
+static bool g_soundAdministratorUpdated;
+
+PPC_FUNC_IMPL(__imp__sub_82B43480);
+PPC_FUNC(sub_82B43480)
+{
+    g_soundAdministratorUpdated = true;
+    __imp__sub_82B43480(ctx, base);
+}
+
+// Dequeue achievements only in the main thread. This is also extra thread safety.
+static std::thread::id g_mainThreadId = std::this_thread::get_id();
+
+static bool CanDequeueAchievement()
+{
+    if (g_soundAdministratorUpdated && std::this_thread::get_id() == g_mainThreadId && !AchievementOverlay::s_queue.empty())
+    {
+        // Check if we can actually play any audio right now. If not, we'll wait until we can.
+        uint32_t audioCenter = *reinterpret_cast<be<uint32_t>*>(g_memory.Translate(0x83362FFC));
+        if (audioCenter != NULL)
+        {
+            uint32_t member = *reinterpret_cast<be<uint32_t>*>(g_memory.Translate(audioCenter + 0x4));
+            uint32_t category = !InspirePatches::s_sceneName.empty() ? 10 : 7; // EVENT category is used during Inspire cutscenes.
+
+            // Check if the volume is non zero.
+            return *reinterpret_cast<uint32_t*>(g_memory.Translate(member + 0x7C + category * 0x10 + 0x8)) != 0;
+        }
+    }
+
+    return false;
+}
+
 void AchievementOverlay::Draw()
 {
+    if (!AchievementOverlay::s_isVisible && CanDequeueAchievement())
+    {
+        s_isVisible = true;
+        g_isClosing = false;
+        g_appearTime = ImGui::GetTime();
+        g_achievement = g_xdbfWrapper.GetAchievement((EXDBFLanguage)Config::Language.Value, s_queue.front());
+        s_queue.pop();
+        
+        if (Config::Language == ELanguage::English)
+            g_achievement.Name = xdbf::FixInvalidSequences(g_achievement.Name);
+        
+        Game_PlaySound("obj_navi_appear");
+    }
+
     if (!s_isVisible)
+    {
+        g_soundAdministratorUpdated = false;
         return;
+    }
     
     if (ImGui::GetTime() - g_appearTime >= OVERLAY_DURATION)
         AchievementOverlay::Close();
+
+    // Close function can use this bool so reset it after.
+    g_soundAdministratorUpdated = false;
 
     auto drawList = ImGui::GetBackgroundDrawList();
     auto& res = ImGui::GetIO().DisplaySize;
@@ -167,21 +221,7 @@ void AchievementOverlay::Draw()
 
 void AchievementOverlay::Open(int id)
 {
-    if (s_isVisible && !g_isClosing)
-    {
-        s_queue.emplace(id);
-        return;
-    }
-
-    s_isVisible = true;
-    g_isClosing = false;
-    g_appearTime = ImGui::GetTime();
-    g_achievement = g_xdbfWrapper.GetAchievement((EXDBFLanguage)Config::Language.Value, id);
-
-    if (Config::Language == ELanguage::English)
-        g_achievement.Name = xdbf::FixInvalidSequences(g_achievement.Name);
-
-    Game_PlaySound("obj_navi_appear");
+    s_queue.push(id);
 }
 
 void AchievementOverlay::Close()
@@ -192,10 +232,6 @@ void AchievementOverlay::Close()
         g_isClosing = true;
     }
 
-    if (s_queue.size())
-    {
+    if (CanDequeueAchievement())
         s_isVisible = false;
-        AchievementOverlay::Open(s_queue.front());
-        s_queue.pop();
-    }
 }

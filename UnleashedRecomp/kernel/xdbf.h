@@ -10,12 +10,12 @@ namespace xdbf
 {
     inline std::string& FixInvalidSequences(std::string& str)
     {
-        static std::vector<std::string> invalidSequences =
+        static std::array<std::string_view, 1> invalidSequences =
         {
             "\xE2\x80\x99"
         };
 
-        static std::vector<std::string> replaceSequences =
+        static std::array<std::string_view, 1> replaceSequences =
         {
             "'"
         };
