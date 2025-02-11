@@ -28,6 +28,17 @@ void HighFrameRateDeltaTimeFixMidAsmHook(PPCRegister& f1)
         f1.f64 = threshold;
 }
 
+// This hook expects the vector register to store delta time at the first index.
+void HighFrameRateDeltaTimeFixVectorMidAsmHook(PPCVRegister& v62)
+{
+    // Having 60 FPS threshold ensures we still retain
+    // the original game behavior when locked to 30/60 FPS.
+    constexpr double threshold = 1.0 / 60.0;
+
+    if (v62.f32[3] < threshold)
+        v62.f32[3] = threshold;
+}
+
 void CameraDeltaTimeFixMidAsmHook(PPCRegister& dest, PPCRegister& src)
 {
     dest.f64 = src.f64 / 30.0;

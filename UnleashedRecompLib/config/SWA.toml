@@ -973,3 +973,9 @@ registers = ["r30", "f30"]
 name = "SparkleLocusMidAsmHook"
 address = 0x82E96804
 jump_address_on_true = 0x82E96808
+
+# Rooftop Run barrel fix (works at up to ~400 FPS)
+[[midasm_hook]]
+name = "HighFrameRateDeltaTimeFixVectorMidAsmHook"
+address = 0x827673CC
+registers = ["v62"]
