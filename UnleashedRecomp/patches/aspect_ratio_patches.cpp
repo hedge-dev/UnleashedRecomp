@@ -351,6 +351,8 @@ enum
     CORNER_EXTRACT = 1 << 20,
 
     SKIP_INSPIRE = 1 << 21,
+
+    CONTROL_TUTORIAL = 1 << 22,
 };
 
 struct CsdModifier
@@ -592,7 +594,7 @@ static const xxHashMap<CsdModifier> g_modifiers =
     { HashStr("ui_playscreen_su/su_sonic_gauge/position/C/R"), { ALIGN_BOTTOM_LEFT | SCALE | STORE_RIGHT_CORNER } },
     { HashStr("ui_playscreen_su/gaia_gauge"), { ALIGN_BOTTOM_LEFT | SCALE | OFFSET_SCALE_LEFT, 632.0f } },
     { HashStr("ui_playscreen_su/gaia_gauge/position/C/R"), { ALIGN_BOTTOM_LEFT | SCALE | STORE_RIGHT_CORNER } },
-    { HashStr("ui_playscreen_su/footer"), { ALIGN_BOTTOM_RIGHT | SCALE } },
+    { HashStr("ui_playscreen_su/footer"), { ALIGN_BOTTOM_RIGHT | SCALE | CONTROL_TUTORIAL } },
 
     // ui_prov_playscreen
     { HashStr("ui_prov_playscreen/so_speed_gauge"), { ALIGN_BOTTOM_LEFT | SCALE | TORNADO_DEFENSE } },
@@ -849,6 +851,11 @@ PPC_FUNC(sub_830C6A00)
 
     if (g_sceneModifier.has_value())
     {
+        if (!Config::ControlTutorial && (g_sceneModifier->flags & CONTROL_TUTORIAL) != 0)
+        {
+            return;
+        }
+
         // Tornado Defense bugs out when applying gameplay UI scaling.
         // This seems consistent with base game behavior, because the UI
         // is normally squashed, which was probably done to work around this.
