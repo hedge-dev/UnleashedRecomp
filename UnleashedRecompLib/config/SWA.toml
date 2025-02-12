@@ -667,6 +667,12 @@ name = "PostureDPadSupportXMidAsmHook"
 address = 0x8266B6AC
 registers = ["r29", "f0"]
 
+# SWA::Player::CSonicStateStompingLand
+[[midasm_hook]]
+name = "PostureDPadSupportMidAsmHook"
+address = 0x8231F824
+registers = ["r29", "f12", "f13"]
+
 # SWA::Boss::Temple::CTemple (shared)
 [[midasm_hook]]
 name = "PostureDPadSupportMidAsmHook"
@@ -684,6 +690,12 @@ registers = ["r30", "f29", "f28"]
 name = "PostureDPadSupportMidAsmHook"
 address = 0x82A7B288
 registers = ["r30", "f13", "f10"]
+
+# SWA::Boss::Temple::CTempleStateBoost / SWA::Boss::Temple::CTempleStateDamage / SWA::Boss::Temple::CTempleStateGuard
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x82A72358
+registers = ["r30", "f13"]
 
 # SWA::Player::CSuperSonicPostureInputSpaceHurrier
 [[midasm_hook]]
