@@ -979,3 +979,8 @@ jump_address_on_true = 0x82E96808
 name = "HighFrameRateDeltaTimeFixVectorMidAsmHook"
 address = 0x827673CC
 registers = ["v62"]
+
+[[midasm_hook]]
+name = "BossEggDragoonDrillMissileCMissileSetRotationMidAsmHook"
+address = 0x82A9BADC
+registers = ["r4"]

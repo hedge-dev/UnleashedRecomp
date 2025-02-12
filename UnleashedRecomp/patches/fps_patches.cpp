@@ -171,6 +171,23 @@ PPC_FUNC(sub_82B00D00)
     *pElapsedTime = std::max(*pElapsedTime, 0.0f);
 }
 
+// Fix for Egg Dragoon's drill missile attack rotating 90 degrees at HFR.
+void BossEggDragoonDrillMissileCMissileSetRotationMidAsmHook(PPCRegister& r4)
+{
+    auto pRotation = (Hedgehog::Math::CQuaternion*)g_memory.Translate(r4.u32);
+    auto magnitude = std::sqrt(pRotation->X * pRotation->X + pRotation->Y * pRotation->Y + pRotation->Z * pRotation->Z + pRotation->W * pRotation->W);
+
+    if (magnitude < 0.0f)
+        return;
+
+    auto magnitudeNrm = 1.0f / magnitude;
+
+    pRotation->X = pRotation->X * magnitudeNrm;
+    pRotation->Y = pRotation->Y * magnitudeNrm;
+    pRotation->Z = pRotation->Z * magnitudeNrm;
+    pRotation->W = pRotation->W * magnitudeNrm;
+}
+
 bool SparkleLocusMidAsmHook()
 {
     // There is an epsilon check in sparkle locus particle code that seems to never pass at high frame rates, which causes vertex corruption.
