@@ -2358,11 +2358,18 @@ static void DrawFPS()
     double time = ImGui::GetTime();
     static double updateTime = time;
     static double fps = 0;
+    static double totalDeltaTime = 0.0;
+    static uint32_t totalDeltaCount = 0;
+
+    totalDeltaTime += g_presentProfiler.value.load();
+    totalDeltaCount++;
 
     if (time - updateTime >= 1.0f)
     {
-        fps = 1000.0 / g_presentProfiler.value.load();
+        fps = 1000.0 / std::max(totalDeltaTime / double(totalDeltaCount), 1.0);
         updateTime = time;
+        totalDeltaTime = 0.0;
+        totalDeltaCount = 0;
     }
 
     auto drawList = ImGui::GetBackgroundDrawList();
