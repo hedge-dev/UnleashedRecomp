@@ -487,20 +487,19 @@ static bool DrawCategories()
     float size = Scale(32.0f);
     ImVec2 textSizes[g_categoryCount];
     float textSquashRatio[g_categoryCount];
-    float tabWidthSum = 0.0f;
     float clipRectWidth = clipRectMax.x - clipRectMin.x;
     float categoryTextPadding = textPadding * 2.0f * g_categoryCount;
     float categoryTabPadding = tabPadding * (g_categoryCount - 1);
-    float maxTextWidth = (clipRectWidth - categoryTextPadding - categoryTabPadding) / float(g_categoryCount);
+    float maxTabWidth = (clipRectWidth - categoryTabPadding) / float(g_categoryCount);
+    float maxTextWidth = maxTabWidth - (NARROW_PADDING_GRID_COUNT * gridSize * 2.0f);
+
+    float tabWidthSum = categoryTabPadding;
     for (size_t i = 0; i < g_categoryCount; i++)
     {
         textSizes[i] = g_dfsogeistdFont->CalcTextSizeA(size, FLT_MAX, 0.0f, GetCategory(i).c_str());
         textSquashRatio[i] = std::min(maxTextWidth / textSizes[i].x, 1.0f);
-        tabWidthSum += textSizes[i].x * textSquashRatio[i];
+        tabWidthSum += std::min(textSizes[i].x + textPadding * 2.0f, maxTabWidth);
     }
-
-    tabWidthSum += categoryTextPadding;
-    tabWidthSum += categoryTabPadding;
 
     float tabHeight = gridSize * 4.0f;
     float xOffset = (clipRectWidth - tabWidthSum) / 2.0f;
@@ -512,7 +511,7 @@ static bool DrawCategories()
     {
         ImVec2 min = { clipRectMin.x + xOffset, clipRectMin.y };
 
-        xOffset += textSizes[i].x * textSquashRatio[i] + textPadding * 2.0f;
+        xOffset += std::min(textSizes[i].x + textPadding * 2.0f, maxTabWidth);
         ImVec2 max = { clipRectMin.x + xOffset, clipRectMin.y + tabHeight };
         xOffset += tabPadding;
 
@@ -578,7 +577,7 @@ static bool DrawCategories()
             SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
         }
 
-        min.x += textPadding;
+        min.x += ((max.x - min.x) - (textSizes[i].x * textSquashRatio[i])) / 2.0f;
 
         // Store to draw again later, otherwise the tab background gets drawn on top of text during the animation.
         minVec[i] = min; 
