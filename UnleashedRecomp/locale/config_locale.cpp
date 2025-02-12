@@ -125,7 +125,7 @@ CONFIG_DEFINE_LOCALE(Hints)
     { ELanguage::German,   { "", "" } },
     { ELanguage::French,   { "", "" } },
     { ELanguage::Spanish,  { "", "" } },
-    { ELanguage::Italian,  { "Ring indizio", "Mostra i ring indizio nei livelli." } }
+    { ELanguage::Italian,  { "Indizi", "Mostra degli indizzi durante il gioco." } }
 };
 
 CONFIG_DEFINE_LOCALE(ControlTutorial)
@@ -135,7 +135,7 @@ CONFIG_DEFINE_LOCALE(ControlTutorial)
     { ELanguage::German,   { "", "" } },
     { ELanguage::French,   { "", "" } },
     { ELanguage::Spanish,  { "", "" } },
-    { ELanguage::Italian,  { "Tutorial dei comandi", "Mostra i tutorial dei comandi nei livelli." } }
+    { ELanguage::Italian,  { "Tutorial dei comandi", "Mostra i tutorial dei comandi durante il gioco." } }
 };
 
 CONFIG_DEFINE_LOCALE(AchievementNotifications)
