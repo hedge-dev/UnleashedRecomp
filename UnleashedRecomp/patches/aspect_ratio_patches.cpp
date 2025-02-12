@@ -8,6 +8,7 @@
 
 #include "aspect_ratio_patches.h"
 #include "camera_patches.h"
+#include "inspire_patches.h"
 
 // These are here for now to not recompile basically all of the project.
 namespace Chao::CSD
@@ -347,7 +348,9 @@ enum
 
     UNSTRETCH_HORIZONTAL = 1 << 19,
 
-    CORNER_EXTRACT = 1 << 20
+    CORNER_EXTRACT = 1 << 20,
+
+    SKIP_INSPIRE = 1 << 21,
 };
 
 struct CsdModifier
@@ -364,10 +367,10 @@ static const xxHashMap<CsdModifier> g_modifiers =
     { HashStr("ui_balloon/window/footer"), { ALIGN_BOTTOM } },
 
     // ui_boss_gauge
-    { HashStr("ui_boss_gauge/gauge_bg"), { ALIGN_TOP_RIGHT | SCALE } },
-    { HashStr("ui_boss_gauge/gauge_2"), { ALIGN_TOP_RIGHT | SCALE } },
-    { HashStr("ui_boss_gauge/gauge_1"), { ALIGN_TOP_RIGHT | SCALE } },
-    { HashStr("ui_boss_gauge/gauge_breakpoint"), { ALIGN_TOP_RIGHT | SCALE } },
+    { HashStr("ui_boss_gauge/gauge_bg"), { ALIGN_TOP_RIGHT | SCALE | SKIP_INSPIRE} },
+    { HashStr("ui_boss_gauge/gauge_2"), { ALIGN_TOP_RIGHT | SCALE | SKIP_INSPIRE} },
+    { HashStr("ui_boss_gauge/gauge_1"), { ALIGN_TOP_RIGHT | SCALE | SKIP_INSPIRE} },
+    { HashStr("ui_boss_gauge/gauge_breakpoint"), { ALIGN_TOP_RIGHT | SCALE | SKIP_INSPIRE} },
 
     // ui_boss_name
     { HashStr("ui_boss_name/name_so/bg"), { UNSTRETCH_HORIZONTAL } },
@@ -920,6 +923,12 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
     }
 
     if ((modifier.flags & SKIP) != 0)
+    {
+        return;
+    }
+
+    // That goddamn boss gauge doesn't disappear in the cutscene where Dark Gaia and Chip hug each other
+    if ((modifier.flags & SKIP_INSPIRE) != 0 && !InspirePatches::s_sceneName.empty() && *reinterpret_cast<be<float>*>(base + ctx.r4.u32) >= 1280.0f)
     {
         return;
     }
