@@ -353,6 +353,8 @@ enum
     SKIP_INSPIRE = 1 << 21,
 
     CONTROL_TUTORIAL = 1 << 22,
+
+    LOADING_ARROW = 1 << 23,
 };
 
 struct CsdModifier
@@ -415,7 +417,9 @@ static const xxHashMap<CsdModifier> g_modifiers =
 
     // ui_loading
     { HashStr("ui_loading/bg_1"), { STRETCH } },
+    { HashStr("ui_loading/bg_1/arrow"), { STRETCH | LOADING_ARROW } },
     { HashStr("ui_loading/bg_2"), { STRETCH } },
+    { HashStr("ui_loading/bg_2/arrow"), { STRETCH | LOADING_ARROW } },
     { HashStr("ui_loading/n_2_d/bg/sky"), { STRETCH } },
     { HashStr("ui_loading/n_2_d/bg/under"), { STRETCH } },
     { HashStr("ui_loading/n_2_d/letterbox/letterbox_under"), { STRETCH } },
@@ -970,6 +974,22 @@ static void Draw(PPCContext& ctx, uint8_t* base, PPCFunc* original, uint32_t str
         {
             return reinterpret_cast<be<float>*>(stack + index * stride);
         };
+
+    // Subtract half a pixel from loading arrows to prevent transparent pixels surrounding them from leaking into the texture filtering.
+    if (Video::s_viewportHeight > 720 && (modifier.flags & LOADING_ARROW) != 0 && stride == 0x14)
+    {
+        for (size_t i = 0; i < 4; i++)
+        {
+            auto texCoord = getPosition(i) + 4;
+
+            constexpr float OFFSET = 0.5f / 720.0f;
+
+            if (i == 0 || i == 2) // Top
+                *texCoord = (*texCoord + OFFSET);
+            else // Bottom
+                *texCoord = (*texCoord - OFFSET);
+        }
+    }
 
     float offsetX = 0.0f;
     float offsetY = 0.0f;
