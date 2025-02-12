@@ -116,6 +116,66 @@ name = "DisableHintsMidAsmHook"
 address = 0x827A2E34
 jump_address_on_true = 0x827A2E4C
 
+# Disable Egg Dragoon hint "V_WHG_083" ("That lit-up part on the bottom looks fishy. I'll try aiming for that.")
+[[midasm_hook]]
+name = "DisableHintsMidAsmHook"
+address = 0x82AA3224
+jump_address_on_true = 0x82AA3228
+
+# Disable Egg Dragoon hint "V_CHP_057" ("That green round thing looks suspicious! Give it a bonk, Sonic!")
+[[midasm_hook]]
+name = "DisableHintsMidAsmHook"
+address = 0x82AB1A00
+jump_address_on_true = 0x82AB1A04
+
+# Disable Dark Moray hints
+[[midasm_hook]]
+name = "DisableHintsMidAsmHook"
+address = 0x829F7538
+jump_address_on_true = 0x829F753C
+
+# Disable Dark Moray hint "snow_boss_01" ("Ack, Sonic! You're frozen! Move the left stick left and right quickly to break free!")
+[[midasm_hook]]
+name = "DisableHintsMidAsmHook"
+address = 0x829F7C90
+jump_address_on_true = 0x829F7C94
+
+# Disable Dark Guardian hint "V_CHP_051" ("Ooh, ooh! Sonic! What if you took the boxes over to the blue place!")
+[[midasm_hook]]
+name = "DisableHintsMidAsmHook"
+address = 0x82A33008
+jump_address_on_true = 0x82A33054
+
+# Disable Dark Guardian hint "V_CHP_055" ("Looks like those annoying nightmares stay gone for a while if you clear 'em out!")
+[[midasm_hook]]
+name = "DisableHintsMidAsmHook"
+address = 0x82A1DE14
+jump_address_on_true = 0x82A1DE34
+
+# Disable Dark Guardian hint "V_WHG_076" ("I keep beating him down and he gets right back up! There's gotta be a better way.")
+[[midasm_hook]]
+name = "DisableHintsMidAsmHook"
+address = 0x82A260D8
+jump_address_on_true = 0x82A26198
+
+# Disable Dark Guardian hint "V_WHG_078" ("Looks like I can push this box thing.")
+[[midasm_hook]]
+name = "DisableHintsMidAsmHook"
+address = 0x82A2F934
+jump_address_on_true = 0x82A2F94C
+
+# Disable Dark Gaia Phoenix hint "V_WHG_070" ("Ngh! Looks like I can't get at it while it's covered in fire...")
+[[midasm_hook]]
+name = "DisableHintsMidAsmHook"
+address = 0x829D2388
+jump_address_on_true = 0x829D238C
+
+# Disable Dark Gaia Phoenix hint "V_WHG_071" ("Looks like he runs out of breath eventually. That's my chance.")
+[[midasm_hook]]
+name = "DisableHintsMidAsmHook"
+address = 0x829E409C
+jump_address_on_true = 0x829E40A0
+
 # Disable navigation volumes
 [[midasm_hook]]
 name = "DisableControlTutorialMidAsmHook"

@@ -13,6 +13,17 @@ bool DisableHintsMidAsmHook()
     return !Config::Hints;
 }
 
+// Disable Perfect Dark Gaia hints.
+PPC_FUNC_IMPL(__imp__sub_82AC36E0);
+PPC_FUNC(sub_82AC36E0)
+{
+    auto pPerfectDarkGaiaChipHintName = (xpointer<char>*)g_memory.Translate(0x8338EF10);
+
+    strcpy(pPerfectDarkGaiaChipHintName->get(), Config::Hints ? "V_CHP_067\0" : "end\0");
+
+    __imp__sub_82AC36E0(ctx, base);
+}
+
 bool DisableControlTutorialMidAsmHook()
 {
     return !Config::ControlTutorial;
