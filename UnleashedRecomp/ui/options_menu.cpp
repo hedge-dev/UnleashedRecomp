@@ -477,43 +477,43 @@ static bool DrawCategories()
     auto clipRectMin = drawList->GetClipRectMin();
     auto clipRectMax = drawList->GetClipRectMax();
 
-    constexpr float NARROW_PADDING_GRID_COUNT = 1.5f;
-    constexpr float WIDE_PADDING_GRID_COUNT = 3.0f;
-
     float gridSize = Scale(GRID_SIZE);
-    float textPadding = gridSize * Lerp(NARROW_PADDING_GRID_COUNT, WIDE_PADDING_GRID_COUNT, g_aspectRatioNarrowScale);
-    float tabPadding = gridSize;
 
     float size = Scale(32.0f);
     ImVec2 textSizes[g_categoryCount];
-    float textSquashRatio[g_categoryCount];
     float clipRectWidth = clipRectMax.x - clipRectMin.x;
-    float categoryTextPadding = textPadding * 2.0f * g_categoryCount;
-    float categoryTabPadding = tabPadding * (g_categoryCount - 1);
-    float maxTabWidth = (clipRectWidth - categoryTabPadding) / float(g_categoryCount);
-    float maxTextWidth = maxTabWidth - (NARROW_PADDING_GRID_COUNT * gridSize * 2.0f);
 
-    float tabWidthSum = categoryTabPadding;
+    float textWidthSum = 0.0f;
     for (size_t i = 0; i < g_categoryCount; i++)
     {
         textSizes[i] = g_dfsogeistdFont->CalcTextSizeA(size, FLT_MAX, 0.0f, GetCategory(i).c_str());
-        textSquashRatio[i] = std::min(maxTextWidth / textSizes[i].x, 1.0f);
-        tabWidthSum += std::min(textSizes[i].x + textPadding * 2.0f, maxTabWidth);
+        textWidthSum += textSizes[i].x;
+    }
+
+    float textSquashRatio = 1.0f;
+    float maxTextWidthSum = clipRectWidth - (gridSize * 4.0f * (g_categoryCount - 1));
+    if (textWidthSum > maxTextWidthSum)
+    {
+        textSquashRatio = maxTextWidthSum / textWidthSum;
+        for (auto& textSize : textSizes)
+            textSize.x *= textSquashRatio;
+
+        textWidthSum = maxTextWidthSum;
     }
 
     float tabHeight = gridSize * 4.0f;
-    float xOffset = (clipRectWidth - tabWidthSum) / 2.0f;
+    float textPadding = (clipRectWidth - textWidthSum) / (g_categoryCount + 1.0f);
+    float xOffset = textPadding;
     xOffset -= (1.0 - motion) * gridSize * 4.0;
 
-    ImVec2 minVec[g_categoryCount];
+    ImVec2 textPositions[g_categoryCount];
 
     for (size_t i = 0; i < g_categoryCount; i++)
     {
-        ImVec2 min = { clipRectMin.x + xOffset, clipRectMin.y };
+        float tabPadding = std::min(textPadding / 2.0f, gridSize * 3.0f);
 
-        xOffset += std::min(textSizes[i].x + textPadding * 2.0f, maxTabWidth);
-        ImVec2 max = { clipRectMin.x + xOffset, clipRectMin.y + tabHeight };
-        xOffset += tabPadding;
+        ImVec2 min = { clipRectMin.x + xOffset - tabPadding, clipRectMin.y };
+        ImVec2 max = { min.x + textSizes[i].x + tabPadding * 2.0f, min.y + tabHeight};
 
         if (g_categoryIndex == i)
         {
@@ -577,23 +577,23 @@ static bool DrawCategories()
             SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
         }
 
-        min.x += ((max.x - min.x) - (textSizes[i].x * textSquashRatio[i])) / 2.0f;
-
         // Store to draw again later, otherwise the tab background gets drawn on top of text during the animation.
-        minVec[i] = min; 
+        textPositions[i] = { clipRectMin.x + xOffset, clipRectMin.y };
+        xOffset += textSizes[i].x + textPadding;
     }
+
+    SetScale({ textSquashRatio, 1.0f });
 
     for (size_t i = 0; i < g_categoryCount; i++)
     {
-        auto& min = minVec[i];
+        auto& pos = textPositions[i];
         uint8_t alpha = (i == g_categoryIndex ? 235 : 128) * motion;
         
-        SetOrigin({ min.x, min.y });
-        SetScale({ textSquashRatio[i], 1.0f });
+        SetOrigin({ pos.x, pos.y });
         SetGradient
         (
-            min,
-            { min.x + textSizes[i].x, min.y + textSizes[i].y },
+            pos,
+            { pos.x + textSizes[i].x, pos.y + textSizes[i].y },
             IM_COL32(128, 255, 0, alpha),
             IM_COL32(255, 192, 0, alpha)
         );
@@ -602,7 +602,7 @@ static bool DrawCategories()
         (
             g_dfsogeistdFont,
             size,
-            min,
+            pos,
             IM_COL32_WHITE,
             GetCategory(i).c_str(),
             4,
