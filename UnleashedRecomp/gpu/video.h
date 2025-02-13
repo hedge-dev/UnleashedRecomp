@@ -1,7 +1,7 @@
 #pragma once
 
 //#define ASYNC_PSO_DEBUG
-//#define PSO_CACHING
+/////////////////////////////////////////////////////////////////////#define PSO_CACHING
 //#define PSO_CACHING_CLEANUP
 
 #include "rhi/plume_render_interface.h"
