@@ -31,13 +31,3 @@ void Game_PlaySound(const char* pName)
         g_userHeap.Free(strAllocation);
     }
 }
-
-void Window_SetDisplay(int displayIndex)
-{
-    GameWindow::SetDisplay(displayIndex);
-}
-
-void Window_SetFullscreen(bool isEnabled)
-{
-    GameWindow::SetFullscreen(isEnabled);
-}

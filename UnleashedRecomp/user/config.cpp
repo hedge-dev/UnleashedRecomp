@@ -1,7 +1,7 @@
 #include "config.h"
 #include <os/logger.h>
+#include <ui/game_window.h>
 #include <user/paths.h>
-#include <exports.h>
 
 std::vector<IConfigDef*> g_configDefinitions;
 
@@ -407,11 +407,6 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EUIAlignmentMode)
     extern CONFIG_ENUM_LOCALE(type) g_##type##_locale; \
     ConfigDef<type> Config::name{section, #name, &g_##name##_locale, defaultValue, &g_##type##_template, &g_##type##_locale};
 
-#undef  CONFIG_DEFINE_CALLBACK
-#define CONFIG_DEFINE_CALLBACK(section, type, name, defaultValue, readCallback) \
-    extern CONFIG_LOCALE g_##name##_locale; \
-    ConfigDef<type> Config::name{section, #name, defaultValue, [](ConfigDef<type>* def) readCallback};
-
 #include "config_def.h"
 
 // CONFIG_DEFINE
@@ -445,13 +440,6 @@ ConfigDef<T, isHidden>::ConfigDef(std::string section, std::string name, CONFIG_
     for (const auto& pair : *EnumTemplate)
         EnumTemplateReverse[pair.second] = pair.first;
 
-    g_configDefinitions.emplace_back(this);
-}
-
-// CONFIG_DEFINE_CALLBACK
-template<typename T, bool isHidden>
-ConfigDef<T, isHidden>::ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T, isHidden>*)> callback) : Section(section), Name(name), DefaultValue(defaultValue), Callback(callback)
-{
     g_configDefinitions.emplace_back(this);
 }
 
@@ -723,8 +711,54 @@ std::filesystem::path Config::GetConfigPath()
     return GetUserPath() / "config.toml";
 }
 
+void Config::CreateCallbacks()
+{
+    Config::WindowSize.LockCallback = [](ConfigDef<int32_t>* def)
+    {
+        // Try matching the current window size with a known configuration.
+        if (def->Value < 0)
+            def->Value = GameWindow::FindNearestDisplayMode();
+    };
+
+    Config::WindowSize.ApplyCallback = [](ConfigDef<int32_t>* def)
+    {
+        auto displayModes = GameWindow::GetDisplayModes();
+
+        // Use largest supported resolution if overflowed.
+        if (def->Value >= displayModes.size())
+            def->Value = displayModes.size() - 1;
+
+        auto& mode = displayModes[def->Value];
+        auto centre = SDL_WINDOWPOS_CENTERED_DISPLAY(GameWindow::GetDisplay());
+
+        GameWindow::SetDimensions(mode.w, mode.h, centre, centre);
+    };
+
+    Config::Monitor.Callback = [](ConfigDef<int32_t>* def)
+    {
+        GameWindow::SetDisplay(def->Value);
+    };
+
+    Config::Fullscreen.Callback = [](ConfigDef<bool>* def)
+    {
+        GameWindow::SetFullscreen(def->Value);
+        GameWindow::SetDisplay(Config::Monitor);
+    };
+
+    Config::ResolutionScale.Callback = [](ConfigDef<float>* def)
+    {
+        def->Value = std::clamp(def->Value, 0.25f, 2.0f);
+    };
+}
+
 void Config::Load()
 {
+    if (!s_isCallbacksCreated)
+    {
+        CreateCallbacks();
+        s_isCallbacksCreated = true;
+    }
+
     auto configPath = GetConfigPath();
 
     if (!std::filesystem::exists(configPath))

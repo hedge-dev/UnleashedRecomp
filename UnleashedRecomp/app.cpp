@@ -28,7 +28,7 @@ void App::Exit()
     std::_Exit(0);
 }
 
-// SWA::CApplication
+// SWA::CApplication::CApplication
 PPC_FUNC_IMPL(__imp__sub_824EB490);
 PPC_FUNC(sub_824EB490)
 {
@@ -74,6 +74,10 @@ PPC_FUNC(sub_822C1130)
 
     AudioPatches::Update(App::s_deltaTime);
     InspirePatches::Update();
+
+    // Apply subtitles option.
+    if (auto pApplicationDocument = SWA::CApplicationDocument::GetInstance())
+        pApplicationDocument->m_InspireSubtitles = Config::Subtitles;
 
     __imp__sub_822C1130(ctx, base);
 }

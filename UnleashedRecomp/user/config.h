@@ -25,6 +25,10 @@ public:
 #define CONFIG_LOCALE            std::unordered_map<ELanguage, std::tuple<std::string, std::string>>
 #define CONFIG_ENUM_LOCALE(type) std::unordered_map<ELanguage, std::unordered_map<type, std::tuple<std::string, std::string>>>
 
+#define CONFIG_CALLBACK(name)       if (name.Callback) name.Callback(&name)
+#define CONFIG_LOCK_CALLBACK(name)  if (name.LockCallback) name.LockCallback(&name)
+#define CONFIG_APPLY_CALLBACK(name) if (name.ApplyCallback) name.ApplyCallback(&name)
+
 #define WINDOWPOS_CENTRED        0x2FFF0000
 
 extern std::vector<IConfigDef*> g_configDefinitions;
@@ -174,9 +178,6 @@ public:
     // CONFIG_DEFINE_ENUM_LOCALISED
     ConfigDef(std::string section, std::string name, CONFIG_LOCALE* nameLocale, T defaultValue, std::unordered_map<std::string, T>* enumTemplate, CONFIG_ENUM_LOCALE(T)* enumLocale);
 
-    // CONFIG_DEFINE_CALLBACK
-    ConfigDef(std::string section, std::string name, T defaultValue, std::function<void(ConfigDef<T, isHidden>*)> callback);
-
     ConfigDef(const ConfigDef&) = delete;
     ConfigDef(ConfigDef&&) = delete;
     ~ConfigDef();
@@ -221,15 +222,17 @@ public:
 #define CONFIG_DEFINE_LOCALISED(section, type, name, defaultValue)              CONFIG_DECLARE(type, name)
 #define CONFIG_DEFINE_ENUM(section, type, name, defaultValue)                   CONFIG_DECLARE(type, name)
 #define CONFIG_DEFINE_ENUM_LOCALISED(section, type, name, defaultValue)         CONFIG_DECLARE(type, name)
-#define CONFIG_DEFINE_CALLBACK(section, type, name, defaultValue, readCallback) CONFIG_DECLARE(type, name)
 
 class Config
 {
 public:
     #include "config_def.h"
 
+    static inline bool s_isCallbacksCreated;
+
     static std::filesystem::path GetConfigPath();
 
+    static void CreateCallbacks();
     static void Load();
     static void Save();
 };

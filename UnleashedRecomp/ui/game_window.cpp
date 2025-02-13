@@ -173,27 +173,6 @@ void GameWindow::Init(const char* sdlVideoDriver)
     SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 #endif
 
-    Config::WindowSize.LockCallback = [](ConfigDef<int32_t>* def)
-    {
-        // Try matching the current window size with a known configuration.
-        if (def->Value < 0)
-            def->Value = FindNearestDisplayMode();
-    };
-
-    Config::WindowSize.ApplyCallback = [](ConfigDef<int32_t>* def)
-    {
-        auto displayModes = GetDisplayModes();
-
-        // Use largest supported resolution if overflowed.
-        if (def->Value >= displayModes.size())
-            def->Value = displayModes.size() - 1;
-
-        auto& mode = displayModes[def->Value];
-        auto centre = SDL_WINDOWPOS_CENTERED_DISPLAY(GetDisplay());
-
-        SetDimensions(mode.w, mode.h, centre, centre);
-    };
-
     s_x = Config::WindowX;
     s_y = Config::WindowY;
     s_width = Config::WindowWidth;

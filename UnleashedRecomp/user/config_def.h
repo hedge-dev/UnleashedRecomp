@@ -54,30 +54,10 @@ CONFIG_DEFINE_LOCALISED("Video", int32_t, WindowSize, -1);
 CONFIG_DEFINE("Video", int32_t, WindowWidth, 1280);
 CONFIG_DEFINE("Video", int32_t, WindowHeight, 720);
 CONFIG_DEFINE_ENUM("Video", EWindowState, WindowState, EWindowState::Normal);
-
-CONFIG_DEFINE_CALLBACK("Video", int32_t, Monitor, 0,
-{
-    def->Locale = &g_Monitor_locale;
-
-    Window_SetDisplay(def->Value);
-});
-
+CONFIG_DEFINE_LOCALISED("Video", int32_t, Monitor, 0);
 CONFIG_DEFINE_ENUM_LOCALISED("Video", EAspectRatio, AspectRatio, EAspectRatio::Auto);
-
-CONFIG_DEFINE_CALLBACK("Video", float, ResolutionScale, 1.0f,
-{
-    def->Locale = &g_ResolutionScale_locale;
-    def->Value = std::clamp(def->Value, 0.25f, 2.0f);
-});
-
-CONFIG_DEFINE_CALLBACK("Video", bool, Fullscreen, true,
-{
-    def->Locale = &g_Fullscreen_locale;
-
-    Window_SetFullscreen(def->Value);
-    Window_SetDisplay(Monitor);
-});
-
+CONFIG_DEFINE_LOCALISED("Video", float, ResolutionScale, 1.0f);
+CONFIG_DEFINE_LOCALISED("Video", bool, Fullscreen, true);
 CONFIG_DEFINE_LOCALISED("Video", bool, VSync, true);
 CONFIG_DEFINE_ENUM("Video", ETripleBuffering, TripleBuffering, ETripleBuffering::Auto);
 CONFIG_DEFINE_LOCALISED("Video", int32_t, FPS, 60);

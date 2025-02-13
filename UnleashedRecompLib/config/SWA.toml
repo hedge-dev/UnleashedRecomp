@@ -588,11 +588,6 @@ registers = ["r3"]
 return_on_true = true
 
 [[midasm_hook]]
-name = "ToggleSubtitlesMidAsmHook"
-address = 0x82B9BB74
-registers = ["r27"]
-
-[[midasm_hook]]
 name = "AchievementManagerUnlockMidAsmHook"
 address = 0x82BCFF28
 registers = ["r31"]
