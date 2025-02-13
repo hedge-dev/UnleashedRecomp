@@ -79,6 +79,7 @@ CONFIG_DEFINE_HIDDEN("Codes", bool, AllowCancellingUnleash, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, DisableAutoSaveWarning, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, DisableDLCIcon, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, DisableDWMRoundedCorners, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, FixEggmanlandUsingEventGalleryTransition, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, FixUnleashOutOfControlDrain, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, HomingAttackOnJump, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, HUDToggleKey, false);

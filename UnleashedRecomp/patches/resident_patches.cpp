@@ -27,16 +27,19 @@ PPC_FUNC(sub_824DCF38)
             ctx.r4.u32 = SWA::eLoadingDisplayType_Arrows;
     }
 
-    if (auto pGameDocument = SWA::CGameDocument::GetInstance())
+    if (Config::FixEggmanlandUsingEventGalleryTransition)
     {
-        auto stageName = pGameDocument->m_pMember->m_StageName.c_str();
-
-        if (stageName && strlen(stageName))
+        if (auto pGameDocument = SWA::CGameDocument::GetInstance())
         {
-            /* Fix restarting Eggmanland as the Werehog
-               erroneously using the Event Gallery transition. */
-            if (ctx.r4.u32 == SWA::eLoadingDisplayType_EventGallery && !strcmp(stageName, "Act_EggmanLand"))
-                ctx.r4.u32 = SWA::eLoadingDisplayType_NowLoading;
+            auto stageName = pGameDocument->m_pMember->m_StageName.c_str();
+
+            if (stageName && strlen(stageName))
+            {
+                /* Fix restarting Eggmanland as the Werehog
+                   erroneously using the Event Gallery transition. */
+                if (ctx.r4.u32 == SWA::eLoadingDisplayType_EventGallery && !strcmp(stageName, "Act_EggmanLand"))
+                    ctx.r4.u32 = SWA::eLoadingDisplayType_NowLoading;
+            }
         }
     }
 
