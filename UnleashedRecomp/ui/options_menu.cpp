@@ -1583,7 +1583,7 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
             scrollDirection = 1.0f;
         }
 
-        SetVerticalMarqueeFade(clipRectMin, clipRectMax, Scale(24), Lerp(Scale(24), 0.0f, scrollOffset / scrollMax));
+        SetVerticalMarqueeFade({ clipRectMin.x, clipRectMin.y + Scale(5.5f) }, clipRectMax, Scale(10), Scale(10));
 
         DrawRubyAnnotatedText
         (
