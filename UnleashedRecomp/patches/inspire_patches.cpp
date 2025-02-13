@@ -32,6 +32,11 @@ static std::unordered_map<std::string_view, std::pair<float, float>> g_evilSonic
     { "evrt_m8_04", { 0, 2314 } }             // Dark Gaia Appears
 };
 
+// Sonic's mouth EXPLODES for a single frame in Temple Entrance cutscene. 
+// Looks very nasty. Let's hide morph models inbetween certain frames to solve it.
+static bool g_loadedMouthExplosionAnimation;
+static bool g_hideMorphModels;
+
 // SWA::Inspire::CScene
 PPC_FUNC_IMPL(__imp__sub_82B98D80);
 PPC_FUNC(sub_82B98D80)
@@ -53,6 +58,9 @@ PPC_FUNC(sub_82B98D30)
     InspirePatches::s_sceneName.clear();
 
     SDL_User_EvilSonic(App::s_isWerehog);
+
+    g_loadedMouthExplosionAnimation = false;
+    g_hideMorphModels = false;
 }
 
 PPC_FUNC_IMPL(__imp__sub_82B9BA98);
@@ -63,6 +71,26 @@ PPC_FUNC(sub_82B9BA98)
     InspirePatches::s_sceneName = sceneName->c_str();
 
     __imp__sub_82B9BA98(ctx, base);
+}
+
+void AnimationDataMakeMidAsmHook(PPCRegister& r31, PPCRegister& r29, PPCRegister& r28)
+{
+    uint8_t* base = g_memory.base;
+
+    if (r28.u32 == 0x222E0 &&
+        strcmp(reinterpret_cast<const char*>(base + PPC_LOAD_U32(r31.u32)), "t0_04_SN") == 0 &&
+        XXH3_64bits(base + r29.u32, r28.u32) == 0xEC634F0F379F478A)
+    {
+        g_loadedMouthExplosionAnimation = true;
+    }
+}
+
+// Hedgehog::Mirage::CSingleMorphElement::Render
+PPC_FUNC_IMPL(__imp__sub_82E32048);
+PPC_FUNC(sub_82E32048)
+{
+    if (!g_hideMorphModels)
+        __imp__sub_82E32048(ctx, base);
 }
 
 void InspirePatches::DrawDebug()
@@ -100,6 +128,9 @@ void InspirePatches::Update()
 {
     if (!g_pScene || !InspirePatches::s_sceneName.size())
         return;
+
+    g_hideMorphModels = g_loadedMouthExplosionAnimation && g_pScene->m_pData->Frame >= 185.0f &&
+        g_pScene->m_pData->Frame < 195.0f && InspirePatches::s_sceneName == "evrt_t0_04";
 
     if (!g_isFirstFrameChecked && std::find(g_alwaysEvilSonic.begin(), g_alwaysEvilSonic.end(), InspirePatches::s_sceneName) != g_alwaysEvilSonic.end())
     {

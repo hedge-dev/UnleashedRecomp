@@ -1056,3 +1056,8 @@ registers = ["v62"]
 name = "BossEggDragoonDrillMissileCMissileSetRotationMidAsmHook"
 address = 0x82A9BADC
 registers = ["r4"]
+
+[[midasm_hook]]
+name = "AnimationDataMakeMidAsmHook"
+address = 0x82BB38E4
+registers = ["r31", "r29", "r28"]
