@@ -758,6 +758,8 @@ void Config::Load()
 
 void Config::Save()
 {
+    LOGN("Saving configuration...");
+
     auto userPath = GetUserPath();
 
     if (!std::filesystem::exists(userPath))

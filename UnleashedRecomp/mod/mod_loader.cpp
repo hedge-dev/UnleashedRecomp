@@ -119,7 +119,10 @@ void ModLoader::Init()
     }
 
     if (configIni.getString("CPKREDIR", "LogType", std::string()) == "console")
+    {
         os::process::ShowConsole();
+        s_isLogTypeConsole = true;
+    }
 
     std::string modsDbIniFilePathU8 = configIni.getString("CPKREDIR", "ModsDbIni", "");
     if (modsDbIniFilePathU8.empty())
@@ -239,7 +242,7 @@ void ModLoader::Init()
             {
                 if (def->GetName() == codes[i])
                 {
-                    LOGFN("Loaded code: {}", codes[i]);
+                    LOGF_IMPL(Utility, "Mod Loader", "Loading code: \"{}\"", codes[i]);
                     *(bool*)def->GetValue() = true;
                     break;
                 }
@@ -375,6 +378,9 @@ PPC_FUNC(sub_82E0D3E8)
         std::ifstream stream(filePath, std::ios::binary);
         if (stream.good())
         {
+            if (ModLoader::s_isLogTypeConsole)
+                LOGF_IMPL(Utility, "Mod Loader", "Loading file: \"{}\"", reinterpret_cast<const char*>(filePath.u8string().c_str()));
+
             be<uint32_t> signature{};
             stream.read(reinterpret_cast<char*>(&signature), sizeof(signature));
 
@@ -610,6 +616,9 @@ PPC_FUNC(sub_82E0B500)
             std::ifstream stream(arFilePath, std::ios::binary);
             if (stream.good())
             {
+                if (ModLoader::s_isLogTypeConsole)
+                    LOGF_IMPL(Utility, "Mod Loader", "Loading file: \"{}\"", reinterpret_cast<const char*>(arFilePath.u8string().c_str()));
+
                 stream.seekg(0, std::ios::end);
                 size_t arFileSize = stream.tellg();
 

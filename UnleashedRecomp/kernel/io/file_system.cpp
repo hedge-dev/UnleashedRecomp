@@ -1,11 +1,12 @@
-#include <stdafx.h>
 #include "file_system.h"
+#include <cpu/guest_thread.h>
 #include <kernel/xam.h>
 #include <kernel/xdm.h>
 #include <kernel/function.h>
-#include <cpu/guest_thread.h>
-#include <os/logger.h>
 #include <mod/mod_loader.h>
+#include <os/logger.h>
+#include <user/config.h>
+#include <stdafx.h>
 
 struct FileHandle : KernelObject
 {
@@ -365,8 +366,14 @@ std::filesystem::path FileSystem::ResolvePath(const std::string_view& path, bool
     if (checkForMods)
     {
         std::filesystem::path resolvedPath = ModLoader::ResolvePath(path);
+
         if (!resolvedPath.empty())
+        {
+            if (ModLoader::s_isLogTypeConsole)
+                LOGF_IMPL(Utility, "Mod Loader", "Loading file: \"{}\"", reinterpret_cast<const char*>(resolvedPath.u8string().c_str()));
+
             return resolvedPath;
+        }
     }
 
     thread_local std::string builtPath;
