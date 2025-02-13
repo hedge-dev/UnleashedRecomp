@@ -248,8 +248,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Achievements_Name_Uppercase",
         {
             { ELanguage::English,  "ACHIEVEMENTS" },
-            { ELanguage::Japanese, "実績" }
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "実績" },
             { ELanguage::German,   "ERFOLGE" },
             { ELanguage::French,   "SUCCÈS" },
             { ELanguage::Spanish,  "LOGROS" },
@@ -400,7 +399,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Step_Update",
         {
             { ELanguage::English,  "UPDATE" },
-            { ELanguage::Japanese, " アップデート" },
+            { ELanguage::Japanese, "アップデート" },
             { ELanguage::German,   "UPDATE" },
             { ELanguage::French,   "MISE À JOUR" },
             { ELanguage::Spanish,  "ACTUALIZACIÓN" },
@@ -457,8 +456,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Button_Retry",
         {
             { ELanguage::English,  "RETRY" },
-            { ELanguage::Japanese, "リトライ" }
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "リトライ" },
             { ELanguage::German,   "ERNEUT VERSUCHEN" },
             { ELanguage::French,   "RÉESSAYER" },
             { ELanguage::Spanish,  "REINTENTAR" },
