@@ -5769,9 +5769,8 @@ PPC_FUNC(sub_8258CAE0)
 {
     if (g_needsResize)
     {
-        // Backup fade values. These get modified by cutscenes, 
+        // Backup job values. These get modified by cutscenes, 
         // and resizing will cause the values to be forgotten.
-        // NOTE: Intentionally ignoring the shared pointers here.
         auto traverseFxJobs = [&]<typename TCallback>(const TCallback& callback)
         {
             uint32_t scheduler = PPC_LOAD_U32(ctx.r3.u32 + 0xE0);
@@ -5783,28 +5782,63 @@ PPC_FUNC(sub_8258CAE0)
                     for (uint32_t it = PPC_LOAD_U32(member + 0x24); it != PPC_LOAD_U32(member + 0x28); it += 8)
                     {
                         uint32_t job = PPC_LOAD_U32(it);
-                        if (job != NULL && PPC_LOAD_U32(job) == 0x820CA6F8) // SWA::CFxFade
+                        if (job != NULL)
                             callback(job);
                     }
                 }
             }
         };
 
-        struct FadeValues
+        union JobValues
         {
-            uint8_t field50[0x18];
-            uint8_t field88;
+            struct
+            {
+                uint8_t field50[0x18];
+                uint8_t field88;
+            } fade;
+
+            struct
+            {
+                uint8_t camera[0x120];
+                uint8_t field44;
+                uint8_t fieldA0;
+            } shadowMap;
         };
 
-        std::map<uint32_t, FadeValues> fadeValuesMap;
+        std::map<uint32_t, JobValues> jobValuesMap;
         traverseFxJobs([&](uint32_t job)
             {
-                FadeValues fadeValues{};
+                uint32_t vfTable = PPC_LOAD_U32(job);
 
-                memcpy(fadeValues.field50, base + job + 0x50, sizeof(fadeValues.field50));
-                fadeValues.field88 = PPC_LOAD_U8(job + 0x88);
+                if (vfTable == 0x820CA6F8) // SWA::CFxFade
+                {
+                    // NOTE: Intentionally not storing shared pointers here. 
+                    // Game sends messages that assign these every frame already.
+                    JobValues jobValues{};
 
-                fadeValuesMap.emplace(PPC_LOAD_U32(job + 0x48), fadeValues);
+                    memcpy(jobValues.fade.field50, base + job + 0x50, sizeof(jobValues.fade.field50));
+                    jobValues.fade.field88 = PPC_LOAD_U8(job + 0x88);
+
+                    jobValuesMap.emplace(PPC_LOAD_U32(job + 0x48), jobValues);
+                }
+                else if (vfTable == 0x820CAC5C) // SWA::CFxShadowMap
+                {
+                    for (uint32_t it = PPC_LOAD_U32(job + 0x88); it != PPC_LOAD_U32(job + 0x8C); it += 8)
+                    {
+                        uint32_t camera = PPC_LOAD_U32(it);
+                        if (camera != NULL && PPC_LOAD_U32(camera) == 0x820BF83C) // SWA::CShadowMapCameraLiSPSM
+                        {
+                            JobValues jobValues{};
+
+                            memcpy(jobValues.shadowMap.camera, base + camera, sizeof(jobValues.shadowMap.camera));
+                            jobValues.shadowMap.field44 = PPC_LOAD_U8(job + 0x44);
+                            jobValues.shadowMap.fieldA0 = PPC_LOAD_U8(job + 0xA0);
+
+                            jobValuesMap.emplace(vfTable, jobValues);
+                            break;
+                        }
+                    }
+                }
             });
 
         auto r3 = ctx.r3;
@@ -5813,14 +5847,38 @@ PPC_FUNC(sub_8258CAE0)
         __imp__sub_8258C8A0(ctx, base);
         ctx.r3 = r3;
 
-        // Restore fade values.
+        // Restore job values.
         traverseFxJobs([&](uint32_t job)
             {
-                auto findResult = fadeValuesMap.find(PPC_LOAD_U32(job + 0x48));
-                if (findResult != fadeValuesMap.end()) // May NOT actually be found.
+                uint32_t vfTable = PPC_LOAD_U32(job);
+
+                if (vfTable == 0x820CA6F8) // SWA::CFxFade
                 {
-                    memcpy(base + job + 0x50, findResult->second.field50, sizeof(findResult->second.field50));
-                    PPC_STORE_U8(job + 0x88, findResult->second.field88);
+                    auto findResult = jobValuesMap.find(PPC_LOAD_U32(job + 0x48));
+                    if (findResult != jobValuesMap.end()) // May NOT actually be found.
+                    {
+                        memcpy(base + job + 0x50, findResult->second.fade.field50, sizeof(findResult->second.fade.field50));
+                        PPC_STORE_U8(job + 0x88, findResult->second.fade.field88);
+                    }
+                }
+                else if (vfTable == 0x820CAC5C) // SWA::CFxShadowMap
+                {
+                    auto findResult = jobValuesMap.find(vfTable);
+                    if (findResult != jobValuesMap.end()) // Would be weird if this one wasn't found.
+                    {
+                        for (uint32_t it = PPC_LOAD_U32(job + 0x88); it != PPC_LOAD_U32(job + 0x8C); it += 8)
+                        {
+                            uint32_t camera = PPC_LOAD_U32(it);
+                            if (camera != NULL && PPC_LOAD_U32(camera) == 0x820BF83C) // SWA::CShadowMapCameraLiSPSM
+                            {
+                                memcpy(base + camera, findResult->second.shadowMap.camera, sizeof(findResult->second.shadowMap.camera));
+                                PPC_STORE_U32(job + 0x80, camera);
+                                PPC_STORE_U8(job + 0x44, findResult->second.shadowMap.field44);
+                                PPC_STORE_U8(job + 0xA0, findResult->second.shadowMap.fieldA0);
+                                break;
+                            }
+                        }
+                    }
                 }
             });
 
