@@ -1,5 +1,6 @@
 #include "options_menu.h"
 #include "options_menu_thumbnails.h"
+#include "tv_static.h"
 
 #include <api/SWA.h>
 #include <apu/audio.h>
@@ -1436,7 +1437,27 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
         ImVec2 thumbnailMin = { clipRectMin.x, clipRectMin.y + Scale(GRID_SIZE / 2.0f) };
         ImVec2 thumbnailMax = { clipRectMax.x, thumbnailMin.y + thumbnailHeight };
 
-        drawList->AddImage(thumbnail, thumbnailMin, thumbnailMax);
+        if (g_isStage)
+        {
+            drawList->AddImage(thumbnail, thumbnailMin, thumbnailMax);
+        }
+        else
+        {
+            float time = g_appearTime + CONTAINER_FULL_DURATION / 60.0;
+
+            drawList->AddImage(
+                thumbnail,
+                thumbnailMin,
+                thumbnailMax,
+                { 0.0f, 0.0f },
+                { 1.0f, 1.0f },
+                IM_COL32(255, 255, 255, 255 * TVStatic::ComputeThumbnailAlpha(time)));
+
+            TVStatic::Draw(
+                { (thumbnailMin.x + thumbnailMax.x) / 2.0f, (thumbnailMin.y + thumbnailMax.y) / 2.0f },
+                { (thumbnailMax.x - thumbnailMin.x), (thumbnailMax.y - thumbnailMin.y) },
+                time);
+        }
 
         if (g_inaccessibleReason)
         {
@@ -1688,6 +1709,8 @@ void OptionsMenu::Init()
     LoadThumbnails();
 
     g_upMilesElectric = LOAD_ZSTD_TEXTURE(g_miles_electric);
+
+    TVStatic::Init();
 }
 
 void OptionsMenu::Draw()
