@@ -79,6 +79,18 @@ PPC_FUNC(sub_822C1130)
     if (auto pApplicationDocument = SWA::CApplicationDocument::GetInstance())
         pApplicationDocument->m_InspireSubtitles = Config::Subtitles;
 
+    if (Config::EnableEventCollisionDebugView)
+        *SWA::SGlobals::ms_IsTriggerRender = true;
+
+    if (Config::EnableGIMipLevelDebugView)
+        *SWA::SGlobals::ms_VisualizeLoadedLevel = true;
+
+    if (Config::EnableObjectCollisionDebugView)
+        *SWA::SGlobals::ms_IsObjectCollisionRender = true;
+
+    if (Config::EnableStageCollisionDebugView)
+        *SWA::SGlobals::ms_IsCollisionRender = true;
+
     __imp__sub_822C1130(ctx, base);
 }
 
