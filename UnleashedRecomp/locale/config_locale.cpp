@@ -130,7 +130,7 @@ CONFIG_DEFINE_LOCALE(Hints)
 
 CONFIG_DEFINE_LOCALE(ControlTutorial)
 {
-    { ELanguage::English,  { "Control Tutorial", "Show controller hints during gameplay." } },
+    { ELanguage::English,  { "Control Tutorial", "Show controller hints during gameplay.\n\nThe Werehog Critical Attack prompt will be unaffected." } },
     { ELanguage::Japanese, { "", "" } },
     { ELanguage::German,   { "", "" } },
     { ELanguage::French,   { "", "" } },
