@@ -608,13 +608,13 @@ jump_address = 0x82585480
 name = "LoadingScreenControllerMidAsmHook"
 address = 0x824DC9D4
 
-# SWA::Player::CPlayerSpeedPostureInputOnPath
+# SWA::Player::CPlayerSpeedPostureInputOnPath / SWA::Player::CPlayerSpeedPostureInputForcePath / SWA::Player::CPlayerSpeedPostureInput2DStandard
 [[midasm_hook]]
 name = "PostureDPadSupportInvertYMidAsmHook"
 address = 0x8234F194
 registers = ["r31", "f13", "f0"]
 
-# SWA::Player::CPlayerSpeedPostureInputOnPathLocal
+# SWA::Player::CPlayerSpeedPostureInputPathLocal
 [[midasm_hook]]
 name = "PostureDPadSupportMidAsmHook"
 address = 0x8234F610
@@ -722,7 +722,7 @@ name = "PostureDPadSupportXMidAsmHook"
 address = 0x8266B6AC
 registers = ["r29", "f0"]
 
-# SWA::Player::CSonicStateStompingLand
+# SWA::Player::CPlayerSpeedStateNormalDamageStandUp / SWA::Player::CSonicStateStartEvent / SWA::Player::CSonicStateStompingLand
 [[midasm_hook]]
 name = "PostureDPadSupportMidAsmHook"
 address = 0x8231F824
@@ -770,6 +770,30 @@ name = "PostureDPadSupportMidAsmHook"
 address = 0x82454104
 registers = ["r29", "f28", "f27"]
 after_instruction = true
+
+# SWA::CBossEggBeetle
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x829A4FCC
+registers = ["r29", "f13"]
+
+# SWA::CBossEggRayBird (horizontal)
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x829BA7E0
+registers = ["r21", "f13"]
+
+# SWA::CBossEggRayBird (vertical)
+[[midasm_hook]]
+name = "PostureDPadSupportYMidAsmHook"
+address = 0x829C53E8
+registers = ["r21", "f13"]
+
+# SWA::CBossEggLancer
+[[midasm_hook]]
+name = "PostureDPadSupportXMidAsmHook"
+address = 0x82A55A48
+registers = ["r21", "f13"]
 
 # SWA::CWorldMapCamera - disable rotation deadzone for touch
 [[midasm_hook]]
