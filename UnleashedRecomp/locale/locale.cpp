@@ -290,7 +290,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Welcome to\nUnleashed Recompiled!\n\nYou'll need an Xbox 360 copy\nof Sonic Unleashed in order to proceed with the installation." },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Bienvenue sur\nUnleashed Recompiled!\n\nVous aurez besoin d'une copie de\nSonic Unleashed pour Xbox 360 pour procéder à l'installation." },
+            { ELanguage::French,   "Bienvenue sur\nUnleashed Recompiled!\n\nVous aurez besoin d'une copie de Sonic Unleashed pour Xbox\n360 pour procéder à l'installation." },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Benvenuto a\nUnleashed Recompiled!\n\nDovrai avere una copia di\nSonic Unleashed per la Xbox 360\nper proseguire con l'installazione." }
         }
