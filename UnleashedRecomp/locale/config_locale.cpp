@@ -133,7 +133,7 @@ CONFIG_DEFINE_LOCALE(ControlTutorial)
     { ELanguage::English,  { "Control Tutorial", "Show controller hints during gameplay.\n\nThe Werehog Critical Attack prompt will be unaffected." } },
     { ELanguage::Japanese, { "", "" } },
     { ELanguage::German,   { "", "" } },
-    { ELanguage::French,   { "Indication de commande", "Affiche les indications de commandes pendant le jeu.\n\nCeci n'affecte pas les Coup critiques du hérisson-garou." } },
+    { ELanguage::French,   { "Indication des commandes", "Affiche les indications des commandes pendant le jeu.\n\nCeci n'affecte pas les Coup critiques du hérisson-garou." } },
     { ELanguage::Spanish,  { "", "" } },
     { ELanguage::Italian,  { "", "" } }
 };
@@ -611,7 +611,7 @@ CONFIG_DEFINE_LOCALE(Brightness)
     { ELanguage::English,  { "Brightness", "Adjust the brightness level until the symbol on the left is barely visible." } },
     { ELanguage::Japanese, { "", "" } },
     { ELanguage::German,   { "", "" } },
-    { ELanguage::French,   { "Luminosité", "Régler le niveau de luminosité jusqu'à ce que le symbole à gauche soit à peine visible." } },
+    { ELanguage::French,   { "Luminosité", "Règle le niveau de luminosité jusqu'à ce que le symbole à gauche soit à peine visible." } },
     { ELanguage::Spanish,  { "", "" } },
     { ELanguage::Italian,  { "", "" } }
 };
