@@ -133,7 +133,7 @@ CONFIG_DEFINE_LOCALE(ControlTutorial)
     { ELanguage::English,  { "Control Tutorial", "Show controller hints during gameplay.\n\nThe Werehog Critical Attack prompt will be unaffected." } },
     { ELanguage::Japanese, { "", "" } },
     { ELanguage::German,   { "", "" } },
-    { ELanguage::French,   { "Indication des commandes", "Affiche les indications des commandes pendant le jeu.\n\nCeci n'affecte pas les Coup critiques du hérisson-garou." } },
+    { ELanguage::French,   { "Indication des commandes", "Affiche les indications des commandes pendant le jeu.\n\nCeci n'affecte pas les Coup critiques du Werehog." } },
     { ELanguage::Spanish,  { "", "" } },
     { ELanguage::Italian,  { "", "" } }
 };
@@ -473,7 +473,7 @@ CONFIG_DEFINE_LOCALE(BattleTheme)
     { ELanguage::English,  { "Battle Theme", "Play the Werehog battle theme during combat.\n\nThis option will apply the next time you're in combat.\n\nExorcism missions and miniboss themes will be unaffected." } },
     { ELanguage::Japanese, { "", "" } },
     { ELanguage::German,   { "", "" } },
-    { ELanguage::French,   { "Thème de combat", "Joue le thème de combat du hérisson-garou pendant les combat.\n\nCette option s'appliquera la prochaine fois que vous serez en combat.\n\nLes missions d'exorcisme et les thèmes des miniboss ne seront pas affectés." } },
+    { ELanguage::French,   { "Thème de combat", "Joue le thème de combat du Werehog pendant les combat.\n\nCette option s'appliquera la prochaine fois que vous serez en combat.\n\nLes missions d'exorcisme et les thèmes des miniboss ne seront pas affectés." } },
     { ELanguage::Spanish,  { "", "" } },
     { ELanguage::Italian,  { "", "" } }
 };
