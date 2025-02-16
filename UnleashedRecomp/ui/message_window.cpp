@@ -470,8 +470,8 @@ void MessageWindow::Draw()
 
                     std::array<Button, 2> buttons =
                     {
-                        Button(Localise("Common_Select"), EButtonIcon::LMB),
-                        Button(Localise("Common_Back"), EButtonIcon::Escape),
+                        Button("Common_Select", EButtonIcon::LMB),
+                        Button("Common_Back", EButtonIcon::Escape),
                     };
 
                     ButtonGuide::Open(buttons);
