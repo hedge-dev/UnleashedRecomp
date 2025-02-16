@@ -135,7 +135,7 @@ CONFIG_DEFINE_LOCALE(ControlTutorial)
     { ELanguage::German,   { "", "" } },
     { ELanguage::French,   { "", "" } },
     { ELanguage::Spanish,  { "", "" } },
-    { ELanguage::Italian,  { "Tutorial dei comandi", "Mostra i tutorial dei comandi durante il gioco." } }
+    { ELanguage::Italian,  { "Tutorial dei comandi", "Mostra i tutorial dei comandi durante il gioco.\n\nIl tutorial per l'attacco critico del Werehog non verrà influenzato da questa opzione." } }
 };
 
 CONFIG_DEFINE_LOCALE(AchievementNotifications)
