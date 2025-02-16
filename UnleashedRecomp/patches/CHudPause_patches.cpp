@@ -1,5 +1,6 @@
 #include <kernel/function.h>
 #include <api/SWA.h>
+#include <patches/free_camera_patches.h>
 #include <ui/achievement_menu.h>
 #include <ui/button_guide.h>
 #include <ui/options_menu.h>
@@ -119,6 +120,9 @@ bool CHudPauseMiscInjectOptionsMidAsmHook(PPCRegister& pThis)
 PPC_FUNC_IMPL(__imp__sub_824B0930);
 PPC_FUNC(sub_824B0930)
 {
+    if (FreeCameraPatches::s_isActive)
+        return;
+
     if (App::s_isLoading)
     {
         __imp__sub_824B0930(ctx, base);

@@ -137,6 +137,7 @@ set(UNLEASHED_RECOMP_PATCHES_CXX_SOURCES
     "patches/CTitleStateIntro_patches.cpp"
     "patches/CTitleStateMenu_patches.cpp"
     "patches/fps_patches.cpp"
+    "patches/free_camera_patches.cpp"
     "patches/frontend_listener.cpp"
     "patches/input_patches.cpp"
     "patches/inspire_patches.cpp"

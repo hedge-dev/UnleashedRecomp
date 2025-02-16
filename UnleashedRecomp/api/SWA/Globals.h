@@ -33,6 +33,9 @@ namespace SWA
         // ms_IsRenderDebugPositionDraw: デバッグ位置描画
         static inline bool* ms_IsRenderDebugPositionDraw;
 
+        // N/A
+        static inline bool* ms_IsRenderDepthOfField;
+
         // ms_IsRenderGameMainHud: ゲームメインHUD 描画
         static inline bool* ms_IsRenderGameMainHud;
 
@@ -65,6 +68,7 @@ namespace SWA
             ms_IsRenderDebugDraw = (bool*)MmGetHostAddress(0x8328BB23);
             ms_IsRenderDebugDrawText = (bool*)MmGetHostAddress(0x8328BB25);
             ms_IsRenderDebugPositionDraw = (bool*)MmGetHostAddress(0x8328BB24);
+            ms_IsRenderDepthOfField = (bool*)MmGetHostAddress(0x83302720);
             ms_IsRenderGameMainHud = (bool*)MmGetHostAddress(0x8328BB27);
             ms_IsRenderHud = (bool*)MmGetHostAddress(0x8328BB26);
             ms_IsRenderHudPause = (bool*)MmGetHostAddress(0x8328BB28);

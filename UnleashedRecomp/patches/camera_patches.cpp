@@ -1,9 +1,10 @@
+#include "camera_patches.h"
 #include <api/SWA.h>
+#include <gpu/video.h>
+#include <patches/aspect_ratio_patches.h>
+#include <patches/free_camera_patches.h>
 #include <ui/game_window.h>
 #include <user/config.h>
-#include <gpu/video.h>
-#include "camera_patches.h"
-#include "aspect_ratio_patches.h"
 
 void CameraAspectRatioMidAsmHook(PPCRegister& r30, PPCRegister& r31)
 {
@@ -35,7 +36,9 @@ void CameraFieldOfViewMidAsmHook(PPCRegister& r31, PPCRegister& f31)
 {
     auto camera = (SWA::CCamera*)g_memory.Translate(r31.u32);
 
-    f31.f64 = AdjustFieldOfView(f31.f64, camera->m_HorzAspectRatio);
+    f31.f64 = FreeCameraPatches::s_isActive
+        ? FreeCameraPatches::s_fieldOfView
+        : AdjustFieldOfView(f31.f64, camera->m_HorzAspectRatio);
 }
 
 PPC_FUNC_IMPL(__imp__sub_824697B0);

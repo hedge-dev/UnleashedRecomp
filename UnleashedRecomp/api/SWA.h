@@ -94,6 +94,7 @@
 #include "SWA/Player/Character/EvilSonic/EvilSonic.h"
 #include "SWA/Player/Character/EvilSonic/EvilSonicContext.h"
 #include "SWA/Player/Character/EvilSonic/Hud/EvilHudGuide.h"
+#include "SWA/Replay/Camera/ReplayFreeCamera.h"
 #include "SWA/Sequence/Unit/SequenceUnitBase.h"
 #include "SWA/Sequence/Unit/SequenceUnitPlayMovie.h"
 #include "SWA/Sequence/Utility/SequencePlayMovieWrapper.h"

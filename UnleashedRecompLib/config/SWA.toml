@@ -1086,3 +1086,42 @@ registers = ["r4"]
 name = "AnimationDataMakeMidAsmHook"
 address = 0x82BB38E4
 registers = ["r31", "r29", "r28"]
+
+[[midasm_hook]]
+name = "EnableFreeCameraMidAsmHook"
+address = 0x825389F0
+jump_address_on_true = 0x825389F4
+
+[[midasm_hook]]
+name = "EnableFreeCameraMidAsmHook"
+address = 0x82538A18
+jump_address_on_true = 0x82538A1C
+
+[[midasm_hook]]
+name = "FreeCameraActivationInputMidAsmHook"
+address = 0x824569BC
+registers = ["r11", "r27", "r28"]
+jump_address_on_true = 0x824569D4
+
+[[midasm_hook]]
+name = "FreeCameraTeleportToPlayerInputMidAsmHook"
+address = 0x8245C21C
+registers = ["r4"]
+
+[[midasm_hook]]
+name = "FreeCameraSpeedInputMidAsmHook"
+address = 0x8245C318
+registers = ["r31"]
+jump_address_on_true = 0x8245C38C
+
+# Disable "change to free camera" input.
+[[midasm_hook]]
+name = "FreeCameraNullInputMidAsmHook"
+address = 0x8245BCE4
+jump_address_on_true = 0x8245BDB4
+
+# Disable "change to pan camera" input.
+[[midasm_hook]]
+name = "FreeCameraNullInputMidAsmHook"
+address = 0x8245BDC4
+jump_address_on_true = 0x8245BEAC

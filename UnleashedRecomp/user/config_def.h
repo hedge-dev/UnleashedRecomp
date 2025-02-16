@@ -80,6 +80,7 @@ CONFIG_DEFINE_HIDDEN("Codes", bool, DisableAutoSaveWarning, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, DisableDLCIcon, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, DisableDWMRoundedCorners, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, EnableEventCollisionDebugView, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, EnableFreeCamera, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, EnableGIMipLevelDebugView, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, EnableObjectCollisionDebugView, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, EnableStageCollisionDebugView, false);

@@ -4,10 +4,10 @@
 
 namespace SWA
 {
-    class CCameraController : public Hedgehog::Universe::CStateMachineBase::CStateBase
+    class CCameraController
     {
     public:
-        SWA_INSERT_PADDING(0x04);
+        SWA_INSERT_PADDING(0x64);
         be<float> m_FieldOfView;
         SWA_INSERT_PADDING(0x68);
     };
