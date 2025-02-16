@@ -185,7 +185,7 @@ GuestTexture* GetThumbnail(const IConfigDef* cfg)
             bool isPlayStation = Config::ControllerIcons == EControllerIcons::PlayStation;
 
             if (Config::ControllerIcons == EControllerIcons::Auto)
-                isPlayStation = hid::g_inputDeviceController == hid::EInputDevice::PlayStation;
+                isPlayStation = hid::g_inputDevicePad == hid::EInputDevice::PlayStation;
 
             texture = isPlayStation ? g_namedThumbnails["ControlTutorialPS"].get() : g_namedThumbnails["ControlTutorialXB"].get();
         }

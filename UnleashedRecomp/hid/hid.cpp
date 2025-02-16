@@ -2,9 +2,10 @@
 #include <ui/game_window.h>
 #include <user/config.h>
 
-hid::EInputDevice hid::g_inputDevice;
-hid::EInputDevice hid::g_inputDeviceController;
-hid::EInputDeviceExplicit hid::g_inputDeviceExplicit;
+hid::EInputDevice hid::g_inputDevice = EInputDevice::None;
+hid::EInputDevice hid::g_inputDevicePad = EInputDevice::None;
+hid::EInputDeviceExplicit hid::g_inputDevicePadExplicit = EInputDeviceExplicit::Unknown;
+bool hid::g_hasChangedInputDevice;
 
 uint16_t hid::g_prohibitedButtons;
 bool hid::g_isLeftStickProhibited;
@@ -39,7 +40,7 @@ std::string hid::GetInputDeviceName()
             return "Mouse";
     }
 
-    switch (g_inputDeviceExplicit)
+    switch (g_inputDevicePadExplicit)
     {
         case EInputDeviceExplicit::Xbox360:
             return "Xbox 360";

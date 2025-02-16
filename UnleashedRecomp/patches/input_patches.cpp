@@ -186,7 +186,7 @@ public:
 
             case SDL_CONTROLLERTOUCHPADDOWN:
             {
-                g_worldMapCursorParams = hid::g_inputDeviceExplicit == hid::EInputDeviceExplicit::DualSense
+                g_worldMapCursorParams = hid::g_inputDevicePadExplicit == hid::EInputDeviceExplicit::DualSense
                     ? (WorldMapCursorParams)g_worldMapCursorParamsProspero
                     : (WorldMapCursorParams)g_worldMapCursorParamsOrbis;
 

@@ -3596,7 +3596,7 @@ static void SetTexture(GuestDevice* device, uint32_t index, GuestTexture* textur
     auto isPlayStation = Config::ControllerIcons == EControllerIcons::PlayStation;
 
     if (Config::ControllerIcons == EControllerIcons::Auto)
-        isPlayStation = hid::g_inputDeviceController == hid::EInputDevice::PlayStation;
+        isPlayStation = hid::g_inputDevicePad == hid::EInputDevice::PlayStation;
 
     if (isPlayStation && texture != nullptr && texture->patchedTexture != nullptr)
         texture = texture->patchedTexture.get();

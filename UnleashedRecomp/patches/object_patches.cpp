@@ -80,7 +80,7 @@ PPC_FUNC(sub_82B14CC0)
     auto isPlayStation = Config::ControllerIcons == EControllerIcons::PlayStation;
 
     if (Config::ControllerIcons == EControllerIcons::Auto)
-        isPlayStation = hid::g_inputDeviceController == hid::EInputDevice::PlayStation;
+        isPlayStation = hid::g_inputDevicePad == hid::EInputDevice::PlayStation;
 
     if (isPlayStation)
     {

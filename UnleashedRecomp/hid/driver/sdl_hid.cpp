@@ -174,17 +174,16 @@ static void SetControllerInputDevice(Controller* controller)
     if (App::s_isLoading)
         return;
 
+    // Signal that we've changed input device to block first input.
+    if (hid::g_inputDevice == hid::EInputDevice::Keyboard)
+        hid::g_hasChangedInputDevice = true;
+
     hid::g_inputDevice = controller->GetInputDevice();
-    hid::g_inputDeviceController = hid::g_inputDevice;
+    hid::g_inputDevicePad = hid::g_inputDevice;
+    hid::g_inputDevicePadExplicit = (hid::EInputDeviceExplicit)controller->GetControllerType();
 
-    auto controllerType = (hid::EInputDeviceExplicit)controller->GetControllerType();
-
-    if (hid::g_inputDeviceExplicit != controllerType)
-    {
-        hid::g_inputDeviceExplicit = controllerType;
-
-        LOGFN("Detected controller: {}", hid::GetInputDeviceName());
-    }
+    if (hid::g_hasChangedInputDevice)
+        LOGFN("Input Device: {}", hid::GetInputDeviceName());
 }
 
 static void SetControllerTimeOfDayLED(Controller& controller, bool isNight)
@@ -244,14 +243,16 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
                     SetControllerInputDevice(controller);
                 }
 
-                controller->PollAxis();
+                if (!hid::g_hasChangedInputDevice)
+                    controller->PollAxis();
             }
             else
             {
                 SDL_ShowCursor(SDL_DISABLE);
                 SetControllerInputDevice(controller);
 
-                controller->Poll();
+                if (!hid::g_hasChangedInputDevice)
+                    controller->Poll();
             }
 
             break;
@@ -259,8 +260,17 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
         case SDL_KEYDOWN:
         case SDL_KEYUP:
-            hid::g_inputDevice = hid::EInputDevice::Keyboard;
+        {
+            if (hid::g_inputDevice != hid::EInputDevice::Keyboard)
+            {
+                hid::g_inputDevice = hid::EInputDevice::Keyboard;
+                hid::g_hasChangedInputDevice = true;
+
+                LOGN("Input Device: Keyboard");
+            }
+
             break;
+        }
 
         case SDL_MOUSEMOTION:
         case SDL_MOUSEBUTTONDOWN:
@@ -330,6 +340,12 @@ uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
 
     if (!g_activeController)
         return ERROR_DEVICE_NOT_CONNECTED;
+
+    if (hid::g_hasChangedInputDevice)
+    {
+        hid::g_hasChangedInputDevice = false;
+        return ERROR_SUCCESS;
+    }
 
     pState->Gamepad = g_activeController->state;
 

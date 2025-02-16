@@ -161,7 +161,7 @@ void LoadingScreenControllerMidAsmHook()
     auto isPlayStation = Config::ControllerIcons == EControllerIcons::PlayStation;
 
     if (Config::ControllerIcons == EControllerIcons::Auto)
-        isPlayStation = hid::g_inputDeviceController == hid::EInputDevice::PlayStation;
+        isPlayStation = hid::g_inputDevicePad == hid::EInputDevice::PlayStation;
 
     const char* prefix = isPlayStation ? "ps3" : "360";
 

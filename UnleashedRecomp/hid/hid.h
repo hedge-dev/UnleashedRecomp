@@ -4,6 +4,7 @@ namespace hid
 {
     enum class EInputDevice
     {
+        None,
         Keyboard,
         Mouse,
         Xbox,
@@ -29,8 +30,9 @@ namespace hid
     };
 
     extern EInputDevice g_inputDevice;
-    extern EInputDevice g_inputDeviceController;
-    extern EInputDeviceExplicit g_inputDeviceExplicit;
+    extern EInputDevice g_inputDevicePad;
+    extern EInputDeviceExplicit g_inputDevicePadExplicit;
+    extern bool g_hasChangedInputDevice;
 
     extern uint16_t g_prohibitedButtons;
     extern bool g_isLeftStickProhibited;
