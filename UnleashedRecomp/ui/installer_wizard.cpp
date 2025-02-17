@@ -872,7 +872,7 @@ static void DrawDescriptionContainer()
 
     if (g_currentPage == WizardPage::InstallSucceeded && textAlpha >= 1.0)
     {
-        ButtonGuide::Open(Button("Common_Select", selectIcon));
+        ButtonGuide::Open(Button("Common_Select", Scale(115), selectIcon));
     }
     else if (g_currentPage != WizardPage::Installing && textAlpha >= 1.0)
     {
@@ -884,15 +884,15 @@ static void DrawDescriptionContainer()
 
         std::array<Button, 2> buttons =
         {
-            Button("Common_Select", selectIcon),
-            Button(backKey, backIcon)
+            Button("Common_Select", Scale(115), selectIcon),
+            Button(backKey, FLT_MAX, backIcon)
         };
 
         ButtonGuide::Open(buttons);
     }
     else if (g_currentPage == WizardPage::Installing)
     {
-        ButtonGuide::Open(Button("Common_Cancel", backIcon));
+        ButtonGuide::Open(Button("Common_Cancel", FLT_MAX, backIcon));
     }
     else
     {

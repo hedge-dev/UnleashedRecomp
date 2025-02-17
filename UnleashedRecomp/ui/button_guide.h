@@ -40,19 +40,23 @@ class Button
 {
 public:
     std::string Name{};
+    float MaxWidth{ FLT_MAX };
     EButtonIcon Icon{};
     EButtonAlignment Alignment{ EButtonAlignment::Right };
     EFontQuality FontQuality{ EFontQuality::High };
     bool* Visibility{ nullptr };
 
-    Button(std::string name, EButtonIcon icon, EButtonAlignment alignment, EFontQuality fontQuality = EFontQuality::High, bool* visibility = nullptr)
-        : Name(name), Icon(icon), Alignment(alignment), FontQuality(fontQuality), Visibility(visibility) {}
+    Button(std::string name, float maxWidth, EButtonIcon icon, EButtonAlignment alignment, EFontQuality fontQuality = EFontQuality::High, bool* visibility = nullptr)
+        : Name(name), MaxWidth(maxWidth), Icon(icon), Alignment(alignment), FontQuality(fontQuality), Visibility(visibility) {}
 
-    Button(std::string name, EButtonIcon icon, EButtonAlignment alignment, bool* visibility) : Name(name), Icon(icon), Alignment(alignment), Visibility(visibility) {}
+    Button(std::string name, float maxWidth, EButtonIcon icon, EButtonAlignment alignment, bool* visibility)
+        : Name(name), MaxWidth(maxWidth), Icon(icon), Alignment(alignment), Visibility(visibility) {}
 
-    Button(std::string name, EButtonIcon icon, bool* visibility) : Name(name), Icon(icon), Visibility(visibility) {}
+    Button(std::string name, float maxWidth, EButtonIcon icon, bool* visibility)
+        : Name(name), MaxWidth(maxWidth), Icon(icon), Visibility(visibility) {}
 
-    Button(std::string name, EButtonIcon icon) : Name(name), Icon(icon) {}
+    Button(std::string name, float maxWidth, EButtonIcon icon)
+        : Name(name), MaxWidth(maxWidth), Icon(icon) {}
 };
 
 class ButtonGuide

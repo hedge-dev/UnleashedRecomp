@@ -245,7 +245,7 @@ void DrawNextButtonGuide(bool isController, bool isKeyboard)
     if (App::s_isInit)
         icon = EButtonIcon::A;
 
-    ButtonGuide::Open(Button("Common_Next", icon));
+    ButtonGuide::Open(Button("Common_Next", FLT_MAX, icon));
 }
 
 static void ResetSelection()
@@ -425,8 +425,8 @@ void MessageWindow::Draw()
 
                         std::array<Button, 2> buttons =
                         {
-                            Button("Common_Select", selectIcon),
-                            Button("Common_Back", backIcon),
+                            Button("Common_Select", Scale(115), selectIcon),
+                            Button("Common_Back", FLT_MAX, backIcon),
                         };
 
                         ButtonGuide::Open(buttons);
@@ -470,8 +470,8 @@ void MessageWindow::Draw()
 
                     std::array<Button, 2> buttons =
                     {
-                        Button("Common_Select", EButtonIcon::LMB),
-                        Button("Common_Back", EButtonIcon::Escape),
+                        Button("Common_Select", Scale(115), EButtonIcon::LMB),
+                        Button("Common_Back", FLT_MAX, EButtonIcon::Escape),
                     };
 
                     ButtonGuide::Open(buttons);
