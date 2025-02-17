@@ -91,7 +91,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EVoiceLanguage)
     {
         ELanguage::Japanese,
         {
-            { EVoiceLanguage::English,  { "英語", "" } },
+            { EVoiceLanguage::English,  { "ENGLISH", "" } },
             { EVoiceLanguage::Japanese, { "日本語", "" } }
         }
     },
