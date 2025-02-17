@@ -146,3 +146,193 @@ PPC_FUNC(sub_824C1E60)
 
     __imp__sub_824C1E60(ctx, base);
 }
+
+#include <gpu/video.h>
+#include <gpu/imgui/imgui_snapshot.h>
+#include <res/images/common/raw/kb_key_0.png.h>
+#include <decompressor.h>
+#include <ui/imgui_utils.h>
+#include <exports.h>
+#include <words.h>
+#include <random>
+
+static std::string g_qteText;
+static std::vector<double> g_qteTimes;
+static bool g_shouldDrawKeyboardQTE;
+static std::unique_ptr<GuestTexture> g_keyboardTexture;
+static uint8_t g_prevScanCodes[SDL_NUM_SCANCODES];
+static std::default_random_engine g_engine{ std::random_device {}() };
+static std::uniform_int_distribution g_intDistribution;
+static std::uniform_real_distribution g_floatDistribution(0.0, 1.0);
+
+void InitKeyboardQTE()
+{
+    g_keyboardTexture = LOAD_ZSTD_TEXTURE(g_kb_key_0);
+}
+
+void DrawKeyboardQTE()
+{
+    memcpy(g_prevScanCodes, SDL_GetKeyboardState(nullptr), sizeof(g_prevScanCodes));
+
+    if (!g_shouldDrawKeyboardQTE)
+        return;
+
+    g_shouldDrawKeyboardQTE = false;
+
+    auto drawList = ImGui::GetBackgroundDrawList();
+    ImFont* font = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-DB.otf");
+
+    // y: 307
+    // h: 110
+
+    // font: x 36 y 30 30pt
+
+    auto& res = ImGui::GetIO().DisplaySize;
+
+    constexpr float padding = -40.0f;
+    float width = Scale(g_qteText.size() * 110 + (g_qteText.size() - 1) * padding);
+    for (size_t i = 0; i < g_qteText.size(); i++)
+    {
+        float x = res.x / 2.0f - width / 2.0f + Scale((110 + padding)) * i;
+        double motion = ComputeLinearMotion(g_qteTimes[i], 0, 5);
+
+        if (g_qteText[i] != ' ')
+        {
+            std::stringstream text;
+            text << std::toupper(g_qteText[i], std::locale::classic());
+
+            float x = res.x / 2.0f - width / 2.0f + Scale((110 + padding)) * i;
+            drawList->AddImage(g_keyboardTexture.get(), { x, Scale(307) }, { x + Scale(110), Scale(307 + 110) }, {0.0f, 0.0f}, {1.0f, 1.0f}, IM_COL32(255, 255, 255, 255 * motion));
+            drawList->AddText(font, Scale(24.0f), { x + Scale(36), Scale(307 + 28) }, IM_COL32(0, 0, 0, 255 * motion), text.str().c_str());
+        }
+        else
+        {
+            drawList->AddImage(g_keyboardTexture.get(), { x, Scale(307) }, { x + Scale(110), Scale(307 + 110) }, { 0.0f, 0.0f }, { 1.0f, 1.0f }, IM_COL32(255, 255, 255, 255 * (1.0 - motion)));
+        }
+    }
+}
+
+// + 100 is success bool
+// return true to indicate either succeeded or failed
+PPC_FUNC_IMPL(__imp__sub_823329F8);
+PPC_FUNC(sub_823329F8)
+{
+    struct DelayCall
+    {
+        PPCRegister r3;
+        uint8_t* base;
+        PPCRegister time;
+
+        DelayCall(PPCRegister& r3, uint8_t* base) : r3(r3), base(base)
+        {
+            time.u32 = PPC_LOAD_U32(r3.u32 + 104);
+
+            PPCRegister newTime = time;
+            newTime.f32 *= 5.0f;
+            PPC_STORE_U32(r3.u32 + 104, newTime.u32);
+        }
+
+        ~DelayCall()
+        {
+            PPC_STORE_U32(r3.u32 + 104, time.u32);
+        }
+    } delayCall(ctx.r3, base);
+
+    g_shouldDrawKeyboardQTE = true;
+
+    bool foundAny = false;
+
+    for (size_t i = 0; i < g_qteText.size(); i++)
+    {
+        if (g_qteText[i] != ' ')
+        {
+            int lower = std::tolower(g_qteText[i], std::locale::classic());
+            SDL_Scancode scancode = SDL_GetScancodeFromKey(lower);
+
+            for (size_t j = SDL_SCANCODE_A; j <= SDL_SCANCODE_Z; j++)
+            {
+                if (g_prevScanCodes[j] == 0 && SDL_GetKeyboardState(nullptr)[j] != 0)
+                {
+                    if (j == scancode) // pressed the right one
+                    {
+                        g_qteText[i] = ' ';
+                        g_qteTimes[i] = ImGui::GetTime();
+
+                        ctx.r3.u32 = 0;
+                        Game_PlaySound("objsn_trickjump_button");
+
+                        return;
+                    }
+                    else // wrong one!
+                    {
+                        PPC_STORE_U8(ctx.r3.u32 + 100, 0);
+                        ctx.r3.u32 = 1;
+                        return;
+                    }
+                }
+            }
+
+            foundAny = true;
+            break;
+        }
+    }
+
+    // ran out of time
+    if (PPC_LOAD_U32(ctx.r3.u32 + 132) >= PPC_LOAD_U32(ctx.r3.u32 + 104))
+    {
+        PPC_STORE_U8(ctx.r3.u32 + 100, 0);
+        ctx.r3.u32 = 1;
+        return;
+    }
+
+    if (!foundAny)
+    {
+        // pressed all of them correctly
+        PPC_STORE_U8(ctx.r3.u32 + 100, 1);
+        ctx.r3.u32 = 1;
+        return;
+    }
+
+    __imp__sub_823329F8(ctx, base);
+    ctx.r3.u32 = 0;
+
+    return;
+}
+
+PPC_FUNC_IMPL(__imp__sub_826117E0);
+PPC_FUNC(sub_826117E0)
+{
+    auto counts = reinterpret_cast<uint32_t*>(base + PPC_LOAD_U32(ctx.r3.u32 + 252));
+    auto times = reinterpret_cast<uint32_t*>(base + PPC_LOAD_U32(ctx.r3.u32 + 236));
+
+    for (size_t i = 1; i < 3; i++)
+    {
+        if (counts[i] == 0)
+        {
+            counts[i] = counts[0];
+            times[i] = times[0];
+        }
+    }
+
+    __imp__sub_826117E0(ctx, base);
+}
+
+void QteButtonPromptInitMidAsmHook() 
+{
+    g_qteText = g_words[g_intDistribution(g_engine) % std::size(g_words)];
+    g_qteTimes.clear();
+    g_qteTimes.resize(g_qteText.size(), ImGui::GetTime());
+}
+
+void QteButtonPromptUpdateMidAsmHook()
+{
+}
+
+void TrickJumperCompareMidAsmHook(PPCRegister& r28)
+{
+    if (r28.u32 == 12)
+    {
+        if (g_floatDistribution(g_engine) < 0.3)
+            r28.u32 = 0;
+    }
+}

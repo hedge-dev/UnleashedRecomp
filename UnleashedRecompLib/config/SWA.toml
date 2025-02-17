@@ -1093,3 +1093,18 @@ registers = ["r31", "r29", "r28"]
 name = "ObjGrindDashPanelAllocMidAsmHook"
 address = 0x82614948
 registers = ["r3"]
+
+[[midasm_hook]]
+name = "QteButtonPromptInitMidAsmHook"
+address = 0x823339D8
+jump_address = 0x82333D14
+
+[[midasm_hook]]
+name = "QteButtonPromptUpdateMidAsmHook"
+address = 0x82332A90
+jump_address = 0x82332BC4
+
+[[midasm_hook]]
+name = "TrickJumperCompareMidAsmHook"
+address = 0x82611910
+registers = ["r28"]
