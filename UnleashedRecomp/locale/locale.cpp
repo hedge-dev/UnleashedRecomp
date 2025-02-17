@@ -121,7 +121,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Name_WindowSize",
         {
             { ELanguage::English,  "Window Size" },
-            { ELanguage::Japanese, "解像度" },
+            { ELanguage::Japanese, "ウィンドウサイズ" },
             { ELanguage::German,   "Fenstergröße" },
             { ELanguage::French,   "Taille de la fenêtre" },
             { ELanguage::Spanish,  "Tamaño de ventana" },
@@ -133,7 +133,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_WindowSize",
         {
             { ELanguage::English,  "Adjust the size of the game window in windowed mode." },
-            { ELanguage::Japanese, "ゲームの[解像度:かいぞうど]を[設定:せってい]できます" },
+            { ELanguage::Japanese, "ゲームのウィンドウサイズを[設定:せってい]できます" },
             { ELanguage::German,   "Passe die Fenstergröße des Spiels im Fenstermodus an." },
             { ELanguage::French,   "Définir la résolution de jeu en mode fenêtré." },
             { ELanguage::Spanish,  "Ajusta el tamaño de la ventana de juego en modo ventana." },
