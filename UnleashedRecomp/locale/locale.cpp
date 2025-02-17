@@ -322,7 +322,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "The content will be installed to the program's folder.\n\n" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Der Inhalt wird in dem Ordner des Programms installiert.\n\n" },
+            { ELanguage::German,   "Der Inhalt wird in dem Ordner des Programms installiert.\n" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Il contenuto verrà installato nella cartella di questo programma.\n\n" }
@@ -388,7 +388,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Required space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Benötigter Speicherplatz: %2.2f GiB" },
+            { ELanguage::German,   "Benötigter Speicherplatz:\n%2.2f GiB" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Spazio necessario: %2.2f GiB" }
@@ -399,7 +399,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Available space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Verfügbarer Speicherplatz: %2.2f GiB" },
+            { ELanguage::German,   "Verfügbarer Speicherplatz:\n%2.2f GiB" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Spazio disponibile: %2.2f GiB" }
