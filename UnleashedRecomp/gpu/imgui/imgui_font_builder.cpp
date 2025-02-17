@@ -247,6 +247,19 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
                 u1 / packer.width, 
                 v0 / packer.height, 
                 advance);
+
+            config.DstFont->AddGlyph(
+                &config,
+                0x200B,
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f);
         }
 
         config.DstFont->BuildLookupTable();

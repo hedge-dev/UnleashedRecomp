@@ -464,17 +464,39 @@ std::vector<std::string> Split(const char* strStart, const ImFont* font, float f
     const bool wordWrapEnabled = (maxWidth > 0.0f);
     const char *wordWrapEOL = nullptr;
 
+    auto IsKanji = [](const char* str, const char* strEnd)
+    {
+        const char* tempStr = str;
+        unsigned int c = (unsigned int)*tempStr;
+        if (c < 0x80)
+            tempStr += 1;
+        else
+            tempStr += ImTextCharFromUtf8(&c, tempStr, strEnd);
+
+        // Basic CJK and CJK Extension A
+        return (c >= 0x4E00 && c <= 0x9FBF) || (c >= 0x3400 && c <= 0x4DBF);
+    };
+
     while (*str != 0) 
     {
         if (wordWrapEnabled)
         {
             if (wordWrapEOL == nullptr)
             {
-                wordWrapEOL = font->CalcWordWrapPositionA(scale, str, strEnd, maxWidth - lineWidth);
+                wordWrapEOL = CalcWordWrapPositionA(font, scale, str, strEnd, maxWidth - lineWidth);
             }
 
             if (str >= wordWrapEOL)
             {
+                if (IsKanji(str, strEnd))
+                {
+                    // If the current character is Kanji, move back to prevent splitting Kanji
+                    while (str > lineStart && IsKanji(str - 3, strEnd))
+                    {
+                        str -= 3;
+                    }
+                }
+
                 if (textWidth < lineWidth)
                     textWidth = lineWidth;
 
@@ -825,4 +847,106 @@ void DrawToggleLight(ImVec2 pos, bool isEnabled, float alpha)
 
         drawList->AddImage(g_texLight.get(), min, max, GET_UV_COORDS(lightOffUVs), lightCol);
     }
+}
+
+// Taken from ImGui because we need to modify to break for '\u200B\ too
+// Simple word-wrapping for English, not full-featured. Please submit failing cases!
+// This will return the next location to wrap from. If no wrapping if necessary, this will fast-forward to e.g. text_end.
+// FIXME: Much possible improvements (don't cut things like "word !", "word!!!" but cut within "word,,,,", more sensible support for punctuations, support for Unicode punctuations, etc.)
+const char* CalcWordWrapPositionA(const ImFont* font, float scale, const char* text, const char* text_end, float wrap_width)
+{
+    // For references, possible wrap point marked with ^
+    //  "aaa bbb, ccc,ddd. eee   fff. ggg!"
+    //      ^    ^    ^   ^   ^__    ^    ^
+
+    // List of hardcoded separators: .,;!?'"
+
+    // Skip extra blanks after a line returns (that includes not counting them in width computation)
+    // e.g. "Hello    world" --> "Hello" "World"
+
+    // Cut words that cannot possibly fit within one line.
+    // e.g.: "The tropical fish" with ~5 characters worth of width --> "The tr" "opical" "fish"
+    float line_width = 0.0f;
+    float word_width = 0.0f;
+    float blank_width = 0.0f;
+    wrap_width /= scale; // We work with unscaled widths to avoid scaling every characters
+
+    const char* word_end = text;
+    const char* prev_word_end = NULL;
+    bool inside_word = true;
+
+    const char* s = text;
+    IM_ASSERT(text_end != NULL);
+    while (s < text_end)
+    {
+        unsigned int c = (unsigned int)*s;
+        const char* next_s;
+        if (c < 0x80)
+            next_s = s + 1;
+        else
+            next_s = s + ImTextCharFromUtf8(&c, s, text_end);
+
+        if (c < 32)
+        {
+            if (c == '\n')
+            {
+                line_width = word_width = blank_width = 0.0f;
+                inside_word = true;
+                s = next_s;
+                continue;
+            }
+            if (c == '\r')
+            {
+                s = next_s;
+                continue;
+            }
+        }
+
+        const float char_width = ((int)c < font->IndexAdvanceX.Size ? font->IndexAdvanceX.Data[c] : font->FallbackAdvanceX);
+        if (ImCharIsBlankW(c) || c == 0x200B)
+        {
+            if (inside_word)
+            {
+                line_width += blank_width;
+                blank_width = 0.0f;
+                word_end = s;
+            }
+            blank_width += char_width;
+            inside_word = false;
+        }
+        else
+        {
+            word_width += char_width;
+            if (inside_word)
+            {
+                word_end = next_s;
+            }
+            else
+            {
+                prev_word_end = word_end;
+                line_width += word_width + blank_width;
+                word_width = blank_width = 0.0f;
+            }
+
+            // Allow wrapping after punctuation.
+            inside_word = (c != '.' && c != ',' && c != ';' && c != '!' && c != '?' && c != '\"');
+        }
+
+        // We ignore blank width at the end of the line (they can be skipped)
+        if (line_width + word_width > wrap_width)
+        {
+            // Words that cannot possibly fit within an entire line will be cut anywhere.
+            if (word_width < wrap_width)
+                s = prev_word_end ? prev_word_end : word_end;
+            break;
+        }
+
+        s = next_s;
+    }
+
+    // Wrap_width is too small to fit anything. Force displaying 1 character to minimize the height discontinuity.
+    // +1 may not be a character start point in UTF-8 but it's ok because caller loops use (text >= word_wrap_eol).
+    if (s == text && text < text_end)
+        return s + 1;
+    return s;
 }
