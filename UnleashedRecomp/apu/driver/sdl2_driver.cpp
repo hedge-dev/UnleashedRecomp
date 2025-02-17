@@ -1,6 +1,7 @@
 #include <apu/audio.h>
 #include <cpu/guest_thread.h>
 #include <kernel/heap.h>
+#include <os/logger.h>
 #include <user/config.h>
 
 static PPCFunc* g_clientCallback{};
@@ -29,6 +30,9 @@ static void CreateAudioDevice()
         g_audioDevice = SDL_OpenAudioDevice(nullptr, 0, &desired, &obtained, 0);
     }
 
+    if (!g_audioDevice)
+        LOGFN_ERROR("Failed to open audio device: {}", SDL_GetError());
+
     g_downMixToStereo = (obtained.channels == 2);
 }
 
@@ -36,7 +40,13 @@ void XAudioInitializeSystem()
 {
     SDL_SetHint(SDL_HINT_AUDIO_CATEGORY, "playback");
     SDL_SetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME, "Unleashed Recompiled");
-    SDL_InitSubSystem(SDL_INIT_AUDIO);
+
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
+    {
+        LOGFN_ERROR("Failed to init audio subsystem: {}", SDL_GetError());
+        return;
+    }
+
     CreateAudioDevice();
 }
 
