@@ -133,7 +133,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_WindowSize",
         {
             { ELanguage::English,  "Adjust the size of the game window in windowed mode." },
-            { ELanguage::Japanese, "ゲームのウィンドウサイズを[設定:せってい]できます" },
+            { ELanguage::Japanese, "ゲームの\u200Bウィンドウサイズを\u200B[設定:せってい]\u200Bできます" },
             { ELanguage::German,   "Passe die Fenstergröße des Spiels im Fenstermodus an." },
             { ELanguage::French,   "Définir la résolution de jeu en mode fenêtré." },
             { ELanguage::Spanish,  "Ajusta el tamaño de la ventana de juego en modo ventana." },
@@ -146,7 +146,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailable",
         {
             { ELanguage::English,  "This option is not available at this location." },
-            { ELanguage::Japanese, "このオプションは[現在:げんざい]の[画面:がめん]で[変更:へんこう]できません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200B[現在:げんざい]の\u200B[画面:がめん]で\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option ist an dieser Stelle nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible pour l'instant." },
             { ELanguage::Spanish,  "Esta opción no está disponible en este momento." },
@@ -159,7 +159,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailableFullscreen",
         {
             { ELanguage::English,  "This option is not available in fullscreen mode." },
-            { ELanguage::Japanese, "このオプションはフルスクリーンモードで[変更:へんこう]できません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200Bフルスクリーンモードで\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option ist im Vollbildmodus nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible en mode plein écran." },
             { ELanguage::Spanish,  "Esta opción no está disponible en modo pantalla completa." },
@@ -172,7 +172,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailableWindowed",
         {
             { ELanguage::English,  "This option is not available in windowed mode." },
-            { ELanguage::Japanese, "このオプションはウィンドウモードで[変更:へんこう]できません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200Bウィンドウモードで\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option ist im Fenstermodus nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible en mode fenêtré." },
             { ELanguage::Spanish,  "Esta opción no está disponible en modo ventana." },
@@ -185,7 +185,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailableHardware",
         {
             { ELanguage::English,  "This option is not available with your current hardware configuration." },
-            { ELanguage::Japanese, "このオプションは[現在:げんざい]のハードウェア[構成:こうせい]で[変更:へんこう]できません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200B[現在:げんざい]の\u200Bハードウェア[構成:こうせい]で\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option ist mit der momentanen Hardwarekonfiguration nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible avec votre configuration matérielle actuelle." },
             { ELanguage::Spanish,  "Esta opción no está disponible con tu configuración actual de hardware." },
@@ -198,7 +198,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailableMSAA",
         {
             { ELanguage::English,  "This option is not available without MSAA." },
-            { ELanguage::Japanese, "このオプションはMSAAなしで[変更:へんこう]できません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200BMSAAなしで\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option ist ohne MSAA nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible sans MSAA." },
             { ELanguage::Spanish,  "Esta opción no está disponible sin MSAA." },
@@ -211,7 +211,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_OSNotSupported",
         {
             { ELanguage::English,  "This option is not supported by your operating system." },
-            { ELanguage::Japanese, "このオプションは[現在:げんざい]のOSで[変更:へんこう]できません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200B[現在:げんざい]の\u200BOSで\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option wird von diesem Betriebssystem nicht unterstützt." },
             { ELanguage::French,   "Cette option n'est pas prise en charge par votre système d'exploitation." },
             { ELanguage::Spanish,  "Está opción no está soportada por tu sistema operativo." },
