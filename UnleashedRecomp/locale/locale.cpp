@@ -146,7 +146,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailable",
         {
             { ELanguage::English,  "This option is not available at this location." },
-            { ELanguage::Japanese, "タイトル[画面:がめん]やワールドマップのオプションでのみ[変更:へんこう]できます" },
+            { ELanguage::Japanese, "このオプションは[現在:げんざい]の[画面:がめん]で[変更:へんこう]できません" },
             { ELanguage::German,   "Diese Option ist an dieser Stelle nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible pour l'instant." },
             { ELanguage::Spanish,  "Esta opción no está disponible en este momento." },
