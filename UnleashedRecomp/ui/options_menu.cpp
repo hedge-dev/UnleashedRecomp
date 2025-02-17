@@ -1585,6 +1585,13 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
 
         SetVerticalMarqueeFade({ clipRectMin.x, clipRectMin.y + Scale(5.5f) }, clipRectMax, Scale(10), Scale(10));
 
+        // Dirty hack to disallow clipping on Japanese text
+        // whilst allowing annotations to go over the border
+        if (Config::Language == ELanguage::Japanese)
+        {
+            clipRectMax.x -= annotationFontSize;
+        }
+
         DrawRubyAnnotatedText
         (
             g_seuratFont,
