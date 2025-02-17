@@ -527,7 +527,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "It is highly recommended\nthat you install all of the\nDLC, as it includes high\nquality lighting textures\nfor the base game.\n\nAre you sure you want to\nskip this step?" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Il est fortement recommandé\nd'installer l'ensemble du\nDLC car elle inclut des\ntextures de lumière de\nhaute qualité pour le jeu\nde base.\n\nÊtes-vous sûr de vouloir\nignorer cette étape?" },
+            { ELanguage::French,   "Il est fortement recommandé\nd'installer l'ensemble du\nDLC car elle inclut des\ntextures de lumière de\nhaute qualité pour le jeu\nde base.\n\nÊtes-vous sûr de vouloir\nignorer cette étape ?" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Si consiglia di installare\ntutti i DLC, poichè includono\ntexture di illuminazione di qualità migliore.\n\nSei sicuro di voler saltare?" }
         }
@@ -539,7 +539,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "This will restart the game to\nallow you to install any DLC\nthat you are missing.\n\nInstalling DLC will improve the\nlighting quality across the game.\n\nWould you like to install missing\ncontent?" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Cela redémarrera le jeu pour vous\npermettre d'installer les DLC\nmanquants.\n\nL'installation du DLC améliorera\nla qualité de l'éclairage dans le\njeu.\n\nSouhaitez-vous installer le\ncontenu manquant?" },
+            { ELanguage::French,   "Cela redémarrera le jeu pour vous\npermettre d'installer les DLC\nmanquants.\n\nL'installation du DLC améliorera\nla qualité de l'éclairage dans le\njeu.\n\nSouhaitez-vous installer le\ncontenu manquant ?" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Questa opzione riavviera il gioco\nper farti installare qualsiasi DLC\nche non hai installato.\n\nL'installazione dei DLC migliorerà la qualità\ndell'illuminazione del gioco.\n\nVuoi installare i DLC mancanti?" }
         }
@@ -551,7 +551,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "This restarts the game to\nallow you to install any DLC\nthat you may be missing.\n\nYou are not currently\nmissing any DLC.\n\nWould you like to proceed\nanyway?" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Cela redémarrera le jeu pour vous\npermettre d'installer les DLC\nmanquants.\n\nIl ne vous manque aucun DLC.\n\nVoulez-vous quand même continuer?" },
+            { ELanguage::French,   "Cela redémarrera le jeu pour vous\npermettre d'installer les DLC\nmanquants.\n\nIl ne vous manque aucun DLC.\n\nVoulez-vous quand même continuer ?" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Questa opzione riavviera il gioco\nper farti installare qualsiasi DLC\nche non hai installato.\n\nHai già installato tutti i DLC.\n\nVuoi procedere comunque?" }
         }
@@ -575,7 +575,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Are you sure you want to cancel the installation?" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Êtes-vous sûr de vouloir annuler l'installation?" },
+            { ELanguage::French,   "Êtes-vous sûr de vouloir annuler l'installation ?" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
         }
@@ -638,7 +638,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "An update is available!\n\nWould you like to visit the\nreleases page to download it?" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Une mise à jour est disponible!\n\nVoulez-vous visiter la page\ndes mises à jour pour la\ntélécharger?" },
+            { ELanguage::French,   "Une mise à jour est disponible!\n\nVoulez-vous visiter la page\ndes mises à jour pour la\ntélécharger ?" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
         }
