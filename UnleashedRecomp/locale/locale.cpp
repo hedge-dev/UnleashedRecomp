@@ -563,7 +563,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Are you sure you want to quit?" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Êtes-vous sûr de vouloir quitter l'installateur?" },
+            { ELanguage::French,   "Êtes-vous sûr de vouloir quitter ?" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
         }
@@ -587,7 +587,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Are you sure you want to quit?" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Êtes-vous sûr de vouloir quitter le jeu?" },
+            { ELanguage::French,   "Êtes-vous sûr de vouloir quitter ?" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Sei sicuro di voler uscire?" }
         }
