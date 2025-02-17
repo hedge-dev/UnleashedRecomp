@@ -763,7 +763,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Common_Back",
         {
             { ELanguage::English,  "Back" },
-            { ELanguage::Japanese, "戻る" },
+            { ELanguage::Japanese, "もどる" },
             { ELanguage::German,   "Zurück" },
             { ELanguage::French,   "Retour" },
             { ELanguage::Spanish,  "Atrás" },
@@ -807,7 +807,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Common_Switch",
         {
             { ELanguage::English,  "Switch" },
-            { ELanguage::Japanese, "切り替え" },
+            { ELanguage::Japanese, "きりかえ" },
             { ELanguage::German,   "Wechseln" },
             { ELanguage::French,   "Changer" },
             { ELanguage::Spanish,  "Cambiar" },
