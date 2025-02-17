@@ -425,7 +425,7 @@ void MessageWindow::Draw()
 
                         std::array<Button, 2> buttons =
                         {
-                            Button("Common_Select", Scale(115), selectIcon),
+                            Button("Common_Select", 115.0f, selectIcon),
                             Button("Common_Back", FLT_MAX, backIcon),
                         };
 
@@ -470,7 +470,7 @@ void MessageWindow::Draw()
 
                     std::array<Button, 2> buttons =
                     {
-                        Button("Common_Select", Scale(115), EButtonIcon::LMB),
+                        Button("Common_Select", 115.0f, EButtonIcon::LMB),
                         Button("Common_Back", FLT_MAX, EButtonIcon::Escape),
                     };
 

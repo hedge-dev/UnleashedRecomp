@@ -260,7 +260,7 @@ void ButtonGuide::Draw()
         auto iconWidth = Scale(g_iconWidths[btn.Icon]);
         auto iconHeight = Scale(g_iconHeights[btn.Icon]);
         auto textWidth = g_fntNewRodin->CalcTextSizeA(fontSize, FLT_MAX, 0, str).x;
-        auto maxWidth = btn.MaxWidth == FLT_MAX ? textWidth : btn.MaxWidth;
+        auto maxWidth = btn.MaxWidth == FLT_MAX ? textWidth : Scale(btn.MaxWidth);
         auto textScale = std::min(1.0f, maxWidth / textWidth);
 
         if (i > 0)
@@ -287,7 +287,7 @@ void ButtonGuide::Draw()
         auto iconWidth = Scale(g_iconWidths[btn.Icon]);
         auto iconHeight = Scale(g_iconHeights[btn.Icon]);
         auto textWidth = g_fntNewRodin->CalcTextSizeA(fontSize, FLT_MAX, 0, str).x;
-        auto maxWidth = btn.MaxWidth == FLT_MAX ? textWidth : btn.MaxWidth;
+        auto maxWidth = btn.MaxWidth == FLT_MAX ? textWidth : Scale(btn.MaxWidth);
         auto textScale = std::min(1.0f, maxWidth / textWidth);
 
         if (i < g_buttons.size() - 1)
