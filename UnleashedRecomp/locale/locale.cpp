@@ -246,7 +246,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Achievement Unlocked!" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Succès déverrouillé!" },
+            { ELanguage::French,   "Succès déverrouillé !" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
         }
@@ -290,7 +290,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Welcome to\nUnleashed Recompiled!\n\nYou'll need an Xbox 360 copy\nof Sonic Unleashed in order to proceed with the installation." },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Bienvenue sur\nUnleashed Recompiled!\n\nVous aurez besoin d'une copie de Sonic Unleashed pour Xbox\n360 pour procéder à l'installation." },
+            { ELanguage::French,   "Bienvenue sur\nUnleashed Recompiled !\n\nVous aurez besoin d'une copie de Sonic Unleashed pour Xbox\n360 pour procéder à l'installation." },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Benvenuto a\nUnleashed Recompiled!\n\nDovrai avere una copia di\nSonic Unleashed per la Xbox 360\nper proseguire con l'installazione." }
         }
@@ -345,7 +345,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Installation complete!\nThis project is brought to you by:" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Installation terminée!\nCe projet vous est présenté par:" },
+            { ELanguage::French,   "Installation terminée !\nCe projet vous est présenté par:" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
         }
@@ -638,7 +638,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "An update is available!\n\nWould you like to visit the\nreleases page to download it?" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Une mise à jour est disponible!\n\nVoulez-vous visiter la page\ndes mises à jour pour la\ntélécharger ?" },
+            { ELanguage::French,   "Une mise à jour est disponible !\n\nVoulez-vous visiter la page\ndes mises à jour pour la\ntélécharger ?" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
         }
