@@ -18,6 +18,16 @@ namespace Hedgehog::Math
         be<float> Y;
         be<float> Z;
         be<float> W;
+
+        CVector operator*(const float& scalar) const
+        {
+            return { X * scalar, Y * scalar, Z * scalar };
+        }
+
+        CVector operator+(const CVector& v) const
+        {
+            return { X + v.X, Y + v.Y, Z + v.Z };
+        }
     };
 
     class CVector4

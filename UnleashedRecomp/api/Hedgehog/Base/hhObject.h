@@ -21,3 +21,5 @@ namespace Hedgehog::Base
         void operator delete(void* in_pMem, void* in_pObj);
     };
 }
+
+#include "hhObject.inl"

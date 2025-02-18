@@ -36,7 +36,9 @@ namespace SWA
             xpointer<CSoundAdministrator> m_pSoundAdministrator;
             SWA_INSERT_PADDING(0x48);
             xpointer<CGeneralWindow> m_pGeneralWindow;
-            SWA_INSERT_PADDING(0xD8);
+            SWA_INSERT_PADDING(0xC0);
+            boost::anonymous_shared_ptr m_spPlayerSwitchManager;
+            SWA_INSERT_PADDING(0x10);
             SScoreInfo m_ScoreInfo;
             SWA_INSERT_PADDING(0x0C);
         };
@@ -63,6 +65,7 @@ namespace SWA
     SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_StageName, 0xAC);
     SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_pSoundAdministrator, 0xB0);
     SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_pGeneralWindow, 0xFC);
+    SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_spPlayerSwitchManager, 0x1C0);
     SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_ScoreInfo, 0x1D8);
     SWA_ASSERT_SIZEOF(CGameDocument::CMember, 0x230);
 

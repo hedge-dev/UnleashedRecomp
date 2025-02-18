@@ -210,7 +210,7 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
                 g_controllers[freeIndex] = controller;
 
-                SetControllerTimeOfDayLED(controller, App::s_isWerehog);
+                SetControllerTimeOfDayLED(controller, App::s_pEvilSonicContext);
             }
 
             break;

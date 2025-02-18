@@ -57,7 +57,7 @@ PPC_FUNC(sub_82B98D30)
     g_pScene = nullptr;
     InspirePatches::s_sceneName.clear();
 
-    SDL_User_EvilSonic(App::s_isWerehog);
+    SDL_User_EvilSonic(App::s_pEvilSonicContext);
 
     g_loadedMouthExplosionAnimation = false;
     g_hideMorphModels = false;

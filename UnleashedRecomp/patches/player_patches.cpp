@@ -104,9 +104,9 @@ void SetXButtonHomingMidAsmHook(PPCRegister& r30)
 PPC_FUNC_IMPL(__imp__sub_823B49D8);
 PPC_FUNC(sub_823B49D8)
 {
-    __imp__sub_823B49D8(ctx, base);
+    App::s_pEvilSonicContext = (SWA::Player::CEvilSonicContext*)g_memory.Translate(ctx.r3.u32);
 
-    App::s_isWerehog = true;
+    __imp__sub_823B49D8(ctx, base);
 
     SDL_User_EvilSonic(true);
 }
@@ -115,9 +115,9 @@ PPC_FUNC(sub_823B49D8)
 PPC_FUNC_IMPL(__imp__sub_823B4590);
 PPC_FUNC(sub_823B4590)
 {
-    __imp__sub_823B4590(ctx, base);
+    App::s_pEvilSonicContext = nullptr;
 
-    App::s_isWerehog = false;
+    __imp__sub_823B4590(ctx, base);
 
     SDL_User_EvilSonic(false);
 }

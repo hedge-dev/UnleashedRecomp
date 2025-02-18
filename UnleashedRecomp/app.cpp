@@ -5,6 +5,7 @@
 #include <kernel/function.h>
 #include <os/process.h>
 #include <patches/audio_patches.h>
+#include <patches/free_camera_patches.h>
 #include <patches/inspire_patches.h>
 #include <ui/game_window.h>
 #include <user/config.h>
@@ -73,6 +74,7 @@ PPC_FUNC(sub_822C1130)
     }
 
     AudioPatches::Update(App::s_deltaTime);
+    FreeCameraPatches::Update();
     InspirePatches::Update();
 
     // Apply subtitles option.
@@ -94,3 +96,11 @@ PPC_FUNC(sub_822C1130)
     __imp__sub_822C1130(ctx, base);
 }
 
+// SWA::CGameModeStage::CGameModeStage
+PPC_FUNC_IMPL(__imp__sub_82541138);
+PPC_FUNC(sub_82541138)
+{
+    App::s_pGameModeStage = (SWA::CGameModeStage*)g_memory.Translate(ctx.r3.u32);
+
+    __imp__sub_82541138(ctx, base);
+}

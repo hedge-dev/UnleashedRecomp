@@ -20,7 +20,7 @@ PPC_FUNC(sub_824DCF38)
         if (Config::TimeOfDayTransition == ETimeOfDayTransition::PlayStation)
         {
             ctx.r4.u32 = SWA::eLoadingDisplayType_ChangeTimeOfDay;
-            pLoading->m_IsNightToDay = App::s_isWerehog;
+            pLoading->m_IsNightToDay = App::s_pEvilSonicContext;
         }
 
         if (Config::UseArrowsForTimeOfDayTransition)

@@ -8,19 +8,20 @@
 #define DEGREES_TO_RADIANS(x) (float)(x / 180.0f * M_PI)
 #define RADIANS_TO_DEGREES(x) (float)(x / M_PI * 180.0f)
 
-constexpr float DEFAULT_SPEED = 0.5f;
-constexpr float DEFAULT_FOV = 45.0f;
+constexpr float DEFAULT_SPEED = 1.0f;
+constexpr float DEFAULT_FIELD_OF_VIEW = 45.0f;
 constexpr float MOVE_SPEED_SLOW = 0.075f;
 constexpr float MOVE_SPEED_FAST = 8.0f;
 constexpr float MOVE_SPEED_MODIFIER_RATIO = 0.02f;
 constexpr float FOV_MODIFIER_RATIO = 1.0f;
 
 static float g_baseSpeed = DEFAULT_SPEED;
-static float g_baseFOV = DEFAULT_FOV;
+static float g_baseFieldOfView = DEFAULT_FIELD_OF_VIEW;
 
+static bool g_isDisablingFreeCamera;
 static bool g_isCameraLocked;
 static float g_speed;
-static float g_fov;
+static float g_fieldOfView;
 
 static void ResetParameters()
 {
@@ -28,90 +29,22 @@ static void ResetParameters()
     g_speed = g_baseSpeed = DEFAULT_SPEED;
 
     *SWA::SGlobals::ms_IsRenderDepthOfField = true;
-    FreeCameraPatches::s_fieldOfView = g_fov = g_baseFOV = DEFAULT_FOV;
+    FreeCameraPatches::s_fieldOfView = g_fieldOfView = g_baseFieldOfView = DEFAULT_FIELD_OF_VIEW;
 }
 
-bool EnableFreeCameraMidAsmHook()
+bool FreeCameraActiveMidAsmHook()
 {
-    return Config::EnableFreeCamera;
+    return Config::EnableFreeCamera && FreeCameraPatches::s_isActive;
 }
 
-bool FreeCameraNullInputMidAsmHook()
-{
-    return Config::EnableFreeCamera;
-}
-
-// Original input: D-Pad Up
-bool FreeCameraActivationInputMidAsmHook(PPCRegister& r11, PPCRegister& r27, PPCRegister& r28)
+bool FreeCameraSpeedInputMidAsmHook(PPCRegister& r31, PPCRegister& r29, PPCRegister& f0)
 {
     if (!Config::EnableFreeCamera)
         return false;
 
-    static auto isChangedCameraMode = false;
-
-    if ((r11.u32 & SWA::eKeyState_Select) != 0)
-    {
-        if (++r28.u32 >= 2)
-            r28.u32 = 0;
-
-        isChangedCameraMode = true;
-    }
-
-    FreeCameraPatches::s_isActive = r28.u32 > 0;
-
-    if (isChangedCameraMode)
-    {
-        ResetParameters();
-
-        switch (r28.u32)
-        {
-            case 0:
-                LOGN("[Free Camera] Disabled");
-                break;
-
-            case 1:
-                LOGN("[Free Camera] Enabled");
-                break;
-        }
-
-        isChangedCameraMode = false;
-
-        if (FreeCameraPatches::s_isActive && *SWA::SGlobals::ms_IsRenderHud)
-        {
-            *SWA::SGlobals::ms_IsRenderHud = false;
-        }
-        else
-        {
-            *SWA::SGlobals::ms_IsRenderHud = true;
-        }
-    }
-
-    return true;
-}
-
-// Original input: D-Pad Left
-void FreeCameraTeleportToPlayerInputMidAsmHook(PPCRegister& r4)
-{
-    if (Config::EnableFreeCamera)
-        r4.u32 = SWA::eKeyState_RightStick;
-}
-
-// Original inputs: X (Square) / Y (Triangle)
-bool FreeCameraSpeedInputMidAsmHook(PPCRegister& r31)
-{
-    if (!Config::EnableFreeCamera)
-        return false;
-
-    auto pCamera = (SWA::CReplayFreeCamera*)g_memory.Translate(r31.u32);
-    auto pInputState = SWA::CInputState::GetInstance();
-    
-    if (!pInputState)
-        return false;
-
-    auto& rPadState = pInputState->GetPadState();
-
+    auto pCamera = (SWA::CFreeCamera*)g_memory.Translate(r31.u32);
+    auto pPadState = (SWA::SPadState*)g_memory.Translate(r29.u32);
     auto factor = App::s_deltaTime / (1.0f / 60.0f);
-    auto aspectRatio = (float)GameWindow::s_width / (float)GameWindow::s_height;
 
     if (g_isCameraLocked)
     {
@@ -122,7 +55,7 @@ bool FreeCameraSpeedInputMidAsmHook(PPCRegister& r31)
         static auto isLeftTriggerSpeedModifier = false;
         static auto isRightTriggerSpeedModifier = false;
 
-        if (rPadState.IsDown(SWA::eKeyState_LeftTrigger))
+        if (pPadState->IsDown(SWA::eKeyState_LeftTrigger))
         {
             g_speed = MOVE_SPEED_SLOW;
             isLeftTriggerSpeedModifier = true;
@@ -133,7 +66,7 @@ bool FreeCameraSpeedInputMidAsmHook(PPCRegister& r31)
             isLeftTriggerSpeedModifier = false;
         }
 
-        if (rPadState.IsDown(SWA::eKeyState_RightTrigger))
+        if (pPadState->IsDown(SWA::eKeyState_RightTrigger))
         {
             g_speed = MOVE_SPEED_FAST;
             isRightTriggerSpeedModifier = true;
@@ -147,10 +80,10 @@ bool FreeCameraSpeedInputMidAsmHook(PPCRegister& r31)
         if (isLeftTriggerSpeedModifier && isRightTriggerSpeedModifier)
             g_speed = MOVE_SPEED_FAST / 3;
 
-        if (rPadState.IsDown(SWA::eKeyState_A))
+        if (pPadState->IsDown(SWA::eKeyState_A))
             g_speed = g_baseSpeed = DEFAULT_SPEED;
 
-        if (rPadState.IsDown(SWA::eKeyState_B))
+        if (pPadState->IsDown(SWA::eKeyState_B))
         {
             g_baseSpeed -= MOVE_SPEED_MODIFIER_RATIO * factor;
             g_speed = g_baseSpeed;
@@ -158,7 +91,7 @@ bool FreeCameraSpeedInputMidAsmHook(PPCRegister& r31)
             LOGFN("[Free Camera] Speed: {}", g_speed);
         }
 
-        if (rPadState.IsDown(SWA::eKeyState_X))
+        if (pPadState->IsDown(SWA::eKeyState_X))
         {
             g_baseSpeed += MOVE_SPEED_MODIFIER_RATIO * factor;
             g_speed = g_baseSpeed;
@@ -166,57 +99,152 @@ bool FreeCameraSpeedInputMidAsmHook(PPCRegister& r31)
             LOGFN("[Free Camera] Speed: {}", g_speed);
         }
 
-        auto isResetFOV = rPadState.IsDown(SWA::eKeyState_Y);
-        auto isIncreaseFOV = rPadState.IsDown(SWA::eKeyState_DpadUp);
-        auto isDecreaseFOV = rPadState.IsDown(SWA::eKeyState_DpadDown);
-
-        auto fovScaleFactor = 0.0f;
-
-        if (isIncreaseFOV)
-        {
-            fovScaleFactor = FOV_MODIFIER_RATIO;
-        }
-        else if (isDecreaseFOV)
-        {
-            fovScaleFactor = -FOV_MODIFIER_RATIO;
-        }
-
         g_speed = std::clamp(g_speed, 0.01f, 20.0f);
-        g_fov = fmodf(isResetFOV ? DEFAULT_FOV : g_fov + fovScaleFactor * App::s_deltaTime * 60.0f, 180.0f);
     }
 
-    if (rPadState.IsTapped(SWA::eKeyState_DpadLeft))
-    {
-        g_isCameraLocked = !g_isCameraLocked;
-        g_speed = g_baseSpeed;
-
-        if (g_isCameraLocked)
-        {
-            LOGN("[Free Camera] Locked");
-        }
-        else
-        {
-            LOGN("[Free Camera] Unlocked");
-        }
-    }
-
-    if (rPadState.IsTapped(SWA::eKeyState_DpadRight))
-    {
-        *SWA::SGlobals::ms_IsRenderDepthOfField = !*SWA::SGlobals::ms_IsRenderDepthOfField;
-
-        if (*SWA::SGlobals::ms_IsRenderDepthOfField)
-        {
-            LOGN("[Free Camera] Depth of Field ON");
-        }
-        else
-        {
-            LOGN("[Free Camera] Depth of Field OFF");
-        }
-    }
-
-    pCamera->m_Speed = g_speed;
-
-    FreeCameraPatches::s_fieldOfView = 2.0f * atan(tan(DEGREES_TO_RADIANS(g_fov / 2.0f) * (16.0f / 9.0f / std::min(aspectRatio, 16.0f / 9.0f))));
+    f0.f64 = g_speed;
 
     return true;
+}
+
+// SWA::CFreeCamera::Update
+PPC_FUNC_IMPL(__imp__sub_82472A18);
+PPC_FUNC(sub_82472A18)
+{
+    if (Config::EnableFreeCamera)
+    {
+        auto pCamera = (SWA::CFreeCamera*)g_memory.Translate(ctx.r3.u32);
+        auto aspectRatio = (float)GameWindow::s_width / (float)GameWindow::s_height;
+
+        if (auto pInputState = SWA::CInputState::GetInstance())
+        {
+            auto& rPadState = pInputState->GetPadState();
+
+            // Deactivate.
+            if (rPadState.IsTapped(SWA::eKeyState_Select))
+            {
+                guest_stack_var<SWA::Message::MsgPopCameraController> msgPopCameraController(pCamera, 0.0f);
+                guest_stack_var<SWA::Message::MsgCameraPauseMove> msgCameraPauseMove(false);
+
+                // Process SWA::Message::MsgPopCameraController.
+                GuestToHostFunction<int>(sub_8246A840, pCamera->m_pCamera.get(), msgPopCameraController.get());
+
+                // Process SWA::Message::MsgFinishFreeCamera.
+                GuestToHostFunction<int>(sub_8253ADB8, App::s_pGameModeStage);
+
+                // Process SWA::Message::MsgCameraPauseMove.
+                GuestToHostFunction<int>(sub_824679C0, pCamera->m_pCamera.get(), msgCameraPauseMove.get());
+
+                FreeCameraPatches::s_isActive = false;
+                *SWA::SGlobals::ms_IsRenderHud = true;
+
+                LOGN("[Free Camera] Disabled");
+
+                g_isDisablingFreeCamera = true;
+
+                return;
+            }
+
+            // Teleport player to camera.
+            if (rPadState.IsTapped(SWA::eKeyState_LeftStick))
+            {
+                guest_stack_var<SWA::Message::MsgSetPosition> msgSetPosition(pCamera->m_Position);
+                guest_stack_var<SWA::Message::MsgSetVelocity> msgSetVelocity(Hedgehog::Math::CVector(0.0f, 0.0f, 0.0f));
+
+                if (auto pPlayerSpeedContext = SWA::Player::CPlayerSpeedContext::GetInstance())
+                {
+                    // Process SWA::Message::MsgSetPosition.
+                    GuestToHostFunction<int>(sub_82303100, pPlayerSpeedContext->m_pPlayer.get(), msgSetPosition.get());
+
+                    // Process SWA::Message::MsgSetVelocity.
+                    GuestToHostFunction<int>(sub_82311820, pPlayerSpeedContext->m_pPlayer.get(), msgSetVelocity.get());
+                }
+                else if (App::s_pEvilSonicContext)
+                {
+                    // Process SWA::Message::MsgSetPosition.
+                    GuestToHostFunction<int>(sub_82303100, App::s_pEvilSonicContext->m_pPlayer.get(), msgSetPosition.get());
+                }
+            }
+
+            // Lock camera.
+            if (rPadState.IsTapped(SWA::eKeyState_DpadLeft))
+            {
+                g_isCameraLocked = !g_isCameraLocked;
+
+                if (g_isCameraLocked)
+                {
+                    LOGN("[Free Camera] Locked");
+                }
+                else
+                {
+                    g_speed = g_baseSpeed;
+
+                    LOGN("[Free Camera] Unlocked");
+                }
+            }
+
+            // Toggle depth of field.
+            if (rPadState.IsTapped(SWA::eKeyState_DpadRight))
+            {
+                *SWA::SGlobals::ms_IsRenderDepthOfField = !*SWA::SGlobals::ms_IsRenderDepthOfField;
+
+                if (*SWA::SGlobals::ms_IsRenderDepthOfField)
+                {
+                    LOGN("[Free Camera] Depth of Field ON");
+                }
+                else
+                {
+                    LOGN("[Free Camera] Depth of Field OFF");
+                }
+            }
+
+            auto isResetFOV = rPadState.IsDown(SWA::eKeyState_Y);
+            auto isIncreaseFOV = rPadState.IsDown(SWA::eKeyState_DpadUp);
+            auto isDecreaseFOV = rPadState.IsDown(SWA::eKeyState_DpadDown);
+
+            auto fovScaleFactor = 0.0f;
+
+            if (isIncreaseFOV)
+            {
+                fovScaleFactor = FOV_MODIFIER_RATIO;
+            }
+            else if (isDecreaseFOV)
+            {
+                fovScaleFactor = -FOV_MODIFIER_RATIO;
+            }
+
+            g_fieldOfView = fmodf(isResetFOV ? DEFAULT_FIELD_OF_VIEW : g_fieldOfView + fovScaleFactor * App::s_deltaTime * 60.0f, 180.0f);
+
+            FreeCameraPatches::s_fieldOfView = 2.0f * atan(tan(DEGREES_TO_RADIANS(g_fieldOfView / 2.0f) * (16.0f / 9.0f / std::min(aspectRatio, 16.0f / 9.0f))));
+        }
+    }
+
+    __imp__sub_82472A18(ctx, base);
+}
+
+void FreeCameraPatches::Update()
+{
+    if (!Config::EnableFreeCamera || !App::s_pGameModeStage)
+        return;
+
+    if (auto pInputState = SWA::CInputState::GetInstance())
+    {
+        auto& rPadState = pInputState->GetPadState();
+
+        if (rPadState.IsTapped(SWA::eKeyState_Select) && !FreeCameraPatches::s_isActive && !g_isDisablingFreeCamera)
+        {
+            ResetParameters();
+
+            // Process SWA::Message::MsgStartFreeCamera.
+            GuestToHostFunction<int>(sub_8253ACB8, App::s_pGameModeStage);
+
+            FreeCameraPatches::s_isActive = true;
+            *SWA::SGlobals::ms_IsRenderHud = false;
+
+            LOGN("[Free Camera] Enabled");
+        }
+
+        if (rPadState.IsReleased(SWA::eKeyState_Select) && !FreeCameraPatches::s_isActive)
+            g_isDisablingFreeCamera = false;
+    }
 }

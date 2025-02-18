@@ -10,6 +10,9 @@ namespace SWA
         static inline bool* ms_DrawLightFieldSamplingPoint;
 
         // N/A
+        static inline be<float>* ms_FreeCameraSpeed;
+
+        // N/A
         static inline bool* ms_IsAutoSaveWarningShown;
 
         // ms_IgnoreLightFieldData: データを無視する
@@ -60,6 +63,7 @@ namespace SWA
         static void Init()
         {
             ms_DrawLightFieldSamplingPoint = (bool*)MmGetHostAddress(0x83367BCE);
+            ms_FreeCameraSpeed = (be<float>*)MmGetHostAddress(0x83366DF8);
             ms_IgnoreLightFieldData = (bool*)MmGetHostAddress(0x83367BCF);
             ms_IsAutoSaveWarningShown = (bool*)MmGetHostAddress(0x83367BC1);
             ms_IsCollisionRender = (bool*)MmGetHostAddress(0x833678A6);
