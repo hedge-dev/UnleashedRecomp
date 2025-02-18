@@ -224,7 +224,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Message_Restart",
         {
             { ELanguage::English,  "The game will now restart." },
-            { ELanguage::Japanese, "ゲームが[再開:さいかい]されます" },
+            { ELanguage::Japanese, "ゲームが[再起動:さいきどう]されます" },
             { ELanguage::German,   "Das Spiel wird jetzt neu starten." },
             { ELanguage::French,   "Le jeu va maintenant redémarrer." },
             { ELanguage::Spanish,  "El juego se va a reiniciar." },
@@ -365,7 +365,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Page_InstallSucceeded",
         {
             { ELanguage::English,  "Installation complete!\nThis project is brought to you by:" },
-            { ELanguage::Japanese, "インストール[完了:かんりょう]！\nプロジェクトクレジット：" },
+            { ELanguage::Japanese, "インストール[完了:かんりょう]！\nプロジェクト[制作:せいさく]：" },
             { ELanguage::German,   "Installation abgeschlossen!\nDieses Projekt wird präsentiert von:" },
             { ELanguage::French,   "Installation terminée !\nCe projet vous est présenté par:" },
             { ELanguage::Spanish,  "¡Instalación completada!\nEste proyecto ha sido posible gracias a:" },
@@ -556,7 +556,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Message_DLCWarning",
         {
             { ELanguage::English,  "It is highly recommended\nthat you install all of the\nDLC, as it includes high\nquality lighting textures\nfor the base game.\n\nAre you sure you want to\nskip this step?" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "ベースゲーム[用:よう]の[高品質:こうひんしつ]の\n[照明:しょうめい]テクスチャが[含:ふく]まれているため\nすべてのDLCをインストールすることを\n[強:つよ]くお[勧:すす]めします\n\nこの[手順:てじゅん]をスキップしてもよろしいですか？" },
             { ELanguage::German,   "Es wird empgohlen alle Erweiterungen zu installieren, da sie Beleuchtungs-Texturen in einer höheren Qualität für das Basisspiel beinhalten.\n\nBist du dir sicher, dass du diesen Schritt überspringen möchtest?" },
             { ELanguage::French,   "Il est fortement recommandé\nd'installer l'ensemble du\nDLC car elle inclut des\ntextures de lumière de\nhaute qualité pour le jeu\nde base.\n\nÊtes-vous sûr de vouloir\nignorer cette étape ?" },
             { ELanguage::Spanish,  "Se recomienda encarecidamente\ninstalar todo el DLC, ya que\ncontiene texturas de iluminación\nde alta calidad para el juego base.\n\n¿Seguro que quieres saltar este paso?" },
@@ -569,7 +569,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Message_TitleMissingDLC",
         {
             { ELanguage::English,  "This will restart the game to\nallow you to install any DLC\nthat you are missing.\n\nInstalling DLC will improve the\nlighting quality across the game.\n\nWould you like to install missing\ncontent?" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "これによりゲームが[再起動:さいきどう]し\n[不足:ふそく]しているDLCをインストール\nできるようになります\n\nDLCをインストールすると\nゲーム[全体:ぜんたい]の[照明:しょうめい][品質:ひんしつ]が[向上:こうじょう]します\n\n[不足:ふそく]しているコンテンツを\nインストールしますか？" },
             { ELanguage::German,   "Das Spiel wird neu gestartet\num die Installation einer fehlenden\nErweiterung zu ermöglichen.\n\nDie Installation einer\nErweiterung erhöht die Qualität\nder Beleuchtung im gesamten Spiel.\n\nMöchtest du den fehlenden\nInhalt installieren?" },
             { ELanguage::French,   "Cela redémarrera le jeu pour vous\npermettre d'installer les DLC\nmanquants.\n\nL'installation du DLC améliorera\nla qualité de l'éclairage dans le\njeu.\n\nSouhaitez-vous installer le\ncontenu manquant ?" },
             { ELanguage::Spanish,  "Esta opción reiniciará el juego\npara permitirte instalar los DLC\nque falten.\n\nInstalar el DLC mejorará la calidad\nde iluminación en todo el juego.\n\n¿Quieres instalar el contenido\nque falta?" },
@@ -582,7 +582,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Message_Title",
         {
             { ELanguage::English,  "This restarts the game to\nallow you to install any DLC\nthat you may be missing.\n\nYou are not currently\nmissing any DLC.\n\nWould you like to proceed\nanyway?" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "これによりゲームが[再起動:さいきどう]され\n[不足:ふそく]しているDLCを\nインストールできるようになります\n\n[現在:げんざい] [不足:ふそく]しているDLCはありません\n\nそれでも[続行:ぞっこう]しますか？" },
             { ELanguage::German,   "Das Spiel wird neu gestartet\num die Installation einer fehlenden\nErweiterung zu ermöglichen.\n\nEs kann keine weitere Erweiterung\ninstalliert werden.\n\nMöchtest du trotzdem fortfahren?" },
             { ELanguage::French,   "Cela redémarrera le jeu pour vous\npermettre d'installer les DLC\nmanquants.\n\nIl ne vous manque aucun DLC.\n\nVoulez-vous quand même continuer ?" },
             { ELanguage::Spanish,  "Esto reiniciará el juego\npara permitirte instalar\nlos DLC que falten.\n\nActualmente, no falta ningún\nDLC por instalarse.\n\n¿Quieres continuar de todos\nmodos?" },
@@ -649,7 +649,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Title_Message_AchievementDataCorrupt",
         {
             { ELanguage::English,  "The achievement data appears to be\ncorrupted and cannot be loaded.\n\nProceeding from this point will\nclear your achievement data." },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "[実績:じっせき]データが[破損:はそん]しているため\n[読:よ]み[込:こ]むことができません\n\nこの[先:さき]に[進:すす]むと[実績:じっせき]データが\n[消去:しょうきょ]されます" },
             { ELanguage::German,   "Die Erfolgsdaten sind möglicherweise\nfehlerhaft und können nicht\ngeladen werden.\n\nDurch das Fortfahren werden\ndeine bisherigen Erfolgsdaten gelöscht." },
             { ELanguage::French,   "Les données des succès semblent être\nendommagées et ne peuvent être\nchargées.\n\nSi vous continuez, vos données\nseront écrasées." },
             { ELanguage::Spanish,  "Los datos de logros parecen estar\ncorruptos y no pueden cargarse.\n\nContinuar a partir de este punto\neliminará los datos de logros." },
@@ -663,7 +663,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Title_Message_AchievementDataIOError",
         {
             { ELanguage::English,  "The achievement data could not be loaded.\nYour achievements will not be saved." },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "[実績:じっせき]データを[読:よ]み[込:こ]めませんでした\n[実績:じっせき]は[保存:ほぞん]されません。" },
             { ELanguage::German,   "Die Erfolgsdaten konnten nicht geladen werden.\nDeine Erfolge werden nicht gespeichert." },
             { ELanguage::French,   "Les données des succès ne\npeuvent être chargées.\nVos succès ne seront pas\nsauvegardés." },
             { ELanguage::Spanish,  "Los datos de logros no pueden cargarse.\nTus logros no serán guardados." },
@@ -675,7 +675,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Title_Message_UpdateAvailable",
         {
             { ELanguage::English,  "An update is available!\n\nWould you like to visit the\nreleases page to download it?" },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "アップデートが[利用:りよう][可能:かのう]です\n\nリリースページにアクセスして\nダウンロードしますか？" },
             { ELanguage::German,   "Ein Update ist verfügbar!\n\nMöchtest du die Release-Seite\nbesuchen um es herunterzuladen?" },
             { ELanguage::French,   "Une mise à jour est disponible !\n\nVoulez-vous visiter la page\ndes mises à jour pour la\ntélécharger ?" },
             { ELanguage::Spanish,  "¡Hay una actualización disponible!\n\n¿Quieres ir a la página\npara descargarla?" },
@@ -686,7 +686,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Video_BackendError",
         {
             { ELanguage::English,  "Unable to create a D3D12 (Windows) or Vulkan backend.\n\nPlease make sure that:\n\n- Your system meets the minimum requirements.\n- Your GPU drivers are up to date.\n- Your operating system is on the latest version available." },
-            { ELanguage::Japanese, "" },
+            { ELanguage::Japanese, "D3D12 (Windows)または\nVulkanバックエンドを[作成:さくせい]できません\n\n[次:つぎ]の[点:てん]を[確認:かくにん]してください：\n\n※システムが[最小要件:さいしょうようけん]を[満:み]たしている\n※GPUドライバーが[最新:さいしん]である\n※オペレーティングシステムが[最新:さいしん]バージョンである" },
             { ELanguage::German,   "Es ist nicht möglich, ein D3D12 (Windows) oder Vulkan-Backend zu erstellen.\n\nBitte stelle sicher, dass:\n\n- Dein System die Mindestanforderungen erfüllt.\n- Deine GPU-Treiber auf dem neuesten Stand sind.\n- Dein Betriebssystem auf der neuesten verfügbaren Version ist." },
             { ELanguage::French,   "Impossible de créer un backend D3D12 (Windows) ou Vulkan.\n\nVeuillez vous assurer que :\n\n- Votre système répond aux critères minimums requis.\n- Les pilotes de votre processeur graphique sont à jour.\n- Votre système d'exploitation est à jour." },
             { ELanguage::Spanish,  "No se puede crear un entorno de D3D12 (Windows) o de Vulkan.\n\nPor favor, asegúrate de que:\n\n- Tu equipo cumple con los requisitos mínimos.\n- Los drivers de tu tarjeta gráfica están actualizados.\n- Tu sistema operativo está actualizado a la última versión.\n" },
