@@ -565,7 +565,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
             { ELanguage::German,   "" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Sei sicuro di voler uscire?" }
+            { ELanguage::Italian,  "Sicuro di voler uscire?" }
         }
     },
     {
@@ -577,7 +577,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
             { ELanguage::German,   "" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Sei sicuro di voler annullare l'installazione?" }
+            { ELanguage::Italian,  "Sicuro di voler annullare l'installazione?" }
         }
     },
     {
@@ -589,7 +589,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
             { ELanguage::German,   "" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Sei sicuro di voler uscire dal gioco?" }
+            { ELanguage::Italian,  "Sicuro di voler uscire" }
         }
     },
     {
@@ -706,7 +706,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
             { ELanguage::German,   "" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Continua" }
+            { ELanguage::Italian,  "Avanti" }
         }
     },
     {
