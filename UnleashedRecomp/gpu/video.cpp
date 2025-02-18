@@ -285,6 +285,10 @@ static bool g_vulkan = false;
 static constexpr bool g_vulkan = true;
 #endif
 
+#ifndef _WIN32
+static bool g_mesaTriangleStripWorkaround = false;
+#endif
+
 static constexpr bool g_hardwareResolve = true;
 static constexpr bool g_hardwareDepthResolve = true;
 
@@ -1699,6 +1703,15 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
 
                 g_vulkan = (interfaceFunction == CreateVulkanInterfaceWrapper);
 #endif
+
+#ifndef _WIN32
+                if (interfaceFunction == CreateVulkanInterfaceWrapper)
+                {
+                    // Enable triangle strip workaround if we are on the Mesa RADV driver, as it currently has a bug where
+                    // restart indices cause triangles to be culled incorrectly. Converting them to degenerate triangles fixes it.
+                    g_mesaTriangleStripWorkaround = deviceDescription.name.find(" (RADV ") != std::string::npos;
+                }
+#endif
                 break;
             }
         }
@@ -2318,6 +2331,9 @@ static void DrawProfiler()
         ImGui::Text("Present Wait: %s", g_capabilities.presentWait ? "Supported" : "Unsupported");
         ImGui::Text("Triangle Fan: %s", g_capabilities.triangleFan ? "Supported" : "Unsupported");
         ImGui::Text("Dynamic Depth Bias: %s", g_capabilities.dynamicDepthBias ? "Supported" : "Unsupported");
+#ifndef _WIN32
+        ImGui::Text("Triangle Strip Workaround: %s", g_mesaTriangleStripWorkaround ? "Enabled" : "Disabled");
+#endif
         ImGui::NewLine();
 
         ImGui::Text("API: %s", g_vulkan ? "Vulkan" : "D3D12");
@@ -7402,6 +7418,8 @@ bool FxShadowMapMidAsmHook(PPCRegister& r4, PPCRegister& r5, PPCRegister& r6, PP
     }
 }
 
+#ifndef _WIN32
+
 // There is a driver bug on Mesa where restart indices cause incorrect culling and prevent some triangles from being rendered.
 // Restart indices can be converted to degenerate triangles as a workaround until this issue gets fixed.
 static void ConvertToDegenerateTriangles(uint16_t* indices, uint32_t indexCount, uint16_t*& newIndices, uint32_t& newIndexCount)
@@ -7456,7 +7474,7 @@ PPC_FUNC(sub_82E44AF8)
     uint16_t* newIndicesToFree = nullptr;
 
     auto databaseData = reinterpret_cast<Hedgehog::Database::CDatabaseData*>(base + ctx.r3.u32);
-    if (!databaseData->IsMadeOne())
+    if (g_mesaTriangleStripWorkaround && !databaseData->IsMadeOne())
     {
         auto meshResource = reinterpret_cast<MeshResource*>(base + ctx.r4.u32);
 
@@ -7519,7 +7537,7 @@ PPC_FUNC(sub_82E3AFC8)
     uint16_t* newIndices = nullptr;
 
     auto databaseData = reinterpret_cast<Hedgehog::Database::CDatabaseData*>(base + ctx.r3.u32);
-    if (!databaseData->IsMadeOne())
+    if (g_mesaTriangleStripWorkaround && !databaseData->IsMadeOne())
     {
         auto lightAndIndexBufferResource = reinterpret_cast<LightAndIndexBufferResourceV1*>(base + ctx.r4.u32);
 
@@ -7558,7 +7576,7 @@ PPC_FUNC(sub_82E3B1C0)
     uint16_t* newIndices = nullptr;
 
     auto databaseData = reinterpret_cast<Hedgehog::Database::CDatabaseData*>(base + ctx.r3.u32);
-    if (!databaseData->IsMadeOne())
+    if (g_mesaTriangleStripWorkaround && !databaseData->IsMadeOne())
     {
         auto lightAndIndexBufferResource = reinterpret_cast<LightAndIndexBufferResourceV5*>(base + ctx.r4.u32);
 
@@ -7582,6 +7600,8 @@ PPC_FUNC(sub_82E3B1C0)
     if (newIndices != nullptr)
         g_userHeap.Free(newIndices);
 }
+
+#endif
 
 GUEST_FUNCTION_HOOK(sub_82BD99B0, CreateDevice);
 
