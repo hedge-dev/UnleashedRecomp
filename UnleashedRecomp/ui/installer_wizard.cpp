@@ -736,7 +736,17 @@ static void DrawDescriptionContainer()
     }
     else if (g_currentPage == WizardPage::InstallFailed)
     {
-        strncat(descriptionText, g_installerErrorMessage.c_str(), sizeof(descriptionText) - 1);
+        // Japanese needs text to be brought in by a normal width space
+        // as it allows for text to begin further than others for
+        // special characters.
+        if (Config::Language == ELanguage::Japanese)
+        {
+            strncat(descriptionText, std::string(" " + g_installerErrorMessage).c_str(), sizeof(descriptionText) - 1);
+        }
+        else
+        {
+            strncat(descriptionText, g_installerErrorMessage.c_str(), sizeof(descriptionText) - 1);
+        }
     }
 
     double textAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
@@ -769,6 +779,8 @@ static void DrawDescriptionContainer()
 
         textX += annotationFontSize;
         textY += annotationFontSize;
+
+        lineWidth += annotationFontSize;
     }
 
     drawList->PushClipRect(clipRectMin, clipRectMax, false);
