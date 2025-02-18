@@ -353,12 +353,12 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
     {
         "Installer_Page_InstallFailed",
         {
-            { ELanguage::English,  "Installation failed.\n\nError:\n" },
+            { ELanguage::English,  "Installation failed.\n\nError: " },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Installazione fallita.\n\nErrore:\n" }
+            { ELanguage::Italian,  "Installazione fallita.\n\nErrore: " }
         }
     },
     {
