@@ -7402,6 +7402,187 @@ bool FxShadowMapMidAsmHook(PPCRegister& r4, PPCRegister& r5, PPCRegister& r6, PP
     }
 }
 
+// There is a driver bug on Mesa where restart indices cause incorrect culling and prevent some triangles from being rendered.
+// Restart indices can be converted to degenerate triangles as a workaround until this issue gets fixed.
+static void ConvertToDegenerateTriangles(uint16_t* indices, uint32_t indexCount, uint16_t*& newIndices, uint32_t& newIndexCount)
+{
+    newIndices = reinterpret_cast<uint16_t*>(g_userHeap.Alloc(indexCount * sizeof(uint16_t) * 3));
+    newIndexCount = 0;
+
+    bool stripStart = true;
+    uint32_t stripSize = 0;
+    uint16_t lastIndex = 0;
+
+    for (uint32_t i = 0; i < indexCount; i++)
+    {
+        uint16_t index = indices[i];
+        if (index == 0xFFFF)
+        {
+            if ((stripSize % 2) != 0)
+                newIndices[newIndexCount++] = lastIndex;
+
+            stripStart = true;
+            stripSize = 0;
+        }
+        else 
+        {
+            if (stripStart && newIndexCount != 0)
+            {
+                newIndices[newIndexCount++] = lastIndex;
+                newIndices[newIndexCount++] = index;
+            }
+
+            newIndices[newIndexCount++] = index;
+            stripStart = false;
+            ++stripSize;
+            lastIndex = index;
+        }
+    }
+}
+
+struct MeshResource
+{
+    SWA_INSERT_PADDING(0x4);
+    be<uint32_t> indexCount;
+    be<uint32_t> indices;
+};
+
+static std::vector<uint16_t*> g_newIndicesToFree;
+
+// Hedgehog::Mirage::CMeshData::Make
+PPC_FUNC_IMPL(__imp__sub_82E44AF8);
+PPC_FUNC(sub_82E44AF8)
+{
+    uint16_t* newIndicesToFree = nullptr;
+
+    auto databaseData = reinterpret_cast<Hedgehog::Database::CDatabaseData*>(base + ctx.r3.u32);
+    if (!databaseData->IsMadeOne())
+    {
+        auto meshResource = reinterpret_cast<MeshResource*>(base + ctx.r4.u32);
+
+        if (meshResource->indexCount != 0)
+        {
+            uint16_t* newIndices;
+            uint32_t newIndexCount;
+
+            ConvertToDegenerateTriangles(
+                reinterpret_cast<uint16_t*>(base + meshResource->indices),
+                meshResource->indexCount,
+                newIndices,
+                newIndexCount);
+
+            meshResource->indexCount = newIndexCount;
+            meshResource->indices = static_cast<uint32_t>(reinterpret_cast<uint8_t*>(newIndices) - base);
+
+            if (PPC_LOAD_U32(0x83396E98) != NULL)
+            {
+                // If index buffers are getting merged, new indices need to survive until the merge happens.
+                g_newIndicesToFree.push_back(newIndices);
+            }
+            else 
+            {
+                // Otherwise, we can free it immediately.
+                newIndicesToFree = newIndices;
+            }
+        }
+    }
+
+    __imp__sub_82E44AF8(ctx, base);
+
+    if (newIndicesToFree != nullptr)
+        g_userHeap.Free(newIndicesToFree);
+}
+
+// Hedgehog::Mirage::CShareVertexBuffer::Reset
+PPC_FUNC_IMPL(__imp__sub_82E250D0);
+PPC_FUNC(sub_82E250D0)
+{
+    __imp__sub_82E250D0(ctx, base);
+
+    for (auto newIndicesToFree : g_newIndicesToFree)
+        g_userHeap.Free(newIndicesToFree);
+
+    g_newIndicesToFree.clear();
+}
+
+struct LightAndIndexBufferResourceV1
+{
+    SWA_INSERT_PADDING(0x4);
+    be<uint32_t> indexCount;
+    be<uint32_t> indices;
+};
+
+// Hedgehog::Mirage::CLightAndIndexBufferData::MakeV1
+PPC_FUNC_IMPL(__imp__sub_82E3AFC8);
+PPC_FUNC(sub_82E3AFC8)
+{
+    uint16_t* newIndices = nullptr;
+
+    auto databaseData = reinterpret_cast<Hedgehog::Database::CDatabaseData*>(base + ctx.r3.u32);
+    if (!databaseData->IsMadeOne())
+    {
+        auto lightAndIndexBufferResource = reinterpret_cast<LightAndIndexBufferResourceV1*>(base + ctx.r4.u32);
+
+        if (lightAndIndexBufferResource->indexCount != 0)
+        {
+            uint32_t newIndexCount;
+
+            ConvertToDegenerateTriangles(
+                reinterpret_cast<uint16_t*>(base + lightAndIndexBufferResource->indices),
+                lightAndIndexBufferResource->indexCount,
+                newIndices,
+                newIndexCount);
+
+            lightAndIndexBufferResource->indexCount = newIndexCount;
+            lightAndIndexBufferResource->indices = static_cast<uint32_t>(reinterpret_cast<uint8_t*>(newIndices) - base);
+        }
+    }
+
+    __imp__sub_82E3AFC8(ctx, base);
+
+    if (newIndices != nullptr)
+        g_userHeap.Free(newIndices);
+}
+
+struct LightAndIndexBufferResourceV5
+{
+    SWA_INSERT_PADDING(0x8);
+    be<uint32_t> indexCount;
+    be<uint32_t> indices;
+};
+
+// Hedgehog::Mirage::CLightAndIndexBufferData::MakeV5
+PPC_FUNC_IMPL(__imp__sub_82E3B1C0);
+PPC_FUNC(sub_82E3B1C0)
+{
+    uint16_t* newIndices = nullptr;
+
+    auto databaseData = reinterpret_cast<Hedgehog::Database::CDatabaseData*>(base + ctx.r3.u32);
+    if (!databaseData->IsMadeOne())
+    {
+        auto lightAndIndexBufferResource = reinterpret_cast<LightAndIndexBufferResourceV5*>(base + ctx.r4.u32);
+
+        if (lightAndIndexBufferResource->indexCount != 0)
+        {
+            uint32_t newIndexCount;
+
+            ConvertToDegenerateTriangles(
+                reinterpret_cast<uint16_t*>(base + lightAndIndexBufferResource->indices),
+                lightAndIndexBufferResource->indexCount,
+                newIndices,
+                newIndexCount);
+
+            lightAndIndexBufferResource->indexCount = newIndexCount;
+            lightAndIndexBufferResource->indices = static_cast<uint32_t>(reinterpret_cast<uint8_t*>(newIndices) - base);
+        }
+    }
+
+    __imp__sub_82E3B1C0(ctx, base);
+
+    if (newIndices != nullptr)
+        g_userHeap.Free(newIndices);
+}
+
 GUEST_FUNCTION_HOOK(sub_82BD99B0, CreateDevice);
 
 GUEST_FUNCTION_HOOK(sub_82BE6230, DestructResource);
