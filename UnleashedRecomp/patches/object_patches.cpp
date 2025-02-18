@@ -70,10 +70,9 @@ void ObjBigBarrelSetPositionMidAsmHook(PPCRegister& r3, PPCRegister& r4)
     }
 }
 
+// SWA::CExBullet::AddCallback
 // Tornado Defense bullet particles are colored by the button prompt, which differs on PlayStation 3.
 // Luckily, the PS3 particles are left in the files, and they get spawned by name when a bullet gets created.
-
-// SWA::CExBullet::AddCallback
 PPC_FUNC_IMPL(__imp__sub_82B14CC0);
 PPC_FUNC(sub_82B14CC0)
 {
@@ -98,4 +97,38 @@ PPC_FUNC(sub_82B14CC0)
     }
 
     __imp__sub_82B14CC0(ctx, base);
+}
+
+// CObjGrindDashPanel is particularly egregious when it comes to overlapping sounds at HFR
+// due to the character proxy sending the hit message multiple times in a frame. This is a
+// quick workaround to limit the message process function to occur at a 30 FPS time step.
+static constexpr size_t OBJ_GRIND_DASH_PANEL_SIZE = 0x160;
+
+void ObjGrindDashPanelAllocMidAsmHook(PPCRegister& r3)
+{
+    r3.u32 += sizeof(std::chrono::steady_clock::time_point);
+}
+
+// SWA::CObjGrindDashPanel::CObjGrindDashPanel
+PPC_FUNC_IMPL(__imp__sub_82614228);
+PPC_FUNC(sub_82614228)
+{
+    new (base + ctx.r3.u32 + OBJ_GRIND_DASH_PANEL_SIZE) std::chrono::steady_clock::time_point();
+    __imp__sub_82614228(ctx, base);
+}
+
+// SWA::CObjGrindDashPanel::MsgHitEventCollision::Impl
+PPC_FUNC_IMPL(__imp__sub_826145D8);
+PPC_FUNC(sub_826145D8)
+{
+    auto pLastHitTime = (std::chrono::steady_clock::time_point*)g_memory.Translate(ctx.r3.u32 + OBJ_GRIND_DASH_PANEL_SIZE);
+    auto now = std::chrono::steady_clock::now();
+    auto deltaTime = std::min(std::chrono::duration<double>(now - *pLastHitTime).count(), 1.0 / 15.0);
+
+    *pLastHitTime = now;
+
+    if (deltaTime < 1.0 / 30.0)
+        return;
+
+    __imp__sub_826145D8(ctx, base);
 }

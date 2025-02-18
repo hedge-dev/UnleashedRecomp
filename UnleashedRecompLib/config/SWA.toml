@@ -1086,3 +1086,8 @@ registers = ["r4"]
 name = "AnimationDataMakeMidAsmHook"
 address = 0x82BB38E4
 registers = ["r31", "r29", "r28"]
+
+[[midasm_hook]]
+name = "ObjGrindDashPanelAllocMidAsmHook"
+address = 0x82614948
+registers = ["r3"]
