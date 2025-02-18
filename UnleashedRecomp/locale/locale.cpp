@@ -323,7 +323,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "The content will be installed to the program's folder.\n\n" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Le contenu sera installé dans le même dossier que le programme.\n\n" },
+            { ELanguage::French,   "Le contenu sera installé dans le même dossier que le programme.\n" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Il contenuto verrà installato nella cartella di questo programma.\n\n" }
         }
@@ -389,7 +389,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Required space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Espace nécessaire : %2.2f Go" },
+            { ELanguage::French,   "Espace nécessaire :\n%2.2f Go" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Spazio necessario: %2.2f GiB" }
         }
@@ -400,7 +400,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Available space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Espace disponible : %2.2f Go" },
+            { ELanguage::French,   "Espace disponible :\n%2.2f Go" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Spazio disponibile: %2.2f GiB" }
         }
