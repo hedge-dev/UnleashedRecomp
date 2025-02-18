@@ -289,7 +289,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Welcome to\nUnleashed Recompiled!\n\nYou'll need an Xbox 360 copy\nof Sonic Unleashed in order to proceed with the installation." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Willkommen zu \nUnleashed Recompiled!\n\nEs wird eine Xbox 360 Kopie\nvon Sonic Unleashed benötigt\num mit der Installation fortfahren zu können." },
+            { ELanguage::German,   "Willkommen zu\nUnleashed Recompiled! Es wird eine Xbox 360 Kopie von Sonic Unleashed benötigt um mit der Installation fortfahren zu können." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Benvenuto a\nUnleashed Recompiled!\n\nDovrai avere una copia di\nSonic Unleashed per la Xbox 360\nper proseguire con l'installazione." }
@@ -322,7 +322,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "The content will be installed to the program's folder.\n\n" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Der Inhalt wird in dem Ordner des Programms installiert.\n" },
+            { ELanguage::German,   "Der Inhalt wird in dem Ordner des Programms installiert.\n\n" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Il contenuto verrà installato nella cartella di questo programma.\n\n" }
@@ -388,7 +388,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Required space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Benötigter Speicherplatz:\n%2.2f GiB" },
+            { ELanguage::German,   "Benötigter Speicherplatz: %2.2f GiB" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Spazio necessario: %2.2f GiB" }
@@ -399,7 +399,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Available space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Verfügbarer Speicherplatz:\n%2.2f GiB" },
+            { ELanguage::German,   "Verfügbarer Speicherplatz: %2.2f GiB" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Spazio disponibile: %2.2f GiB" }
@@ -490,7 +490,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Select a digital dump with\ncontent from the game.\n\nThese files can be obtained from\nyour Xbox 360 hard drive by\nfollowing the instructions on\nthe GitHub page.\n\nFor choosing a folder with extracted\nand unmodified game files, use\nthe \"Add Folder\" option instead." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Wähle einen digitalen Dump\nmit Inhalten von dem Spiel.\n\nDie entsprechenden Dateien\nkönnen über die Festplatte deiner\nXbox 360 erlangt werden.\nFolge hierfür den Anweisungen\nauf der GitHub Seite.\n\nUm einen Ordner mit\nden unmodifizierten extrahierten\nSpieldateien auszuwählen, benutze\ndie \"Ordner Hinzufügen\" Option\nstattdessen." },
+            { ELanguage::German,   "Wähle einen digitalen Dump von dem Spiel.\n\nDie Dateien können über die Festplatte deinerXbox 360 erlangt werden.\nFolge hierfür den Anweisungen auf der GitHub Seite.\n\nUm einen Ordner mit unmodifizierten Spieldateien auszuwählen, benutze die \"Ordner Hinzufügen\" Option stattdessen." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -502,7 +502,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Select a folder that contains the\nunmodified files that have been\nextracted from the game.\n\nThese files can be obtained from\nyour Xbox 360 hard drive by\nfollowing the instructions on\nthe GitHub page.\n\nFor choosing a digital dump,\nuse the\"Add Files\" option instead." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Wähle einen Ordner, der unmodifizierte\nDateien, die vom Spiel extrahiert wurden\nenthält.\n\nDie entsprechenden Dateien\nkönnen über die Festplatte deiner\nXbox 360 erlangt werden.\nFolge hierfür den Anweisungen\nauf der GitHub Seite.\n\nUm einen digitalen Dump\nauszuwählen, benutze\ndie \"Datei Hinzufügen\" Option\nstattdessen." },
+            { ELanguage::German,   "Wähle einen Ordner, der unmodifizierte Dateien, die vom Spiel extrahiert wurden enthält.\n\nDie Dateien können über die Festplatte deiner Xbox 360 erlangt werden.\nFolge hierfür den Anweisungen auf der GitHub Seite.\n\nUm einen digitalen Dump auszuwählen, benutze die \"Datei Hinzufügen\" Option stattdessen." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -526,7 +526,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "It is highly recommended\nthat you install all of the\nDLC, as it includes high\nquality lighting textures\nfor the base game.\n\nAre you sure you want to\nskip this step?" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Es wird empgohlen alle\nErweiterungen zu installieren\n, da sie Beleuchtungs-Texturen\nin einer höheren Qualität\nfür das Basisspiel beinhalten.\n\nBist du dir sicher, dass\ndu diesen Schritt überspringen\nmöchtest?" },
+            { ELanguage::German,   "Es wird empgohlen alle Erweiterungen zu installieren, da sie Beleuchtungs-Texturen in einer höheren Qualität für das Basisspiel beinhalten.\n\nBist du dir sicher, dass du diesen Schritt überspringen möchtest?" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Si consiglia di installare\ntutti i DLC, poichè includono\ntexture di illuminazione di qualità migliore.\n\nSei sicuro di voler saltare?" }
@@ -562,7 +562,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Are you sure you want to quit?" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Bist du dir sicher, dass du die Installation verlassen möchtest?" },
+            { ELanguage::German,   "Installation verlassen?" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -586,7 +586,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Are you sure you want to quit?" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Bist du dir sicher, dass du das Spiel verlassen möchtest?" },
+            { ELanguage::German,   "Spiel verlassen?" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Sei sicuro di voler uscire?" }
@@ -714,7 +714,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Select" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Auswahl" },
+            { ELanguage::German,   "Auswählen" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Seleziona" }
@@ -769,7 +769,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Switch" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Wechsel" },
+            { ELanguage::German,   "Wechseln" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Cambia" }
