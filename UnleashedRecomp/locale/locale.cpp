@@ -356,7 +356,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Installation failed.\n\nError: " },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "L'installation a échouée.\n\nErreur :\n\n" },
+            { ELanguage::French,   "L'installation a échouée.\n\nErreur : " },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Installazione fallita.\n\nErrore: " }
         }
