@@ -389,7 +389,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Required space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Espace nécessaire :\n%2.2f Go" },
+            { ELanguage::French,   "Espace nécessaire :\n%2.2f Gio" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Spazio necessario: %2.2f GiB" }
         }
@@ -400,7 +400,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Available space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
-            { ELanguage::French,   "Espace disponible :\n%2.2f Go" },
+            { ELanguage::French,   "Espace disponible :\n%2.2f Gio" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Spazio disponibile: %2.2f GiB" }
         }
