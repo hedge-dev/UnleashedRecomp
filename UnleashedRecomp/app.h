@@ -14,6 +14,7 @@ public:
     static inline ELanguage s_language;
 
     static inline double s_deltaTime;
+    static inline double s_time = 0.0; // How much time elapsed since the game started.
 
     static void Restart(std::vector<std::string> restartArgs = {});
     static void Exit();

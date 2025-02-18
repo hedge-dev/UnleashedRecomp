@@ -106,14 +106,14 @@ static constexpr size_t OBJ_GRIND_DASH_PANEL_SIZE = 0x160;
 
 void ObjGrindDashPanelAllocMidAsmHook(PPCRegister& r3)
 {
-    r3.u32 += sizeof(std::chrono::steady_clock::time_point);
+    r3.u32 += sizeof(double);
 }
 
 // SWA::CObjGrindDashPanel::CObjGrindDashPanel
 PPC_FUNC_IMPL(__imp__sub_82614228);
 PPC_FUNC(sub_82614228)
 {
-    new (base + ctx.r3.u32 + OBJ_GRIND_DASH_PANEL_SIZE) std::chrono::steady_clock::time_point();
+    *reinterpret_cast<double*>(base + ctx.r3.u32 + OBJ_GRIND_DASH_PANEL_SIZE) = 0.0;
     __imp__sub_82614228(ctx, base);
 }
 
@@ -121,14 +121,15 @@ PPC_FUNC(sub_82614228)
 PPC_FUNC_IMPL(__imp__sub_826145D8);
 PPC_FUNC(sub_826145D8)
 {
-    auto pLastHitTime = (std::chrono::steady_clock::time_point*)g_memory.Translate(ctx.r3.u32 + OBJ_GRIND_DASH_PANEL_SIZE);
-    auto now = std::chrono::steady_clock::now();
-    auto deltaTime = std::min(std::chrono::duration<double>(now - *pLastHitTime).count(), 1.0 / 15.0);
+    constexpr double REFERENCE_DELTA_TIME = 1.0 / 30.0;
+    constexpr double DELTA_TIME_TOLERANCE = 0.0001;
 
-    *pLastHitTime = now;
+    auto lastHitTime = reinterpret_cast<double*>(base + ctx.r3.u32 + OBJ_GRIND_DASH_PANEL_SIZE);
+    auto deltaTime = App::s_time - *lastHitTime;
 
-    if (deltaTime < 1.0 / 30.0)
-        return;
-
-    __imp__sub_826145D8(ctx, base);
+    if ((deltaTime + DELTA_TIME_TOLERANCE) > REFERENCE_DELTA_TIME)
+    {
+        __imp__sub_826145D8(ctx, base);
+        *lastHitTime = App::s_time;
+    }
 }

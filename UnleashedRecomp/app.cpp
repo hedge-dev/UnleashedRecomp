@@ -60,6 +60,7 @@ PPC_FUNC(sub_822C1130)
     }
 
     App::s_deltaTime = ctx.f1.f64;
+    App::s_time += App::s_deltaTime;
 
     // This function can also be called by the loading thread,
     // which SDL does not like. To prevent the OS from thinking
