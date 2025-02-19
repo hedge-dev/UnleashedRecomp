@@ -256,7 +256,7 @@ void ButtonGuide::Draw()
         if (btn.Visibility && !*btn.Visibility)
             continue;
 
-        auto str = Localise(btn.Name.c_str()).c_str();
+        auto str = Localise(btn.Name).c_str();
         auto iconWidth = Scale(g_iconWidths[btn.Icon]);
         auto iconHeight = Scale(g_iconHeights[btn.Icon]);
         auto textWidth = g_fntNewRodin->CalcTextSizeA(fontSize, FLT_MAX, 0, str).x;
@@ -283,7 +283,7 @@ void ButtonGuide::Draw()
         if (btn.Visibility && !*btn.Visibility)
             continue;
 
-        auto str = Localise(btn.Name.c_str()).c_str();
+        auto str = Localise(btn.Name).c_str();
         auto iconWidth = Scale(g_iconWidths[btn.Icon]);
         auto iconHeight = Scale(g_iconHeights[btn.Icon]);
         auto textWidth = g_fntNewRodin->CalcTextSizeA(fontSize, FLT_MAX, 0, str).x;

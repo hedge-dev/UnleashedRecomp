@@ -1,5 +1,4 @@
 #include <os/registry.h>
-#include <unordered_map>
 
 inline const wchar_t* g_registryRoot = L"Software\\UnleashedRecomp";
 

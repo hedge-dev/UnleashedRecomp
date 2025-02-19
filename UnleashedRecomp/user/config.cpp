@@ -511,43 +511,33 @@ std::string_view ConfigDef<T, isHidden>::GetName() const
 template<typename T, bool isHidden>
 std::string ConfigDef<T, isHidden>::GetNameLocalised(ELanguage language) const
 {
-    if (!Locale)
-        return Name;
-
-    if (!Locale->count(language))
+    if (Locale != nullptr)
     {
-        if (Locale->count(ELanguage::English))
-        {
-            return std::get<0>(Locale->at(ELanguage::English));
-        }
-        else
-        {
-            return Name;
-        }
+        auto languageFindResult = Locale->find(language);
+        if (languageFindResult == Locale->end())
+            languageFindResult = Locale->find(ELanguage::English);
+
+        if (languageFindResult != Locale->end())
+            return std::get<0>(languageFindResult->second);
     }
 
-    return std::get<0>(Locale->at(language));
+    return Name;
 }
 
 template<typename T, bool isHidden>
 std::string ConfigDef<T, isHidden>::GetDescription(ELanguage language) const
 {
-    if (!Locale)
-        return "";
-
-    if (!Locale->count(language))
+    if (Locale != nullptr)
     {
-        if (Locale->count(ELanguage::English))
-        {
-            return std::get<1>(Locale->at(ELanguage::English));
-        }
-        else
-        {
-            return "";
-        }
+        auto languageFindResult = Locale->find(language);
+        if (languageFindResult == Locale->end())
+            languageFindResult = Locale->find(ELanguage::English);
+
+        if (languageFindResult != Locale->end())
+            return std::get<1>(languageFindResult->second);
     }
 
-    return std::get<1>(Locale->at(language));
+    return "";
 }
 
 template<typename T, bool isHidden>
@@ -578,27 +568,27 @@ std::string ConfigDef<T, isHidden>::GetValueLocalised(ELanguage language) const
             : Localise("Common_Off");
     }
 
-    if (!locale)
-        return ToString(false);
-
-    if (!locale->count(language))
+    if (locale != nullptr)
     {
-        if (locale->count(ELanguage::English))
+        ELanguage languages[] = { language, ELanguage::English };
+
+        for (auto languageToFind : languages)
         {
-            language = ELanguage::English;
-        }
-        else
-        {
-            return ToString(false);
+            auto languageFindResult = locale->find(languageToFind);
+
+            if (languageFindResult != locale->end())
+            {
+                auto valueFindResult = languageFindResult->second.find(Value);
+                if (valueFindResult != languageFindResult->second.end())
+                    return std::get<0>(valueFindResult->second);
+            }
+
+            if (languageToFind == ELanguage::English)
+                break;
         }
     }
 
-    auto strings = locale->at(language);
-
-    if (!strings.count(Value))
-        return ToString(false);
-
-    return std::get<0>(strings.at(Value));
+    return ToString(false);
 }
 
 template<typename T, bool isHidden>
@@ -615,27 +605,27 @@ std::string ConfigDef<T, isHidden>::GetValueDescription(ELanguage language) cons
         return "";
     }
 
-    if (!locale)
-        return "";
-
-    if (!locale->count(language))
+    if (locale != nullptr)
     {
-        if (locale->count(ELanguage::English))
+        ELanguage languages[] = { language, ELanguage::English };
+
+        for (auto languageToFind : languages)
         {
-            language = ELanguage::English;
-        }
-        else
-        {
-            return "";
+            auto languageFindResult = locale->find(languageToFind);
+
+            if (languageFindResult != locale->end())
+            {
+                auto valueFindResult = languageFindResult->second.find(Value);
+                if (valueFindResult != languageFindResult->second.end())
+                    return std::get<1>(valueFindResult->second);
+            }
+
+            if (languageToFind == ELanguage::English)
+                break;
         }
     }
 
-    auto strings = locale->at(language);
-
-    if (!strings.count(Value))
-        return "";
-
-    return std::get<1>(strings.at(Value));
+    return "";
 }
 
 template<typename T, bool isHidden>

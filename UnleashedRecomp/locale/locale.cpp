@@ -41,7 +41,7 @@
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 */
 
-std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_locale =
+std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>> g_locale =
 {
     {
         "Options_Header_Name",
@@ -777,22 +777,18 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
     }
 };
 
-std::string& Localise(const char* key)
+std::string& Localise(const std::string_view& key)
 {
-    if (!g_locale.count(key))
-        return g_localeMissing;
-
-    if (!g_locale[key].count(Config::Language))
+    auto localeFindResult = g_locale.find(key);
+    if (localeFindResult != g_locale.end())
     {
-        if (g_locale[key].count(ELanguage::English))
-        {
-            return g_locale[key][ELanguage::English];
-        }
-        else
-        {
-            return g_localeMissing;
-        }
+        auto languageFindResult = localeFindResult->second.find(Config::Language);
+        if (languageFindResult == localeFindResult->second.end())
+            languageFindResult = localeFindResult->second.find(ELanguage::English);
+
+        if (languageFindResult != localeFindResult->second.end())
+            return languageFindResult->second;
     }
 
-    return g_locale[key][Config::Language];
+    return g_localeMissing;
 }

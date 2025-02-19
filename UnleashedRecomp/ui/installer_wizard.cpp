@@ -1399,7 +1399,7 @@ static void DrawNavigationButton()
 
     float squashRatio;
     constexpr float NAV_BUTTON_MAX_TEXT_WIDTH = 90.0f;
-    const char *nextButtonKey = "Installer_Button_Next";
+    std::string_view nextButtonKey = "Installer_Button_Next";
     if (skipButton)
     {
         nextButtonKey = "Installer_Button_Skip";

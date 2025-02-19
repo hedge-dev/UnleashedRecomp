@@ -59,7 +59,11 @@
 
 #define VALUE_THUMBNAIL_MAP(type) std::unordered_map<type, std::unique_ptr<GuestTexture>>
 
-static std::unordered_map<std::string_view, std::unique_ptr<GuestTexture>> g_namedThumbnails;
+static std::unique_ptr<GuestTexture> g_defaultThumbnail;
+
+static std::unique_ptr<GuestTexture> g_controlTutorialXBThumbnail;
+static std::unique_ptr<GuestTexture> g_controlTutorialPSThumbnail;
+
 static std::unordered_map<const IConfigDef*, std::unique_ptr<GuestTexture>> g_configThumbnails;
 
 static VALUE_THUMBNAIL_MAP(ETimeOfDayTransition) g_timeOfDayTransitionThumbnails;
@@ -76,10 +80,10 @@ static VALUE_THUMBNAIL_MAP(EUIAlignmentMode) g_uiAlignmentThumbnails;
 
 void LoadThumbnails()
 {
-    g_namedThumbnails["Default"] = LOAD_ZSTD_TEXTURE(g_default);
-    g_namedThumbnails["WindowSize"] = LOAD_ZSTD_TEXTURE(g_window_size);
-    g_namedThumbnails["ControlTutorialXB"] = LOAD_ZSTD_TEXTURE(g_control_tutorial_xb);
-    g_namedThumbnails["ControlTutorialPS"] = LOAD_ZSTD_TEXTURE(g_control_tutorial_ps);
+    g_defaultThumbnail = LOAD_ZSTD_TEXTURE(g_default);
+
+    g_controlTutorialXBThumbnail = LOAD_ZSTD_TEXTURE(g_control_tutorial_xb);
+    g_controlTutorialPSThumbnail = LOAD_ZSTD_TEXTURE(g_control_tutorial_ps);
 
     g_configThumbnails[&Config::Language] = LOAD_ZSTD_TEXTURE(g_language);
     g_configThumbnails[&Config::VoiceLanguage] = LOAD_ZSTD_TEXTURE(g_voice_language);
@@ -109,6 +113,7 @@ void LoadThumbnails()
     g_configThumbnails[&Config::AspectRatio] = LOAD_ZSTD_TEXTURE(g_aspect_ratio);
     g_configThumbnails[&Config::ResolutionScale] = LOAD_ZSTD_TEXTURE(g_resolution_scale);
     g_configThumbnails[&Config::Fullscreen] = LOAD_ZSTD_TEXTURE(g_fullscreen);
+    g_configThumbnails[&Config::XboxColorCorrection] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction);
 
     g_vsyncThumbnails[false] = LOAD_ZSTD_TEXTURE(g_vsync_off);
     g_vsyncThumbnails[true] = LOAD_ZSTD_TEXTURE(g_vsync_on);
@@ -143,8 +148,6 @@ void LoadThumbnails()
 
     g_uiAlignmentThumbnails[EUIAlignmentMode::Centre] = LOAD_ZSTD_TEXTURE(g_ui_alignment_centre);
     g_uiAlignmentThumbnails[EUIAlignmentMode::Edge] = LOAD_ZSTD_TEXTURE(g_ui_alignment_edge);
-
-    g_configThumbnails[&Config::XboxColorCorrection] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction);
 }
 
 template<typename T>
@@ -156,29 +159,23 @@ bool TryGetValueThumbnail(const IConfigDef* cfg, VALUE_THUMBNAIL_MAP(T)* thumbna
     if (!cfg->GetValue())
         return false;
 
-    auto result = thumbnails->at(*(T*)cfg->GetValue()).get();
+    auto findResult = thumbnails->find(*(T*)cfg->GetValue());
 
-    if (!result)
-        return false;
+    if (findResult != thumbnails->end())
+    {
+        *texture = findResult->second.get();
+        return true;
+    }
 
-    *texture = result;
-
-    return true;
-}
-
-GuestTexture* GetThumbnail(const std::string_view name)
-{
-    if (!g_namedThumbnails.count(name))
-        return g_namedThumbnails["Default"].get();
-
-    return g_namedThumbnails[name].get();
+    return false;
 }
 
 GuestTexture* GetThumbnail(const IConfigDef* cfg)
 {
-    if (!g_configThumbnails.count(cfg))
+    auto findResult = g_configThumbnails.find(cfg);
+    if (findResult == g_configThumbnails.end())
     {
-        auto texture = g_namedThumbnails["Default"].get();
+        auto texture = g_defaultThumbnail.get();
 
         if (cfg == &Config::ControlTutorial)
         {
@@ -187,7 +184,7 @@ GuestTexture* GetThumbnail(const IConfigDef* cfg)
             if (Config::ControllerIcons == EControllerIcons::Auto)
                 isPlayStation = hid::g_inputDeviceController == hid::EInputDevice::PlayStation;
 
-            texture = isPlayStation ? g_namedThumbnails["ControlTutorialPS"].get() : g_namedThumbnails["ControlTutorialXB"].get();
+            texture = isPlayStation ? g_controlTutorialPSThumbnail.get() : g_controlTutorialXBThumbnail.get();
         }
         if (cfg == &Config::TimeOfDayTransition)
         {
@@ -237,5 +234,5 @@ GuestTexture* GetThumbnail(const IConfigDef* cfg)
         return texture;
     }
 
-    return g_configThumbnails[cfg].get();
+    return findResult->second.get();
 }
