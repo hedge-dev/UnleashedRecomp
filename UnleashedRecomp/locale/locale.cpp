@@ -589,7 +589,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
             { ELanguage::German,   "" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
-            { ELanguage::Italian,  "Sicuro di voler uscire" }
+            { ELanguage::Italian,  "Sicuro di voler uscire ?" }
         }
     },
     {

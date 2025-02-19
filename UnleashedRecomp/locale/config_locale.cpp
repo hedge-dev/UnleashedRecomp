@@ -53,7 +53,7 @@ CONFIG_DEFINE_LOCALE(Language)
     { ELanguage::German,   { "Sprache", "" } },
     { ELanguage::French,   { "Langue", "" } },
     { ELanguage::Spanish,  { "Idioma", "" } },
-    { ELanguage::Italian,  { "Lingua", "" } }
+    { ELanguage::Italian,  { "Lingua", "Cambia la lingua utilizzata per i testi e i logo." } }
 };
 
 // Notes: do not localise this.
