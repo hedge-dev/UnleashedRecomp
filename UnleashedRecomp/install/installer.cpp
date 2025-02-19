@@ -598,5 +598,5 @@ XexPatcher::Result Installer::checkGameUpdateCompatibility(const std::filesystem
     }
 
     std::vector<uint8_t> patchedBytes;
-    return XexPatcher::apply(xexBytes, patchBytes, patchedBytes, true);
+    return XexPatcher::apply(xexBytes.data(), xexBytes.size(), patchBytes.data(), patchBytes.size(), patchedBytes, true);
 }

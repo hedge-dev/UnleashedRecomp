@@ -1,5 +1,7 @@
 [main]
 file_path = "../private/default.xex"
+patch_file_path = "../private/default.xexp"
+patched_file_path = "../private/default_patched.xex"
 out_directory_path = "../ppc"
 switch_table_file_path = "SWA_switch_tables.toml"
 

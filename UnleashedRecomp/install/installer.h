@@ -4,7 +4,7 @@
 #include <set>
 
 #include "virtual_file_system.h"
-#include "xex_patcher.h"
+#include <xex_patcher.h>
 
 enum class DLC {
     Unknown,

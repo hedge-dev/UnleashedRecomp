@@ -28,7 +28,10 @@ endforeach()
 add_custom_command(
     OUTPUT ${UNLEASHED_RECOMP_PPC_RECOMPILED_SOURCES}
     COMMAND $<TARGET_FILE:XenonRecomp>
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/private/default.xex" "${CMAKE_CURRENT_SOURCE_DIR}/config/SWA.toml"
+    DEPENDS 
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/default.xex"
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/default.xexp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/config/SWA.toml"
 )
 
 set(XENOS_RECOMP_ROOT "${UNLEASHED_RECOMP_TOOLS_ROOT}/XenosRecomp/XenosRecomp")

@@ -165,10 +165,8 @@ set(UNLEASHED_RECOMP_UI_CXX_SOURCES
 set(UNLEASHED_RECOMP_INSTALL_CXX_SOURCES
     "install/installer.cpp"
     "install/iso_file_system.cpp"
-    "install/memory_mapped_file.cpp"
     "install/update_checker.cpp"
     "install/xcontent_file_system.cpp"
-    "install/xex_patcher.cpp"
     "install/hashes/apotos_shamar.cpp"
     "install/hashes/chunnan.cpp"
     "install/hashes/empire_city_adabat.cpp"
@@ -201,8 +199,6 @@ set(UNLEASHED_RECOMP_THIRDPARTY_SOURCES
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/implot/implot.cpp"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/implot/implot_demo.cpp"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/implot/implot_items.cpp"
-    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/libmspack/libmspack/mspack/lzxd.c"
-    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/tiny-AES-c/aes.c"
     "${UNLEASHED_RECOMP_TOOLS_ROOT}/XenosRecomp/thirdparty/smol-v/source/smolv.cpp"
 )
 
@@ -212,11 +208,8 @@ set(UNLEASHED_RECOMP_THIRDPARTY_INCLUDES
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/imgui"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/implot"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/json/include"
-    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/libmspack/libmspack/mspack"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/magic_enum/include"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/stb"
-    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/tiny-AES-c"
-    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/TinySHA1"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/unordered_dense/include"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/volk"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/Vulkan-Headers/include"

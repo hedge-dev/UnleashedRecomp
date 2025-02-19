@@ -7,9 +7,6 @@
 [submodule "tools/XenosRecomp"]
 	path = tools/XenosRecomp
 	url = https://github.com/hedge-dev/XenosRecomp.git
-[submodule "thirdparty/libmspack"]
-	path = thirdparty/libmspack
-	url = https://github.com/kyz/libmspack
 [submodule "UnleashedRecompResources"]
 	path = UnleashedRecompResources
 	url = https://github.com/hedge-dev/UnleashedRecompResources.git
@@ -40,9 +37,6 @@
 [submodule "thirdparty/concurrentqueue"]
 	path = thirdparty/concurrentqueue
 	url = https://github.com/cameron314/concurrentqueue.git
-[submodule "thirdparty/tiny-AES-c"]
-	path = thirdparty/tiny-AES-c
-	url = https://github.com/kokke/tiny-AES-c.git
 [submodule "thirdparty/magic_enum"]
 	path = thirdparty/magic_enum
 	url = https://github.com/Neargye/magic_enum.git
