@@ -76,7 +76,6 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         {
             { ELanguage::English,  "INPUT" },
             { ELanguage::Japanese, "INPUT" },
-            { ELanguage::Japanese, "" },
             { ELanguage::German,   "EINGABE" },
             { ELanguage::French,   "COMMANDES" },
             { ELanguage::Spanish,  "CONTROLES" },

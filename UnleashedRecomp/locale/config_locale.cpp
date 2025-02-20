@@ -508,7 +508,7 @@ CONFIG_DEFINE_LOCALE(BattleTheme)
 CONFIG_DEFINE_LOCALE(WindowSize)
 {
     { ELanguage::English,  { "Window Size", "Adjust the size of the game window in windowed mode." } },
-    { ELanguage::Japanese, { "ウィンドウサイズ", "ウィンドウモードで\u200Bゲームの\u200Bウィンドウサイズを\u200B[調整:ちょうせい]できます" }},
+    { ELanguage::Japanese, { "ウィンドウサイズ", "ウィンドウモードで\u200Bゲームの\u200Bウィンドウサイズを\u200B[調整:ちょうせい]できます" } },
     { ELanguage::German,   { "Fenstergröße", "Ändere die Größe des Spielfensters im Fenstermodus." } },
     { ELanguage::French,   { "Taille de la fenêtre", "Modifie la taille de la fenêtre de jeu en mode fenêtré." } },
     { ELanguage::Spanish,  { "Tamaño de ventana", "Ajusta el tamaño de la ventana de juego." } },
@@ -901,7 +901,7 @@ CONFIG_DEFINE_LOCALE(XboxColorCorrection)
 CONFIG_DEFINE_LOCALE(CutsceneAspectRatio)
 {
     { ELanguage::English,  { "Cutscene Aspect Ratio", "Change the aspect ratio of the real-time cutscenes." } },
-    { ELanguage::Japanese, { "アスペクト[比:ひ]のカットシーン", "リアルタイムカットシーンの\u200Bアスペクト[比:ひ]を\u200B[変更:へんこう]できます" } },
+    { ELanguage::Japanese, { "アスペクト[比:ひ]のカットシーン", "リアルタイム\u200Bカットシーンの\u200Bアスペクト[比:ひ]を\u200B[変更:へんこう]できます" } },
     { ELanguage::German,   { "Zwischensequenz-Seitenverhältnis", "Verändere das Seitenverhältnis der Echtzeit-Zwischensequenzen." } },
     { ELanguage::French,   { "Format des cinématiques", "Modifie le format d'image des cinématiques en temps réel." } },
     { ELanguage::Spanish,  { "Relación de aspecto de cinemáticas", "Cambia la relación de aspecto de las cinemáticas de tiempo real." } },
