@@ -355,7 +355,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Installation failed.\n\nError:\n\n" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Installation fehlgeschlagen. Fehler:\n\n" },
+            { ELanguage::German,   "Installation fehlgeschlagen.\n\nFehler: " },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Installazione fallita.\n\nErrore:\n\n" }
