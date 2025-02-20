@@ -680,7 +680,7 @@ void DrawRubyAnnotatedText(const ImFont* font, float fontSize, float maxWidth, c
     for (auto& line : lines)
     {
         line = ReAddRubyAnnotations(line, input.second);
-        if (!line.empty() && line.substr(0, 3) != "ã€Œ" && leadingSpace)
+        if (!line.empty() && line.substr(0, 3) != "「" && leadingSpace)
         {
             line.insert(0, " ");
         }

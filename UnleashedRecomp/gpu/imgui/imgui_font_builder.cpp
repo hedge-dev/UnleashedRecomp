@@ -257,7 +257,10 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
                 v0 / packer.height, 
                 advance);
         }
-
+        
+        // Used as a zero-width helper for automatic line breaks.
+        // This is useful for languages like Japanese to separate 'words'
+        // so that they don't get split mid-kana by the automatic splitter.
         config.DstFont->AddGlyph(
             &config,
             0x200B,
@@ -271,6 +274,10 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
             0.0f,
             0.0f);
 
+        // A duplicate of the normal width space character.
+        // Overrides the unicode Four-Per-Em Space character.
+        // This can be used to add visual spacers that are ignored
+        // by the automatic line splitting logic.
         config.DstFont->AddGlyph(
             &config,
             0x2005,
