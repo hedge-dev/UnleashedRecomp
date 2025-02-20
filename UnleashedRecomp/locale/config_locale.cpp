@@ -611,7 +611,7 @@ CONFIG_DEFINE_LOCALE(ResolutionScale)
 CONFIG_DEFINE_LOCALE(Fullscreen)
 {
     { ELanguage::English,  { "Fullscreen", "Toggle between borderless fullscreen or windowed mode." } },
-    { ELanguage::Japanese, { "フルスクリーン", "ボーダーレスフルスクリーンか\u200Bウィンドウモードを\u200B[選択:せんたく]できます" } },
+    { ELanguage::Japanese, { "フルスクリーン", "ボーダーレス\u200Bフルスクリーンか\u200Bウィンドウモードを\u200B[選択:せんたく]できます" } },
     { ELanguage::German,   { "Vollbild", "Wechsle zwischen dem randlosen Vollbildmodus und dem Fenstermodus." } },
     { ELanguage::French,   { "Plein écran", "Alterne entre le mode plein écran sans bordure et le mode fenêtré." } },
     { ELanguage::Spanish,  { "Pantalla completa", "Cambia entre modo de pantalla completa o ventana." } },
@@ -706,7 +706,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EAntiAliasing)
 CONFIG_DEFINE_LOCALE(TransparencyAntiAliasing)
 {
     { ELanguage::English,  { "Transparency Anti-Aliasing", "Apply anti-aliasing to alpha transparent textures." } },
-    { ELanguage::Japanese, { "アンチエイリアスのトランスペアレンシー", "アルファ[透明:とうめい]テクスチャに\u200Bアンチエイリアシングを\u200B[適用:てきよう]されます" } },
+    { ELanguage::Japanese, { "アンチエイリアスのトランスペアレンシー", "アルファ[透明:とうめい]\u200Bテクスチャに\u200Bアンチエイリアシングを\u200B[適用:てきよう]されます" } },
     { ELanguage::German,   { "Transparenz-Kantenglättung", "Wende Kantenglättung auf Alpha-Transparenz-Texturen an." } },
     { ELanguage::French,   { "Anticrénelage de transparence", "Applique l'anticrénelage sur les textures transparentes." } },
     { ELanguage::Spanish,  { "Anti-Aliasing de transparencias", "Aplica antialiasing a las texturas transparentes." } },
@@ -849,7 +849,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EMotionBlur)
         {
             { EMotionBlur::Off,      { "オフ", "" } },
             { EMotionBlur::Original, { "オリジナル", "" } },
-            { EMotionBlur::Enhanced, { "エンハンスド", "エンハンスド: パフォーマンスを\u200B[犠牲:ぎせい]にして　より多くのサンプルを\u200B[使用:しよう]してより\u200B[滑:なめ]らかなモーションブラーを\u200B[実現:じつげん]されます" } }
+            { EMotionBlur::Enhanced, { "エンハンスド", "エンハンスド: パフォーマンスを\u200B[犠牲:ぎせい]にして\u200Bより[多:おお]くの\u200Bサンプルを\u200B[使用:しよう]してより\u200B[滑:なめ]らかな\u200Bモーションブラーを\u200B[実現:じつげん]されます" } }
         }
     },
     {
@@ -890,7 +890,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EMotionBlur)
 CONFIG_DEFINE_LOCALE(XboxColorCorrection)
 {
     { ELanguage::English,  { "Xbox Color Correction", "Use the warm tint from the Xbox version of the game." } },
-    { ELanguage::Japanese, { "[色補正:いろほせい]のXBOX", "Xbox[版:ばん]のゲームの\u200B[暖色系:だんしょくけい]の[色合:いろあ]いを\u200B[使用:しよう]されます" } },
+    { ELanguage::Japanese, { "XBOXの[色補正:いろほせい]", "Xbox[版:ばん]のゲームの\u200B[暖色系:だんしょくけい]の[色合:いろあ]いを\u200B[使用:しよう]されます" } },
     { ELanguage::German,   { "Xbox Farbkorrektur", "Benutzt den warmen Farbstich aus der Xbox-Version des Spiels." } },
     { ELanguage::French,   { "Correction couleurs Xbox", "Utilise le filtre de couleur provenant de la version Xbox du jeu." } },
     { ELanguage::Spanish,  { "Corrección de color de Xbox", "Utiliza el tono cálido de la versión Xbox del juego." } },
@@ -921,8 +921,8 @@ CONFIG_DEFINE_ENUM_LOCALE(ECutsceneAspectRatio)
     {
         ELanguage::Japanese,
         {
-            { ECutsceneAspectRatio::Original, { "オリジナル", "オリジナル: " } },
-            { ECutsceneAspectRatio::Unlocked, { "解除", "[解除:かいじょ]: カットシーンの\u200Bアスペクト[比:ひ]を\u200Bウィンドウサイズに\u200B[合:あ]わせて\u200B[調整:ちょうせい]されます\n\n[警告:けいこく]: 元の16:9のアスペクト[比:ひ]を\u200B[超:こ]えると\u200B[視覚的:しかくてき]な\u200B[異常:いじょう]が\u200B[発生:はっせい]します" } },
+            { ECutsceneAspectRatio::Original, { "オリジナル", "オリジナル: カットシーンを\u200B[元:もと]の\u200B16:9の\u200Bアスペクト[比:ひ]に\u200B[固定:こてい]されます" } },
+            { ECutsceneAspectRatio::Unlocked, { "解除", "[解除:かいじょ]: カットシーンの\u200Bアスペクト[比:ひ]を\u200Bウィンドウサイズに\u200B[合:あ]わせて\u200B[調整:ちょうせい]されます\n\n[警告:けいこく]: [元:もと]の\u200B16:9の\u200Bアスペクト[比:ひ]を\u200B[超:こ]えると\u200B[視覚的:しかくてき]な\u200B[異常:いじょう]が\u200B[発生:はっせい]します" } },
         }
     },
     {
