@@ -183,6 +183,9 @@ void AchievementOverlay::Draw()
                 IM_COL32(255, 255, 255, 255)                                                            // col
             );
 
+            // Use low quality text.
+            SetShaderModifier(IMGUI_SHADER_MODIFIER_LOW_QUALITY_TEXT);
+
             // Draw header text.
             DrawTextWithShadow
             (
@@ -208,6 +211,9 @@ void AchievementOverlay::Draw()
                 1.0f,                                                                                                              // radius
                 IM_COL32(0, 0, 0, 255)                                                                                             // shadowColour
             );
+
+            // Reset low quality text shader modifier.
+            SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
         }
         else
         {

@@ -14,7 +14,6 @@
 constexpr float DEFAULT_SIDE_MARGINS = 379;
 
 ImFont* g_fntNewRodin;
-ImFont* g_fntNewRodinLQ;
 
 std::unique_ptr<GuestTexture> g_upControllerIcons;
 std::unique_ptr<GuestTexture> g_upKBMIcons;
@@ -144,21 +143,13 @@ std::tuple<std::tuple<ImVec2, ImVec2>, GuestTexture*> GetButtonIcon(EButtonIcon 
     return std::make_tuple(btn, texture);
 }
 
-ImFont* GetFont(EFontQuality fontQuality)
-{
-    return fontQuality == EFontQuality::Low
-        ? g_fntNewRodinLQ
-        : g_fntNewRodin;
-}
-
 static void DrawGuide(float* offset, ImVec2 regionMin, ImVec2 regionMax, EButtonIcon icon,
     EButtonAlignment alignment, ImVec2 iconMin, ImVec2 iconMax, EFontQuality fontQuality,
     float textWidth, float maxTextWidth, float textScale, float fontSize, const char* text)
 {
     auto drawList = ImGui::GetBackgroundDrawList();
     auto iconWidth = Scale(g_iconWidths[icon]);
-    auto font = GetFont(fontQuality);
-    auto textMarginY = regionMin.y + Scale(8.89f);
+    auto textMarginY = regionMin.y + Scale(9.0f);
 
     ImVec2 textPos;
 
@@ -206,11 +197,17 @@ static void DrawGuide(float* offset, ImVec2 regionMin, ImVec2 regionMax, EButton
     SetScale({ textScale, 1.0f });
     SetOrigin(textPos);
 
-    DrawTextWithOutline(font, fontSize, textPos, IM_COL32_WHITE, text, 4, IM_COL32_BLACK);
-
-    // Add extra luminance to low quality text.
     if (fontQuality == EFontQuality::Low)
-        drawList->AddText(font, fontSize, textPos, IM_COL32(255, 255, 255, 127), text);
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_LOW_QUALITY_TEXT);
+
+    DrawTextWithOutline(g_fntNewRodin, fontSize, textPos, IM_COL32_WHITE, text, 4, IM_COL32_BLACK);
+
+    if (fontQuality == EFontQuality::Low)
+    {
+        // Add extra luminance to low quality text.
+        drawList->AddText(g_fntNewRodin, fontSize, textPos, IM_COL32(255, 255, 255, 127), text);
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
+    }
 
     SetScale({ 1.0f, 1.0f });
     SetOrigin({ 0.0f, 0.0f });
@@ -221,8 +218,6 @@ void ButtonGuide::Init()
     auto& io = ImGui::GetIO();
 
     g_fntNewRodin = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-M.otf");
-    g_fntNewRodinLQ = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-M.otf");
-
     g_upControllerIcons = LOAD_ZSTD_TEXTURE(g_controller);
     g_upKBMIcons = LOAD_ZSTD_TEXTURE(g_kbm);
 }

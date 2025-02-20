@@ -55,8 +55,8 @@ public:
     Button(std::string name, float maxWidth, EButtonIcon icon, bool* visibility)
         : Name(name), MaxWidth(maxWidth), Icon(icon), Visibility(visibility) {}
 
-    Button(std::string name, float maxWidth, EButtonIcon icon)
-        : Name(name), MaxWidth(maxWidth), Icon(icon) {}
+    Button(std::string name, float maxWidth, EButtonIcon icon, EFontQuality fontQuality = EFontQuality::High)
+        : Name(name), MaxWidth(maxWidth), Icon(icon), FontQuality(fontQuality) {}
 };
 
 class ButtonGuide

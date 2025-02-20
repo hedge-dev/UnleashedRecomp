@@ -223,6 +223,10 @@ void DrawButton(int rowIndex, float yOffset, float width, float height, std::str
     auto fontSize = Scale(28);
     auto textSize = g_fntSeurat->CalcTextSizeA(fontSize, FLT_MAX, 0, text.c_str());
 
+    // Show low quality text in-game.
+    if (App::s_isInit)
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_LOW_QUALITY_TEXT);
+
     DrawTextWithShadow
     (
         g_fntSeurat,
@@ -231,6 +235,10 @@ void DrawButton(int rowIndex, float yOffset, float width, float height, std::str
         isSelected ? IM_COL32(255, 128, 0, 255) : IM_COL32(255, 255, 255, 255),
         text.c_str()
     );
+
+    // Reset the shader modifier.
+    if (App::s_isInit)
+        SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 }
 
 void DrawNextButtonGuide(bool isController, bool isKeyboard)
@@ -241,11 +249,16 @@ void DrawNextButtonGuide(bool isController, bool isKeyboard)
             ? EButtonIcon::Enter
             : EButtonIcon::LMB;
 
-    // Always show controller prompt in-game.
-    if (App::s_isInit)
-        icon = EButtonIcon::A;
+    auto fontQuality = EFontQuality::High;
 
-    ButtonGuide::Open(Button("Common_Next", FLT_MAX, icon));
+    // Always show controller prompt and low quality text in-game.
+    if (App::s_isInit)
+    {
+        icon = EButtonIcon::A;
+        fontQuality = EFontQuality::Low;
+    }
+
+    ButtonGuide::Open(Button("Common_Next", FLT_MAX, icon, fontQuality));
 }
 
 static void ResetSelection()
@@ -338,6 +351,10 @@ void MessageWindow::Draw()
 
     if (DrawContainer(g_appearTime, centre, { textSize.x / 2 + textMarginX, textSize.y / 2 + textMarginY }, !g_isControlsVisible))
     {
+        // Use low quality text when the game is booted to not clash with existing UI.
+        if (App::s_isInit)
+            SetShaderModifier(IMGUI_SHADER_MODIFIER_LOW_QUALITY_TEXT);
+
         DrawRubyAnnotatedText
         (
             g_fntSeurat,
@@ -358,6 +375,10 @@ void MessageWindow::Draw()
 
             true
         );
+
+        // Reset the shader modifier.
+        if (App::s_isInit)
+            SetShaderModifier(IMGUI_SHADER_MODIFIER_LOW_QUALITY_TEXT);
 
         drawList->PopClipRect();
 
@@ -423,10 +444,17 @@ void MessageWindow::Draw()
                             backIcon = EButtonIcon::Escape;
                         }
 
+                        auto fontQuality = EFontQuality::High;
+                        if (App::s_isInit)
+                        {
+                            // Show low quality text in-game.
+                            fontQuality = EFontQuality::Low;
+                        }
+
                         std::array<Button, 2> buttons =
                         {
-                            Button("Common_Select", 115.0f, selectIcon),
-                            Button("Common_Back", FLT_MAX, backIcon),
+                            Button("Common_Select", 115.0f, selectIcon, fontQuality),
+                            Button("Common_Back", FLT_MAX, backIcon, fontQuality),
                         };
 
                         ButtonGuide::Open(buttons);

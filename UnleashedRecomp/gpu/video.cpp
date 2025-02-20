@@ -1340,6 +1340,7 @@ struct ImGuiPushConstants
     ImU32 gradientBottomLeft{};
     uint32_t shaderModifier{};
     uint32_t texture2DDescriptorIndex{};
+    ImVec2 displaySize{};
     ImVec2 inverseDisplaySize{};
     ImVec2 origin{ 0.0f, 0.0f };
     ImVec2 scale{ 1.0f, 1.0f };
@@ -2496,6 +2497,7 @@ static void ProcDrawImGui(const RenderCommand& cmd)
     commandList->setViewports(RenderViewport(drawData.DisplayPos.x, drawData.DisplayPos.y, drawData.DisplaySize.x, drawData.DisplaySize.y));
 
     ImGuiPushConstants pushConstants{};
+    pushConstants.displaySize = drawData.DisplaySize;
     pushConstants.inverseDisplaySize = { 1.0f / drawData.DisplaySize.x, 1.0f / drawData.DisplaySize.y };
     commandList->setGraphicsPushConstants(0, &pushConstants);
 

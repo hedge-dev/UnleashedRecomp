@@ -45,6 +45,9 @@ void ResetGradient()
 
 void SetShaderModifier(uint32_t shaderModifier)
 {
+    if (shaderModifier == IMGUI_SHADER_MODIFIER_LOW_QUALITY_TEXT && Config::DisableLowResolutionFontOnCustomUI)
+        shaderModifier = IMGUI_SHADER_MODIFIER_NONE;
+
     auto callbackData = AddImGuiCallback(ImGuiCallback::SetShaderModifier);
     callbackData->setShaderModifier.shaderModifier = shaderModifier;
 }
