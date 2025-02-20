@@ -569,7 +569,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Message_TitleMissingDLC",
         {
             { ELanguage::English,  "This will restart the game to\nallow you to install any DLC\nthat you are missing.\n\nInstalling DLC will improve the\nlighting quality across the game.\n\nWould you like to install missing\ncontent?" },
-            { ELanguage::Japanese, "これによりゲームが[再起動:さいきどう]し[不足:ふそく]しているDLCを\nインストールできるようになります\n\nDLCをインストールすると\nゲーム[全体:ぜんたい]の[照明品質:しょうめいひんしつ]が[向上:こうじょう]します\n\n[不足:ふそく]しているコンテンツを\nインストールしますか？" },
+            { ELanguage::Japanese, "これによりゲームが[再起動:さいきどう]し[不足:ふそく]しているDLCを\nインストールできるようになります\n\nDLCをインストールすると\nゲーム[全体:ぜんたい]の [照明品質:しょうめいひんしつ] が[向上:こうじょう]します\n\n[不足:ふそく]しているコンテンツを\nインストールしますか？" },
             { ELanguage::German,   "Das Spiel wird neu gestartet\num die Installation einer fehlenden\nErweiterung zu ermöglichen.\n\nDie Installation einer\nErweiterung erhöht die Qualität\nder Beleuchtung im gesamten Spiel.\n\nMöchtest du den fehlenden\nInhalt installieren?" },
             { ELanguage::French,   "Cela redémarrera le jeu pour vous\npermettre d'installer les DLC\nmanquants.\n\nL'installation du DLC améliorera\nla qualité de l'éclairage dans le\njeu.\n\nSouhaitez-vous installer le\ncontenu manquant ?" },
             { ELanguage::Spanish,  "Esta opción reiniciará el juego\npara permitirte instalar los DLC\nque falten.\n\nInstalar el DLC mejorará la calidad\nde iluminación en todo el juego.\n\n¿Quieres instalar el contenido\nque falta?" },
