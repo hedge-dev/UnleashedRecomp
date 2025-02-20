@@ -800,7 +800,9 @@ static void DrawDescriptionContainer()
         [=](const char* str, float size, ImVec2 pos)
         {
             DrawTextBasic(g_seuratFont, size, pos, IM_COL32(255, 255, 255, 255 * textAlpha), str);
-        }
+        },
+        false,
+        Config::Language == ELanguage::Japanese
     );
 
     drawList->PopClipRect();
