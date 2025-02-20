@@ -157,19 +157,19 @@ static void DrawGuide(float* offset, ImVec2 regionMin, ImVec2 regionMax, EButton
     {
         auto iconMarginX = Scale(16);
 
-        iconMin = alignment == EButtonAlignment::Left
-            ? ImVec2(/* X */ regionMin.x + *offset - maxTextWidth + iconMarginX, /* Y */ iconMin.y)
-            : ImVec2(/* X */ regionMax.x - *offset - maxTextWidth + iconMarginX - iconWidth, /* Y */ iconMin.y);
+        iconMin.x = alignment == EButtonAlignment::Left
+            ? regionMin.x + *offset - maxTextWidth + (iconWidth / 2)
+            : regionMax.x - *offset - maxTextWidth - (iconWidth / 2) - iconMarginX;
 
-        iconMax = ImVec2(iconMin.x + iconWidth, iconMax.y);
+        iconMax.x = iconMin.x + iconWidth;
 
         // Left button.
         auto btnIcon = GetButtonIcon(icon == EButtonIcon::LBRB ? EButtonIcon::LB : EButtonIcon::LT);
         drawList->AddImage(std::get<1>(btnIcon), iconMin, iconMax, GET_UV_COORDS(std::get<0>(btnIcon)));
 
         auto dualIconMin = alignment == EButtonAlignment::Left
-            ? ImVec2(/* X */ regionMin.x + *offset + maxTextWidth - iconMarginX, /* Y */ iconMin.y)
-            : ImVec2(/* X */ regionMax.x - *offset + maxTextWidth - iconMarginX - iconWidth, /* Y */ iconMin.y);
+            ? ImVec2(iconMax.x + maxTextWidth + iconMarginX, iconMin.y)
+            : ImVec2(regionMax.x - *offset + maxTextWidth - iconWidth, iconMin.y);
 
         auto dualIconMax = ImVec2(dualIconMin.x + iconWidth, iconMax.y);
 
