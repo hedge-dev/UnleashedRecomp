@@ -449,11 +449,8 @@ static bool DrawCategories()
 
     auto inputState = SWA::CInputState::GetInstance();
 
-    bool moveLeft = !g_lockedOnOption && (inputState->GetPadState().IsTapped(SWA::eKeyState_LeftBumper) ||
-        inputState->GetPadState().IsTapped(SWA::eKeyState_LeftTrigger));
-
-    bool moveRight = !g_lockedOnOption && (inputState->GetPadState().IsTapped(SWA::eKeyState_RightBumper) ||
-        inputState->GetPadState().IsTapped(SWA::eKeyState_RightTrigger));
+    bool moveLeft = !g_lockedOnOption && inputState->GetPadState().IsTapped(SWA::eKeyState_LeftBumper);
+    bool moveRight = !g_lockedOnOption && inputState->GetPadState().IsTapped(SWA::eKeyState_RightBumper);
 
     if (moveLeft)
     {
