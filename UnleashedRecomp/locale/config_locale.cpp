@@ -236,8 +236,8 @@ CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
         ELanguage::German,
         {
             { EControllerIcons::Auto,        { "AUTO", "Auto: Das Spiel erkennt automatisch deinen Controller um die Symbole dementsprechend anzupassen." } },
-            { EControllerIcons::Xbox,        { "", "" } },
-            { EControllerIcons::PlayStation, { "", "" } }
+            { EControllerIcons::Xbox,        { "XBOX", "" } },
+            { EControllerIcons::PlayStation, { "PLAYSTATION", "" } }
         }
     },
     {
