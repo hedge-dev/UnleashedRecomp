@@ -289,7 +289,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Welcome to\nUnleashed Recompiled!\n\nYou'll need an Xbox 360 copy\nof Sonic Unleashed in order to proceed with the installation." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Willkommen zu\nUnleashed Recompiled! Es wird eine Xbox 360 Kopie von Sonic Unleashed benötigt um mit der Installation fortfahren zu können." },
+            { ELanguage::German,   "Willkommen zu\nUnleashed Recompiled!\nEs wird eine Xbox 360 Kopie von Sonic Unleashed benötigt um mit der Installation fortfahren zu können." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Benvenuto a\nUnleashed Recompiled!\n\nDovrai avere una copia di\nSonic Unleashed per la Xbox 360\nper proseguire con l'installazione." }
@@ -322,7 +322,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "The content will be installed to the program's folder.\n\n" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Der Inhalt wird in dem Ordner des Programms installiert.\n\n" },
+            { ELanguage::German,   "Der Inhalt wird in dem Ordner des Programms installiert.\n" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Il contenuto verrà installato nella cartella di questo programma.\n\n" }
@@ -355,7 +355,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Installation failed.\n\nError:\n\n" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Installation fehlgeschlagen\n\nFehler:\n\n" },
+            { ELanguage::German,   "Installation fehlgeschlagen. Fehler:\n\n" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Installazione fallita.\n\nErrore:\n\n" }
@@ -388,7 +388,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Required space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Benötigter Speicherplatz: %2.2f GiB" },
+            { ELanguage::German,   "Benötigter Speicherplatz:\n%2.2f GiB" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Spazio necessario: %2.2f GiB" }
@@ -399,7 +399,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Available space: %2.2f GiB" },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Verfügbarer Speicherplatz: %2.2f GiB" },
+            { ELanguage::German,   "Verfügbarer Speicherplatz:\n%2.2f GiB" },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "Spazio disponibile: %2.2f GiB" }
@@ -490,7 +490,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Select a digital dump with\ncontent from the game.\n\nThese files can be obtained from\nyour Xbox 360 hard drive by\nfollowing the instructions on\nthe GitHub page.\n\nFor choosing a folder with extracted\nand unmodified game files, use\nthe \"Add Folder\" option instead." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Wähle einen digitalen Dump von dem Spiel.\n\nDie Dateien können über die Festplatte deinerXbox 360 erlangt werden.\nFolge hierfür den Anweisungen auf der GitHub Seite.\n\nUm einen Ordner mit unmodifizierten Spieldateien auszuwählen, benutze die \"Ordner Hinzufügen\" Option stattdessen." },
+            { ELanguage::German,   "Wähle einen digitalen Dump von dem Spiel.\n\nDie Dateien können über die Festplatte deiner\nXbox 360 erlangt werden.\nFolge hierfür den Anweisungen auf der GitHub Seite.\n\nUm einen Ordner mit unmodifizierten Spieldateien auszuwählen, benutze die \"Ordner Hinzufügen\" Option stattdessen." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
@@ -502,7 +502,7 @@ std::unordered_map<std::string, std::unordered_map<ELanguage, std::string>> g_lo
         {
             { ELanguage::English,  "Select a folder that contains the\nunmodified files that have been\nextracted from the game.\n\nThese files can be obtained from\nyour Xbox 360 hard drive by\nfollowing the instructions on\nthe GitHub page.\n\nFor choosing a digital dump,\nuse the\"Add Files\" option instead." },
             { ELanguage::Japanese, "" },
-            { ELanguage::German,   "Wähle einen Ordner, der unmodifizierte Dateien, die vom Spiel extrahiert wurden enthält.\n\nDie Dateien können über die Festplatte deiner Xbox 360 erlangt werden.\nFolge hierfür den Anweisungen auf der GitHub Seite.\n\nUm einen digitalen Dump auszuwählen, benutze die \"Datei Hinzufügen\" Option stattdessen." },
+            { ELanguage::German,   "Wähle einen Ordner, der unmodifizierte Dateien, die vom Spiel extrahiert wurden enthält.\n\nDie Dateien können über die Festplatte deiner\nXbox 360 erlangt werden.\nFolge hierfür den Anweisungen auf der GitHub Seite.\n\nUm einen digitalen Dump auszuwählen, benutze die \"Datei Hinzufügen\" Option stattdessen." },
             { ELanguage::French,   "" },
             { ELanguage::Spanish,  "" },
             { ELanguage::Italian,  "" }
