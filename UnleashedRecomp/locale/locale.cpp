@@ -293,7 +293,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Page_SelectLanguage",
         {
             { ELanguage::English,  "Please select a language." },
-            { ELanguage::Japanese, "[言語:げんご]を[選択:せんたく]してください" },
+            { ELanguage::Japanese, " [言語:げんご]を[選択:せんたく]してください" },
             { ELanguage::German,   "Bitte eine Sprache auswählen." },
             { ELanguage::French,   "Choisissez une langue." },
             { ELanguage::Spanish,  "Selecciona un idioma." },
@@ -317,7 +317,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Page_SelectGameAndUpdate",
         {
             { ELanguage::English,  "Add the sources for the game and its title update." },
-            { ELanguage::Japanese, "ゲームのソースとタイトルアップデートを[追加:ついか]" },
+            { ELanguage::Japanese, " ゲームのソースとタイトルアップデート\n を[追加:ついか]" },
             { ELanguage::German,   "Füge die Quellen für das Spiel und dessen Update hinzu." },
             { ELanguage::French,   "Ajouter les fichiers du jeu ainsi que ses mises à jour." },
             { ELanguage::Spanish,  "Añade las fuentes para el juego y su actualización." },
@@ -329,7 +329,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Page_SelectDLC",
         {
             { ELanguage::English,  "Add the sources for the DLC." },
-            { ELanguage::Japanese, "DLCのソースを[追加:ついか]" },
+            { ELanguage::Japanese, " DLCのソースを[追加:ついか]" },
             { ELanguage::German,   "Füge die Quellen für die Erweiterungen des Spiels hinzu." },
             { ELanguage::French,   "Ajouter les fichiers pour les DLCs." },
             { ELanguage::Spanish,  "Añade las fuentes para el DLC." },
@@ -341,7 +341,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Page_CheckSpace",
         {
             { ELanguage::English,  "The content will be installed to the program's folder.\n\n" },
-            { ELanguage::Japanese, "コンテンツはプログラムのフォルダにインストールされます\n\n" },
+            { ELanguage::Japanese, " コンテンツはプログラムのフォルダに\n インストールされます\n" },
             { ELanguage::German,   "Der Inhalt wird in dem Ordner des Programms installiert.\n" },
             { ELanguage::French,   "Le contenu sera installé dans le même dossier que le programme.\n" },
             { ELanguage::Spanish,  "El contenido será instalado a la carpeta del programa.\n\n" },
@@ -353,7 +353,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Page_Installing",
         {
             { ELanguage::English,  "Please wait while the content is being installed..." },
-            { ELanguage::Japanese, "コンテンツのインストール[中:ちゅう]はお[待:ま]ちください" },
+            { ELanguage::Japanese, " コンテンツのインストール[中:ちゅう]はお[待:ま]ち\n ください" },
             { ELanguage::German,   "Bitte warten. Der Inhalt wird installiert..." },
             { ELanguage::French,   "Veuillez patienter pendant l'installation du contenu..." },
             { ELanguage::Spanish,  "Por favor, espera mientras el contenido se instala... " },
@@ -365,7 +365,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Page_InstallSucceeded",
         {
             { ELanguage::English,  "Installation complete!\nThis project is brought to you by:" },
-            { ELanguage::Japanese, "インストール[完了:かんりょう]！\nプロジェクト[制作:せいさく]：" },
+            { ELanguage::Japanese, " インストール[完了:かんりょう]！\n プロジェクト[制作:せいさく]：" },
             { ELanguage::German,   "Installation abgeschlossen!\nDieses Projekt wird präsentiert von:" },
             { ELanguage::French,   "Installation terminée !\nCe projet vous est présenté par:" },
             { ELanguage::Spanish,  "¡Instalación completada!\nEste proyecto ha sido posible gracias a:" },
@@ -377,7 +377,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Page_InstallFailed",
         {
             { ELanguage::English,  "Installation failed.\n\nError: " },
-            { ELanguage::Japanese, "インストールに[失敗:しっぱい]しました\n\nエラー： " },
+            { ELanguage::Japanese, " インストールに[失敗:しっぱい]しました\n\nエラー： " },
             { ELanguage::German,   "Installation fehlgeschlagen.\n\nFehler: " },
             { ELanguage::French,   "L'installation a échouée.\n\nErreur : " },
             { ELanguage::Spanish,  "La instalación falló.\n\nError: " },
@@ -411,7 +411,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Step_RequiredSpace",
         {
             { ELanguage::English,  "Required space: %2.2f GiB" },
-            { ELanguage::Japanese, "[必要:ひつよう]な[容量:ようりょう]: %2.2f GiB" },
+            { ELanguage::Japanese, " [必要:ひつよう]な[容量:ようりょう]: %2.2f GiB" },
             { ELanguage::German,   "Benötigter Speicherplatz:\n%2.2f GiB" },
             { ELanguage::French,   "Espace nécessaire :\n%2.2f Gio" },
             { ELanguage::Spanish,  "Espacio necesario: %2.2f GiB" },
@@ -423,7 +423,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Step_AvailableSpace",
         {
             { ELanguage::English,  "Available space: %2.2f GiB" },
-            { ELanguage::Japanese, "[使用:しよう][可能:かのう]な[容量:ようりょう]: %2.2f GiB" },
+            { ELanguage::Japanese, " [使用:しよう][可能:かのう]な[容量:ようりょう]: %2.2f GiB" },
             { ELanguage::German,   "Verfügbarer Speicherplatz:\n%2.2f GiB" },
             { ELanguage::French,   "Espace disponible :\n%2.2f Gio" },
             { ELanguage::Spanish,  "Espacio disponible: %2.2f GiB" },
