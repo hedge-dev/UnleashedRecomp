@@ -741,12 +741,10 @@ static void DrawDescriptionContainer()
         // special characters.
         if (Config::Language == ELanguage::Japanese)
         {
-            strncat(descriptionText, std::string(" " + g_installerErrorMessage).c_str(), sizeof(descriptionText) - 1);
+            strncat(descriptionText, " ", 1);
         }
-        else
-        {
-            strncat(descriptionText, g_installerErrorMessage.c_str(), sizeof(descriptionText) - 1);
-        }
+
+        strncat(descriptionText, g_installerErrorMessage.c_str(), sizeof(descriptionText) - 1);
     }
 
     double textAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
