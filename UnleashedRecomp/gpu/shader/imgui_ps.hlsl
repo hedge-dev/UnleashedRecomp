@@ -90,7 +90,7 @@ float4 SampleSdfFont(float4 color, Texture2D<float4> texture, float2 uv, float2 
     float screenPxRange = max(0.5 * dot(unitRange, screenTexSize), 1.0);
             
     float sd = median(textureColor.r, textureColor.g, textureColor.b) - 0.5;
-    float screenPxDistance = screenPxRange * (sd + g_PushConstants.Outline / (pxRange * 2.0));
+    float screenPxDistance = screenPxRange * (sd + g_PushConstants.Outline / (pxRange * 1.5));
             
     if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_TITLE_BEVEL)
     {
@@ -100,7 +100,7 @@ float4 SampleSdfFont(float4 color, Texture2D<float4> texture, float2 uv, float2 
 
         float cosTheta = dot(normal, normalize(float2(1, 1)));
         float3 gradient = lerp(color.rgb, cosTheta >= 0.0 ? rimColor : shadowColor, abs(cosTheta));
-        color.rgb = lerp(gradient, color.rgb, pow(saturate(sd + 0.8), 32.0));
+        color.rgb = lerp(gradient, color.rgb, pow(saturate(sd + 0.77), 32.0));
     }
     else if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_CATEGORY_BEVEL)
     {
