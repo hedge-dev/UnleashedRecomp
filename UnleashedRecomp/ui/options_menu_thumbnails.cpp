@@ -2,7 +2,6 @@
 #include <decompressor.h>
 #include <hid/hid.h>
 
-// TODO (Hyper): lower the resolution of these textures once final.
 #include <res/images/options_menu/thumbnails/achievement_notifications.dds.h>
 #include <res/images/options_menu/thumbnails/allow_background_input_xb.dds.h>
 #include <res/images/options_menu/thumbnails/allow_background_input_ps.dds.h>
@@ -36,14 +35,11 @@
 #include <res/images/options_menu/thumbnails/movie_scale_fill.dds.h>
 #include <res/images/options_menu/thumbnails/music_attenuation.dds.h>
 #include <res/images/options_menu/thumbnails/music_volume.dds.h>
-#include <res/images/options_menu/thumbnails/resolution_scale.dds.h>
-#include <res/images/options_menu/thumbnails/shadow_resolution_original.dds.h>
 #include <res/images/options_menu/thumbnails/shadow_resolution_x512.dds.h>
 #include <res/images/options_menu/thumbnails/shadow_resolution_x1024.dds.h>
 #include <res/images/options_menu/thumbnails/shadow_resolution_x2048.dds.h>
 #include <res/images/options_menu/thumbnails/shadow_resolution_x4096.dds.h>
 #include <res/images/options_menu/thumbnails/shadow_resolution_x8192.dds.h>
-#include <res/images/options_menu/thumbnails/subtitles.dds.h>
 #include <res/images/options_menu/thumbnails/time_transition_ps.dds.h>
 #include <res/images/options_menu/thumbnails/time_transition_xb.dds.h>
 #include <res/images/options_menu/thumbnails/transparency_antialiasing_false.dds.h>
@@ -97,7 +93,6 @@ void LoadThumbnails()
 
     g_configThumbnails[&Config::Language] = LOAD_ZSTD_TEXTURE(g_language);
     g_configThumbnails[&Config::VoiceLanguage] = LOAD_ZSTD_TEXTURE(g_voice_language);
-    //g_configThumbnails[&Config::Subtitles] = LOAD_ZSTD_TEXTURE(g_subtitles);
     g_configThumbnails[&Config::Hints] = LOAD_ZSTD_TEXTURE(g_hints);
     g_configThumbnails[&Config::AchievementNotifications] = LOAD_ZSTD_TEXTURE(g_achievement_notifications);
 
@@ -119,7 +114,6 @@ void LoadThumbnails()
     g_configThumbnails[&Config::WindowSize] = LOAD_ZSTD_TEXTURE(g_window_size);
     g_configThumbnails[&Config::Monitor] = LOAD_ZSTD_TEXTURE(g_monitor);
     g_configThumbnails[&Config::AspectRatio] = LOAD_ZSTD_TEXTURE(g_aspect_ratio);
-    //g_configThumbnails[&Config::ResolutionScale] = LOAD_ZSTD_TEXTURE(g_resolution_scale);
     g_configThumbnails[&Config::Fullscreen] = LOAD_ZSTD_TEXTURE(g_fullscreen);
     g_configThumbnails[&Config::XboxColorCorrection] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction);
 
@@ -137,7 +131,6 @@ void LoadThumbnails()
     g_transparencyAntiAliasingThumbnails[false] = LOAD_ZSTD_TEXTURE(g_transparency_antialiasing_false);
     g_transparencyAntiAliasingThumbnails[true] = LOAD_ZSTD_TEXTURE(g_transparency_antialiasing_true);
 
-    g_shadowResolutionThumbnails[EShadowResolution::Original] = LOAD_ZSTD_TEXTURE(g_shadow_resolution_original);
     g_shadowResolutionThumbnails[EShadowResolution::x512] = LOAD_ZSTD_TEXTURE(g_shadow_resolution_x512);
     g_shadowResolutionThumbnails[EShadowResolution::x1024] = LOAD_ZSTD_TEXTURE(g_shadow_resolution_x1024);
     g_shadowResolutionThumbnails[EShadowResolution::x2048] = LOAD_ZSTD_TEXTURE(g_shadow_resolution_x2048);
@@ -167,7 +160,15 @@ bool TryGetValueThumbnail(const IConfigDef* cfg, VALUE_THUMBNAIL_MAP(T)* thumbna
     if (!cfg->GetValue())
         return false;
 
-    auto findResult = thumbnails->find(*(T*)cfg->GetValue());
+    T value = *(T*)cfg->GetValue();
+
+    if constexpr (std::is_same_v<T, EShadowResolution>)
+    {
+        if (value == EShadowResolution::Original)
+            value = EShadowResolution::x1024;
+    }
+
+    auto findResult = thumbnails->find(value);
 
     if (findResult != thumbnails->end())
     {
