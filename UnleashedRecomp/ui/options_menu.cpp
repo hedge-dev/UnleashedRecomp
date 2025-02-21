@@ -1458,7 +1458,7 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
 
         if (g_inaccessibleReason)
         {
-            desc = *g_inaccessibleReason;
+            desc += "\n\n" + *g_inaccessibleReason;
         }
         else
         {
@@ -1476,10 +1476,9 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
             }
 
             const auto& valueDescription = g_selectedItem->GetValueDescription(Config::Language);
+
             if (!valueDescription.empty())
-            {
                 desc += "\n\n" + valueDescription;
-            }
         }
 
         clipRectMin = { clipRectMin.x, thumbnailMax.y };
