@@ -195,15 +195,15 @@ GuestTexture* GetThumbnail(const IConfigDef* cfg)
         {
             texture = isPlayStation ? g_controlTutorialPSThumbnail.get() : g_controlTutorialXBThumbnail.get();
         }
-        if (cfg == &Config::Vibration)
+        else if (cfg == &Config::Vibration)
         {
             texture = isPlayStation ? g_vibrationPSThumbnail.get() : g_vibrationXBThumbnail.get();
         }
-        if (cfg == &Config::AllowBackgroundInput)
+        else if (cfg == &Config::AllowBackgroundInput)
         {
             texture = isPlayStation ? g_backgroundInputPSThumbnail.get() : g_backgroundInputXBThumbnail.get();
         }
-        if (cfg == &Config::TimeOfDayTransition)
+        else if (cfg == &Config::TimeOfDayTransition)
         {
             TryGetValueThumbnail<ETimeOfDayTransition>(cfg, &g_timeOfDayTransitionThumbnails, &texture);
         }
