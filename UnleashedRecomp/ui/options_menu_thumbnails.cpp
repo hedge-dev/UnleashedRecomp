@@ -97,7 +97,7 @@ void LoadThumbnails()
 
     g_configThumbnails[&Config::Language] = LOAD_ZSTD_TEXTURE(g_language);
     g_configThumbnails[&Config::VoiceLanguage] = LOAD_ZSTD_TEXTURE(g_voice_language);
-    g_configThumbnails[&Config::Subtitles] = LOAD_ZSTD_TEXTURE(g_subtitles);
+    //g_configThumbnails[&Config::Subtitles] = LOAD_ZSTD_TEXTURE(g_subtitles);
     g_configThumbnails[&Config::Hints] = LOAD_ZSTD_TEXTURE(g_hints);
     g_configThumbnails[&Config::AchievementNotifications] = LOAD_ZSTD_TEXTURE(g_achievement_notifications);
 
@@ -119,7 +119,7 @@ void LoadThumbnails()
     g_configThumbnails[&Config::WindowSize] = LOAD_ZSTD_TEXTURE(g_window_size);
     g_configThumbnails[&Config::Monitor] = LOAD_ZSTD_TEXTURE(g_monitor);
     g_configThumbnails[&Config::AspectRatio] = LOAD_ZSTD_TEXTURE(g_aspect_ratio);
-    g_configThumbnails[&Config::ResolutionScale] = LOAD_ZSTD_TEXTURE(g_resolution_scale);
+    //g_configThumbnails[&Config::ResolutionScale] = LOAD_ZSTD_TEXTURE(g_resolution_scale);
     g_configThumbnails[&Config::Fullscreen] = LOAD_ZSTD_TEXTURE(g_fullscreen);
     g_configThumbnails[&Config::XboxColorCorrection] = LOAD_ZSTD_TEXTURE(g_xbox_color_correction);
 
