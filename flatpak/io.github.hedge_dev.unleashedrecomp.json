@@ -40,6 +40,16 @@
         },
         {
           "type": "file",
+          "path": "private/default.xexp",
+          "dest": "UnleashedRecompLib/private"
+        },
+        {
+          "type": "file",
+          "path": "private/default_patched.xex",
+          "dest": "UnleashedRecompLib/private"
+        },
+        {
+          "type": "file",
           "path": "private/shader.ar",
           "dest": "UnleashedRecompLib/private"
         }
