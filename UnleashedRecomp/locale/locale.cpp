@@ -213,7 +213,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "この\u200Bオプションは\u200B[現在:げんざい]の\u200BOSで\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option wird von diesem Betriebssystem nicht unterstützt." },
             { ELanguage::French,   "Cette option n'est pas prise en charge par votre système d'exploitation." },
-            { ELanguage::Spanish,  "Está opción no está soportada por tu sistema operativo." },
+            { ELanguage::Spanish,  "Esta opción no está soportada por tu sistema operativo." },
             { ELanguage::Italian,  "Questa opzione non è disponibile con il tuo sistema operativo." }
         }
     },
