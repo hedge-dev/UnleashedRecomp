@@ -1121,17 +1121,25 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     {
         if (config == &Config::WindowSize)
         {
-            auto displayModes = GameWindow::GetDisplayModes();
-
-            if (config->Value >= 0 && config->Value < displayModes.size())
+            if (Config::Fullscreen)
             {
-                auto& displayMode = displayModes[config->Value];
-
-                valueText = fmt::format("{}x{}", displayMode.w, displayMode.h);
+                int displayW, displayH;
+                GameWindow::GetSizeInPixels(&displayW, &displayH);
+                valueText = fmt::format("{}x{}", displayW, displayH);
             }
             else
             {
-                valueText = fmt::format("{}x{}", GameWindow::s_width, GameWindow::s_height);
+                auto displayModes = GameWindow::GetDisplayModes();
+                if (config->Value >= 0 && config->Value < displayModes.size())
+                {
+                    auto& displayMode = displayModes[config->Value];
+
+                    valueText = fmt::format("{}x{}", displayMode.w, displayMode.h);
+                }
+                else
+                {
+                    valueText = fmt::format("{}x{}", GameWindow::s_width, GameWindow::s_height);
+                }
             }
         }
         else if (config == &Config::Monitor)

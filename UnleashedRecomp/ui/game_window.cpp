@@ -378,6 +378,11 @@ SDL_Rect GameWindow::GetDimensions()
     return rect;
 }
 
+void GameWindow::GetSizeInPixels(int *w, int *h)
+{
+    SDL_GetWindowSizeInPixels(s_pWindow, w, h);
+}
+
 void GameWindow::SetDimensions(int w, int h, int x, int y)
 {
     s_width = w;

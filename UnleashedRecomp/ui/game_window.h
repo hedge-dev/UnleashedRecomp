@@ -37,6 +37,7 @@ public:
     static bool IsMaximised();
     static EWindowState SetMaximised(bool isEnabled);
     static SDL_Rect GetDimensions();
+    static void GetSizeInPixels(int *w, int *h);
     static void SetDimensions(int w, int h, int x = SDL_WINDOWPOS_CENTERED, int y = SDL_WINDOWPOS_CENTERED);
     static void ResetDimensions();
     static uint32_t GetWindowFlags();
