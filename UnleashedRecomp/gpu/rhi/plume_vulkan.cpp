@@ -2344,7 +2344,7 @@ namespace plume {
         dstWidth = rect.right - rect.left;
         dstHeight = rect.bottom - rect.top;
 #   elif defined(SDL_VULKAN_ENABLED)
-        SDL_GetWindowSize(renderWindow, (int *)(&dstWidth), (int *)(&dstHeight));
+        SDL_GetWindowSizeInPixels(renderWindow, (int *)(&dstWidth), (int *)(&dstHeight));
 #   elif defined(__ANDROID__)
         dstWidth = ANativeWindow_getWidth(renderWindow);
         dstHeight = ANativeWindow_getHeight(renderWindow);
