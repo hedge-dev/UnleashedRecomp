@@ -4,20 +4,20 @@ Unleashed Recompiled is an unofficial PC port of Sonic Unleashed created through
 
 **This project does not include any game assets. You must provide the files from your own legally acquired copy of the game to install or build Unleashed Recompiled.**
 
-[Check out the latest release here](/releases/latest).
+[Check out the latest release here](https://github.com/hedge-dev/UnleashedRecomp/releases/latest).
 
 [XenonRecomp](https://github.com/hedge-dev/XenonRecomp) and [XenosRecomp](https://github.com/hedge-dev/XenosRecomp) are the main recompilers used for converting the game’s original PowerPC code and Xenos shaders into compatible C++ and HLSL code respectively. The development of these recompilers was directly inspired by [N64: Recompiled](https://github.com/N64Recomp/N64Recomp), which was used to create [Zelda 64: Recompiled](https://github.com/Zelda64Recomp/Zelda64Recomp).
 
 ## Table of Contents
 
-- [Minimum System Requirements](#Minimum System Requirements)
-- [How To Install](#How To Install)
-- [Features](#Features)
-- [Update Roadmap](#Update Roadmap)
-- [Known Issues](#Known Issues)
-- [FAQ](#FAQ)
-- [Building](#Building)
-- [Credits](#Credits)
+- [Minimum System Requirements](#minimum-system-requirements)
+- [How To Install](#how-to-install)
+- [Features](#features)
+- [Update Roadmap](#update-roadmap)
+- [Known Issues](#known-issues)
+- [FAQ](#faq)
+- [Building](#building)
+- [Credits](#credits)
 
 ## Minimum System Requirements
 
@@ -50,7 +50,7 @@ Unleashed Recompiled is an unofficial PC port of Sonic Unleashed created through
 
 [English Dumping Guide](/DUMPING-en.md)
 
-3) Download [the latest release](/releases/latest) of Unleashed Recompiled and extract it to where you’d like the game to be installed.
+3) Download [the latest release](https://github.com/hedge-dev/UnleashedRecomp/releases/latest) of Unleashed Recompiled and extract it to where you’d like the game to be installed.
 
 4) Run the executable and you will be guided through the game installation process. You will be asked to provide the files you acquired in the previous step. When presented with options for how to do this:
 
@@ -115,14 +115,14 @@ Additionally, to support the game's extensive use of asset streaming, parallel t
 The game’s frame rate cap has been increased by default to 60 FPS, with support for higher targets and unlocked frame rate being available from the options menu. A vast amount of glitches that usually occur on higher frame rates have been fixed and are included as part of the Recompilation.
 
 > [!NOTE]
-> While the game is considered to be beatable at frame rates higher than 60, please note that [some issues](#High Frame Rate Glitches) can still occur. Some of these issues might be addressed in future updates.
+> While the game is considered to be beatable at frame rates higher than 60, please note that [some issues](#high-frame-rate-glitches) can still occur. Some of these issues might be addressed in future updates.
 
 ### Ultrawide Support
 
 Aspect ratios for ultrawide displays, such as 21:9 or even larger, are supported out of the box, with options to adjust the placement of the UI to the edges or in its original 16:9 area if desired. No external codes are required\!
 
 > [!NOTE]
-> Cutscenes by default are locked to their original aspect ratio to prevent [presentation issues](#Ultrawide Visual Issues), as the game was not designed to present these scenes with wider aspect ratios. However, you can use the included option to unlock this feature if you don’t mind these issues.
+> Cutscenes by default are locked to their original aspect ratio to prevent [presentation issues](#ultrawide-visual-issues), as the game was not designed to present these scenes with wider aspect ratios. However, you can use the included option to unlock this feature if you don’t mind these issues.
 
 ### Low Input Latency
 
@@ -135,7 +135,7 @@ One of the biggest improvements that the Recompilation features over emulators i
 While the system is very extensive, some special shaders such as post processing effects or 2D elements are not detected ahead of time, so a list of pre-determined pipelines are compiled during the game’s introduction sequence. However, the amount is so low that this is done completely in the background and it was determined there was no need to show a shader compilation screen in most systems that were tested.
 
 > [!NOTE]
-> While stutters from shader compilation are non-existent, please be aware that [some stutters](#Unavoidable Stutters) may be encountered due to the way the game was programmed. If you encounter these, keep in mind **these are not related to shader compilation**. Some of these issues might be addressed in future updates.
+> While stutters from shader compilation are non-existent, please be aware that [some stutters](#unavoidable-stutters) may be encountered due to the way the game was programmed. If you encounter these, keep in mind **these are not related to shader compilation**. Some of these issues might be addressed in future updates.
 
 ### Support For Xbox And PlayStation Button Icons
 
@@ -165,7 +165,7 @@ Be aware that installing the game on a Steam Deck can be a slow process and can 
 Performance has been found to improve significantly when the Deck’s GPU clock is manually set to its maximum value through Game Scope, even if the game appears to be primarily CPU-bottlenecked. Be aware that maintaining the target frame rate may be difficult during demanding sections, such as Werehog combat or DLC stages. Overall, performance is considered to be noticeably better than on the original hardware while using the default settings.
 
 > [!NOTE]
-> It’s recommended to perform the installation process while on desktop mode, as the [File Picker might not be available in Game Mode](#File Picker Unavailable on Steam Deck in Game Mode) at all times.
+> It’s recommended to perform the installation process while on desktop mode, as the [File Picker might not be available in Game Mode](#file-picker-unavailable-on-steam-deck-in-game-mode) at all times.
 
 ### Mod Support
 
@@ -176,7 +176,7 @@ The mod format is the same standard as the one used for Generations mods. Mods t
 Modded files for the Xbox 360 version of the game are compatible with Unleashed Recompiled. However, please note that some mods may have used as a target the version of the game that doesn’t contain the Title Update, so some mods may have issues and require updates from their authors to work with the Recompilation.
 
 > [!NOTE]
-> Code modding is currently not possible and is [planned for a future update](#Code Modding). As a workaround for the time being, some codes have been directly embedded into the game and can be accessed through Hedge Mod Manager’s Codes tab.
+> Code modding is currently not possible and is [planned for a future update](#code-modding). As a workaround for the time being, some codes have been directly embedded into the game and can be accessed through Hedge Mod Manager’s Codes tab.
 
 ## Update Roadmap
 
@@ -184,11 +184,11 @@ Modded files for the Xbox 360 version of the game are compatible with Unleashed 
 
 ### Input Remapping
 
-An option for changing the mappings of the actions to the controller buttons as well as support for keyboard bindings. In the meantime, refer to this [question in the FAQ](#What are the keyboard mappings?) for the default keyboard bindings as well as where to edit them if necessary.
+An option for changing the mappings of the actions to the controller buttons as well as support for keyboard bindings. In the meantime, refer to this [question in the FAQ](#what-are-the-keyboard-mappings) for the default keyboard bindings as well as where to edit them if necessary.
 
 ### High Frame Rate Fixes
 
-A number of [gameplay issues](#High Frame Rate Glitches) are currently present that will gradually be fixed as more research into how the game works is done. At the moment, the game is considered to be beatable in High Frame Rates, but it may be required to limit it to 60 FPS to clear some optional content.
+A number of [gameplay issues](#high-frame-rate-glitches) are currently present that will gradually be fixed as more research into how the game works is done. At the moment, the game is considered to be beatable in High Frame Rates, but it may be required to limit it to 60 FPS to clear some optional content.
 
 ### Code Modding
 
@@ -212,7 +212,7 @@ Even if the Recompilation process introduces a small overhead, the game does not
 
 Most of the known stutters are related to the game loading in layers of new objects at certain points in stages or simply spawning in particle systems, which can have fixed stutters nearly up to 10 milliseconds every time they’re created even on strong hardware. These hitches are much easier to notice when targeting frame rates such as 120 Hz, where one frame only lasts around 8 milliseconds.
 
-These problems are not possible to mitigate without further research in how the game works and will remain a goal for future updates to fix if possible. However, [as mentioned in the FAQ](#How can I improve performance?), it’s been found that these stutters can be significantly mitigated by playing on Linux, possibly due to the amount of synchronization primitives used by the game when these operations are performed.
+These problems are not possible to mitigate without further research in how the game works and will remain a goal for future updates to fix if possible. However, [as mentioned in the FAQ](#how-can-i-improve-performance), it’s been found that these stutters can be significantly mitigated by playing on Linux, possibly due to the amount of synchronization primitives used by the game when these operations are performed.
 
 ### High Frame Rate Glitches
 
@@ -222,7 +222,7 @@ A lot of the bugs present in the game can largely be explained by sudden spikes 
 
 Unleashed Recompiled features a vast amount of fixes for issues that present themselves when targeting high frame rates, and fixing *all of them* is a task that is too big without more knowledge into how the game works. It is possible that these issues will be fixed in the future or that alternative solutions such as transform interpolation are implemented instead.
 
-If you encounter game-breaking issues or unplayable sections, try temporarily limiting the framerate to resolve them. Also, check the [Issues](/issues) page for any existing reports.
+If you encounter game-breaking issues or unplayable sections, try temporarily limiting the framerate to resolve them. Also, check the [Issues](https://github.com/hedge-dev/UnleashedRecomp/issues) page for any existing reports.
 
 ### Ultrawide Visual Issues
 
@@ -242,12 +242,12 @@ Simply booting at least once in Desktop Mode will enable the Deck to use the fil
 
 ### Do you have a Discord server?
 
-Unleashed Recompiled is not associated with any Discord servers. Use the [Issues](/issues) page if you require support.
+Unleashed Recompiled is not associated with any Discord servers. Use the [Issues](https://github.com/hedge-dev/UnleashedRecomp/issues) page if you require support.
 
 ### What are the keyboard mappings?
 
 [PLACEHOLDER TABLE]
-You can change the keyboard bindings by editing `config.toml` located in the [configuration directory](#Where is the save file and the configuration stored?), although using a gamepad is highly recommended until [Input Remapping](#Input Remapping) is added in a future update.
+You can change the keyboard bindings by editing `config.toml` located in the [configuration directory](#where-is-the-save-file-and-the-configuration-stored), although using a gamepad is highly recommended until [Input Remapping](#input-remapping) is added in a future update.
 
 ### Where is the save file and the configuration stored?
 
@@ -260,11 +260,11 @@ You will find the save data either under the folder `save` or under `mlsave` if 
 
 ### I want to update the game. How can I avoid losing my save file? Do I need to reinstall the game?
 
-Updating the game can be done by simply copying and replacing the files from a [release](/releases) on top of your existing installation. **Your save file and configuration won’t be lost.** You won’t need to reinstall the game, as the game’s files will always remain the same across versions of Unleashed Recompiled.
+Updating the game can be done by simply copying and replacing the files from a [release](https://github.com/hedge-dev/UnleashedRecomp/releases) on top of your existing installation. **Your save file and configuration won’t be lost.** You won’t need to reinstall the game, as the game’s files will always remain the same across versions of Unleashed Recompiled.
 
 ### How can I force the game to store the save data and configuration on the installation folder?
 
-You can make the game ignore the [default configuration paths](#Where is the save file and the configuration stored?) and force it to save everything on the installation directory by creating an empty `portable.txt` file. You’re directly responsible for safekeeping your save data and configuration if you choose this option.
+You can make the game ignore the [default configuration paths](#where-is-the-save-file-and-the-configuration-stored) and force it to save everything on the installation directory by creating an empty `portable.txt` file. You’re directly responsible for safekeeping your save data and configuration if you choose this option.
 
 ### How can I install mods?
 
