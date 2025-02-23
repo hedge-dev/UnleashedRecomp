@@ -2,6 +2,7 @@
 #include <apu/embedded_player.h>
 #include <user/config.h>
 
+#include <res/music/installer.ogg.h>
 #include <res/sounds/sys_worldmap_cursor.ogg.h>
 #include <res/sounds/sys_worldmap_finaldecide.ogg.h>
 #include <res/sounds/sys_actstg_pausecansel.ogg.h>
@@ -87,13 +88,17 @@ static void PlayEmbeddedSound(EmbeddedSound s)
         data.chunk = Mix_LoadWAV_RW(SDL_RWFromConstMem(soundData, soundDataSize), 1);
     }
     
+    Mix_VolumeChunk(data.chunk, Config::MasterVolume * Config::EffectsVolume * MIX_MAX_VOLUME);
     Mix_PlayChannel(g_channelIndex % MIX_CHANNELS, data.chunk, 0);
     ++g_channelIndex;
 }
 
+static Mix_Music* g_installerMusic;
+
 void EmbeddedPlayer::Init() 
 {
-    Mix_OpenAudio(XAUDIO_SAMPLES_HZ, AUDIO_F32SYS, 2, 256);
+    Mix_OpenAudio(XAUDIO_SAMPLES_HZ, AUDIO_F32SYS, 2, 2048);
+    g_installerMusic = Mix_LoadMUS_RW(SDL_RWFromConstMem(g_installer_music, sizeof(g_installer_music)), 1);
 
     s_isActive = true;
 }
@@ -111,6 +116,21 @@ void EmbeddedPlayer::Play(const char *name)
     PlayEmbeddedSound(it->second);
 }
 
+void EmbeddedPlayer::PlayMusic()
+{
+    if (!Mix_PlayingMusic())
+    {
+        Mix_PlayMusic(g_installerMusic, INT_MAX);
+        Mix_VolumeMusic(Config::MasterVolume * Config::MusicVolume * MUSIC_VOLUME * MIX_MAX_VOLUME);
+    }
+}
+
+void EmbeddedPlayer::FadeOutMusic()
+{
+    if (Mix_PlayingMusic())
+        Mix_FadeOutMusic(1000);
+}
+
 void EmbeddedPlayer::Shutdown() 
 {
     for (EmbeddedSoundData &data : g_embeddedSoundData)
@@ -118,6 +138,9 @@ void EmbeddedPlayer::Shutdown()
         if (data.chunk != nullptr)
             Mix_FreeChunk(data.chunk);
     }
+
+    Mix_HaltMusic();
+    Mix_FreeMusic(g_installerMusic);
 
     Mix_CloseAudio();
     Mix_Quit();

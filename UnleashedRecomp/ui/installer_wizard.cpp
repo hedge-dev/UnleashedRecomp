@@ -1721,6 +1721,24 @@ static void PickerCheckResults()
     g_currentPickerVisible = false;
 }
 
+static bool g_fadingOutMusic;
+
+static void ProcessMusic()
+{
+    if (g_isDisappearing)
+    {
+        if (!g_fadingOutMusic)
+        {
+            EmbeddedPlayer::FadeOutMusic();
+            g_fadingOutMusic = true;
+        }
+    }
+    else
+    {
+        EmbeddedPlayer::PlayMusic();
+    }
+}
+
 void InstallerWizard::Init()
 {
     auto &io = ImGui::GetIO();
@@ -1850,6 +1868,7 @@ bool InstallerWizard::Run(std::filesystem::path installPath, bool skipGame)
     while (s_isVisible)
     {
         Video::WaitOnSwapChain();
+        ProcessMusic();
         SDL_PumpEvents();
         SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
         GameWindow::Update();
