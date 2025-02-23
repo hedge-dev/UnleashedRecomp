@@ -26,8 +26,11 @@ foreach(i RANGE 0 260)
 endforeach()
 
 add_custom_command(
-    OUTPUT ${UNLEASHED_RECOMP_PPC_RECOMPILED_SOURCES}
-    COMMAND $<TARGET_FILE:XenonRecomp>
+    OUTPUT 
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/default_patched.xex"
+        ${UNLEASHED_RECOMP_PPC_RECOMPILED_SOURCES}
+    COMMAND 
+        $<TARGET_FILE:XenonRecomp>
     DEPENDS 
         "${CMAKE_CURRENT_SOURCE_DIR}/private/default.xex"
         "${CMAKE_CURRENT_SOURCE_DIR}/private/default.xexp"
@@ -49,9 +52,15 @@ file(GLOB XENOS_RECOMP_SOURCES
 )
 
 add_custom_command(
-    OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/shader/shader_cache.cpp"
-    COMMAND $<TARGET_FILE:XenosRecomp>
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/private/shader.ar" ${XENOS_RECOMP_SOURCES} ${XENOS_RECOMP_INCLUDE}
+    OUTPUT 
+        "${CMAKE_CURRENT_SOURCE_DIR}/shader/shader_cache.cpp"
+    COMMAND
+        $<TARGET_FILE:XenosRecomp>
+    DEPENDS 
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/default_patched.xex"
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/shader.ar" 
+        ${XENOS_RECOMP_SOURCES} 
+        ${XENOS_RECOMP_INCLUDE}
 )
 
 add_library(UnleashedRecompLib 
