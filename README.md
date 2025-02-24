@@ -270,7 +270,7 @@ The installer may display this error for several reasons. Please check the follo
 
 - Verify that you're not trying to add compressed files such as `.zip`, `.7z`, `.rar` or other formats.
 
-- Only use the 'Add Folder' option if you're sure you have a directory with the content's files already extracted, which means it'll only contain files like `.xex`, `.ar.00`, `.arl` and others. **This option will not scan your folder for compatible content**.
+- Only use the **Add Folder** option if you're sure you have a directory with the content's files already extracted, which means it'll only contain files like `.xex`, `.ar.00`, `.arl` and others. **This option will not scan your folder for compatible content**.
 
 - Ensure that the files you've acquired correspond to the same region. **Discs and Title Updates from different regions can't be used together** and will fail to generate a patch.
 
