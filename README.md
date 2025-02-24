@@ -268,13 +268,13 @@ The installer may display this error for several reasons. Please check the follo
 
 - Please read the [How to Install](#how-to-install) section and make sure you've acquired all of the necessary files correctly.
 
-- Make sure you're not trying to add compressed files such as `.zip`, `.7z`, `.rar` or other formats.
+- Verify that you're not trying to add compressed files such as `.zip`, `.7z`, `.rar` or other formats.
 
 - Only use the 'Add Folder' option if you're sure you have a directory with the content's files already extracted, which means it'll only contain files like `.xex`, `.ar.00`, `.arl` and others. **This option will not scan your folder for compatible content**.
 
-- Make sure the files you've acquired correspond to the same region. **Discs and Title Updates from different regions can't be used together** and will fail to generate a patch.
+- Ensure that the files you've acquired correspond to the same region. **Discs and Title Updates from different regions can't be used together** and will fail to generate a patch.
 
-- The installer has plenty of integrity checks built-in to make sure that **only original and unmodified files are accepted**. Do not attempt to provide modified files to the installer as it'll not accept them.
+- The installer will only accept **original and unmodified files**. Do not attempt to provide modified files to the installer.
 
 ### What are the keyboard bindings?
 
