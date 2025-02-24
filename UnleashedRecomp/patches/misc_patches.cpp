@@ -108,3 +108,21 @@ PPC_FUNC(sub_82586698)
 
     __imp__sub_82586698(ctx, base);
 }
+
+// Disable only certain hints coming from invisible hints
+PPC_FUNC_IMPL(__imp__sub_82736E80);
+PPC_FUNC(sub_82736E80)
+{
+    // GroupID parameter text
+    auto* groupId = (const char*)g_memory.Translate(PPC_LOAD_U32(ctx.r3.u32 + 256));
+    
+    // WhiteIsland_ACT1_001 (Windmill Isle Act 1 Night, Start)
+    // Your friend went off that way, Sonic.
+    // Quick, let's go after him!
+    if (!Config::Hints && strcmp(groupId, "WhiteIsland_ACT1_001"))
+    {
+        return;
+    }
+
+    __imp__sub_82736E80(ctx, base);
+}

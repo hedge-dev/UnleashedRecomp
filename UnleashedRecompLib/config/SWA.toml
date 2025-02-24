@@ -106,12 +106,6 @@ jump_address = 0x82468EE0
 name = "ResetScoreOnRestartMidAsmHook"
 address = 0x82304374
 
-# Disable hint volumes
-[[midasm_hook]]
-name = "DisableHintsMidAsmHook"
-address = 0x827A2504
-jump_address_on_true = 0x827A251C
-
 # Disable hint rings
 [[midasm_hook]]
 name = "DisableHintsMidAsmHook"
