@@ -184,7 +184,7 @@ Modded files for the Xbox 360 version of the game are compatible with Unleashed 
 
 ## Update Roadmap
 
-### A number of different features are planned for future updates.
+A number of different features are planned for future updates.
 
 ### Action Remapping
 
@@ -363,7 +363,7 @@ This project does not plan to support any more platforms other than Windows, Lin
 ## Credits
 
 ### Unleashed Recompiled
-- [Skyth](https://github.com/blueskythlikesclouds): Creator and Main Developer of the recompilation utilizing technologies created for it such as [XenonRecomp](https://github.com/hedge-dev/XenonRecomp) and [XenosRecomp](https://github.com/hedge-dev/XenosRecomp). Other responsibilities include the creation of the graphical and audio backends for the project, alongside newly added custom menus, numerous patches and new features to the game.
+- [Skyth](https://github.com/blueskythlikesclouds): Creator and Main Developer of the recompilation, as well as the developer of technologies created for it such as [XenonRecomp](https://github.com/hedge-dev/XenonRecomp) and [XenosRecomp](https://github.com/hedge-dev/XenosRecomp). Other responsibilities include the creation of the graphical and audio backends for the project, alongside newly added custom menus, numerous patches and new features to the game.
 
 - [Sajid](https://github.com/Sajidur78): Co-creator and Main Developer of the recompilation utilizing technologies created for it such as [XenonAnalyse](https://github.com/hedge-dev/XenonRecomp/?tab=readme-ov-file#XenonAnalyse). Other responsibilities include the implementation of core components, like Xbox 360 kernel level calls with Win32 equivalent replacements to make the game function.
 
