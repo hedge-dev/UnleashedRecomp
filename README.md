@@ -11,7 +11,7 @@ Unleashed Recompiled is an unofficial PC port of Sonic Unleashed created through
 ## Table of Contents
 
 - [Minimum System Requirements](#minimum-system-requirements)
-- [How To Install](#how-to-install)
+- [How to Install](#how-to-install)
 - [Features](#features)
 - [Update Roadmap](#update-roadmap)
 - [Known Issues](#known-issues)
@@ -38,15 +38,15 @@ Unleashed Recompiled is an unofficial PC port of Sonic Unleashed created through
 > [!NOTE]
 > More storage space may be required if uncompressed game files are provided during installation.
 
-## How To Install
+## How to Install
 
 1) You must have access to the following:
 
-- Xbox 360 (modifications not necessary)
-- Sonic Unleashed for Xbox 360 (US or EU, **JP is not supported**)
-  - Retail Disc or Digital Copy (can be purchased and downloaded from the [Xbox Store](https://www.xbox.com/en-US/games/store/sonic-unleashed/c098fgnmts8f)).
-  - Title Update required.
-  - All available DLC (Adventure Packs) are optional, but **highly recommended**. **The DLC includes high quality lighting for the entire game**.
+    - Xbox 360 (modifications not necessary)
+    - Sonic Unleashed for Xbox 360 (US or EU, **JP is not supported**)
+        - Retail Disc or Digital Copy (can be purchased and downloaded from the [Xbox Store](https://www.xbox.com/en-US/games/store/sonic-unleashed/c098fgnmts8f)).
+        - Title Update required.
+        - All available DLC (Adventure Packs) are optional, but **highly recommended**. **The DLC includes high quality lighting for the entire game**.
 
 2) **Before proceeding with the installation**, make sure to follow the guide on how to acquire the game files from your Xbox 360.
 
