@@ -262,6 +262,20 @@ Simply booting at least once in Desktop Mode will enable the Deck to use the fil
 
 Unleashed Recompiled is not associated with any Discord servers. Use the [Issues](https://github.com/hedge-dev/UnleashedRecomp/issues) page if you need support.
 
+### Why does the installer say my files are invalid?
+
+The installer may display this error for several reasons. Please check the following to ensure your files are valid:
+
+- Please read the [How to Install](#how-to-install) section and make sure you've acquired all of the necessary files correctly.
+
+- Make sure you're not trying to add compressed files such as `.zip`, `.7z`, `.rar` or other formats.
+
+- Only use the 'Add Folder' option if you're sure you have a directory with the content's files already extracted, which means it'll only contain files like `.xex`, `.ar.00`, `.arl` and others. **This option will not scan your folder for compatible content**.
+
+- Make sure the files you've acquired correspond to the same region. **Discs and Title Updates from different regions can't be used together** and will fail to generate a patch.
+
+- The installer has plenty of integrity checks built-in to make sure that **only original and unmodified files are accepted**. Do not attempt to provide modified files to the installer as it'll not accept them.
+
 ### What are the keyboard bindings?
 
 Pad|Key
