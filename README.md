@@ -8,6 +8,8 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
 
 [XenonRecomp](https://github.com/hedge-dev/XenonRecomp) and [XenosRecomp](https://github.com/hedge-dev/XenosRecomp) are the main recompilers used for converting the game's original PowerPC code and Xenos shaders into compatible C++ and HLSL code respectively. The development of these recompilers was directly inspired by [N64: Recompiled](https://github.com/N64Recomp/N64Recomp), which was used to create [Zelda 64: Recompiled](https://github.com/Zelda64Recomp/Zelda64Recomp).
 
+<br/>
+
 ## Table of Contents
 
 - [Minimum System Requirements](#minimum-system-requirements)
@@ -72,30 +74,30 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
 
 ## Features
 
-### • Easy to Use Installer
+### Easy to Use Installer
 
 A built-in installation wizard will guide you through the process of installing the game with many integrity checks to ensure the process goes as smoothly as possible. The installer can also be accessed from the title screen, if you wish to add the DLC at a later time.
 
-### • Options Menu
+### Options Menu
 
 A completely new options menu accessible from the title screen or pause menu, with an unprecedented level of fidelity to the game's design language. Get access to many quality of life features and graphics options directly within the game with full controller navigation.
 
-### • Achievements
+### Achievements
 
 You will be rewarded with achievements as you progress through the game just like on its original platform. Achievements are recreated with integrated notifications and a new menu also very faithful to the game's design language. Get all of them and you will be rewarded with a gold trophy!
 
 > [!NOTE]
 > Achievements cannot be used with platforms such as Steam or RetroAchievements.
 
-### • Custom Localization
+### Custom Localization
 
 All of the new menus in the port fully support localization for each of the game's originally supported languages; English, Japanese, German, French, Spanish and Italian. As a bonus, switching the game to Japanese also changes the title screen logo to its original Japanese counterpart.
 
-### • High Fidelity
+### High Fidelity
 
 Special care and attention was taken to recreate the game's visuals as accurately as possible and was always compared to the game running on the original hardware. The colors are as vibrant as those of the PlayStation 3 version, which did not use the color correction filter present in the Xbox 360 version, as was originally intended. Nevertheless, an option to recreate the original warm filter from the Xbox 360 version has been included as an option.
 
-### • High Resolution Enhancements
+### High Resolution Enhancements
 
 Many improvements have been provided to accompany support for higher resolutions:
 
@@ -106,7 +108,7 @@ Many improvements have been provided to accompany support for higher resolutions
 - A Bicubic Texture Filtering option which greatly enhances the visual result of Global Illumination textures.
 - A more precise implementation of the game's reverse Z technique, eliminating most Z-fighting issues and fixing the jittery motion blur in stages like Jungle Joyride.
 
-### • High Performance Renderer
+### High Performance Renderer
 
 A new renderer was written from scratch to translate the game's draw calls to modern APIs in a highly efficient way while also taking advantage of multi-threading.
 
@@ -118,25 +120,25 @@ Multiple optimizations were made to the game's shadow map rendering and special 
 
 Additionally, to support the game's extensive use of asset streaming, parallel transfer queues are leveraged, a feature only available in modern APIs that enable efficient use of available PCI-E bandwidth.
 
-### • High Frame Rate Support
+### High Frame Rate Support
 
 The game's frame rate cap has been increased by default to 60 FPS, with support for higher targets and unlocked frame rate being available from the options menu. A vast amount of glitches that usually occur at higher frame rates have been fixed and are included as part of the recompilation.
 
 > [!NOTE]
 > While the game is considered to be beatable at frame rates higher than 60 FPS, please note that [some issues](#high-frame-rate-glitches) can still occur. Some of these issues may be addressed in future updates.
 
-### • Ultrawide Support
+### Ultrawide Support
 
 Aspect ratios for ultrawide displays (such as 21:9 or even wider) are supported out of the box, with options to adjust the alignment of the UI to the edges or to the original 16:9 safe area, if desired. No external codes are required!
 
 > [!NOTE]
 > By default, cutscenes are locked to their original aspect ratio to prevent [presentation issues](#ultrawide-visual-issues), as the game was not designed to present these scenes with wider aspect ratios. However, you can use the included option to unlock this feature if you don't mind these issues.
 
-### • Low Input Latency
+### Low Input Latency
 
 Modern input latency reduction techniques are included to improve the game's responsiveness as much as possible, such as support for [Waitable Swap Chains](https://learn.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains) in both D3D12 and Vulkan. This methodology was applied directly before the game's input polling to minimize latency. Additionally, the D3D12 backend also supports [Flip Models](https://devblogs.microsoft.com/directx/dxgi-flip-model/), allowing the game to directly present to the screen as quickly as possible.
 
-### • Asynchronous Shader Compilation
+### Asynchronous Shader Compilation
 
 One of the biggest improvements that the recompilation features over emulators is the fact that Pipeline Compilation (commonly known as "Shader Compilation") is directly integrated into the game as part of the asset loading process. This means there's **no stutters during gameplay the first time new objects or effects appear**.
 
@@ -147,13 +149,13 @@ While this system is very extensive, some special shaders such as post-processin
 > [!NOTE]
 > While stutters from shader compilation are non-existent, please be aware that [some stutters](#unavoidable-stutters) may be encountered due to the way the game was programmed. If you encounter these, please keep in mind that **these are not related to shader compilation**. Some of these issues may be addressed in future updates.
 
-### • Support for Xbox and PlayStation Controller Icons
+### Support for Xbox and PlayStation Controller Icons
 
 You can freely choose whether to use Xbox 360 or PlayStation 3 controller icons. By default, the game will automatically detect which to use based on your controller, but you can select a different option based on your personal preference from within the options menu.
 
 Game objects that display controller icons such as Reaction Plates or Jump Selectors will automatically switch their textures to match the option in use. Even small details such as the Tornado Defense missions using different colors for the missiles have been accounted for.
 
-### • Quality of Life Options
+### Quality of Life Options
 
 Many options have been integrated to address some common quality of life improvements that were deemed to be essential to the port:
 
@@ -166,7 +168,7 @@ Many options have been integrated to address some common quality of life improve
 > [!NOTE]
 > Please note that Music Attenuation is not currently available on Linux. Support for this feature may be added in a future update.
 
-### • Steam Deck Support
+### Steam Deck Support
 
 Native Linux builds that work on the Steam Deck out of the box are available. The Flatpak version can be installed directly and added as a non-Steam game easily via Desktop Mode.
 
@@ -177,7 +179,7 @@ Performance has been found to improve significantly when the Deck's GPU clock is
 > [!NOTE]
 > It is recommended to perform the installation process while in Desktop Mode, as the [file picker may not be available in Game Mode](#file-picker-unavailable-on-steam-deck-in-game-mode) at all times.
 
-### • Mod Support
+### Mod Support
 
 The game includes a mod loader compatible with [Hedge Mod Manager](https://github.com/thesupersonic16/HedgeModManager). As an option, users looking for Linux support should try the development version of [HMM 8](https://github.com/hedge-dev/HedgeModManager), which should work out of the box on platforms such as the Steam Deck.
 
@@ -194,15 +196,15 @@ Modded files for the Xbox 360 version of the game are compatible with Unleashed 
 
 A number of different features are planned for future updates.
 
-### • Action Remapping
+### Action Remapping
 
 Options for changing the bindings of the player actions to the controller buttons, as well as support for keyboard bindings. In the meantime, refer to this [question in the FAQ](#what-are-the-keyboard-bindings) for the default keyboard bindings, as well as where to edit them if necessary.
 
-### • High Frame Rate Fixes
+### High Frame Rate Fixes
 
 A number of [gameplay issues](#high-frame-rate-glitches) are currently present that will gradually be fixed as more research into how the game works is done. At the moment, the game is considered to be beatable at high frame rates, but you may be required to limit the game to 60 FPS in order to clear some optional content.
 
-### • Code Modding
+### Code Modding
 
 Modifying the code of a recompilation is a fundamentally different process than doing it for a game that only supports one platform on a single executable version. Everyone can build and fork Unleashed Recompiled on their own, which makes the method of targeting a single executable essentially impossible.
 
@@ -210,7 +212,7 @@ A convenient and maintainable method for code modding is under research and will
 
 In the meantime, those interested in doing extensive code modding are recommended to fork the repository and introduce their changes in preparation for the code modding update.
 
-### • Stance on New Features
+### Stance on New Features
 
 The team behind Unleashed Recompiled is committed to preserving the game's original design as best as possible. Additional features that don't fit the vision of the project will be left to mods or forks to cover. As such, requests for such features will not be considered. If you request a new feature, make sure it makes sense within the design of the original game and fits the goal of delivering a PC version of the game.
 
@@ -218,7 +220,7 @@ The team behind Unleashed Recompiled is committed to preserving the game's origi
 
 ## Known Issues
 
-### • Unavoidable Stutters
+### Unavoidable Stutters
 
 While Unleashed Recompiled does its best effort on fixing any hitches and stutters that could originate from the translation process, some problems are not possible to fix due to the way the game was built.
 
@@ -228,7 +230,7 @@ Most of the known stutters are related to the game loading in layers of new obje
 
 These problems are not possible to mitigate without further research into how the game works and will remain a goal for future updates to fix if possible. However, [as mentioned in the FAQ](#how-can-i-improve-performance), it's been found that these stutters can be significantly mitigated by playing on Linux, possibly due to the amount of synchronization primitives used by the game when these operations are performed.
 
-### • High Frame Rate Glitches
+### High Frame Rate Glitches
 
 Sonic Unleashed is not a game that runs at a fixed rate on any of its target platforms. While it does target 30 FPS on Xbox 360 and is uncapped on PlayStation 3, it doesn't exactly hit these targets often depending on the area, and if it does, the time step itself is subject to large deviations. The game's programming simply follows the time step as closely as possible, which means inconsistencies in the time step are impossible to reproduce without targeting one exact piece of hardware.
 
@@ -238,15 +240,15 @@ Unleashed Recompiled features a vast amount of fixes for issues that present the
 
 If you encounter game breaking bugs or unplayable sections, try temporarily limiting the frame rate to resolve them. Also, check the [Issues](https://github.com/hedge-dev/UnleashedRecomp/issues) page for any existing reports.
 
-### • Ultrawide Visual Issues
+### Ultrawide Visual Issues
 
 Visual oddities may occur when unlocking the aspect ratio during cutscenes, as the game was not designed for wider formats. Adjusting these scenes can be subjective, so it will be up to mods to address these issues, as they require modifying the game's animations and object placement within cutscene files.
 
-### • Original Game Bugs
+### Original Game Bugs
 
 Game bugs present on the original hardware are intentionally preserved and will not be fixed. Please do not report issues for these bugs and verify that the issue does not occur on original hardware before reporting. Bug reports for issues found in the original game will be rejected. Bugs that only happen in Unleashed Recompiled must be accompanied by footage captured on original hardware showing that the bug does not happen there.
 
-### • File Picker Unavailable on Steam Deck in Game Mode
+### File Picker Unavailable on Steam Deck in Game Mode
 
 Due to some restrictions of how the desktop environment on the Steam Deck works whilst in Game Mode, please note that you may need to at least first boot into Desktop Mode to be able to use the file picker to provide the game files.
 
