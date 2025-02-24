@@ -3,7 +3,7 @@
   <id>io.github.hedge_dev.unleashedrecomp</id>
   
   <name>Unleashed Recompiled</name>
-  <summary>Static recompilation of Sonic Unleashed.</summary>
+  <summary>An unofficial PC port of Sonic Unleashed.</summary>
   
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0+</project_license>
@@ -16,7 +16,7 @@
   
   <description>
     <p>
-      A native PC port of Sonic Unleashed for Xbox 360 achieved through static recompilation.
+      An unofficial PC port of the Xbox 360 version of Sonic Unleashed created through the process of static recompilation.
 
       https://github.com/hedge-dev/UnleashedRecomp
     </p>
