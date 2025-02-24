@@ -249,9 +249,38 @@ Unleashed Recompiled is not associated with any Discord servers. Use the [Issues
 
 ### What are the keyboard bindings?
 
-[PLACEHOLDER TABLE]
+Pad|Key
+-|-
+A (Cross)|S
+B (Circle)|D
+X (Square)|A
+Y (Triangle)|W
+D-Pad - Up|Unbound
+D-Pad - Down|Unbound
+D-Pad - Left|Unbound
+D-Pad - Right|Unbound
+Start|Return
+Back (Select)|Backspace
+Left Trigger (L2)|1
+Right Trigger (R2)|3
+Left Bumper (L1)|Q
+Right Bumper (R1)|E
+Left Stick - Up|Up Arrow
+Left Stick - Down|Down Arrow
+Left Stick - Left|Left Arrow
+Left Stick - Right|Right Arrow
+Right Stick - Up|Unbound
+Right Stick - Down|Unbound
+Right Stick - Left|Unbound
+Right Stick - Right|Unbound
+
+---
 
 You can change the keyboard bindings by editing `config.toml` located in the [configuration directory](#where-is-the-save-data-and-configuration-file-stored), although using a controller is highly recommended until [Action Remapping](#action-remapping) is added in a future update.
+
+Refer to the left column of [this enum template](https://github.com/hedge-dev/UnleashedRecomp/blob/main/UnleashedRecomp/user/config.cpp#L40) for a list of valid keys.
+
+*The default keyboard layout is based on Devil's Details' keyboard layout for Sonic Generations (2011)*.
 
 ### Where is the save data and configuration file stored?
 
@@ -272,7 +301,7 @@ You can make the game ignore the [default configuration paths](#where-is-the-sav
 
 ### How can I install mods?
 
-**Do not install mods by modifying the game data.** Use [Hedge Mod Manager](https://github.com/thesupersonic16/HedgeModManager) instead. You will not get support for modifying your game files directly.
+**Do not install mods by modifying the game data**. Use [Hedge Mod Manager](https://github.com/thesupersonic16/HedgeModManager) instead. You will not get support for modifying your game files directly.
 
 > [!WARNING]
 > Unleashed Mod Manager is not recommended for use with Unleashed Recompiled.
