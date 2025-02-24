@@ -112,6 +112,12 @@ name = "DisableHintsMidAsmHook"
 address = 0x827A2E34
 jump_address_on_true = 0x827A2E4C
 
+# Disable Tornado Defense hints
+[[midasm_hook]]
+name = "DisableHintsMidAsmHook"
+address = 0x82AF52BC
+jump_address_on_true = 0x82AF52E4
+
 # Disable Egg Dragoon hint "V_WHG_083" ("That lit-up part on the bottom looks fishy. I'll try aiming for that.")
 [[midasm_hook]]
 name = "DisableHintsMidAsmHook"

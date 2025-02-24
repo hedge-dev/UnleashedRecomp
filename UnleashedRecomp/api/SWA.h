@@ -86,6 +86,7 @@
 #include "SWA/Inspire/InspireTextureAnimationInfo.h"
 #include "SWA/Inspire/InspireTextureOverlay.h"
 #include "SWA/Inspire/InspireTextureOverlayInfo.h"
+#include "SWA/Message/MsgRequestHelp.h"
 #include "SWA/Menu/MenuWindowBase.h"
 #include "SWA/Movie/MovieDisplayer.h"
 #include "SWA/Movie/MovieManager.h"

@@ -109,18 +109,41 @@ PPC_FUNC(sub_82586698)
     __imp__sub_82586698(ctx, base);
 }
 
-// Disable only certain hints coming from invisible hints
+// SWA::CObjHint::MsgNotifyObjectEvent::Impl
+// Disable only certain hints from hint volumes.
+// This hook should be used to allow hint volumes specifically to also prevent them from affecting the player.
 PPC_FUNC_IMPL(__imp__sub_82736E80);
 PPC_FUNC(sub_82736E80)
 {
     // GroupID parameter text
     auto* groupId = (const char*)(base + PPC_LOAD_U32(ctx.r3.u32 + 0x100));
     
-    // WhiteIsland_ACT1_001 (Windmill Isle Act 1 Night, Start)
-    // Your friend went off that way, Sonic.
-    // Quick, let's go after him!
-    if (!Config::Hints && strcmp(groupId, "WhiteIsland_ACT1_001") != 0)
-        return;
+    if (!Config::Hints)
+    {
+        // WhiteIsland_ACT1_001 (Windmill Isle Act 1 Night, Start)
+        // Your friend went off that way, Sonic. Quick, let's go after him!
+        if (strcmp(groupId, "WhiteIsland_ACT1_001") != 0)
+            return;
+    }
 
     __imp__sub_82736E80(ctx, base);
+}
+
+// SWA::CHelpWindow::MsgRequestHelp::Impl
+// Disable only certain hints from other sequences.
+// This hook should be used to block hint messages from unknown sources.
+PPC_FUNC_IMPL(__imp__sub_824C1E60);
+PPC_FUNC(sub_824C1E60)
+{
+    auto pMsgRequestHelp = (SWA::Message::MsgRequestHelp*)(base + ctx.r4.u32);
+
+    if (!Config::Hints)
+    {
+        // s10d_mykETF_c_navi (Town Mykonos Entrance, First Entry)
+        // Looks like we can get to a bunch of places in the village from here!
+        if (strcmp(pMsgRequestHelp->m_Name.c_str(), "s10d_mykETF_c_navi") == 0)
+            return;
+    }
+
+    __imp__sub_824C1E60(ctx, base);
 }
