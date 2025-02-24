@@ -43,6 +43,7 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
 1) You must have access to the following:
 
     - Xbox 360 (modifications not necessary)
+    - Xbox 360 Hard Drive Transfer Kit (or a compatible SATA to USB adapter)
     - Sonic Unleashed for Xbox 360 (US or EU, **JP is not supported**)
         - Retail Disc or Digital Copy (can be purchased and downloaded from the [Xbox Store](https://www.xbox.com/en-US/games/store/sonic-unleashed/c098fgnmts8f)).
         - Title Update required.
@@ -304,7 +305,7 @@ You can make the game ignore the [default configuration paths](#where-is-the-sav
 **Do not install mods by modifying the game data**. Use [Hedge Mod Manager](https://github.com/thesupersonic16/HedgeModManager) instead. You will not get support for modifying your game files directly.
 
 > [!WARNING]
-> Unleashed Mod Manager is not recommended for use with Unleashed Recompiled.
+> Unleashed Mod Manager is not recommended for use with Unleashed Recompiled, as it can make permanent changes to your game files.
 
 ### How can I force the game to run the installation again?
 
