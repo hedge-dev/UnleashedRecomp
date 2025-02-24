@@ -859,16 +859,19 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
                 if (g_canReset && padState.IsTapped(SWA::eKeyState_X))
                 {
-                    config->MakeDefault();
+                    if (!config->IsDefaultValue())
+                    {
+                        config->MakeDefault();
 
-                    VideoConfigValueChangedCallback(config);
-                    XAudioConfigValueChangedCallback(config);
+                        VideoConfigValueChangedCallback(config);
+                        XAudioConfigValueChangedCallback(config);
 
-                    if (config->Callback)
-                        config->Callback(config);
+                        if (config->Callback)
+                            config->Callback(config);
 
-                    if (config->ApplyCallback)
-                        config->ApplyCallback(config);
+                        if (config->ApplyCallback)
+                            config->ApplyCallback(config);
+                    }
 
                     Game_PlaySound("sys_worldmap_decide");
                 }
