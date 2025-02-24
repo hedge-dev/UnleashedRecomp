@@ -383,7 +383,7 @@ This project does not plan to support any more platforms other than Windows, Lin
 
 - [Sajid](https://github.com/Sajidur78): Co-creator and Main Developer of the recompilation utilizing technologies created for it such as [XenonAnalyse](https://github.com/hedge-dev/XenonRecomp/?tab=readme-ov-file#XenonAnalyse). Other responsibilities include the implementation of core components, like Xbox 360 kernel level calls with Win32 equivalent replacements to make the game function.
 
-- [Hyper](https://github.com/hyperbx): Developer of system level features such as the achievements and options menu alongside numerous patches to make the game feel right at hand on modern systems with features such as LED and touchpad support on DualShock and DualSense controllers. Aided in creation of concept art and final thumbnails.
+- [Hyper](https://github.com/hyperbx): Developer of system level features such as the achievements and options menu alongside numerous patches to make the game feel right at home on modern systems with features such as LED and touchpad support on DualShock and DualSense controllers. Aided in creation of concept art and final thumbnails.
 
 - [Darío](https://github.com/DarioSamo): Creator of the graphics hardware abstraction layer [plume](https://github.com/renderbag/plume) used by the project's rendering layer. Alongside providing consultation for graphics and aiding with shader research/development responsibilities include the installer wizard and supporting Linux. Spanish Translator of the newly added menus by the recompilation alongside DaGuAr.
 
