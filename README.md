@@ -426,13 +426,13 @@ This project does not plan to support any more platforms other than Windows, Lin
 
 - [LJSTAR](https://github.com/LJSTARbird): Artist behind several thumbnail designs used in the options menu and the button guide for opening the achievements menu. Provided French localization for the custom menus.
 
-- [saguinee](https://github.com/saguinee): Artist behind thumbnail designs used in the options menu such as Hints and Battle Theme.
+- [saguinee](https://twitter.com/saguinee): Artist behind thumbnail designs used in the options menu such as Hints and Battle Theme.
 
 - [Goalringmod27](https://linktr.ee/goalringmod27): Concept Artist behind the achievements overlay shown during gameplay. Aided in the creation of the Transparency Anti-Aliasing thumbnail.
 
 - [M&M](https://github.com/ActualMandM): Provisional support for dynamic UI aspect ratio.
 
-- [DaGuAr](https://x.com/TheDaguar): Provided Spanish localization for the custom menus alongside Darío.
+- [DaGuAr](https://twitter.com/TheDaguar): Provided Spanish localization for the custom menus alongside Darío.
 
 - [brianuuuSonic](https://github.com/brianuuu): Provided Japanese localization for the custom menus.
 
