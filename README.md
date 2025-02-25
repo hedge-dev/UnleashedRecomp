@@ -246,7 +246,7 @@ Visual oddities may occur when unlocking the aspect ratio during cutscenes, as t
 
 ### Original Game Bugs
 
-Game bugs present on the original hardware are intentionally preserved and will not be fixed. Please do not report issues for these bugs and verify that the issue does not occur on original hardware before reporting. Bug reports for issues found in the original game will be rejected. Bugs that only happen in Unleashed Recompiled must be accompanied by footage captured on original hardware showing that the bug does not happen there.
+Game bugs present on the original hardware are intentionally preserved and will not be fixed. Please do not report issues for these bugs and verify that the issue does not occur on original hardware before reporting. Bug reports for issues found in the original game will be rejected. Bugs that only happen in Unleashed Recompiled must be accompanied by footage captured on original Xbox 360 hardware showing that the bug does not happen there.
 
 ### File Picker Unavailable on Steam Deck in Game Mode
 
