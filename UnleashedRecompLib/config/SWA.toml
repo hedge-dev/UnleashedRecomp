@@ -106,12 +106,6 @@ jump_address = 0x82468EE0
 name = "ResetScoreOnRestartMidAsmHook"
 address = 0x82304374
 
-# Disable hint rings
-[[midasm_hook]]
-name = "DisableHintsMidAsmHook"
-address = 0x827A2E34
-jump_address_on_true = 0x827A2E4C
-
 # Disable Tornado Defense hints
 [[midasm_hook]]
 name = "DisableHintsMidAsmHook"
@@ -183,12 +177,6 @@ jump_address_on_true = 0x829E40A0
 name = "DisableHintsMidAsmHook"
 address = 0x82691CB0
 jump_address_on_true = 0x82691E24
-
-# Disable navigation volumes
-[[midasm_hook]]
-name = "DisableControlTutorialMidAsmHook"
-address = 0x827AA5EC
-jump_address_on_true = 0x827AA604
 
 # Disable Werehog button prompts
 [[midasm_hook]]

@@ -1206,7 +1206,6 @@ static void DrawConfigOptions()
 
     int32_t rowCount = 0;
 
-    bool isStage = OptionsMenu::s_pauseMenuType == SWA::eMenuType_Stage || OptionsMenu::s_pauseMenuType == SWA::eMenuType_Hub;
     auto cmnReason = &Localise("Options_Desc_NotAvailable");
 
     // TODO: Don't use raw numbers here!
@@ -1216,8 +1215,8 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::Language, !OptionsMenu::s_isPause, cmnReason);
             DrawConfigOption(rowCount++, yOffset, &Config::VoiceLanguage, OptionsMenu::s_pauseMenuType == SWA::eMenuType_WorldMap, cmnReason);
             DrawConfigOption(rowCount++, yOffset, &Config::Subtitles, true);
-            DrawConfigOption(rowCount++, yOffset, &Config::Hints, !isStage, cmnReason);
-            DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, !isStage, cmnReason);
+            DrawConfigOption(rowCount++, yOffset, &Config::Hints, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::ControlTutorial, true);
             DrawConfigOption(rowCount++, yOffset, &Config::AchievementNotifications, true);
             DrawConfigOption(rowCount++, yOffset, &Config::TimeOfDayTransition, !Config::UseArrowsForTimeOfDayTransition);
             break;

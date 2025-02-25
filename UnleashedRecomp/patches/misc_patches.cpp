@@ -13,6 +13,38 @@ bool DisableHintsMidAsmHook()
     return !Config::Hints;
 }
 
+// Disable hint ring visuals.
+PPC_FUNC_IMPL(__imp__sub_82738088);
+PPC_FUNC(sub_82738088)
+{
+    auto pObjHintRing = (SWA::CObjHintRing*)(base + ctx.r3.u32);
+    auto pDeltaTime = (be<float>*)(base + ctx.r4.u32);
+
+    if (!Config::Hints)
+    {
+        auto pAnimationControl = PPC_LOAD_U32(ctx.r3.u32 + 0xF0);
+
+        // how does this even work
+        guest_stack_var<be<float>> time = 0.0f;
+        GuestToHostFunction<int>(sub_82BB4A40, pAnimationControl, time.get());
+        GuestToHostFunction<int>(sub_82BBC050, pAnimationControl, *pDeltaTime);
+
+        return;
+    }
+
+    __imp__sub_82738088(ctx, base);
+}
+
+// Disable hint ring hit event.
+PPC_FUNC_IMPL(__imp__sub_827391E0);
+PPC_FUNC(sub_827391E0)
+{
+    if (!Config::Hints)
+        return;
+
+    __imp__sub_827391E0(ctx, base);
+}
+
 // Disable Perfect Dark Gaia hints.
 PPC_FUNC_IMPL(__imp__sub_82AC36E0);
 PPC_FUNC(sub_82AC36E0)
@@ -24,9 +56,14 @@ PPC_FUNC(sub_82AC36E0)
     __imp__sub_82AC36E0(ctx, base);
 }
 
-bool DisableControlTutorialMidAsmHook()
+// Disable navigation volumes.
+PPC_FUNC_IMPL(__imp__sub_8273C4C8);
+PPC_FUNC(sub_8273C4C8)
 {
-    return !Config::ControlTutorial;
+    if (!Config::ControlTutorial)
+        return;
+
+    __imp__sub_8273C4C8(ctx, base);
 }
 
 bool DisableEvilControlTutorialMidAsmHook(PPCRegister& r4, PPCRegister& r5)
