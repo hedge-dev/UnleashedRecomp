@@ -194,7 +194,7 @@ The game includes a mod loader compatible with [Hedge Mod Manager](https://githu
 
 The mod format uses the same standard as the one used by Sonic Generations mods. Mods that were originally created for [Unleashed Mod Manager](https://github.com/hyperbx/Unleashed-Mod-Manager) are also supported for the sake of backwards compatibility. However, using this mod format is not recommended in the long term and should now be considered deprecated.
 
-Modded files for the Xbox 360 version of the game are compatible with Unleashed Recompiled. However, some mods may have targeted a version of the game that doesn't contain the title update, so those may have issues and require updates from their authors to work with the recompilation.
+Modded files for the Xbox 360 version of the game are compatible with Unleashed Recompiled. However, some mods may have targeted a version of the game that doesn't contain the title update, so those may have issues and require updates from their authors in order to work with the recompilation. Mods that replace the game's executable file (`default.xex`) or shaders are not supported.
 
 > [!NOTE]
 > Code modding is currently not possible and is [planned for a future update](#code-modding). As a workaround for the time being, some codes have been directly embedded into the game and can be accessed through Hedge Mod Manager's Codes tab.
