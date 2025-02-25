@@ -49,6 +49,7 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
 1) You must have access to the following:
 
     - Xbox 360 (modifications not necessary)
+    - Xbox 360 Hard Drive (20 GB minimum)
     - Xbox 360 Hard Drive Transfer Kit (or a compatible SATA to USB adapter)
     - Sonic Unleashed for Xbox 360 (US or EU, **JP is not supported**)
         - Retail Disc or Digital Copy (can be purchased and downloaded from the [Xbox Store](https://www.xbox.com/en-US/games/store/sonic-unleashed/c098fgnmts8f)).
@@ -57,7 +58,7 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
 
 2) **Before proceeding with the installation**, make sure to follow the guide on how to acquire the game files from your Xbox 360.
 
-    - [English Dumping Guide](/DUMPING-en.md)
+    - [English Dumping Guide](/docs/DUMPING-en.md)
 
 3) Download [the latest release](https://github.com/hedge-dev/UnleashedRecomp/releases/latest) of Unleashed Recompiled and extract it to where you'd like the game to be installed.
 
