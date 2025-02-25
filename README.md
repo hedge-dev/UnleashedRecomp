@@ -134,6 +134,15 @@ Aspect ratios for ultrawide displays (such as 21:9 or even wider) are supported 
 > [!NOTE]
 > By default, cutscenes are locked to their original aspect ratio to prevent [presentation issues](#ultrawide-visual-issues), as the game was not designed to present these scenes with wider aspect ratios. However, you can use the included option to unlock this feature if you don't mind these issues.
 
+### Extended Controller Features
+
+Support for the D-Pad has been added to various parts of the game, allowing the full game to be completed using it over the analog stick, if you so desire.
+
+If you have a DualShock 4 or DualSense controller, the LED will dynamically change color depending on the game context and support for the touchpad has been added to the World Map, allowing you to spin the planet freely!
+
+> [!NOTE]
+> LED and touchpad support for the DualShock 4 and DualSense may be limited on Linux.
+
 ### Low Input Latency
 
 Modern input latency reduction techniques are included to improve the game's responsiveness as much as possible, such as support for [Waitable Swap Chains](https://learn.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains) in both D3D12 and Vulkan. This methodology was applied directly before the game's input polling to minimize latency. Additionally, the D3D12 backend also supports [Flip Models](https://devblogs.microsoft.com/directx/dxgi-flip-model/), allowing the game to directly present to the screen as quickly as possible.
