@@ -404,45 +404,45 @@ This project does not plan to support any more platforms other than Windows, Lin
 ## Credits
 
 ### Unleashed Recompiled
-- [Skyth](https://github.com/blueskythlikesclouds): Creator and Main Developer of the recompilation, as well as the developer of technologies created for it such as [XenonRecomp](https://github.com/hedge-dev/XenonRecomp) and [XenosRecomp](https://github.com/hedge-dev/XenosRecomp). Other responsibilities include the creation of the graphical and audio backends for the project, alongside newly added custom menus, numerous patches and new features to the game.
+- [Skyth](https://github.com/blueskythlikesclouds): Creator and Lead Developer of the recompilation, as well as the developer of technologies created for it such as [XenonRecomp](https://github.com/hedge-dev/XenonRecomp) and [XenosRecomp](https://github.com/hedge-dev/XenosRecomp). Other responsibilities include the creation of the graphics and audio backends for the project, alongside custom menus, dynamic UI aspect ratio and various patches and new features added to the game.
 
-- [Sajid](https://github.com/Sajidur78): Co-creator and Main Developer of the recompilation utilizing technologies created for it such as [XenonAnalyse](https://github.com/hedge-dev/XenonRecomp/?tab=readme-ov-file#XenonAnalyse). Other responsibilities include the implementation of core components, like Xbox 360 kernel level calls with Win32 equivalent replacements to make the game function.
+- [Sajid](https://github.com/Sajidur78): Co-creator and Developer of the recompilation, as well as the developer of [XenonAnalyse](https://github.com/hedge-dev/XenonRecomp/?tab=readme-ov-file#XenonAnalyse). Other responsibilities include the implementation of core components for the project, like the Xbox 360 kernel translation layer used to make the game function.
 
-- [Hyper](https://github.com/hyperbx): Developer of system level features such as the achievements and options menu alongside numerous patches to make the game feel right at home on modern systems with features such as LED and touchpad support on DualShock and DualSense controllers. Aided in creation of concept art and final thumbnails.
+- [Hyper](https://github.com/hyperbx): Developer of system level features, such as achievement support and the custom menus, alongside various other patches and features to make the game feel right at home on modern systems. Aided in the creation of concept art and the final options menu thumbnails.
 
-- [Darío](https://github.com/DarioSamo): Creator of the graphics hardware abstraction layer [plume](https://github.com/renderbag/plume) used by the project's rendering layer. Alongside providing consultation for graphics and aiding with shader research/development responsibilities include the installer wizard and supporting Linux. Spanish Translator of the newly added menus by the recompilation alongside DaGuAr.
+- [Darío](https://github.com/DarioSamo): Creator of the graphics hardware abstraction layer [plume](https://github.com/renderbag/plume), used by the project's graphics backend. Alongside providing consultation for graphics and aiding with shader research and development, other responsibilities include the installer wizard and Linux support. Provided Spanish localization for the custom menus.
 
-- [ĐeäTh](https://github.com/DeaTh-G): Supervisor of game accurate design philosophies regarding newly implemented menus into the recompilation. Aided with the implementation of annotation support for Japanese localization, whilst providing minor help to all localizations of the recompilation.
+- [ĐeäTh](https://github.com/DeaTh-G): Supervisor of game accurate design philosophy regarding the custom menus. Aided in the implementation of annotation support for Japanese localization, whilst providing minor support for all localization.
 
-- [RadiantDerg](https://github.com/RadiantDerg): Main Artist behind the thumbnails used in the options menu of the recompilation of the game. Other responsibilities include the creation of several debugging related codes for HMM and providing aid with the research of the game's internals.
+- [RadiantDerg](https://github.com/RadiantDerg): Lead Artist behind the thumbnails used in the options menu. Other responsibilities include the creation of several debugging related codes for Hedge Mod Manager and providing aid with the research of the game's internals.
 
-- [PTKay](https://github.com/PTKay): Main Concept Artist for the newly created menus for the recompilation. Other responsibilities include aiding with the development of the installer wizard's visuals.
+- [PTKay](https://github.com/PTKay): Lead Concept Artist for the custom menus. Aided in the development of the installer wizard's visuals.
 
-- [SuperSonic16](https://github.com/thesupersonic16): Main Developer of [Hedge Mod Manager](https://github.com/thesupersonic16/HedgeModManager), providing compatibility for modding with the recompilation. Aided with the creation of the deployment system for Linux builds.
+- [SuperSonic16](https://github.com/thesupersonic16): Lead Developer of [Hedge Mod Manager](https://github.com/thesupersonic16/HedgeModManager), providing compatibility for modding with the recompilation. Aided in the creation of the deployment system for Linux builds.
 
-- [NextinHKRY](https://github.com/NextinMono): Italian Translator of the newly added menus by the recompilation. Provided aid with researching the game's internals and creating concept art for several options menu thumbnails used in the final release.
+- [NextinHKRY](https://github.com/NextinMono): Aided in researching the game's internals and creating concept art for some options menu thumbnails used in the final release. Provided Italian localization for the custom menus.
 
-- [LadyLunanova](https://github.com/LadyLunanova): Artist of the Achievement Trophy sprite and the keyboard and mouse graphics used in the installer wizard. 
+- [LadyLunanova](https://linktr.ee/ladylunanova): Artist behind the achievement trophy sprite and the keyboard and mouse icons used in the installer wizard. 
 
-- [LJSTAR](https://github.com/LJSTARbird): Artist behind several thumbnail designs used in the options menu and the button guide for opening the achievements menu of the recompilation. French Translator of the newly added menus by the recompilation.
+- [LJSTAR](https://github.com/LJSTARbird): Artist behind several thumbnail designs used in the options menu and the button guide for opening the achievements menu. Provided French localization for the custom menus.
 
 - [saguinee](https://github.com/saguinee): Artist behind thumbnail designs used in the options menu such as Hints and Battle Theme.
 
-- [Goalringmod27](https://github.com/Goalringmod27): Concept Artist behind the achievements overlay shown during gameplay. Aided in the creation of Transparency Anti-Aliasing thumbnail.
+- [Goalringmod27](https://linktr.ee/goalringmod27): Concept Artist behind the achievements overlay shown during gameplay. Aided in the creation of the Transparency Anti-Aliasing thumbnail.
 
-- [M&M](https://github.com/ActualMandM): Provision of help for aspect ratio adjustments.
+- [M&M](https://github.com/ActualMandM): Provisional support for dynamic UI aspect ratio.
 
-- [DaGuAr](https://x.com/TheDaguar): Spanish Translator of the newly added menus by the recompilation alongside Darío.
+- [DaGuAr](https://x.com/TheDaguar): Provided Spanish localization for the custom menus alongside Darío.
 
-- [brianuuuSonic](https://github.com/brianuuu): Japanese Translator of the newly added menus by the recompilation.
+- [brianuuuSonic](https://github.com/brianuuu): Provided Japanese localization for the custom menus.
 
-- [Kitzuku](https://github.com/Kitzuku): German Translator of the newly added menus by the recompilation.
+- [Kitzuku](https://github.com/Kitzuku): Provided German localization for the custom menus.
 
 ### Special Thanks
-- [Mr-Wiseguy](https://github.com/Mr-Wiseguy): Creator of [N64: Recompiled](https://github.com/N64Recomp/N64Recomp) which was the inspiration behind the creation of this project. Provided information and assistance at the beginning of the recompilation's development.
+- [Mr-Wiseguy](https://github.com/Mr-Wiseguy): Creator of [N64: Recompiled](https://github.com/N64Recomp/N64Recomp), which was the inspiration behind the creation of this project. Provided information and assistance at the beginning of development.
 
-- [ocornut](https://github.com/ocornut): Creator of [Dear ImGui](https://github.com/ocornut/imgui) which was used as the backbone of the recompilation's custom menus.
+- [ocornut](https://github.com/ocornut): Creator of [Dear ImGui](https://github.com/ocornut/imgui), which is used as the backbone of the custom menus.
 
-- [xenia-project](https://github.com/xenia-project/xenia): Extraordinary amounts of research put into the workings of the Xbox 360 which sped up the development of the recompilation.
+- [xenia-project](https://github.com/xenia-project/xenia): Extraordinary amounts of research regarding the inner workings of the Xbox 360, which sped up the development of the recompilation.
 
 - Raymond Chen: Useful resources on Windows application development with his blog ["The Old New Thing"](https://devblogs.microsoft.com/oldnewthing/).
