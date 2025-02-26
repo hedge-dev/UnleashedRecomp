@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstddef>
+#include <cstring>
 #include <vector>
 #include <fstream>
 #include <cassert>
