@@ -120,9 +120,9 @@ PPC_FUNC(sub_82736E80)
     
     if (!Config::Hints)
     {
-        // WhiteIsland_ACT1_001 (Windmill Isle Act 1 Night, Start)
-        // Your friend went off that way, Sonic. Quick, let's go after him!
-        if (strcmp(groupId, "WhiteIsland_ACT1_001") != 0)
+        // WhiteIsland_ACT1_001: "Your friend went off that way, Sonic. Quick, let's go after him!"
+        // s20n_mykETF_c_navi_2: "Huh? Weird! We can't get through here anymore. We were able to earlier!"
+        if (strcmp(groupId, "WhiteIsland_ACT1_001") != 0 && strcmp(groupId, "s20n_mykETF_c_navi_2") != 0)
             return;
     }
 
@@ -139,8 +139,7 @@ PPC_FUNC(sub_824C1E60)
 
     if (!Config::Hints)
     {
-        // s10d_mykETF_c_navi (Town Mykonos Entrance, First Entry)
-        // Looks like we can get to a bunch of places in the village from here!
+        // s10d_mykETF_c_navi: "Looks like we can get to a bunch of places in the village from here!"
         if (strcmp(pMsgRequestHelp->m_Name.c_str(), "s10d_mykETF_c_navi") == 0)
             return;
     }
