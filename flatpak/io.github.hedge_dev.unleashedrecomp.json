@@ -52,6 +52,11 @@
           "type": "file",
           "path": "private/shader.ar",
           "dest": "UnleashedRecompLib/private"
+        },
+        {
+          "type": "file",
+          "path": "private/shader_decompressed.ar",
+          "dest": "UnleashedRecompLib/private"
         }
       ],
       "build-options": {

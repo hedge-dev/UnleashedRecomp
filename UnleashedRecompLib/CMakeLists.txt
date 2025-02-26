@@ -37,6 +37,15 @@ add_custom_command(
         "${CMAKE_CURRENT_SOURCE_DIR}/config/SWA.toml"
 )
 
+add_custom_command(
+    OUTPUT
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/shader_decompressed.ar"
+    COMMAND
+        $<TARGET_FILE:x_decompress> "${CMAKE_CURRENT_SOURCE_DIR}/private/shader.ar" "${CMAKE_CURRENT_SOURCE_DIR}/private/shader_decompressed.ar"
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/shader.ar"
+)
+
 set(XENOS_RECOMP_ROOT "${UNLEASHED_RECOMP_TOOLS_ROOT}/XenosRecomp/XenosRecomp")
 set(XENOS_RECOMP_INCLUDE "${XENOS_RECOMP_ROOT}/shader_common.h")
 
@@ -58,7 +67,7 @@ add_custom_command(
         $<TARGET_FILE:XenosRecomp>
     DEPENDS 
         "${CMAKE_CURRENT_SOURCE_DIR}/private/default_patched.xex"
-        "${CMAKE_CURRENT_SOURCE_DIR}/private/shader.ar" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/shader_decompressed.ar" 
         ${XENOS_RECOMP_SOURCES} 
         ${XENOS_RECOMP_INCLUDE}
 )
