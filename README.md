@@ -32,7 +32,7 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
   - NVIDIA: GeForce GT 630
   - AMD: Radeon HD 7750 (2012, not the RX 7000)
   - Intel: HD Graphics 510 (Skylake)
-- Operating system:
+- Operating System:
   - Windows 10 (version 1909)
   - A modern Linux distro such as Ubuntu 22.04 LTS
 - Storage:
