@@ -398,7 +398,7 @@ This project does not plan to support any more platforms other than Windows, Lin
 
 ## Building
 
-[Check out the building instructions here](/BUILDING.md).
+[Check out the building instructions here](/docs/BUILDING.md).
 
 <br/>
 
