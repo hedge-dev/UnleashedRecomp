@@ -14,29 +14,32 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
           token: ${{ secrets.ORG_TOKEN }}
 
-      - name: Checkout private repository
+      - name: Checkout Private Repository
         uses: actions/checkout@v4
         with:
           repository: ${{ secrets.ASSET_REPO }}
           token: ${{ secrets.ASSET_REPO_TOKEN }}
-          path: flatpak/private
+          path: ./private
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |-
           sudo apt update
           sudo apt install -y flatpak-builder ccache
 
-      - name: Cache ccache directory
+      - name: Setup ccache
         uses: actions/cache@v4
         with:
           path: /tmp/ccache
           key: ccache-${{ runner.os }}
+
+      - name: Prepare Project
+        run: cp ./private/* ./UnleashedRecompLib/private  
 
       - name: Prepare Flatpak
         run: |
