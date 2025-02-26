@@ -236,7 +236,7 @@ While Unleashed Recompiled does its best effort on fixing any hitches and stutte
 
 Even if the recompilation process introduces a small overhead, the game does not perform some tasks in an asynchronous way. These stutters exist on original hardware, but are much more noticeable when targeting higher frame rates.
 
-Most of the known stutters are related to the game loading in layers of new objects at certain points in stages or simply spawning in particle systems, which can have fixed stutters nearly up to 10 milliseconds every time they're created, even on powerful hardware. These hitches are much easier to notice when targeting frame rates such as 120 FPS, where one frame only lasts around 8 milliseconds.
+Most of the known stutters are related to the game loading in layers of new objects at certain points in stages, spawning in particle systems or playing multiple sound effects: these can produce pauses that can last almost 10 milliseconds even on powerful hardware. These hitches are much easier to notice when targeting frame rates such as 120 FPS, where one frame only lasts around 8 milliseconds.
 
 These problems are not possible to mitigate without further research into how the game works and will remain a goal for future updates to fix if possible. However, [as mentioned in the FAQ](#how-can-i-improve-performance), it's been found that these stutters can be significantly mitigated by playing on Linux, possibly due to the amount of synchronization primitives used by the game when these operations are performed.
 
