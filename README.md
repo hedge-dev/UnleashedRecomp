@@ -352,6 +352,8 @@ The second argument will be passed directly to SDL as a hint to try to initializ
 
 Given it is not possible to run the game where the Flatpak is stored, the game data will be installed to `~/.var/app/io.github.hedge_dev.unleashedrecomp/data`. The Flatpak build will only recognize this directory as valid. Feel free to reuse this data directory with a native Linux build if you wish to switch in the future.
 
+If you wish to move this data to another location, you can do so by creating a symlink from this directory to the one where you'll migrate your installation to.
+
 ### How can I improve performance?
 
 You can lower the values of some of the following graphics options to improve performance. Other options may help, but these usually have the biggest impact:
