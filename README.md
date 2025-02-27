@@ -438,10 +438,10 @@ The team behind Unleashed Recompiled does not currently have any plans to port m
 ### Special Thanks
 - [Mr-Wiseguy](https://github.com/Mr-Wiseguy): Creator of [N64: Recompiled](https://github.com/N64Recomp/N64Recomp), which was the inspiration behind the creation of this project. Provided information and assistance at the beginning of development.
 
+- [xenia-project](https://github.com/xenia-project/xenia): Extraordinary amounts of research regarding the inner workings of the Xbox 360, which sped up the development of the recompilation.
+
 - [Katlin Daigler](https://katlindaigler.carbonmade.com): Provided consultation for logo design.
 
 - [ocornut](https://github.com/ocornut): Creator of [Dear ImGui](https://github.com/ocornut/imgui), which is used as the backbone of the custom menus.
-
-- [xenia-project](https://github.com/xenia-project/xenia): Extraordinary amounts of research regarding the inner workings of the Xbox 360, which sped up the development of the recompilation.
 
 - Raymond Chen: Useful resources on Windows application development with his blog ["The Old New Thing"](https://devblogs.microsoft.com/oldnewthing/).
