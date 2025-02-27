@@ -384,6 +384,10 @@ While macOS is not currently on the roadmap, this project welcomes any effort to
 
 This project does not plan to support any more platforms other than Windows, Linux and potentially macOS at the moment. Any contributors who wish to support more platforms should do so through a fork.
 
+### Do you have plans to recompile other Xbox 360 games or Sonic games?
+
+The team behind Unleashed Recompiled does not currently have any plans to port more Xbox 360 games or Sonic games. Anyone is free to look into [XenonRecomp](https://github.com/hedge-dev/XenonRecomp) if they wish to investigate these opportunities.
+
 ## Building
 
 [Check out the building instructions here](/docs/BUILDING.md).
