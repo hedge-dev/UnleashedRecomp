@@ -1,4 +1,8 @@
-# Unleashed Recompiled
+<p align="center">
+    <img src="https://raw.githubusercontent.com/hedge-dev/UnleashedRecompResources/refs/heads/main/images/logo/Logo.png" width="512"/>
+</p>
+
+---
 
 Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic Unleashed created through the process of static recompilation. The port offers Windows and Linux support with numerous built-in enhancements such as high resolutions, ultrawide support, high frame rates, improved performance and modding.
 
@@ -7,8 +11,6 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
 [Check out the latest release here](https://github.com/hedge-dev/UnleashedRecomp/releases/latest).
 
 [XenonRecomp](https://github.com/hedge-dev/XenonRecomp) and [XenosRecomp](https://github.com/hedge-dev/XenosRecomp) are the main recompilers used for converting the game's original PowerPC code and Xenos shaders into compatible C++ and HLSL code respectively. The development of these recompilers was directly inspired by [N64: Recompiled](https://github.com/N64Recomp/N64Recomp), which was used to create [Zelda 64: Recompiled](https://github.com/Zelda64Recomp/Zelda64Recomp).
-
-<br/>
 
 ## Table of Contents
 
@@ -20,8 +22,6 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
 - [FAQ](#faq)
 - [Building](#building)
 - [Credits](#credits)
-
-<br/>
 
 ## Minimum System Requirements
 
@@ -41,8 +41,6 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
 
 > [!NOTE]
 > More storage space may be required if uncompressed game files are provided during installation.
-
-<br/>
 
 ## How to Install
 
@@ -70,8 +68,6 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
 
 > [!NOTE]
 > Please note that it is **not possible** to complete the installation if your files have been **modified**. In case of other problems such as black screens or crashes, **do not try to reinstall the game** as it is not possible for the process to result in an invalid installation.
-
-<br/>
 
 ## Features
 
@@ -200,8 +196,6 @@ Modded files for the Xbox 360 version of the game are compatible with Unleashed 
 > [!NOTE]
 > Code modding is currently not possible and is [planned for a future update](#code-modding). As a workaround for the time being, some codes have been directly embedded into the game and can be accessed through Hedge Mod Manager's Codes tab.
 
-<br/>
-
 ## Update Roadmap
 
 A number of different features are planned for future updates.
@@ -225,8 +219,6 @@ In the meantime, those interested in doing extensive code modding are recommende
 ### Stance on New Features
 
 The team behind Unleashed Recompiled is committed to preserving the game's original design as best as possible. Additional features that don't fit the vision of the project will be left to mods or forks to cover. As such, requests for such features will not be considered. If you request a new feature, make sure it makes sense within the design of the original game and fits the goal of delivering a PC version of the game.
-
-<br/>
 
 ## Known Issues
 
@@ -263,8 +255,6 @@ Game bugs present on the original hardware are intentionally preserved and will 
 Due to some restrictions of how the desktop environment on the Steam Deck works whilst in Game Mode, please note that you may need to at least first boot into Desktop Mode to be able to use the file picker to provide the game files.
 
 Simply booting at least once in Desktop Mode will enable the Deck to use the file picker when going back to Game Mode. You can complete the entire installation process while in Desktop Mode to save yourself the trouble of browsing through Game Mode if necessary.
-
-<br/>
 
 ## FAQ
 
@@ -394,13 +384,9 @@ While macOS is not currently on the roadmap, this project welcomes any effort to
 
 This project does not plan to support any more platforms other than Windows, Linux and potentially macOS at the moment. Any contributors who wish to support more platforms should do so through a fork.
 
-<br/>
-
 ## Building
 
 [Check out the building instructions here](/docs/BUILDING.md).
-
-<br/>
 
 ## Credits
 
@@ -425,7 +411,7 @@ This project does not plan to support any more platforms other than Windows, Lin
 
 - [LadyLunanova](https://linktr.ee/ladylunanova): Artist behind the achievement trophy sprite and the keyboard and mouse icons used in the installer wizard. 
 
-- [LJSTAR](https://github.com/LJSTARbird): Artist behind several thumbnail designs used in the options menu and the button guide for opening the achievements menu. Provided French localization for the custom menus.
+- [LJSTAR](https://github.com/LJSTARbird): Artist behind the project logo, along with several thumbnail designs used in the options menu and created new icons for the button guide for opening the achievements menu. Provided French localization for the custom menus.
 
 - [saguinee](https://twitter.com/saguinee): Artist behind thumbnail designs used in the options menu such as Hints and Battle Theme.
 
@@ -441,6 +427,8 @@ This project does not plan to support any more platforms other than Windows, Lin
 
 ### Special Thanks
 - [Mr-Wiseguy](https://github.com/Mr-Wiseguy): Creator of [N64: Recompiled](https://github.com/N64Recomp/N64Recomp), which was the inspiration behind the creation of this project. Provided information and assistance at the beginning of development.
+
+- [Katlin Daigler](https://katlindaigler.carbonmade.com): Provided consultation for logo design.
 
 - [ocornut](https://github.com/ocornut): Creator of [Dear ImGui](https://github.com/ocornut/imgui), which is used as the backbone of the custom menus.
 
