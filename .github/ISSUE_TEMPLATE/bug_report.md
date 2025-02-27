@@ -1,7 +1,10 @@
 ---
-name: 'Bug Report'
-description: 'Report a bug in Unleashed Recompiled.'
-type: 'Bug'
+name: Bug Report
+about: Report a bug in Unleashed Recompiled.
+title: ''
+labels: ''
+assignees: ''
+
 ---
 
 ### Validation
