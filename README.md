@@ -204,6 +204,10 @@ A number of different features are planned for future updates.
 
 Options for changing the bindings of the player actions to the controller buttons, as well as support for keyboard bindings. In the meantime, refer to this [question in the FAQ](#what-are-the-keyboard-bindings) for the default keyboard bindings, as well as where to edit them if necessary.
 
+### More Linux Builds
+
+Linux builds that don't require Flatpak will be added in the future as soon as a way to [create the shortcuts required for HedgeModManager](https://github.com/hedge-dev/UnleashedRecomp/issues/451) is implemented. In the meantime, you can access these builds through the [Actions](https://github.com/hedge-dev/UnleashedRecomp/actions) panel or [build them yourself](#building).
+
 ### High Frame Rate Fixes
 
 A number of [gameplay issues](#high-frame-rate-glitches) are currently present that will gradually be fixed as more research into how the game works is done. At the moment, the game is considered to be beatable at high frame rates, but you may be required to limit the game to 60 FPS in order to clear some optional content.
