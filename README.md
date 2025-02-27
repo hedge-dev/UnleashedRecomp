@@ -138,7 +138,9 @@ Support for the D-Pad has been added to various parts of the game, allowing the 
 If you have a DualShock 4 or DualSense controller, the LED will dynamically change color depending on the game context and support for the touchpad has been added to the World Map, allowing you to spin the planet freely!
 
 > [!NOTE]
-> LED and touchpad support for the DualShock 4 and DualSense may be limited on Linux.
+> LED and touchpad support for the DualShock 4 and DualSense controllers may be limited when using third-party input translation layers (such as DS4Windows or Steam Input).
+>
+> Support for both features may also be limited on Linux.
 
 ### Low Input Latency
 
@@ -381,6 +383,10 @@ Linux has an unexpected advantage when it comes to CPU performance, showing impr
 ### Can I install the game with a Japanese copy?
 
 The Japanese version of Sonic Unleashed has some minor differences in both file structure and content that make this version of the game incompatible with the international release. Furthermore, the US and EU versions of the game already support Japanese. Supporting this version would only cause mod compatibility issues in the future, so it is unlikely to be added to the update roadmap as it would also require its own recompilation.
+
+### Why is the game detecting my PlayStation controller as an Xbox controller?
+
+If you're using a third-party input translation layer (such as DS4Windows or Steam Input), it is recommended that you disable these for full controller support.
 
 ### Will macOS be supported?
 
