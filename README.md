@@ -206,7 +206,7 @@ Options for changing the bindings of the player actions to the controller button
 
 ### More Linux Builds
 
-Linux builds that don't require Flatpak will be added in the future as soon as a way to [create the shortcuts required for HedgeModManager](https://github.com/hedge-dev/UnleashedRecomp/issues/451) is implemented. In the meantime, you can access these builds through the [Actions](https://github.com/hedge-dev/UnleashedRecomp/actions) panel or [build them yourself](#building).
+Linux builds that don't require Flatpak will be added in the future when a way to [create the shortcuts required for HedgeModManager](https://github.com/hedge-dev/UnleashedRecomp/issues/451) is implemented. In the meantime, you can access these builds through the [Actions](https://github.com/hedge-dev/UnleashedRecomp/actions) panel or [build them yourself](#building).
 
 ### High Frame Rate Fixes
 
