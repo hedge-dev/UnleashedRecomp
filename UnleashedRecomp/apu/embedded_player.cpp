@@ -97,7 +97,7 @@ static Mix_Music* g_installerMusic;
 
 void EmbeddedPlayer::Init() 
 {
-    Mix_OpenAudio(XAUDIO_SAMPLES_HZ, AUDIO_F32SYS, 2, 2048);
+    Mix_OpenAudio(XAUDIO_SAMPLES_HZ, AUDIO_F32SYS, 2, 4096);
     g_installerMusic = Mix_LoadMUS_RW(SDL_RWFromConstMem(g_installer_music, sizeof(g_installer_music)), 1);
 
     s_isActive = true;
