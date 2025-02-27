@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in Unleashed Recompiled.
+about: Report a bug in Unleashed Recompiled
 type: Bug
 ---
 
