@@ -376,6 +376,9 @@ Some of the game's more demanding sections require strong CPU single-thread perf
 
 Linux has an unexpected advantage when it comes to CPU performance, showing improvements in CPU-bound scenarios. It's currently speculated that this could be due to the heavy amount of thread synchronization the game performs, an operation that is likely to be more performant on Linux's CPU scheduler than on Windows' scheduler. If you wish to gain some additional performance, playing on Linux instead of Windows could yield better results.
 
+> [!WARNING]
+> Using external frame rate limiters or performance overlays may degrade performance or have negative consequences.
+
 ### Can I install the game with a PlayStation 3 copy?
 
 **You cannot use the files from the PlayStation 3 version of the game.** Supporting these files would require an entirely new recompilation, as they have proprietary formatting that only works on PS3 and the code for these formats is only present in that version. All significant differences present in the PS3 version of the game have been included in this project as options.
