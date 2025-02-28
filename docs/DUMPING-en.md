@@ -3,7 +3,7 @@
 ### Pre-requisites
 - Xbox 360 (modifications not necessary)
 - Xbox 360 Hard Drive (20 GB minimum)
-- Xbox 360 Hard Drive Transfer Kit (or a compatible SATA to USB adapter)
+- Xbox 360 Hard Drive Transfer Cable (or a compatible SATA to USB adapter)
 - Sonic Unleashed for Xbox 360 (US or EU, **JP is not supported**)
     - Retail Disc or Digital Copy (can be purchased and downloaded from the [Xbox Store](https://www.xbox.com/en-US/games/store/sonic-unleashed/c098fgnmts8f)).
     - Title Update required.
@@ -27,7 +27,7 @@
 > - [Xbox 360 S](https://www.ifixit.com/Guide/Xbox+360+S+Hard+Drive+Replacement/3184)
 > - [Xbox 360 E](https://www.ifixit.com/Guide/Xbox+360+E+Hard+Drive+Replacement/22179)
 
-5. Using the Xbox 360 Hard Drive Transfer Kit (or compatible SATA to USB adapter), connect your Xbox 360 hard drive to your PC.
+5. Using the Xbox 360 Hard Drive Transfer Cable (or compatible SATA to USB adapter), connect your Xbox 360 hard drive to your PC.
 
 > [!CAUTION]
 > If you're using an unofficial SATA to USB adapter, you may need to remove the hard drive from its enclosure in order to connect it.
@@ -36,7 +36,7 @@
 >
 > For Xbox 360 S|E hard drives, this enclosure is glued shut and removing the hard drive may be an irreversible process!
 >
-> **It is highly recommended** that you obtain the official Xbox 360 Hard Drive Transfer Kit in order to proceed.
+> **It is highly recommended** that you obtain the official Xbox 360 Hard Drive Transfer Cable in order to proceed.
 
 6. Download [the latest release of Velocity](https://github.com/Gualdimar/Velocity/releases/download/xex%2Biso-branch/Velocity-XEXISO.rar) and open the `*.rar` file using [7-Zip](https://7-zip.org/download.html), then extract its contents anywhere that's convenient to you.
 7. Create a new folder anywhere that's convenient to you for storing the game files.
