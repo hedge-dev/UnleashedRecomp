@@ -54,23 +54,8 @@ jobs:
           flatpak-builder --user --force-clean --install-deps-from=flathub --repo=repo --ccache builddir ./flatpak/${{ env.FLATPAK_ID }}.json
           flatpak build-bundle repo ./${{ env.FLATPAK_ID }}.flatpak ${{ env.FLATPAK_ID }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
-# Uploads the built flatpak bundle to GitHub
-#      - name: Upload artifact
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: UnleashedRecomp-flatpak
-#          path: ./${{ env.FLATPAK_ID }}.flatpak
-      
-      - name: Upload artifact to Discord
-        env: 
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        if: ${{ env.DISCORD_WEBHOOK != '' }}
-        uses: tsickert/discord-webhook@v6.0.0
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          webhook-url: ${{ env.DISCORD_WEBHOOK }}
-          content: |
-            OS: Linux
-            Summary: ${{ env.commit_message }}
-            Commit: ${{ github.sha }}
-            Branch: ${{ github.ref_name }}
-          filename: ./${{ env.FLATPAK_ID }}.flatpak
+          name: UnleashedRecomp-Flatpak
+          path: ./${{ env.FLATPAK_ID }}.flatpak

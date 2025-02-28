@@ -5,7 +5,7 @@ on:
 
 env:
   LLVM_VERSION: 18
-  CMAKE_PRESET: linux-relwithdebinfo
+  CMAKE_PRESET: linux-release
 
 jobs:
   build:

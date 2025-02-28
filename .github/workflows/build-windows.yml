@@ -72,23 +72,8 @@ jobs:
 
           Compress-Archive -Path .\release\* -DestinationPath .\UnleashedRecomp-Windows.zip
 
-# Uploads the packed zip file to GitHub
-#      - name: Upload artifact
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: UnleashedRecomp-Windows
-#          path: .\UnleashedRecomp-Windows.zip
-      
-      - name: Upload artifact to Discord
-        env: 
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        if: ${{ env.DISCORD_WEBHOOK != '' }}
-        uses: tsickert/discord-webhook@v6.0.0
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          webhook-url: ${{ env.DISCORD_WEBHOOK }}
-          content: |
-            OS: Windows
-            Summary: ${{ env.commit_message }}
-            Commit: ${{ github.sha }}
-            Branch: ${{ github.ref_name }}
-          filename: .\UnleashedRecomp-Windows.zip
+          name: UnleashedRecomp-Windows
+          path: .\UnleashedRecomp-Windows.zip
