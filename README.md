@@ -54,6 +54,13 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
         - Title Update required.
         - All available DLC (Adventure Packs) are optional, but **highly recommended**. **The DLC includes high quality lighting for the entire game**.
 
+> [!TIP]
+> If you do not have the Xbox 360 Hard Drive Transfer Cable, please ensure that you purchase the correct revision of it for your console.
+>
+> The latest revision works with both original Xbox 360 and Xbox 360 S|E hard drives, but the first revision only works with original Xbox 360 hard drives.
+>
+> To know which is which, the first revision cable is gray, whereas the latest revision (which supports any Xbox 360 hard drive) is black.
+
 2) **Before proceeding with the installation**, make sure to follow the guide on how to acquire the game files from your Xbox 360.
 
     - [English Dumping Guide](/docs/DUMPING-en.md)

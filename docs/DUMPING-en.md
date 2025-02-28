@@ -11,6 +11,13 @@
 - [7-Zip](https://7-zip.org/download.html) (for extracting Velocity)
 - [Velocity](https://github.com/Gualdimar/Velocity/releases/download/xex%2Biso-branch/Velocity-XEXISO.rar) (Gualdimar's fork)
 
+> [!TIP]
+> If you do not have the Xbox 360 Hard Drive Transfer Cable, please ensure that you purchase the correct revision of it for your console.
+>
+> The latest revision works with both original Xbox 360 and Xbox 360 S|E hard drives, but the first revision only works with original Xbox 360 hard drives.
+>
+> To know which is which, the first revision cable is gray, whereas the latest revision (which supports any Xbox 360 hard drive) is black.
+
 ### Instructions
 
 > [!NOTE]
