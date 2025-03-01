@@ -153,6 +153,8 @@ int main(int argc, char *argv[])
     timeBeginPeriod(1);
 #endif
 
+    os::process::CheckConsole();
+
     if (!os::registry::Init())
         LOGN_WARNING("OS doesn't support registry");
 

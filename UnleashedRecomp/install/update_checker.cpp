@@ -9,6 +9,8 @@
 #include <shellapi.h>
 #endif
 
+#include <os/logger.h>
+
 // UpdateChecker
 
 using json = nlohmann::json;
@@ -52,7 +54,7 @@ static bool parseVersion(const std::string &versionStr, int &major, int &minor, 
     }
     catch (const std::exception &e)
     {
-        fmt::println("Error while parsing version: {}.", e.what());
+        LOGF_ERROR("Error while parsing version: {}.", e.what());
         return false;
     }
 
@@ -93,25 +95,25 @@ void updateCheckerThread()
                 }
                 else
                 {
-                    fmt::println("Error while parsing response: tag_name does not contain a valid version string.");
+                    LOG_ERROR("Error while parsing response: tag_name does not contain a valid version string.");
                     g_updateCheckerResult = UpdateChecker::Result::Failed;
                 }
             }
             else
             {
-                fmt::println("Error while parsing response: tag_name not found or not the right type.");
+                LOG_ERROR("Error while parsing response: tag_name not found or not the right type.");
                 g_updateCheckerResult = UpdateChecker::Result::Failed;
             }
         }
         catch (const json::exception &e)
         {
-            fmt::println("Error while parsing response: {}", e.what());
+            LOGF_ERROR("Error while parsing response: {}", e.what());
             g_updateCheckerResult = UpdateChecker::Result::Failed;
         }
     }
     else
     {
-        fmt::println("Error while performing request: {}", curl_easy_strerror(res));
+        LOGF_ERROR("Error while performing request: {}", curl_easy_strerror(res));
         g_updateCheckerResult = UpdateChecker::Result::Failed;
     }
 

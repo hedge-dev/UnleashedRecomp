@@ -52,6 +52,11 @@ bool os::process::StartProcess(const std::filesystem::path& path, const std::vec
     return true;
 }
 
+void os::process::CheckConsole()
+{
+    g_consoleVisible = (GetConsoleWindow() != nullptr);
+}
+
 void os::process::ShowConsole()
 {
     if (GetConsoleWindow() == nullptr)
@@ -60,5 +65,7 @@ void os::process::ShowConsole()
         freopen("CONIN$", "r", stdin);
         freopen("CONOUT$", "w", stderr);
         freopen("CONOUT$", "w", stdout);
+
+        g_consoleVisible = true;
     }
 }

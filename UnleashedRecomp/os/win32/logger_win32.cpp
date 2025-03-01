@@ -1,9 +1,10 @@
 #include <os/logger.h>
+#include <os/process.h>
 
 #define FOREGROUND_WHITE  (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE)
 #define FOREGROUND_YELLOW (FOREGROUND_RED | FOREGROUND_GREEN)
 
-HANDLE g_hStandardOutput;
+static HANDLE g_hStandardOutput;
 
 void os::logger::Init()
 {
@@ -12,6 +13,9 @@ void os::logger::Init()
 
 void os::logger::Log(const std::string_view str, ELogType type, const char* func)
 {
+    if (!os::process::g_consoleVisible)
+        return;
+
     switch (type)
     {
         case ELogType::Utility:

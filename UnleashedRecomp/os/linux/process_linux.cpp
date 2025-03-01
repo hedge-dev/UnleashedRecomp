@@ -61,6 +61,12 @@ bool os::process::StartProcess(const std::filesystem::path& path, const std::vec
     return true;
 }
 
+void os::process::CheckConsole()
+{
+    // Always visible on Linux.
+    g_consoleVisible = true;
+}
+
 void os::process::ShowConsole()
 {
     // Unnecessary on Linux.
