@@ -8,6 +8,20 @@ type: Bug
 - [ ] I have checked the [Issues](https://github.com/hedge-dev/UnleashedRecomp/issues) page to see if my problem has already been reported
 - [ ] I have confirmed that this bug does not occur in the original game running on original Xbox 360 hardware
 
+#### If you have DLC installed, please specify which ones you have.
+- [ ] Apotos & Shamar Adventure Pack
+- [ ] Chun-nan Adventure Pack
+- [ ] Empire City & Adabat Adventure Pack
+- [ ] Holoska Adventure Pack
+- [ ] Mazuri Adventure Pack
+- [ ] Spagonia Adventure Pack
+
+#### If you have mods enabled, please specify which ones you have.
+Provide a list of your enabled mods in Hedge Mod Manager here. You will not receive support for issues *caused* by mods.
+
+#### If you have codes enabled, please specify which ones you have.
+Provide a list of your enabled codes in Hedge Mod Manager here.
+
 ### Describe the Bug
 A clear and concise description of what the bug is.
 
