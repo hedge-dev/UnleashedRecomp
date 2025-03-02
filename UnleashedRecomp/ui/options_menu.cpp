@@ -1051,14 +1051,12 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         {
             float deltaTime = ImGui::GetIO().DeltaTime;
 
-            bool fastIncrement = (time - g_lastTappedTime) > 0.5;
+            bool fastIncrement = isSlider && (leftIsHeld || rightIsHeld) && (time - g_lastTappedTime) > 0.5;
             bool isPlayIncrementSound = true;
 
             constexpr double INCREMENT_TIME = 1.0 / 120.0;
             constexpr double INCREMENT_SOUND_TIME = 1.0 / 7.5;
 
-            if (isSlider)
-            {
                 if (fastIncrement)
                 {
                     isPlayIncrementSound = (time - g_lastIncrementSoundTime) > INCREMENT_SOUND_TIME;
@@ -1074,7 +1072,6 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                     decrement = leftIsHeld;
                     increment = rightIsHeld;
                 }
-            }
 
             do
             {
