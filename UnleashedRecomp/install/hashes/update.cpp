@@ -10,6 +10,7 @@ const uint64_t UpdateHashes[] = {
     6914273463875662709ULL,
     15542186142639918255ULL,
     17773094197787397017ULL,
+    4145621795357905881ULL,
     5694064368761413534ULL,
     10660633045276223515ULL,
     6259845327508088719ULL,
@@ -48,7 +49,7 @@ const uint64_t UpdateHashes[] = {
 };
 
 const std::pair<const char *, uint32_t> UpdateFiles[] = {
-    { "default.xexp", 3 },
+    { "default.xexp", 4 },
     { "work/ActD_MykonosAct1/Base.set.xml", 1 },
     { "work/ActD_NY/Mission_NYCity_S20_10.set.xml", 1 },
     { "work/ActD_SubEU_01/Set2.set.xml", 1 },
