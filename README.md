@@ -6,6 +6,8 @@
 
 Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic Unleashed created through the process of static recompilation. The port offers Windows and Linux support with numerous built-in enhancements such as high resolutions, ultrawide support, high frame rates, improved performance and modding.
 
+Test for PR.
+
 **This project does not include any game assets. You must provide the files from your own legally acquired copy of the game to install or build Unleashed Recompiled.**
 
 [Check out the latest release here](https://github.com/hedge-dev/UnleashedRecomp/releases/latest).
