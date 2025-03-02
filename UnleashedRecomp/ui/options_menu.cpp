@@ -80,6 +80,7 @@ static double g_lockedOnTime;
 static double g_lastTappedTime;
 static double g_lastIncrementTime;
 static double g_lastIncrementSoundTime;
+static double g_fastIncrementHoldTime;
 
 static constexpr size_t GRID_SIZE = 9;
 
@@ -1057,21 +1058,26 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             constexpr double INCREMENT_TIME = 1.0 / 120.0;
             constexpr double INCREMENT_SOUND_TIME = 1.0 / 7.5;
 
-                if (fastIncrement)
-                {
-                    isPlayIncrementSound = (time - g_lastIncrementSoundTime) > INCREMENT_SOUND_TIME;
+            if (fastIncrement)
+                g_fastIncrementHoldTime += deltaTime;
+            else
+                g_fastIncrementHoldTime = 0;
 
-                    if ((time - g_lastIncrementTime) < INCREMENT_TIME)
-                        fastIncrement = false;
-                    else
-                        g_lastIncrementTime = time;
-                }
+            if (fastIncrement)
+            {
+                isPlayIncrementSound = (time - g_lastIncrementSoundTime) > INCREMENT_SOUND_TIME;
 
-                if (fastIncrement)
-                {
-                    decrement = leftIsHeld;
-                    increment = rightIsHeld;
-                }
+                if (g_fastIncrementHoldTime < INCREMENT_TIME)
+                    fastIncrement = false;
+                else
+                    g_lastIncrementTime = time;
+            }
+
+            if (fastIncrement)
+            {
+                decrement = leftIsHeld;
+                increment = rightIsHeld;
+            }
 
             do
             {
@@ -1090,9 +1096,10 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                         config->Value += 0.01f;
                 }
 
-                deltaTime -= INCREMENT_TIME;
+                if (fastIncrement)
+                    g_fastIncrementHoldTime -= INCREMENT_TIME;
             }
-            while (fastIncrement && deltaTime > 0.0f);
+            while (fastIncrement && g_fastIncrementHoldTime >= INCREMENT_TIME);
 
             bool isConfigValueInBounds = config->Value >= valueMin && config->Value <= valueMax;
 
