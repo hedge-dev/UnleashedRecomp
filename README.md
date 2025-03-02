@@ -29,7 +29,7 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
   - Intel: Sandy Bridge (Intel Core 2nd Generation)
   - AMD: Bulldozer (AMD FX series)
 - GPU with support for Direct3D 12.0 (Shader Model 6) or Vulkan 1.2:
-  - NVIDIA: GeForce GT 630
+  - NVIDIA: Kepler GPU (Cards with the same name may have different architectures)
   - AMD: Radeon HD 7750 (2012, not the RX 7000)
   - Intel: HD Graphics 510 (Skylake)
 - Operating System:
