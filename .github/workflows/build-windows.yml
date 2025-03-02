@@ -1,7 +1,8 @@
 name: Build Project (Windows)
 
 on:
-  pull_request:
+  pull_request_target:
+    types: [ opened, synchronize ]
   push:
   workflow_dispatch:
 
