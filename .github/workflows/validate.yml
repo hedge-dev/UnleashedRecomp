@@ -1,0 +1,202 @@
+name: validate
+on:
+  workflow_call:
+    secrets:
+      ASSET_REPO:
+        required: true
+      ASSET_REPO_TOKEN:
+        required: true
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+  
+jobs:
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-24.04
+    env:
+      LLVM_VERSION: 18
+      CMAKE_PRESET: linux-release
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Checkout Private Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.ASSET_REPO }}
+          token: ${{ secrets.ASSET_REPO_TOKEN }}
+          path: ./private
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ccache-${{ runner.os }}
+  
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./thirdparty/vcpkg/downloads
+            ./thirdparty/vcpkg/packages
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+              vcpkg-${{ runner.os }}-
+
+      - name: Install Dependencies (Linux)
+        run: |-
+          sudo apt update
+          sudo apt install -y ninja-build llvm-${{ env.LLVM_VERSION }}-dev libgtk-3-dev
+
+      - name: Cache ccache Directory
+        uses: actions/cache@v4
+        with:
+          path: /tmp/ccache
+          key: ccache-${{ runner.os }}
+
+      - name: Prepare Project
+        run: cp ./private/* ./UnleashedRecompLib/private
+  
+      - name: Configure Project
+        env:
+          CCACHE_DIR: /tmp/ccache
+        run: cmake . --preset ${{ env.CMAKE_PRESET }} -DSDL2MIXER_VORBIS=VORBISFILE -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache
+
+      - name: Build Project
+        env:
+          CCACHE_DIR: /tmp/ccache
+        run: cmake --build ./out/build/${{ env.CMAKE_PRESET }} --target UnleashedRecomp
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnleashedRecomp-Linux
+          path: ./out/build/${{ env.CMAKE_PRESET }}/UnleashedRecomp/UnleashedRecomp
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    env:
+      CMAKE_PRESET: x64-Clang-Release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.ASSET_REPO }}
+          token: ${{ secrets.ASSET_REPO_TOKEN }}
+          path: .\private
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ccache-${{ runner.os }}
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./thirdparty/vcpkg/downloads
+            ./thirdparty/vcpkg/packages
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+              vcpkg-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          choco install ninja
+          Remove-Item -Path "C:\ProgramData\Chocolatey\bin\ccache.exe" -Force -ErrorAction SilentlyContinue
+      
+      - name: Configure Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Prepare Project
+        run: |
+          $commitMessage = git log -1 --pretty=%s
+          Add-Content -Path $env:GITHUB_ENV -Value "commit_message=$commitMessage"
+          copy .\private\* .\UnleashedRecompLib\private
+
+      - name: Configure Project
+        run: cmake . --preset ${{ env.CMAKE_PRESET }} -DSDL2MIXER_VORBIS=VORBISFILE -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache
+
+      - name: Build Project
+        run: cmake --build .\out\build\${{ env.CMAKE_PRESET }} --target UnleashedRecomp
+      
+      - name: Pack Release
+        run: |
+          New-Item -ItemType Directory -Path .\release
+          New-Item -ItemType Directory -Path .\release\D3D12
+
+          Move-Item -Path ".\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\D3D12\D3D12Core.dll" -Destination ".\release\D3D12\D3D12Core.dll"
+          Move-Item -Path ".\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\dxcompiler.dll" -Destination ".\release\dxcompiler.dll"
+          Move-Item -Path ".\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\dxil.dll" -Destination ".\release\dxil.dll"
+          Move-Item -Path ".\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\UnleashedRecomp.exe" -Destination ".\release\UnleashedRecomp.exe"
+
+          Compress-Archive -Path .\release\* -DestinationPath .\UnleashedRecomp-Windows.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnleashedRecomp-Windows
+          path: .\UnleashedRecomp-Windows.zip
+  build-flatpak:
+    name: Build Flatpak
+    runs-on: ubuntu-24.04
+    env:
+      FLATPAK_ID: io.github.hedge_dev.unleashedrecomp
+      FREEDESKTOP_VERSION: 23.08
+      LLVM_VERSION: 18
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.ORG_TOKEN }}
+
+      - name: Checkout Private Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.ASSET_REPO }}
+          token: ${{ secrets.ASSET_REPO_TOKEN }}
+          path: ./private
+
+      - name: Install Dependencies
+        run: |-
+          sudo apt update
+          sudo apt install -y flatpak-builder ccache
+
+      - name: Setup ccache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/ccache
+          key: ccache-${{ runner.os }}
+
+      - name: Prepare Project
+        run: cp ./private/* ./UnleashedRecompLib/private  
+
+      - name: Prepare Flatpak
+        run: |
+          flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak --user install -y flathub org.freedesktop.Sdk//${{ env.FREEDESKTOP_VERSION }}
+          flatpak --user install -y flathub org.freedesktop.Sdk.Extension.llvm${{ env.LLVM_VERSION }}//${{ env.FREEDESKTOP_VERSION }}
+
+      - name: Build Flatpak
+        run: |
+          echo "commit_message=$(git log -1 --pretty=%s)" >> $GITHUB_ENV
+          export CCACHE_DIR=/tmp/ccache
+          flatpak-builder --user --force-clean --install-deps-from=flathub --repo=repo --ccache builddir ./flatpak/${{ env.FLATPAK_ID }}.json
+          flatpak build-bundle repo ./${{ env.FLATPAK_ID }}.flatpak ${{ env.FLATPAK_ID }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnleashedRecomp-Flatpak
+          path: ./${{ env.FLATPAK_ID }}.flatpak

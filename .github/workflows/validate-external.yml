@@ -1,0 +1,20 @@
+name: validate-external
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+jobs:
+  authorize:
+    if: github.repository != github.event.pull_request.head.repo.full_name
+    environment:
+      ${{ github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.full_name != github.repository &&
+      'external' || 'internal' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo ✓
+  build:
+    needs: authorize
+    uses: ./.github/workflows/validate.yml
+    secrets:
+      ASSET_REPO: ${{ secrets.ASSET_REPO }}
+      ASSET_REPO_TOKEN: ${{ secrets.ASSET_REPO_TOKEN }}
