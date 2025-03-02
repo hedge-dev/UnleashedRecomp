@@ -6833,6 +6833,13 @@ void GetDatabaseDataMidAsmHook(PPCRegister& r1, PPCRegister& r4)
 
             if (isParticleModel)
                 return;
+
+            // Adabat water is broken in original game, which they tried to fix by partially including the files in the update,
+            // which then finally fixed for real in the DLC. This confuses the async PSO compiler and causes a hang if the DLC is missing.
+            // We'll just ignore it.
+            bool isAdabatWater = strcmp(databaseData->m_TypeAndName.c_str() + 2, "evl_sea_obj_st_waterCircle") == 0;
+            if (isAdabatWater)
+                return;
         }
 
         databaseData->m_Flags |= eDatabaseDataFlags_CompilingPipelines;
