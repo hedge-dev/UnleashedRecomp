@@ -37,6 +37,7 @@
 #include <magic_enum/magic_enum.hpp>
 #endif
 
+#define UNLEASHED_RECOMP
 #include "../../tools/XenosRecomp/XenosRecomp/shader_common.h"
 
 #ifdef UNLEASHED_RECOMP_D3D12

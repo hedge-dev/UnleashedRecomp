@@ -41,7 +41,7 @@ static ImFont* g_fntSeurat;
 
 std::string g_text;
 int g_result;
-std::vector<std::string> g_buttons;
+static std::vector<std::string> g_buttons;
 int g_defaultButtonIndex;
 int g_cancelButtonIndex;
 
