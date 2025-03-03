@@ -306,26 +306,26 @@ uint32_t XamContentCreateEx(uint32_t dwUserIndex, const char* szRootName, const 
 
         if (!exists)
         {
-            std::string root = "";
+            std::filesystem::path rootPath;
 
             if (pContentData->dwContentType == XCONTENTTYPE_SAVEDATA)
             {
-                std::u8string savePathU8 = GetSavePath(true).u8string();
-                root = (const char *)(savePathU8.c_str());
+                rootPath = GetSavePath(true);
             }
             else if (pContentData->dwContentType == XCONTENTTYPE_DLC)
             {
-                root = GAME_INSTALL_DIRECTORY "/dlc";
+                rootPath = GetGamePath() / "dlc";
             }
             else
             {
-                root = GAME_INSTALL_DIRECTORY;
+                rootPath = GetGamePath();
             }
 
+            const std::string root = (const char*)rootPath.u8string().c_str();
             XamRegisterContent(*pContentData, root);
 
             std::error_code ec;
-            std::filesystem::create_directory(std::u8string_view((const char8_t*)(root.c_str())), ec);
+            std::filesystem::create_directory(rootPath, ec);
 
             XamRootCreate(szRootName, root);
         }

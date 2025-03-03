@@ -35,6 +35,7 @@ add_custom_command(
         "${CMAKE_CURRENT_SOURCE_DIR}/private/default.xex"
         "${CMAKE_CURRENT_SOURCE_DIR}/private/default.xexp"
         "${CMAKE_CURRENT_SOURCE_DIR}/config/SWA.toml"
+    USES_TERMINAL
 )
 
 add_custom_command(
@@ -53,6 +54,7 @@ target_compile_definitions(XenosRecomp PRIVATE
     XENOS_RECOMP_INPUT=\"${CMAKE_CURRENT_SOURCE_DIR}/private\" 
     XENOS_RECOMP_OUTPUT=\"${CMAKE_CURRENT_SOURCE_DIR}/shader/shader_cache.cpp\"
     XENOS_RECOMP_INCLUDE_INPUT=\"${XENOS_RECOMP_INCLUDE}\"
+    UNLEASHED_RECOMP
 )
 
 file(GLOB XENOS_RECOMP_SOURCES 
@@ -70,6 +72,7 @@ add_custom_command(
         "${CMAKE_CURRENT_SOURCE_DIR}/private/shader_decompressed.ar" 
         ${XENOS_RECOMP_SOURCES} 
         ${XENOS_RECOMP_INCLUDE}
+    USES_TERMINAL
 )
 
 add_library(UnleashedRecompLib 
@@ -79,4 +82,5 @@ add_library(UnleashedRecompLib
 )
 
 target_include_directories(UnleashedRecompLib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(UnleashedRecompLib PRIVATE "${UNLEASHED_RECOMP_TOOLS_ROOT}/XenonRecomp/thirdparty/simde")
 target_precompile_headers(UnleashedRecompLib PUBLIC "ppc/ppc_recomp_shared.h")

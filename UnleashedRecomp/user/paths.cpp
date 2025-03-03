@@ -1,7 +1,7 @@
 #include "paths.h"
 #include <os/process.h>
 
-std::filesystem::path g_executableRoot = os::process::GetExecutablePath().remove_filename();
+std::filesystem::path g_executableRoot = os::process::GetExecutableRoot();
 std::filesystem::path g_userPath = BuildUserPath();
 
 bool CheckPortable()
@@ -22,18 +22,24 @@ std::filesystem::path BuildUserPath()
         userPath = std::filesystem::path{ knownPath } / USER_DIRECTORY;
 
     CoTaskMemFree(knownPath);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     const char* homeDir = getenv("HOME");
+#if defined(__linux__)
     if (homeDir == nullptr)
     {
         homeDir = getpwuid(getuid())->pw_dir;
     }
+#endif
 
     if (homeDir != nullptr)
     {
         // Prefer to store in the .config directory if it exists. Use the home directory otherwise.
         std::filesystem::path homePath = homeDir;
+#if defined(__linux__)
         std::filesystem::path configPath = homePath / ".config";
+#else
+        std::filesystem::path configPath = homePath / "Library" / "Application Support";
+#endif
         if (std::filesystem::exists(configPath))
             userPath = configPath / USER_DIRECTORY;
         else

@@ -20,7 +20,7 @@ std::unique_ptr<GuestTexture> g_upKBMIcons;
 
 float g_sideMargins = DEFAULT_SIDE_MARGINS;
 
-std::vector<Button> g_buttons;
+static std::vector<Button> g_buttons;
 
 std::unordered_map<EButtonIcon, float> g_iconWidths =
 {

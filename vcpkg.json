@@ -9,8 +9,12 @@
             "name": "directx12-agility",
             "platform": "windows"
         },
-        "directx-dxc",
         "freetype",
         "curl"
-    ]
+    ],
+    "vcpkg-configuration": {
+        "overlay-triplets": [
+            "vcpkg/triplets"
+        ]
+    }
 }

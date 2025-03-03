@@ -40,29 +40,101 @@ GuestThreadContext::~GuestThreadContext()
     g_userHeap.Free(thread);
 }
 
+#ifdef USE_PTHREAD
+static size_t GetStackSize()
+{
+    // Cache as this should not change.
+    static size_t stackSize = 0;
+    if (stackSize == 0)
+    {
+        // 8 MiB is a typical default.
+        constexpr auto defaultSize = 8 * 1024 * 1024;
+        struct rlimit lim;
+        const auto ret = getrlimit(RLIMIT_STACK, &lim);
+        if (ret == 0 && lim.rlim_cur < defaultSize)
+        {
+            // Use what the system allows.
+            stackSize = lim.rlim_cur;
+        }
+        else
+        {
+            stackSize = defaultSize;
+        }
+    }
+    return stackSize;
+}
+
+static void* GuestThreadFunc(void* arg)
+{
+    GuestThreadHandle* hThread = (GuestThreadHandle*)arg;
+#else
 static void GuestThreadFunc(GuestThreadHandle* hThread)
 {
+#endif
     hThread->suspended.wait(true);
     GuestThread::Start(hThread->params);
+#ifdef USE_PTHREAD
+    return nullptr;
+#endif
 }
 
 GuestThreadHandle::GuestThreadHandle(const GuestThreadParams& params)
-    : params(params), suspended((params.flags & 0x1) != 0), thread(GuestThreadFunc, this)
+    : params(params), suspended((params.flags & 0x1) != 0)
+#ifdef USE_PTHREAD
+{
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, GetStackSize());
+    const auto ret = pthread_create(&thread, &attr, GuestThreadFunc, this);
+    if (ret != 0) {
+        fprintf(stderr, "pthread_create failed with error code 0x%X.\n", ret);
+        return;
+    }
+}
+#else
+      , thread(GuestThreadFunc, this)
 {
 }
+#endif
 
 GuestThreadHandle::~GuestThreadHandle()
 {
+#ifdef USE_PTHREAD
+    pthread_join(thread, nullptr);
+#else
     if (thread.joinable())
         thread.join();
+#endif
+}
+
+template <typename ThreadType>
+static uint32_t CalcThreadId(const ThreadType& id)
+{
+    if constexpr (sizeof(id) == 4)
+        return *reinterpret_cast<const uint32_t*>(&id);
+    else
+        return XXH32(&id, sizeof(id), 0);
+}
+
+uint32_t GuestThreadHandle::GetThreadId() const
+{
+#ifdef USE_PTHREAD
+    return CalcThreadId(thread);
+#else
+    return CalcThreadId(thread.get_id());
+#endif
 }
 
 uint32_t GuestThreadHandle::Wait(uint32_t timeout)
 {
     assert(timeout == INFINITE);
 
+#ifdef USE_PTHREAD
+    pthread_join(thread, nullptr);
+#else
     if (thread.joinable())
         thread.join();
+#endif
 
     return STATUS_WAIT_0;
 }
@@ -80,27 +152,25 @@ uint32_t GuestThread::Start(const GuestThreadParams& params)
     return ctx.ppcContext.r3.u32;
 }
 
-static uint32_t GetThreadId(const std::thread::id& id)
-{
-    if constexpr (sizeof(id) == 4)
-        return *reinterpret_cast<const uint32_t*>(&id);
-    else
-        return XXH32(&id, sizeof(id), 0);
-}
-
 GuestThreadHandle* GuestThread::Start(const GuestThreadParams& params, uint32_t* threadId)
 {
     auto hThread = CreateKernelObject<GuestThreadHandle>(params);
 
     if (threadId != nullptr)
-        *threadId = GetThreadId(hThread->thread.get_id());
+    {
+        *threadId = hThread->GetThreadId();
+    }
 
     return hThread;
 }
 
 uint32_t GuestThread::GetCurrentThreadId()
 {
-    return GetThreadId(std::this_thread::get_id());
+#ifdef USE_PTHREAD
+    return CalcThreadId(pthread_self());
+#else
+    return CalcThreadId(std::this_thread::get_id());
+#endif
 }
 
 void GuestThread::SetLastError(uint32_t error)

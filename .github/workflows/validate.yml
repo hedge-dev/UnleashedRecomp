@@ -210,3 +210,80 @@ jobs:
         with:
           name: UnleashedRecomp-Flatpak
           path: ./${{ env.FLATPAK_ID }}.flatpak
+  build-macos:
+    name: Build macOS
+    runs-on: macos-15
+    strategy:
+      matrix:
+        arch: [ "arm64" ]
+        preset: ["macos-debug", "macos-release", "macos-relwithdebinfo"]
+    env:
+      CMAKE_PRESET: ${{ matrix.preset }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Checkout Private Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.ASSET_REPO }}
+          token: ${{ secrets.ASSET_REPO_TOKEN }}
+          path: ./private
+
+      - name: Setup latest Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ccache-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.preset }}
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./thirdparty/vcpkg/downloads
+            ./thirdparty/vcpkg/packages
+          key: vcpkg-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ matrix.arch }}-
+
+      - name: Install Dependencies (macOS)
+        run: |
+          brew install ninja
+
+      - name: Cache ccache Directory
+        uses: actions/cache@v4
+        with:
+          path: /tmp/ccache
+          key: ccache-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.preset }}
+
+      - name: Prepare Project
+        run: |
+          cp ./private/* ./UnleashedRecompLib/private
+
+      - name: Configure Project
+        env:
+          CCACHE_DIR: /tmp/ccache
+        run: cmake . --preset ${{ env.CMAKE_PRESET }} -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} -DSDL2MIXER_VORBIS=VORBISFILE -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache
+
+      - name: Build Project
+        env:
+          CCACHE_DIR: /tmp/ccache
+        run: cmake --build ./out/build/${{ env.CMAKE_PRESET }} --target UnleashedRecomp
+
+      - name: Pack Release
+        run: |
+          codesign --deep -fs - "./out/build/${{ env.CMAKE_PRESET }}/UnleashedRecomp/Unleashed Recompiled.app"
+          tar -czf UnleashedRecomp-macOS-${{ matrix.arch }}-${{ env.CMAKE_PRESET }}.tar.gz -C ./out/build/${{ env.CMAKE_PRESET }}/UnleashedRecomp "Unleashed Recompiled.app"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnleashedRecomp-macOS-${{ matrix.arch }}-${{ env.CMAKE_PRESET }}
+          path: UnleashedRecomp-macOS-${{ matrix.arch }}-${{ env.CMAKE_PRESET }}.tar.gz

@@ -61,3 +61,9 @@
 [submodule "UnleashedRecomp/api"]
 	path = UnleashedRecomp/api
 	url = https://github.com/hedge-dev/SWA.git
+[submodule "thirdparty/MoltenVK/MoltenVK"]
+	path = thirdparty/MoltenVK/MoltenVK
+	url = https://github.com/KhronosGroup/MoltenVK.git
+[submodule "thirdparty/MoltenVK/SPIRV-Cross"]
+	path = thirdparty/MoltenVK/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git

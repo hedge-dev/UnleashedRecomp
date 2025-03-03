@@ -50,6 +50,21 @@ You can also find the equivalent packages for your preferred distro.
 > [!NOTE]
 > This list may not be comprehensive for your particular distro and you may be required to install additional packages, should an error occur during configuration.
 
+### macOS
+You will need to install Xcode 16.3+ or the equivalent Xcode Command Line Tools from Apple.
+
+The following commands will install additional required dependencies, depending on which package manager you use.
+
+If you use Homebrew:
+```bash
+brew install cmake ninja pkg-config
+```
+
+If you use MacPorts:
+```bash
+sudo port install cmake ninja pkg-config
+```
+
 ## 4. Build the Project
 
 ### Windows
@@ -80,4 +95,23 @@ cmake --build ./out/build/linux-release --target UnleashedRecomp
 3. Navigate to the directory that was specified as the output in the previous step and run the game.
 ```bash
 ./UnleashedRecomp
+```
+
+### macOS
+1. Configure the project using CMake by navigating to the repository and running the following command.
+```bash
+cmake . --preset macos-release
+```
+
+> [!NOTE]
+> The available presets are `macos-debug`, `macos-relwithdebinfo` and `macos-release`.
+
+2. Build the project using the selected configuration.
+```bash
+cmake --build ./out/build/macos-release --target UnleashedRecomp
+```
+
+3. Navigate to the directory that was specified as the output in the previous step and run the game.
+```bash
+open -a UnleashedRecomp.app
 ```
