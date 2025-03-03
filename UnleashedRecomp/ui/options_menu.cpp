@@ -1266,6 +1266,8 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::Monitor, canChangeMonitor, monitorReason, 0, 0, displayCount - 1, false);
 
             DrawConfigOption(rowCount++, yOffset, &Config::AspectRatio, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::AspectWidth, true, nullptr, 1, 50, 100);
+            DrawConfigOption(rowCount++, yOffset, &Config::AspectHeight, true, nullptr, 1, 50, 100);
             DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale, true, nullptr, 0.25f, 1.0f, 2.0f);
             DrawConfigOption(rowCount++, yOffset, &Config::Fullscreen, true);
             DrawConfigOption(rowCount++, yOffset, &Config::VSync, true);
