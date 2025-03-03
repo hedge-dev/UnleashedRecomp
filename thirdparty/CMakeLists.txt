@@ -20,3 +20,7 @@ add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/nativefiledialog-extended"
 add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/o1heap")
 add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/SDL")
 add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/SDL_mixer")
+
+if (APPLE)
+    add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/MoltenVK")
+endif()

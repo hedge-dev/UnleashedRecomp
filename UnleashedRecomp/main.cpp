@@ -1,5 +1,7 @@
 #include <stdafx.h>
+#ifdef __x86_64__
 #include <cpuid.h>
+#endif
 #include <cpu/guest_thread.h>
 #include <gpu/video.h>
 #include <kernel/function.h>
@@ -69,8 +71,10 @@ void KiSystemStartup()
 
     const auto gameContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Game");
     const auto updateContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Update");
-    XamRegisterContent(gameContent, GAME_INSTALL_DIRECTORY "/game");
-    XamRegisterContent(updateContent, GAME_INSTALL_DIRECTORY "/update");
+    const std::string gamePath = (const char*)(GetGamePath() / "game").u8string().c_str();
+    const std::string updatePath = (const char*)(GetGamePath() / "update").u8string().c_str();
+    XamRegisterContent(gameContent, gamePath);
+    XamRegisterContent(updateContent, updatePath);
 
     const auto saveFilePath = GetSaveFilePath(true);
     bool saveFileExists = std::filesystem::exists(saveFilePath);
@@ -102,7 +106,7 @@ void KiSystemStartup()
     XamContentCreateEx(0, "D", &gameContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
 
     std::error_code ec;
-    for (auto& file : std::filesystem::directory_iterator(GAME_INSTALL_DIRECTORY "/dlc", ec))
+    for (auto& file : std::filesystem::directory_iterator(GetGamePath() / "dlc", ec))
     {
         if (file.is_directory())
         {
@@ -165,10 +169,10 @@ uint32_t LdrLoadModule(const std::filesystem::path &path)
     return entry;
 }
 
+#ifdef __x86_64__
 __attribute__((constructor(101), target("no-avx,no-avx2"), noinline))
 void init()
 {
-#ifdef __x86_64__
     uint32_t eax, ebx, ecx, edx;
 
     // Execute CPUID for processor info and feature bits.
@@ -185,8 +189,8 @@ void init()
 
         std::_Exit(1);
     }
-#endif
 }
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -324,7 +328,7 @@ int main(int argc, char *argv[])
     HostStartup();
 
     std::filesystem::path modulePath;
-    bool isGameInstalled = Installer::checkGameInstall(GAME_INSTALL_DIRECTORY, modulePath);
+    bool isGameInstalled = Installer::checkGameInstall(GetGamePath(), modulePath);
     bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
     if (runInstallerWizard)
     {
@@ -334,7 +338,7 @@ int main(int argc, char *argv[])
             std::_Exit(1);
         }
 
-        if (!InstallerWizard::Run(GAME_INSTALL_DIRECTORY, isGameInstalled && forceDLCInstaller))
+        if (!InstallerWizard::Run(GetGamePath(), isGameInstalled && forceDLCInstaller))
         {
             std::_Exit(0);
         }

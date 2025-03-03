@@ -4,7 +4,6 @@ if(NOT DEFINED ENV{VCPKG_ROOT})
     message(FATAL_ERROR "VCPKG_ROOT is not defined!")
 endif()
 
-include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 set(UNLEASHED_RECOMP_THIRDPARTY_ROOT ${CMAKE_SOURCE_DIR}/thirdparty)
 set(UNLEASHED_RECOMP_TOOLS_ROOT ${CMAKE_SOURCE_DIR}/tools)
 set(CMAKE_CXX_STANDARD 20)
@@ -18,15 +17,27 @@ endif()
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-# Target Sandy Bridge for all projects
-add_compile_options(
-    -march=sandybridge
-)
+project("UnleashedRecomp-ALL")
+
+if (CMAKE_OSX_ARCHITECTURES)
+    set(UNLEASHED_RECOMP_ARCHITECTURE ${CMAKE_OSX_ARCHITECTURES})
+elseif(CMAKE_SYSTEM_PROCESSOR)
+    set(UNLEASHED_RECOMP_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
+else()
+    set(UNLEASHED_RECOMP_ARCHITECTURE ${CMAKE_HOST_SYSTEM_PROCESSOR})
+endif()
+string(TOLOWER "${UNLEASHED_RECOMP_ARCHITECTURE}" UNLEASHED_RECOMP_ARCHITECTURE)
+message(STATUS "Detected architecture: ${UNLEASHED_RECOMP_ARCHITECTURE}")
+
+if (UNLEASHED_RECOMP_ARCHITECTURE STREQUAL "x86_64" OR UNLEASHED_RECOMP_ARCHITECTURE STREQUAL "amd64")
+    # Target Sandy Bridge for all projects
+    add_compile_options(
+        -march=sandybridge
+    )
+endif()
 
 add_subdirectory(${UNLEASHED_RECOMP_THIRDPARTY_ROOT})
 add_subdirectory(${UNLEASHED_RECOMP_TOOLS_ROOT})
-
-project("UnleashedRecomp-ALL")
 
 # Include sub-projects.
 add_subdirectory("UnleashedRecompLib")

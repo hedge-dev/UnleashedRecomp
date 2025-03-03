@@ -2,6 +2,15 @@
 
 #include <kernel/xdm.h>
 
+// Use pthreads directly on macOS to be able to increase default stack size.
+#ifdef __APPLE__
+#define USE_PTHREAD 1
+#endif
+
+#ifdef USE_PTHREAD
+#include <pthread.h>
+#endif
+
 #define CURRENT_THREAD_HANDLE uint32_t(-2)
 
 struct GuestThreadContext
@@ -24,10 +33,16 @@ struct GuestThreadHandle : KernelObject
 {
     GuestThreadParams params;
     std::atomic<bool> suspended;
+#ifdef USE_PTHREAD
+    pthread_t thread;
+#else
     std::thread thread;
+#endif
 
     GuestThreadHandle(const GuestThreadParams& params);
     ~GuestThreadHandle() override;
+
+    uint32_t GetThreadId() const;
 
     uint32_t Wait(uint32_t timeout) override;
 };
