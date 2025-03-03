@@ -1165,27 +1165,38 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
     size = Scale(20.0f);
     textSize = g_newRodinFont->CalcTextSizeA(size, FLT_MAX, 0.0f, valueText.data());
 
-    min.x += ((max.x - min.x) - textSize.x) / 2.0f;
-    min.y += ((max.y - min.y) - textSize.y) / 2.0f;
+    auto textSquashRatio = 1.0f;
+
+    if (textSize.x > max.x - min.x)
+        textSquashRatio = (max.x - min.x) / textSize.x - 0.1f;
+
+    auto textX = min.x + ((max.x - min.x) - (textSize.x * textSquashRatio)) / 2.0f;
+    auto textY = min.y + ((max.y - min.y) - textSize.y) / 2.0f;
 
     SetGradient
     (
-        min,
-        { min.x + textSize.x, min.y + textSize.y },
+        { textX, textY },
+        { textX + textSize.x, textY + textSize.y },
         IM_COL32(192, 255, 0, 255),
         IM_COL32(128, 170, 0, 255)
     );
+
+    SetScale({ textSquashRatio, 1.0f });
+    SetOrigin({ textX, textY });
 
     DrawTextWithOutline
     (
         g_newRodinFont,
         size,
-        min,
+        { textX, textY },
         IM_COL32(255, 255, 255, 255 * alpha),
         valueText.data(),
         4,
         IM_COL32(0, 0, 0, 255 * alpha)
     );
+
+    SetScale({ 1.0f, 1.0f });
+    SetOrigin({ 0.0f, 0.0f });
 
     ResetGradient();
 }
