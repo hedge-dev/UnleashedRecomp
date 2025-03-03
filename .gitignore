@@ -407,6 +407,3 @@ FodyWeavers.xsd
 # CMake Files
 **/cmake-build-debug
 **/CMakeCache.txt
-
-# Unleashed game files
-private/
