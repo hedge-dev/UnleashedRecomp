@@ -26,7 +26,7 @@
 #undef ControlMask
 #undef Success
 #elif defined(__APPLE__)
-typedef struct _NSWindow NSWindow;
+#include <SDL.h>
 #endif
 
 #ifdef SDL_VULKAN_ENABLED
@@ -52,7 +52,9 @@ namespace plume {
     };
 #elif defined(__APPLE__)
     struct RenderWindow {
-        NSWindow* window;
+        SDL_Window* window;
+        void* view;
+
         bool operator==(const struct RenderWindow& rhs) const {
             return window == rhs.window;
         }
@@ -1784,6 +1786,9 @@ namespace plume {
     };
 
     struct RenderDeviceCapabilities {
+        // Geometry shaders.
+        bool geometryShader = false;
+
         // Raytracing.
         bool raytracing = false;
         bool raytracingStateUpdate = false;
