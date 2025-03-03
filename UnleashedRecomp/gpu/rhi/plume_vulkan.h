@@ -20,6 +20,10 @@
 #define VK_USE_PLATFORM_ANDROID_KHR
 #elif defined(__linux__)
 #define VK_USE_PLATFORM_XLIB_KHR
+#elif defined(__APPLE__)
+#define VK_USE_PLATFORM_METAL_EXT
+// For VK_KHR_portability_subset
+#define VK_ENABLE_BETA_EXTENSIONS
 #endif
 
 #include <volk.h>

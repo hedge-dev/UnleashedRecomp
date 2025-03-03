@@ -211,6 +211,8 @@ void GameWindow::Init(const char* sdlVideoDriver)
     s_renderWindow = s_pWindow;
 #elif defined(__linux__)
     s_renderWindow = { info.info.x11.display, info.info.x11.window };
+#elif defined(__APPLE__)
+    s_renderWindow = { SDL_Metal_GetLayer(SDL_Metal_CreateView(s_pWindow)) };
 #else
     static_assert(false, "Unknown platform.");
 #endif

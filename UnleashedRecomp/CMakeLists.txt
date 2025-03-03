@@ -97,6 +97,14 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
         "os/linux/user_linux.cpp"
         "os/linux/version_linux.cpp"
     )
+elseif (APPLE)
+    set(UNLEASHED_RECOMP_OS_CXX_SOURCES
+        "os/macos/logger_macos.cpp"
+        "os/macos/media_macos.cpp"
+        "os/macos/process_macos.cpp"
+        "os/macos/user_macos.cpp"
+        "os/macos/version_macos.cpp"
+    )
 endif()
 
 set(UNLEASHED_RECOMP_CPU_CXX_SOURCES

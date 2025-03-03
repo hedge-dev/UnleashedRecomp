@@ -51,6 +51,9 @@ namespace plume {
         VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
 #   elif defined(__linux__)
         VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+#   elif defined(__APPLE__)
+        VK_EXT_METAL_SURFACE_EXTENSION_NAME,
+        VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
 #   endif
     };
 
@@ -65,7 +68,11 @@ namespace plume {
         VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
         VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
 #   ifdef VULKAN_OBJECT_NAMES_ENABLED
-        VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+#   endif
+#   ifdef __APPLE__
+        // Vulkan spec requires this to be enabled if supported.
+        VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
 #   endif
     };
     
@@ -2045,6 +2052,18 @@ namespace plume {
             fprintf(stderr, "vkCreateXlibSurfaceKHR failed with error code 0x%X.\n", res);
             return;
         }
+#   elif defined(__APPLE__)
+        assert(renderWindow.layer != nullptr);
+        VkMetalSurfaceCreateInfoEXT surfaceCreateInfo = {};
+        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
+        surfaceCreateInfo.pLayer = renderWindow.layer;
+
+        VulkanInterface *renderInterface = commandQueue->device->renderInterface;
+        res = vkCreateMetalSurfaceEXT(renderInterface->instance, &surfaceCreateInfo, nullptr, &surface);
+        if (res != VK_SUCCESS) {
+            fprintf(stderr, "vkCreateMetalSurfaceEXT failed with error code 0x%X.\n", res);
+            return;
+        }
 #   endif
 
         VkBool32 presentSupported = false;
@@ -3690,6 +3709,13 @@ namespace plume {
         bufferDeviceAddressFeatures.pNext = featuresChain;
         featuresChain = &bufferDeviceAddressFeatures;
 
+#ifdef __APPLE__
+        VkPhysicalDevicePortabilitySubsetFeaturesKHR portabilityFeatures = {};
+        portabilityFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR;
+        portabilityFeatures.pNext = featuresChain;
+        featuresChain = &portabilityFeatures;
+#endif
+
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
         deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
         deviceFeatures.pNext = featuresChain;
@@ -3759,6 +3785,11 @@ namespace plume {
             bufferDeviceAddressFeatures.pNext = createDeviceChain;
             createDeviceChain = &bufferDeviceAddressFeatures;
         }
+
+#ifdef __APPLE__
+        portabilityFeatures.pNext = createDeviceChain;
+        createDeviceChain = &portabilityFeatures;
+#endif
 
         // Retrieve the information for the queue families.
         uint32_t queueFamilyCount = 0;
@@ -4320,6 +4351,10 @@ namespace plume {
                 break;
             }
         }
+#   endif
+
+#   ifdef __APPLE__
+        createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 #   endif
         
         res = vkCreateInstance(&createInfo, nullptr, &instance);
