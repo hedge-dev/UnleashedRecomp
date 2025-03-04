@@ -693,6 +693,12 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         }
     },
     {
+        "System_Win32_MissingDLLs",
+        {
+            { ELanguage::English, "The module \"%s\" could not be found.\n\nPlease make sure that:\n\n- You extracted this copy of Unleashed Recompiled fully and not just the *.exe file.\n- You are not running Unleashed Recompiled from a *.zip file." }
+        }
+    },
+    {
         "Common_On",
         {
             { ELanguage::English,  "ON" },
