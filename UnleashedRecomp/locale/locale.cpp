@@ -145,7 +145,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailable",
         {
             { ELanguage::English,  "This option is not available at this location." },
-            { ELanguage::Japanese, "この\u200Bオプションは\u200B[現在:げんざい]の\u200B[画面:がめん]で\u200B[変更:へんこう]\u200Bできません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200B[現在:げんざい]の\u200B[画面:がめん]では\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option ist an dieser Stelle nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible pour l'instant." },
             { ELanguage::Spanish,  "Esta opción no está disponible en este momento." },
@@ -158,7 +158,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailableFullscreen",
         {
             { ELanguage::English,  "This option is not available in fullscreen mode." },
-            { ELanguage::Japanese, "この\u200Bオプションは\u200Bフルスクリーンモードで\u200B[変更:へんこう]\u200Bできません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200Bフルスクリーンモードでは\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option ist im Vollbildmodus nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible en mode plein écran." },
             { ELanguage::Spanish,  "Esta opción no está disponible en modo pantalla completa." },
@@ -171,7 +171,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailableWindowed",
         {
             { ELanguage::English,  "This option is not available in windowed mode." },
-            { ELanguage::Japanese, "この\u200Bオプションは\u200Bウィンドウモードで\u200B[変更:へんこう]\u200Bできません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200Bウィンドウモードでは\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option ist im Fenstermodus nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible en mode fenêtré." },
             { ELanguage::Spanish,  "Esta opción no está disponible en modo ventana." },
