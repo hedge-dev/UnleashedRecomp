@@ -1240,13 +1240,21 @@ static void DrawLanguagePicker()
     {
         float alphaMotion = ComputeMotionInstaller(g_appearTime, g_disappearTime, CONTAINER_INNER_TIME, CONTAINER_INNER_DURATION);
         float minX, maxX;
-        bool buttonPressed;
+        bool buttonPressed = false;
 
-        for (int i = 0; i < 6; i++)
+        int numLanguages = sizeof(LANGUAGE_TEXT) / sizeof(LANGUAGE_TEXT[0]);
+
+        int numColumns = 2;
+        int numRows = (numLanguages + numColumns - 1) / numColumns;
+
+        for (int i = 0; i < numLanguages; i++)
         {
-            ComputeButtonColumnCoordinates((i < 3) ? ButtonColumnLeft : ButtonColumnRight, minX, maxX);
+            ButtonColumn column = (i % numColumns == 0) ? ButtonColumnLeft : ButtonColumnRight;
+            ComputeButtonColumnCoordinates(column, minX, maxX);
 
-            float minusY = (CONTAINER_BUTTON_GAP + BUTTON_HEIGHT) * (float(i % 3));
+            float rowIndex = i / numColumns;
+            float minusY = (CONTAINER_BUTTON_GAP + BUTTON_HEIGHT) * rowIndex;
+
             ImVec2 min = { minX, g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT - CONTAINER_BUTTON_GAP - BUTTON_HEIGHT - minusY) };
             ImVec2 max = { maxX, g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT - CONTAINER_BUTTON_GAP - minusY) };
 
