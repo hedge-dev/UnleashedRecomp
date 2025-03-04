@@ -43,7 +43,7 @@ sudo apt install autoconf automake libtool pkg-config curl cmake ninja-build cla
 ```
 The following command will install the required dependencies on a distro that uses `pacman` (such as Arch-based distros).
 ```bash
-sudo pacman -S base-devel ninja lld clang gtk3 vcpkg
+sudo pacman -S base-devel ninja lld clang gtk3
 ```
 You can also find the equivalent packages for your preferred distro.
 
