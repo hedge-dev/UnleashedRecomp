@@ -37,7 +37,7 @@ jobs:
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ccache-${{ runner.os }}
+          key: ccache-${{ runner.os }}-${{ matrix.preset }}
   
       - name: Cache vcpkg
         uses: actions/cache@v4
@@ -58,7 +58,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/ccache
-          key: ccache-${{ runner.os }}
+          key: ccache-${{ runner.os }}-${{ matrix.preset }}
 
       - name: Prepare Project
         run: cp ./private/* ./UnleashedRecompLib/private
@@ -103,7 +103,7 @@ jobs:
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ccache-${{ runner.os }}
+          key: ccache-${{ runner.os }}-${{ matrix.preset }}
 
       - name: Cache vcpkg
         uses: actions/cache@v4
