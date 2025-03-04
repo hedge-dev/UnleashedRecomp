@@ -1,4 +1,5 @@
 #include <stdafx.h>
+#include <cpuid.h>
 #include <cpu/guest_thread.h>
 #include <gpu/video.h>
 #include <kernel/function.h>
@@ -147,6 +148,29 @@ uint32_t LdrLoadModule(const std::filesystem::path &path)
     return entry;
 }
 
+__attribute__((constructor(101), target("no-avx,no-avx2"), noinline))
+void init()
+{
+#ifdef __x86_64__
+    uint32_t eax, ebx, ecx, edx;
+
+    // Execute CPUID for processor info and feature bits.
+    __get_cpuid(1, &eax, &ebx, &ecx, &edx);
+
+    // Check for AVX support.
+    if ((ecx & (1 << 28)) == 0)
+    {
+        printf("[*] CPU does not support the AVX instruction set.\n");
+
+#ifdef _WIN32
+        MessageBoxA(nullptr, "Your CPU does not meet the minimum system requirements.", "Unleashed Recompiled", MB_ICONERROR);
+#endif
+
+        std::_Exit(1);
+    }
+#endif
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef _WIN32
@@ -156,7 +180,7 @@ int main(int argc, char *argv[])
     os::process::CheckConsole();
 
     if (!os::registry::Init())
-        LOGN_WARNING("OS doesn't support registry");
+        LOGN_WARNING("OS does not support registry.");
 
     os::logger::Init();
 
