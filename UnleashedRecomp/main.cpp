@@ -16,6 +16,7 @@
 #include <kernel/xdbf.h>
 #include <install/installer.h>
 #include <install/update_checker.h>
+#include <os/host.h>
 #include <os/logger.h>
 #include <os/process.h>
 #include <os/registry.h>
@@ -156,18 +157,20 @@ int main(int argc, char *argv[])
     os::process::CheckConsole();
 
     if (!os::registry::Init())
-        LOGN_WARNING("OS doesn't support registry");
+        LOGN_WARNING("OS does not support registry.");
 
     os::logger::Init();
 
     bool forceInstaller = false;
     bool forceDLCInstaller = false;
+    bool bypassCPURequirements = false;
     const char *sdlVideoDriver = nullptr;
 
     for (uint32_t i = 1; i < argc; i++)
     {
         forceInstaller = forceInstaller || (strcmp(argv[i], "--install") == 0);
         forceDLCInstaller = forceDLCInstaller || (strcmp(argv[i], "--install-dlc") == 0);
+        bypassCPURequirements = bypassCPURequirements || (strcmp(argv[i], "--bypass-cpu-requirements") == 0);
 
         if (strcmp(argv[i], "--sdl-video-driver") == 0)
         {
@@ -179,6 +182,12 @@ int main(int argc, char *argv[])
     }
 
     Config::Load();
+
+    if (!bypassCPURequirements && !os::host::IsCapableCPU())
+    {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("System_UnsupportedCPU").c_str(), GameWindow::s_pWindow);
+        std::_Exit(1);
+    }
 
     // Check the time since the last time an update was checked. Store the new time if the difference is more than six hours.
     constexpr double TimeBetweenUpdateChecksInSeconds = 6 * 60 * 60;

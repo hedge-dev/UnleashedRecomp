@@ -693,6 +693,12 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         }
     },
     {
+        "System_UnsupportedCPU",
+        {
+            { ELanguage::English, "Your CPU does not meet the minimum system requirements." }
+        }
+    },
+    {
         "Common_On",
         {
             { ELanguage::English,  "ON" },

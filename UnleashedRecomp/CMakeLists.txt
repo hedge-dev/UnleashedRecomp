@@ -99,6 +99,18 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
     )
 endif()
 
+if (WIN32)
+    set(UNLEASHED_RECOMP_OS_CXX_SOURCES_NO_AVX
+        "os/win32/host_win32.cpp"
+    )
+elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    set(UNLEASHED_RECOMP_OS_CXX_SOURCES_NO_AVX
+        "os/linux/host_linux.cpp"
+    )
+endif()
+
+list(APPEND UNLEASHED_RECOMP_OS_CXX_SOURCES ${UNLEASHED_RECOMP_OS_CXX_SOURCES_NO_AVX})
+
 set(UNLEASHED_RECOMP_CPU_CXX_SOURCES
     "cpu/guest_thread.cpp"
 )
@@ -204,6 +216,7 @@ set(UNLEASHED_RECOMP_THIRDPARTY_SOURCES
 
 set(UNLEASHED_RECOMP_THIRDPARTY_INCLUDES
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/concurrentqueue"
+    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/cpuid"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/ddspp"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/imgui"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/implot"
@@ -223,6 +236,7 @@ if (UNLEASHED_RECOMP_D3D12)
     list(APPEND UNLEASHED_RECOMP_THIRDPARTY_SOURCES "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp")
 endif()
 
+set_source_files_properties(${UNLEASHED_RECOMP_OS_CXX_SOURCES_NO_AVX} PROPERTIES COMPILE_FLAGS "-mno-avx" SKIP_PRECOMPILE_HEADERS ON)
 set_source_files_properties(${UNLEASHED_RECOMP_THIRDPARTY_SOURCES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 
 set(UNLEASHED_RECOMP_CXX_SOURCES
@@ -354,6 +368,8 @@ if (WIN32)
     )
 endif()
 
+add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/cpuid" cpuid)
+
 target_link_libraries(UnleashedRecomp PRIVATE
     fmt::fmt
     libzstd_static
@@ -367,6 +383,7 @@ target_link_libraries(UnleashedRecomp PRIVATE
     UnleashedRecompLib
     xxHash::xxhash
     CURL::libcurl
+    steinwurf::cpuid
 )
 
 target_include_directories(UnleashedRecomp PRIVATE

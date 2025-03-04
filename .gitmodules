@@ -58,3 +58,6 @@
 [submodule "thirdparty/json"]
 	path = thirdparty/json
 	url = https://github.com/nlohmann/json
+[submodule "thirdparty/cpuid"]
+	path = thirdparty/cpuid
+	url = https://github.com/steinwurf/cpuid.git
