@@ -303,6 +303,18 @@ void PostureSpaceHurrierDPadSupportYMidAsmHook(PPCRegister& pPadState, PPCVRegis
         vector.f32[3] = -1.0f;
 }
 
+void SetXButtonHomingMidAsmHook(PPCRegister& r1)
+{
+    auto pXButtonHoming = (bool*)(g_memory.base + r1.u32 + 0x63);
+
+    *pXButtonHoming = !Config::HomingAttackOnJump;
+}
+
+bool IsHomingAttackOnJump()
+{
+    return Config::HomingAttackOnJump;
+}
+
 // ------------- WORLD MAP ------------- //
 
 bool WorldMapDeadzoneMidAsmHook(PPCRegister& pPadState)
