@@ -76,7 +76,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UnleashedRecomp-Linux
+          name: UnleashedRecomp-${{ env.CMAKE_PRESET }}-Linux
           path: ./out/build/${{ env.CMAKE_PRESET }}/UnleashedRecomp/UnleashedRecomp
   build-windows:
     name: Build Windows
@@ -151,7 +151,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: UnleashedRecomp-Windows
-          path: .\UnleashedRecomp-Windows.zip
+          path: .\UnleashedRecomp-${{ env.CMAKE_PRESET }}-Windows.zip
   build-flatpak:
     name: Build Flatpak
     runs-on: ubuntu-24.04
