@@ -76,7 +76,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UnleashedRecomp-${{ env.CMAKE_PRESET }}-Linux
+          name: UnleashedRecomp-Linux-${{ env.CMAKE_PRESET }}
           path: ./out/build/${{ env.CMAKE_PRESET }}/UnleashedRecomp/UnleashedRecomp
   build-windows:
     name: Build Windows
@@ -150,8 +150,15 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UnleashedRecomp-Windows
-          path: .\UnleashedRecomp-${{ env.CMAKE_PRESET }}-Windows.zip
+          name: UnleashedRecomp-Windows-${{ env.CMAKE_PRESET }}
+          path: .\UnleashedRecomp-Windows.zip
+
+      - name: Upload PDB
+        uses: actions/upload-artifact@v4
+        if: ${{ matrix.preset != 'x64-Clang-Release' }}
+        with:
+          name: UnleashedRecomp-Windows-${{ env.CMAKE_PRESET }}-PDB
+          path: .\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\UnleashedRecomp.pdb
   build-flatpak:
     name: Build Flatpak
     runs-on: ubuntu-24.04
