@@ -60,7 +60,7 @@
 14. Navigate to `/Content/Cache/` and click the **Name** column to sort by name. Look for a file that begins with `TU_19KA20I`, this is the title update which is required for installation.
 
 > [!NOTE]
-> If you're using a USB storage device, you will need to navigate to `/System Cache/Cache/` instead.
+> If you're using an external USB storage device, you will need to navigate to `/System Cache/Cache/` instead.
 
 > [!TIP]
 > If you wish to verify that the contents of this file are correct, you may double-click on it to open it in **Package Viewer** and confirm that `default.xexp` exists inside, along with a folder called `work`.
