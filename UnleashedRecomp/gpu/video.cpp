@@ -1305,6 +1305,26 @@ static bool DetectWine()
     HMODULE dllHandle = GetModuleHandle("ntdll.dll");
     return dllHandle != nullptr && GetProcAddress(dllHandle, "wine_get_version") != nullptr;
 }
+
+static bool DetectMac()
+{
+    HMODULE dllHandle = GetModuleHandle("ntdll.dll");
+    if (dllHandle == nullptr)
+    {
+        return false;
+    }
+    typedef void (CDECL *WineGetHostVersionFunc)(const char** sysname, const char** release);
+    WineGetHostVersionFunc wineGetHostVersion =
+        reinterpret_cast<WineGetHostVersionFunc>(GetProcAddress(dllHandle, "wine_get_host_version"));
+    if (wineGetHostVersion == nullptr)
+    {
+        return false;
+    }
+    const char* sysname = nullptr;
+    const char* release = nullptr;
+    wineGetHostVersion(&sysname, &release);
+    return std::string(sysname) == "Darwin";
+}
 #endif
 
 static constexpr size_t TEXTURE_DESCRIPTOR_SIZE = 65536;
@@ -1658,7 +1678,7 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     GameWindow::Init(sdlVideoDriver);
 
 #ifdef UNLEASHED_RECOMP_D3D12
-    g_vulkan = DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan;
+    g_vulkan = (DetectWine() && !DetectMac()) || Config::GraphicsAPI == EGraphicsAPI::Vulkan;
 #endif
 
     // Attempt to create the possible backends using a vector of function pointers. Whichever succeeds first will be the chosen API.
