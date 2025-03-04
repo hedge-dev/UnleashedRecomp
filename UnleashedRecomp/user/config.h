@@ -84,7 +84,8 @@ enum class EAspectRatio : uint32_t
     Auto,
     Wide,
     Narrow,
-    OriginalNarrow
+    OriginalNarrow,
+    Custom
 };
 
 enum class ETripleBuffering : uint32_t
