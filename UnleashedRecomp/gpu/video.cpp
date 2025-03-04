@@ -287,8 +287,8 @@ static constexpr bool g_vulkan = true;
 
 static bool g_triangleStripWorkaround = false;
 
-static constexpr bool g_hardwareResolve = true;
-static constexpr bool g_hardwareDepthResolve = true;
+static bool g_hardwareResolve = true;
+static bool g_hardwareDepthResolve = true;
 
 static std::unique_ptr<RenderInterface> g_interface;
 static std::unique_ptr<RenderDevice> g_device;
@@ -1698,6 +1698,10 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
                             continue;
                         }
                     }
+
+                    // Hardware resolve seems to be completely bugged on Intel D3D12 drivers.
+                    g_hardwareResolve = (deviceDescription.vendor != RenderDeviceVendor::INTEL);
+                    g_hardwareDepthResolve = (deviceDescription.vendor != RenderDeviceVendor::INTEL);
                 }
 
                 g_vulkan = (interfaceFunction == CreateVulkanInterfaceWrapper);
@@ -2326,6 +2330,8 @@ static void DrawProfiler()
         ImGui::Text("Triangle Fan: %s", g_capabilities.triangleFan ? "Supported" : "Unsupported");
         ImGui::Text("Dynamic Depth Bias: %s", g_capabilities.dynamicDepthBias ? "Supported" : "Unsupported");
         ImGui::Text("Triangle Strip Workaround: %s", g_triangleStripWorkaround ? "Enabled" : "Disabled");
+        ImGui::Text("Hardware Resolve: %s", g_hardwareResolve ? "Enabled" : "Disabled");
+        ImGui::Text("Hardware Depth Resolve: %s", g_hardwareDepthResolve ? "Enabled" : "Disabled");
         ImGui::NewLine();
 
         ImGui::Text("API: %s", g_vulkan ? "Vulkan" : "D3D12");
