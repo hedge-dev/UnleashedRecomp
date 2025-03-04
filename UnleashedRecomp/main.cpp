@@ -27,6 +27,15 @@
 #include <timeapi.h>
 #endif
 
+#if _WIN32 && UNLEASHED_RECOMP_D3D12
+static std::array<std::string_view, 3> g_D3D12RequiredModules =
+{
+    "D3D12/D3D12Core.dll",
+    "dxcompiler.dll",
+    "dxil.dll"
+};
+#endif
+
 const size_t XMAIOBegin = 0x7FEA0000;
 const size_t XMAIOEnd = XMAIOBegin + 0x0000FFFF;
 
@@ -179,6 +188,19 @@ int main(int argc, char *argv[])
     }
 
     Config::Load();
+
+#if _WIN32 && UNLEASHED_RECOMP_D3D12
+    for (auto& dll : g_D3D12RequiredModules)
+    {
+        if (!std::filesystem::exists(g_executableRoot / dll))
+        {
+            char text[512];
+            snprintf(text, sizeof(text), Localise("System_Win32_MissingDLLs").c_str(), dll.data());
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), text, GameWindow::s_pWindow);
+            std::_Exit(1);
+        }
+    }
+#endif
 
     // Check the time since the last time an update was checked. Store the new time if the difference is more than six hours.
     constexpr double TimeBetweenUpdateChecksInSeconds = 6 * 60 * 60;

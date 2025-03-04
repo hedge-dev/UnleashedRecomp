@@ -8,6 +8,8 @@
 #define GAME_INSTALL_DIRECTORY "."
 #endif
 
+extern std::filesystem::path g_executableRoot;
+
 inline std::filesystem::path GetGamePath()
 {
     return GAME_INSTALL_DIRECTORY;
