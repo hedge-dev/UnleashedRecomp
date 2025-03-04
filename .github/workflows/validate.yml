@@ -14,9 +14,12 @@ jobs:
   build-linux:
     name: Build Linux
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        preset: ["linux-debug", "linux-release", "linux-relwithdebinfo"]
     env:
       LLVM_VERSION: 18
-      CMAKE_PRESET: linux-release
+      CMAKE_PRESET: ${{ matrix.preset }}
 
     steps:
       - name: Checkout Repository
@@ -78,8 +81,11 @@ jobs:
   build-windows:
     name: Build Windows
     runs-on: windows-latest
+    strategy:
+      matrix:
+        preset: ["x64-Clang-Debug", "x64-Clang-Release", "x64-Clang-RelWithDebInfo"]
     env:
-      CMAKE_PRESET: x64-Clang-Release
+      CMAKE_PRESET: ${{ matrix.preset }}
 
     steps:
       - name: Checkout repository
