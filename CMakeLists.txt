@@ -18,15 +18,25 @@ endif()
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-# Target Sandy Bridge for all projects
-add_compile_options(
-    -march=sandybridge
-)
+if (APPLE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
+endif()
+
+project("UnleashedRecomp-ALL")
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
+include(DetectArchitecture)
+message(STATUS "Detected architecture: ${ARCHITECTURE}")
+
+if (ARCHITECTURE STREQUAL "x86_64")
+    # Target Sandy Bridge for all projects
+    add_compile_options(
+        -march=sandybridge
+    )
+endif()
 
 add_subdirectory(${UNLEASHED_RECOMP_THIRDPARTY_ROOT})
 add_subdirectory(${UNLEASHED_RECOMP_TOOLS_ROOT})
-
-project("UnleashedRecomp-ALL")
 
 # Include sub-projects.
 add_subdirectory("UnleashedRecompLib")

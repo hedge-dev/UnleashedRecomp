@@ -97,6 +97,14 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
         "os/linux/user_linux.cpp"
         "os/linux/version_linux.cpp"
     )
+elseif (APPLE)
+    set(UNLEASHED_RECOMP_OS_CXX_SOURCES
+        "os/macos/logger_macos.cpp"
+        "os/macos/media_macos.cpp"
+        "os/macos/process_macos.cpp"
+        "os/macos/user_macos.cpp"
+        "os/macos/version_macos.cpp"
+    )
 endif()
 
 set(UNLEASHED_RECOMP_CPU_CXX_SOURCES
@@ -296,6 +304,47 @@ if (WIN32)
     if (${CMAKE_BUILD_TYPE} MATCHES "Release")
         target_link_options(UnleashedRecomp PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
     endif()
+elseif (APPLE)
+    # Create version number for app bundle.
+    CreateVersionString(
+        VERSION_TXT ${VERSION_TXT}
+        OUTPUT_VAR MACOS_BUNDLE_VERSION
+    )
+
+    add_executable(UnleashedRecomp MACOSX_BUNDLE
+        ${UNLEASHED_RECOMP_CXX_SOURCES}
+        res/macos/game_icon.icns
+    )
+    set_source_files_properties(res/macos/game_icon.icns PROPERTIES
+        MACOSX_PACKAGE_LOCATION Resources)
+    set_target_properties(UnleashedRecomp PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/macos/MacOSXBundleInfo.plist.in
+        MACOSX_BUNDLE_GUI_IDENTIFIER hedge-dev.UnleashedRecomp
+        MACOSX_BUNDLE_BUNDLE_NAME "Unleashed Recompiled"
+        MACOSX_BUNDLE_BUNDLE_VERSION ${MACOS_BUNDLE_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${MACOS_BUNDLE_VERSION}
+        MACOSX_BUNDLE_ICON_FILE "game_icon.icns"
+    )
+
+    # Linking with MoltenVK directly would prevent using the system Vulkan loader to load with debug layers.
+    # Instead, copy the MoltenVK dylib to the app bundle along with an ICD file for the loader to find it.
+    # In the event the loader is not installed, the MoltenVK dylib can still be picked up directly in the app bundle.
+    set(MVK_ICD ${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/MoltenVK/MoltenVK_icd.json)
+    target_sources(UnleashedRecomp PRIVATE ${MVK_ICD})
+    set_source_files_properties(${MVK_ICD} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/vulkan/icd.d)
+
+    # Unfortunately using the MoltenVK target output as a resource file does not quite create the correct
+    # dependency chain, so we need to resolve the paths manually and create a copy target dependency chain.
+    set(MVK_DYLIB_SRC ${CMAKE_BINARY_DIR}/thirdparty/MoltenVK/libMoltenVK.dylib)
+    set(MVK_DYLIB_DST ${CMAKE_CURRENT_BINARY_DIR}/UnleashedRecomp.app/Contents/Frameworks/libMoltenVK.dylib)
+    add_custom_command(
+        OUTPUT ${MVK_DYLIB_DST}
+        DEPENDS ${MVK_DYLIB_SRC}
+        COMMAND cmake -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
+    add_custom_target(CopyMoltenVK DEPENDS ${MVK_DYLIB_DST})
+    add_dependencies(CopyMoltenVK MoltenVK)
+    add_dependencies(UnleashedRecomp CopyMoltenVK)
+    set_property(TARGET UnleashedRecomp APPEND PROPERTY BUILD_RPATH "@executable_path/../Frameworks")
 else()
     add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES})
 endif()
@@ -317,7 +366,25 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_compile_definitions(UnleashedRecomp PRIVATE SDL_VULKAN_ENABLED)
 endif()
 
-find_package(directx-dxc REQUIRED)
+set(DXC_BIN_PATH "${UNLEASHED_RECOMP_TOOLS_ROOT}/XenosRecomp/thirdparty/dxc-bin")
+if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    if (WIN32)
+        set(DXC "${DXC_BIN_PATH}/bin/x64/dxc.exe")
+    elseif (APPLE)
+        set(DXC "DYLD_LIBRARY_PATH=${DXC_BIN_PATH}/lib/x64" "${DXC_BIN_PATH}/bin/x64/dxc-macos")
+    else()
+        set(DXC "LD_LIBRARY_PATH=${DXC_BIN_PATH}/lib/x64" "${DXC_BIN_PATH}/bin/x64/dxc-linux")
+    endif()
+else()
+    if (WIN32)
+        set(DXC "${DXC_BIN_PATH}/bin/arm64/dxc.exe")
+    elseif (APPLE)
+        set(DXC "DYLD_LIBRARY_PATH=${DXC_BIN_PATH}/lib/arm64" "${DXC_BIN_PATH}/bin/arm64/dxc-macos")
+    else()
+        set(DXC "LD_LIBRARY_PATH=${DXC_BIN_PATH}n/lib/arm64" "${DXC_BIN_PATH}/bin/arm64/dxc-linux")
+    endif()
+endif()
+
 find_package(CURL REQUIRED)
 
 if (UNLEASHED_RECOMP_D3D12)
@@ -327,7 +394,7 @@ if (UNLEASHED_RECOMP_D3D12)
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Layers,IMPORTED_LOCATION_DEBUG> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
        COMMAND_EXPAND_LISTS
     )
-    
+
     find_file(DIRECTX_DXIL_LIBRARY "dxil.dll")
     file(COPY ${DIRECTX_DXIL_LIBRARY} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -335,13 +402,9 @@ if (UNLEASHED_RECOMP_D3D12)
         Microsoft::DirectX-Headers 
         Microsoft::DirectX-Guids 
         Microsoft::DirectX12-Agility
-        Microsoft::DirectXShaderCompiler
-        Microsoft::DXIL
         dxgi
     )
 endif()
-
-file(CHMOD ${DIRECTX_DXC_TOOL} PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 
 if (WIN32)
     target_link_libraries(UnleashedRecomp PRIVATE
@@ -389,14 +452,14 @@ function(compile_shader FILE_PATH TARGET_NAME)
     if (UNLEASHED_RECOMP_D3D12)
         add_custom_command(
             OUTPUT ${FILE_PATH}.dxil.h
-            COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil
+            COMMAND ${DXC} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil
             DEPENDS ${FILE_PATH}
         )
         target_sources(UnleashedRecomp PRIVATE ${FILE_PATH}.dxil.h)
     endif()
     add_custom_command(
         OUTPUT ${FILE_PATH}.spirv.h
-        COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -Fh ${FILE_PATH}.spirv.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_spirv
+        COMMAND ${DXC} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -Fh ${FILE_PATH}.spirv.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_spirv
         DEPENDS ${FILE_PATH}
     )
     target_sources(UnleashedRecomp PRIVATE ${FILE_PATH}.spirv.h)

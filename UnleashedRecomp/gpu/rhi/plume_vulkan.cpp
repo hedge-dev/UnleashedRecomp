@@ -51,13 +51,20 @@ namespace plume {
         VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
 #   elif defined(__linux__)
         VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+#   elif defined(__APPLE__)
+        VK_EXT_METAL_SURFACE_EXTENSION_NAME,
+        // Used to configure MoltenVK.
+        VK_EXT_LAYER_SETTINGS_EXTENSION_NAME,
 #   endif
     };
 
     static const std::unordered_set<std::string> OptionalInstanceExtensions = {
-        // No optional instance extensions yet.
+#   if defined(__APPLE__)
+        // Optional, as it is only needed for system libvulkan loader.
+        VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+#   endif
     };
-    
+
     static const std::unordered_set<std::string> RequiredDeviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME,
@@ -65,7 +72,7 @@ namespace plume {
         VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
         VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
 #   ifdef VULKAN_OBJECT_NAMES_ENABLED
-        VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
 #   endif
     };
     
@@ -79,6 +86,10 @@ namespace plume {
         VK_KHR_PRESENT_ID_EXTENSION_NAME,
         VK_KHR_PRESENT_WAIT_EXTENSION_NAME,
         VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME,
+#   ifdef __APPLE__
+        // Vulkan spec requires this to be enabled if supported.
+        VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+#   endif
     };
 
     // Common functions.
@@ -567,14 +578,16 @@ namespace plume {
         }
     }
     
-    static VkPipelineStageFlags toStageFlags(RenderBarrierStages stages, bool rtSupported) {
+    static VkPipelineStageFlags toStageFlags(RenderBarrierStages stages, bool geometrySupported, bool rtSupported) {
         VkPipelineStageFlags flags = 0;
 
         if (stages & RenderBarrierStage::GRAPHICS) {
             flags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
             flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
             flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-            flags |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+            if (geometrySupported) {
+                flags |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+            }
             flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             flags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
             flags |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
@@ -2045,6 +2058,19 @@ namespace plume {
             fprintf(stderr, "vkCreateXlibSurfaceKHR failed with error code 0x%X.\n", res);
             return;
         }
+#   elif defined(__APPLE__)
+        assert(renderWindow.window != 0);
+        assert(renderWindow.view != 0);
+        VkMetalSurfaceCreateInfoEXT surfaceCreateInfo = {};
+        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
+        surfaceCreateInfo.pLayer = renderWindow.view;
+
+        VulkanInterface *renderInterface = commandQueue->device->renderInterface;
+        res = vkCreateMetalSurfaceEXT(renderInterface->instance, &surfaceCreateInfo, nullptr, &surface);
+        if (res != VK_SUCCESS) {
+            fprintf(stderr, "vkCreateMetalSurfaceEXT failed with error code 0x%X.\n", res);
+            return;
+        }
 #   endif
 
         VkBool32 presentSupported = false;
@@ -2354,6 +2380,8 @@ namespace plume {
         // The attributes width and height members do not include the border.
         dstWidth = attributes.width;
         dstHeight = attributes.height;
+#   elif defined(__APPLE__)
+        SDL_GetWindowSizeInPixels(renderWindow.window, (int *)(&dstWidth), (int *)(&dstHeight));
 #   endif
     }
 
@@ -2677,9 +2705,10 @@ namespace plume {
 
         endActiveRenderPass();
 
+        const bool geometryEnabled = device->capabilities.geometryShader;
         const bool rtEnabled = device->capabilities.raytracing;
         VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT | toStageFlags(stages, rtEnabled);
+        VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT | toStageFlags(stages, geometryEnabled, rtEnabled);
         thread_local std::vector<VkBufferMemoryBarrier> bufferMemoryBarriers;
         thread_local std::vector<VkImageMemoryBarrier> imageMemoryBarriers;
         bufferMemoryBarriers.clear();
@@ -2698,7 +2727,7 @@ namespace plume {
             bufferMemoryBarrier.offset = 0;
             bufferMemoryBarrier.size = interfaceBuffer->desc.size;
             bufferMemoryBarriers.emplace_back(bufferMemoryBarrier);
-            srcStageMask |= toStageFlags(interfaceBuffer->barrierStages, rtEnabled);
+            srcStageMask |= toStageFlags(interfaceBuffer->barrierStages, geometryEnabled, rtEnabled);
             interfaceBuffer->barrierStages = stages;
         }
 
@@ -2718,7 +2747,7 @@ namespace plume {
             imageMemoryBarrier.subresourceRange.layerCount = interfaceTexture->desc.arraySize;
             imageMemoryBarrier.subresourceRange.aspectMask = (interfaceTexture->desc.flags & RenderTextureFlag::DEPTH_TARGET) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
             imageMemoryBarriers.emplace_back(imageMemoryBarrier);
-            srcStageMask |= toStageFlags(interfaceTexture->barrierStages, rtEnabled);
+            srcStageMask |= toStageFlags(interfaceTexture->barrierStages, geometryEnabled, rtEnabled);
             interfaceTexture->textureLayout = textureBarrier.layout;
             interfaceTexture->barrierStages = stages;
         }
@@ -2884,6 +2913,9 @@ namespace plume {
             offsetVector.clear();
             for (uint32_t i = 0; i < viewCount; i++) {
                 const VulkanBuffer *interfaceBuffer = static_cast<const VulkanBuffer *>(views[i].buffer.ref);
+                if (interfaceBuffer == nullptr && !device->nullDescriptorSupported) {
+                    interfaceBuffer = static_cast<const VulkanBuffer *>(device->nullBuffer.get());
+                }
                 bufferVector.emplace_back((interfaceBuffer != nullptr) ? interfaceBuffer->vk : VK_NULL_HANDLE);
                 offsetVector.emplace_back(views[i].buffer.offset);
             }
@@ -2898,7 +2930,9 @@ namespace plume {
             viewportVector.clear();
 
             for (uint32_t i = 0; i < count; i++) {
-                viewportVector.emplace_back(VkViewport{ viewports[i].x, viewports[i].y, viewports[i].width, viewports[i].height, viewports[i].minDepth, viewports[i].maxDepth });
+                float width = std::max(viewports[i].width, 1.f);
+                float height = std::max(viewports[i].height, 1.f);
+                viewportVector.emplace_back(VkViewport{ viewports[i].x, viewports[i].y, width, height, viewports[i].minDepth, viewports[i].maxDepth });
             }
 
             if (!viewportVector.empty()) {
@@ -2907,7 +2941,9 @@ namespace plume {
         }
         else {
             // Single element fast path.
-            VkViewport viewport = VkViewport{ viewports[0].x, viewports[0].y, viewports[0].width, viewports[0].height, viewports[0].minDepth, viewports[0].maxDepth };
+            float width = std::max(viewports[0].width, 1.f);
+            float height = std::max(viewports[0].height, 1.f);
+            VkViewport viewport = VkViewport{ viewports[0].x, viewports[0].y, width, height, viewports[0].minDepth, viewports[0].maxDepth };
             vkCmdSetViewport(vk, 0, 1, &viewport);
         }
     }
@@ -3690,6 +3726,13 @@ namespace plume {
         bufferDeviceAddressFeatures.pNext = featuresChain;
         featuresChain = &bufferDeviceAddressFeatures;
 
+#ifdef __APPLE__
+        VkPhysicalDevicePortabilitySubsetFeaturesKHR portabilityFeatures = {};
+        portabilityFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR;
+        portabilityFeatures.pNext = featuresChain;
+        featuresChain = &portabilityFeatures;
+#endif
+
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
         deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
         deviceFeatures.pNext = featuresChain;
@@ -3759,6 +3802,11 @@ namespace plume {
             bufferDeviceAddressFeatures.pNext = createDeviceChain;
             createDeviceChain = &bufferDeviceAddressFeatures;
         }
+
+#ifdef __APPLE__
+        portabilityFeatures.pNext = createDeviceChain;
+        createDeviceChain = &portabilityFeatures;
+#endif
 
         // Retrieve the information for the queue families.
         uint32_t queueFamilyCount = 0;
@@ -3897,6 +3945,7 @@ namespace plume {
         description.dedicatedVideoMemory = memoryHeapSize;
 
         // Fill capabilities.
+        capabilities.geometryShader = deviceFeatures.features.geometryShader;
         capabilities.raytracing = rtSupported;
         capabilities.raytracingStateUpdate = false;
         capabilities.sampleLocations = sampleLocationsSupported;
@@ -3910,6 +3959,11 @@ namespace plume {
 
         // Fill Vulkan-only capabilities.
         loadStoreOpNoneSupported = supportedOptionalExtensions.find(VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME) != supportedOptionalExtensions.end();
+        nullDescriptorSupported = nullDescriptor;
+
+        if (!nullDescriptorSupported) {
+            nullBuffer = createBuffer(RenderBufferDesc::DefaultBuffer(16, RenderBufferFlag::VERTEX));
+        }
     }
 
     VulkanDevice::~VulkanDevice() {
@@ -4235,6 +4289,22 @@ namespace plume {
         createInfo.pApplicationInfo = &appInfo;
         createInfo.ppEnabledLayerNames = nullptr;
         createInfo.enabledLayerCount = 0;
+
+#   ifdef __APPLE__
+        createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+
+        // Enable specialized queue families, ensuring that the queue family heuristics
+        // will pick up correct families for the graphics and copy queues.
+        constexpr VkBool32 specializedQueueFamilies = true;
+        const VkLayerSettingEXT settings[] = {
+            {"MoltenVK", "MVK_CONFIG_SPECIALIZED_QUEUE_FAMILIES", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &specializedQueueFamilies},
+        };
+        VkLayerSettingsCreateInfoEXT settingsCreateInfo = {};
+        settingsCreateInfo.sType = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
+        settingsCreateInfo.settingCount = std::size(settings);
+        settingsCreateInfo.pSettings = settings;
+        createInfo.pNext = &settingsCreateInfo;
+#   endif
 
         // Check for extensions.
         uint32_t extensionCount;

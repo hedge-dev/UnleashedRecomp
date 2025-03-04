@@ -1,12 +1,12 @@
 [submodule "tools/XenonRecomp"]
 	path = tools/XenonRecomp
-	url = https://github.com/hedge-dev/XenonRecomp.git
+	url = https://github.com/IsaacMarovitz/XenonRecomp.git
 [submodule "thirdparty/ddspp"]
 	path = thirdparty/ddspp
 	url = https://github.com/redorav/ddspp.git
 [submodule "tools/XenosRecomp"]
 	path = tools/XenosRecomp
-	url = https://github.com/hedge-dev/XenosRecomp.git
+	url = https://github.com/squidbus/XenosRecomp.git
 [submodule "UnleashedRecompResources"]
 	path = UnleashedRecompResources
 	url = https://github.com/hedge-dev/UnleashedRecompResources.git
@@ -58,3 +58,9 @@
 [submodule "thirdparty/json"]
 	path = thirdparty/json
 	url = https://github.com/nlohmann/json
+[submodule "thirdparty/MoltenVK/MoltenVK"]
+	path = thirdparty/MoltenVK/MoltenVK
+	url = https://github.com/KhronosGroup/MoltenVK.git
+[submodule "thirdparty/MoltenVK/SPIRV-Cross"]
+	path = thirdparty/MoltenVK/SPIRV-Cross
+	url = https://github.com/dboyan/SPIRV-Cross.git

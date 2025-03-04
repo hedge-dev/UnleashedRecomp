@@ -79,4 +79,5 @@ add_library(UnleashedRecompLib
 )
 
 target_include_directories(UnleashedRecompLib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(UnleashedRecompLib PRIVATE "${UNLEASHED_RECOMP_TOOLS_ROOT}/XenonRecomp/thirdparty/simde")
 target_precompile_headers(UnleashedRecompLib PUBLIC "ppc/ppc_recomp_shared.h")

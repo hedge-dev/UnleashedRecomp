@@ -9,7 +9,6 @@
             "name": "directx12-agility",
             "platform": "windows"
         },
-        "directx-dxc",
         "freetype",
         "curl"
     ]
