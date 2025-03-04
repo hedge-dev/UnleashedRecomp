@@ -146,3 +146,13 @@ PPC_FUNC(sub_824C1E60)
 
     __imp__sub_824C1E60(ctx, base);
 }
+
+// Remove boost filter
+void DisableBoostFilterMidAsmHook(PPCRegister& r11)
+{
+    if (Config::DisableBoostFilter)
+    {
+        if (r11.u32 == 1)
+            r11.u32 = 0;
+    }
+}
