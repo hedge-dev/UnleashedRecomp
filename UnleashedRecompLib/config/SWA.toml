@@ -201,6 +201,7 @@ return_on_false = true
 name = "SetXButtonHomingMidAsmHook"
 address = 0x8237AC90
 registers = ["r1"]
+jump_address_on_true = 0x8237AD08
 
 # Down force HFR fix
 [[midasm_hook]]
