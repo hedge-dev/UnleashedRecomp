@@ -220,7 +220,7 @@ CONFIG_DEFINE_ENUM_LOCALE(ETimeOfDayTransition)
 CONFIG_DEFINE_LOCALE(ControllerIcons)
 {
     { ELanguage::English,  { "Controller Icons", "Change the icons to match your controller." } },
-    { ELanguage::Japanese, { "コントローラーアイコン", "ゲーム[内:ない]の\nコントローラーアイコン\nを\u200B[変更:へんこう]できます" } },
+    { ELanguage::Japanese, { "コントローラーアイコン", "ゲーム[内:ない]の\u200Bコントローラーアイコン\u200Bを[変更:へんこう]できます" } },
     { ELanguage::German,   { "Controllersymbole", "Ändere die Controllersymbole, um sie auf dein Modell anzupassen." } },
     { ELanguage::French,   { "Icône des boutons", "Modifie les icônes pour les faire correspondre à votre manette." } },
     { ELanguage::Spanish,  { "Iconos del mando", "Cambia los iconos para que coincidan con tu mando." } },
@@ -241,7 +241,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
     {
         ELanguage::Japanese,
         {
-            { EControllerIcons::Auto,        { "自動検出", "[\u2005自動検出\u2005:じどうけんしゅつ]: コントローラーアイコン\nを[使用:しよう]している\u200B[\u2005入\u2005力\u2005:にゅうりょく]デバイスに[応:おう]じて\u200B[自動的:じどうてき]に[決定:けってい]します" } },
+            { EControllerIcons::Auto,        { "自動検出", "[\u2005自動検出\u2005:じどうけんしゅつ]: コントローラーアイコン\u200Bを[使用:しよう]している\u200B[\u2005入\u2005力\u2005:にゅうりょく]デバイスに[応:おう]じて\u200B[自動的:じどうてき]に[決定:けってい]します" } },
             { EControllerIcons::Xbox,        { "XBOX", "" } },
             { EControllerIcons::PlayStation, { "PLAYSTATION", "" } }
         }
@@ -552,7 +552,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
     {
         ELanguage::Japanese,
         {
-            { EAspectRatio::Auto, { "自動", "[自動:じどう]: アスペクト[比:ひ]は\u200Bウィンドウサイズに\u200B[合:あ]わせて[調整:ちょうせい]されます" } },
+            { EAspectRatio::Auto, { "自動", "[自動:じどう]: アスペクト[比:ひ]は\u200Bウィンドウサイズに\u200B[合:あ]わせて\u200B[調整:ちょうせい]されます" } },
             { EAspectRatio::Wide, { "16:9", "16:9: ワイドスクリーンの\u200Bアスペクト[比:ひ]に\u200B[固定:こてい]されます" } },
             { EAspectRatio::Narrow, { "4:3", "4:3: ナローの\u200Bアスペクト[比:ひ]に\u200B[固定:こてい]されます" } },
             { EAspectRatio::OriginalNarrow, { "オリジナル 4:3", "オリジナル 4:3: オリジナルの\u200Bアスペクト[比:ひ]に\u200B[固定:こてい]されます" } }
@@ -736,7 +736,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EShadowResolution)
     {
         ELanguage::Japanese,
         {
-            { EShadowResolution::Original, { "オリジナル", "オリジナル: [影:かげ]の[解像度:かいぞうど]が\u200B[自動的:じどうてき]に[決定:決定]されます" } }
+            { EShadowResolution::Original, { "オリジナル", "オリジナル: [影:かげ]の[解像度:かいぞうど]が\u200B[自動的:じどうてき]に[決定:けってい]されます" } }
         }
     },
     {
