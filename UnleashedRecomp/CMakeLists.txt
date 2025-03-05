@@ -8,6 +8,11 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     option(UNLEASHED_RECOMP_FLATPAK "Configure the build for Flatpak compatibility." OFF)
 endif()
 
+# Undefine this to generate a font atlas file in working directory.
+# You also need to do this if you are testing localization, as only
+# characters in the locale get added to the atlas.
+option(ENABLE_IM_FONT_ATLAS_SNAPSHOT "Use font atlas snapshot instead of generating one." ON)
+
 function(BIN2C)
     cmake_parse_arguments(BIN2C_ARGS "" "TARGET_OBJ;SOURCE_FILE;DEST_FILE;ARRAY_NAME;COMPRESSION_TYPE" "" ${ARGN})
 
@@ -317,6 +322,10 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_compile_definitions(UnleashedRecomp PRIVATE SDL_VULKAN_ENABLED)
 endif()
 
+if (ENABLE_IM_FONT_ATLAS_SNAPSHOT)
+    target_compile_definitions(UnleashedRecomp PRIVATE -DENABLE_IM_FONT_ATLAS_SNAPSHOT)
+else()
+
 find_package(directx-dxc REQUIRED)
 find_package(CURL REQUIRED)
 
@@ -357,7 +366,6 @@ endif()
 target_link_libraries(UnleashedRecomp PRIVATE
     fmt::fmt
     libzstd_static
-    msdf-atlas-gen::msdf-atlas-gen
     nfd::nfd
     o1heap
     XenonUtils
@@ -368,6 +376,12 @@ target_link_libraries(UnleashedRecomp PRIVATE
     xxHash::xxhash
     CURL::libcurl
 )
+
+if (NOT ENABLE_IM_FONT_ATLAS_SNAPSHOT)
+    target_link_libraries(UnleashedRecomp PRIVATE
+        msdf-atlas-gen::msdf-atlas-gen
+    )
+endif()
 
 target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}

@@ -1,5 +1,7 @@
 #include "imgui_font_builder.h"
 
+#ifndef ENABLE_IM_FONT_ATLAS_SNAPSHOT
+
 #include <msdf-atlas-gen/msdf-atlas-gen.h>
 
 // Taken directly from msdf-atlas-gen, modified to support custom rectangles.
@@ -321,3 +323,5 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
 }
 
 ImFontBuilderIO g_fontBuilderIO = { FontBuilder_Build };
+
+#endif
