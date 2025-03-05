@@ -284,7 +284,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
 CONFIG_DEFINE_LOCALE(HorizontalCamera)
 {
     { ELanguage::English,  { "Horizontal Camera", "Change how the camera moves left and right." } },
-    { ELanguage::Japanese, { "カメラの[左右:さゆう]", "カメラが[左右:さゆう]に\u200B[動:うご]く[方向:ほうこう]を\u200B[選択:せんたく]できます" } },
+    { ELanguage::Japanese, { "カメラの[左右:さゆう]", "カメラ[左右:さゆう]の\u200B[動:うご]く[方向:ほうこう]を\u200B[選択:せんたく]できます" } },
     { ELanguage::German,   { "Horizontale Kamera", "Ändere wie sich die Kamera nach links und rechts bewegt." } },
     { ELanguage::French,   { "Caméra horizontale", "Modifie la rotation horizontale de la caméra." } },
     { ELanguage::Spanish,  { "Cámara horizontal", "Cambia cómo se mueve la camara hacia la izquierda y la derecha." } },
@@ -295,7 +295,7 @@ CONFIG_DEFINE_LOCALE(HorizontalCamera)
 CONFIG_DEFINE_LOCALE(VerticalCamera)
 {
     { ELanguage::English,  { "Vertical Camera", "Change how the camera moves up and down." } },
-    { ELanguage::Japanese, { "カメラの[上下:じょうげ]", "カメラが[上下:じょうげ]に\u200B[動:うご]く[方向:ほうこう]を\u200B[選択:せんたく]できます" } },
+    { ELanguage::Japanese, { "カメラの[上下:じょうげ]", "カメラ[上下:じょうげ]の\u200B[動:うご]く[方向:ほうこう]を\u200B[選択:せんたく]できます" } },
     { ELanguage::German,   { "Vertikale Kamera", "Ändere wie sich die Kamera nach oben und unten bewegt." } },
     { ELanguage::French,   { "Caméra verticale", "Modifie la rotation verticale de la caméra." } },
     { ELanguage::Spanish, { "Cámara vertical", "Cambia cómo se mueve la camara hacia arriba y abajo." } },
