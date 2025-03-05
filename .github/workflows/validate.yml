@@ -14,9 +14,12 @@ jobs:
   build-linux:
     name: Build Linux
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        preset: ["linux-debug", "linux-release", "linux-relwithdebinfo"]
     env:
       LLVM_VERSION: 18
-      CMAKE_PRESET: linux-release
+      CMAKE_PRESET: ${{ matrix.preset }}
 
     steps:
       - name: Checkout Repository
@@ -34,7 +37,7 @@ jobs:
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ccache-${{ runner.os }}
+          key: ccache-${{ runner.os }}-${{ matrix.preset }}
   
       - name: Cache vcpkg
         uses: actions/cache@v4
@@ -55,7 +58,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/ccache
-          key: ccache-${{ runner.os }}
+          key: ccache-${{ runner.os }}-${{ matrix.preset }}
 
       - name: Prepare Project
         run: cp ./private/* ./UnleashedRecompLib/private
@@ -73,13 +76,16 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UnleashedRecomp-Linux
+          name: UnleashedRecomp-Linux-${{ env.CMAKE_PRESET }}
           path: ./out/build/${{ env.CMAKE_PRESET }}/UnleashedRecomp/UnleashedRecomp
   build-windows:
     name: Build Windows
     runs-on: windows-latest
+    strategy:
+      matrix:
+        preset: ["x64-Clang-Debug", "x64-Clang-Release", "x64-Clang-RelWithDebInfo"]
     env:
-      CMAKE_PRESET: x64-Clang-Release
+      CMAKE_PRESET: ${{ matrix.preset }}
 
     steps:
       - name: Checkout repository
@@ -97,7 +103,7 @@ jobs:
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ccache-${{ runner.os }}
+          key: ccache-${{ runner.os }}-${{ matrix.preset }}
 
       - name: Cache vcpkg
         uses: actions/cache@v4
@@ -144,8 +150,15 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UnleashedRecomp-Windows
+          name: UnleashedRecomp-Windows-${{ env.CMAKE_PRESET }}
           path: .\UnleashedRecomp-Windows.zip
+
+      - name: Upload PDB
+        uses: actions/upload-artifact@v4
+        if: ${{ matrix.preset != 'x64-Clang-Release' }}
+        with:
+          name: UnleashedRecomp-Windows-${{ env.CMAKE_PRESET }}-PDB
+          path: .\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\UnleashedRecomp.pdb
   build-flatpak:
     name: Build Flatpak
     runs-on: ubuntu-24.04
