@@ -15,6 +15,10 @@ set(SDL2MIXER_OPUS OFF)
 set(SDL2MIXER_VORBIS "VORBISFILE")
 set(SDL2MIXER_WAVPACK OFF)
 
+if (WIN32)
+    add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/SDL")
+endif()
+
 add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/msdf-atlas-gen")
 add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/nativefiledialog-extended")
 add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/o1heap")
