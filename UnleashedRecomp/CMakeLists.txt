@@ -11,7 +11,7 @@ endif()
 # Undefine this to generate a font atlas file in working directory.
 # You also need to do this if you are testing localization, as only
 # characters in the locale get added to the atlas.
-option(ENABLE_IM_FONT_ATLAS_SNAPSHOT "Use font atlas snapshot instead of generating one." ON)
+option(UNLEASHED_RECOMP_ENABLE_IM_FONT_ATLAS_SNAPSHOT "Use font atlas snapshot instead of generating one." ON)
 
 function(BIN2C)
     cmake_parse_arguments(BIN2C_ARGS "" "TARGET_OBJ;SOURCE_FILE;DEST_FILE;ARRAY_NAME;COMPRESSION_TYPE" "" ${ARGN})
@@ -322,7 +322,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_compile_definitions(UnleashedRecomp PRIVATE SDL_VULKAN_ENABLED)
 endif()
 
-if (ENABLE_IM_FONT_ATLAS_SNAPSHOT)
+if (UNLEASHED_RECOMP_ENABLE_IM_FONT_ATLAS_SNAPSHOT)
     target_compile_definitions(UnleashedRecomp PRIVATE -DENABLE_IM_FONT_ATLAS_SNAPSHOT)
 else()
 
