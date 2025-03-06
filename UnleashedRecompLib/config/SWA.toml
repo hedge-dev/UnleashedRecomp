@@ -1093,3 +1093,8 @@ registers = ["r31", "r29", "r28"]
 name = "ObjGrindDashPanelAllocMidAsmHook"
 address = 0x82614948
 registers = ["r3"]
+
+[[midasm_hook]]
+name = "DisableBoostFilterMidAsmHook"
+address = 0x82B48C9C
+registers = ["r11"]
