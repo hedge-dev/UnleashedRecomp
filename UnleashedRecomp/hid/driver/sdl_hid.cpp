@@ -197,110 +197,136 @@ static void SetControllerTimeOfDayLED(Controller& controller, bool isNight)
     auto g = isNight ? 0 : 37;
     auto b = isNight ? 101 : 184;
 
-    controller.SetLED(r, g, b);
+    // Ensure the lightbar is set correctly
+    if (SDL_GameControllerHasLED(controller.controller))
+    {
+        SDL_GameControllerSetLED(controller.controller, r, g, b);
+    }
 }
+
 
 int HID_OnSDLEvent(void*, SDL_Event* event)
 {
     switch (event->type)
     {
-        case SDL_CONTROLLERDEVICEADDED:
+    case SDL_CONTROLLERDEVICEADDED:
+    {
+        const auto freeIndex = FindFreeController();
+
+        if (freeIndex != -1)
         {
-            const auto freeIndex = FindFreeController();
+            auto controller = Controller(event->cdevice.which);
 
-            if (freeIndex != -1)
+            g_controllers[freeIndex] = controller;
+
+            SetControllerTimeOfDayLED(controller, App::s_isWerehog);
+
+            // Ensure Player 1's controller is always the active controller
+            if (freeIndex == 0)
             {
-                auto controller = Controller(event->cdevice.which);
-
-                g_controllers[freeIndex] = controller;
-
-                SetControllerTimeOfDayLED(controller, App::s_isWerehog);
+                SetControllerInputDevice(&g_controllers[0]);
             }
-
-            break;
         }
 
-        case SDL_CONTROLLERDEVICEREMOVED:
+        break;
+    }
+
+    case SDL_CONTROLLERDEVICEREMOVED:
+    {
+        auto* controller = FindController(event->cdevice.which);
+
+        if (controller)
+            controller->Close();
+
+        // If Player 1's controller is removed, set the next available controller as active
+        if (controller == &g_controllers[0])
         {
-            auto* controller = FindController(event->cdevice.which);
-
-            if (controller)
-                controller->Close();
-
-            break;
-        }
-
-        case SDL_CONTROLLERBUTTONDOWN:
-        case SDL_CONTROLLERBUTTONUP:
-        case SDL_CONTROLLERAXISMOTION:
-        case SDL_CONTROLLERTOUCHPADDOWN:
-        {
-            auto* controller = FindController(event->cdevice.which);
-
-            if (!controller)
-                break;
-
-            if (event->type == SDL_CONTROLLERAXISMOTION)
+            for (auto& ctrl : g_controllers)
             {
-                if (abs(event->caxis.value) > 8000)
+                if (ctrl.CanPoll())
                 {
-                    SDL_ShowCursor(SDL_DISABLE);
-                    SetControllerInputDevice(controller);
+                    SetControllerInputDevice(&ctrl);
+                    break;
                 }
-
-                controller->PollAxis();
             }
-            else
+        }
+
+        break;
+    }
+
+    case SDL_CONTROLLERBUTTONDOWN:
+    case SDL_CONTROLLERBUTTONUP:
+    case SDL_CONTROLLERAXISMOTION:
+    case SDL_CONTROLLERTOUCHPADDOWN:
+    {
+        auto* controller = FindController(event->cdevice.which);
+
+        if (!controller)
+            break;
+
+        if (event->type == SDL_CONTROLLERAXISMOTION)
+        {
+            if (abs(event->caxis.value) > 8000)
             {
                 SDL_ShowCursor(SDL_DISABLE);
                 SetControllerInputDevice(controller);
-
-                controller->Poll();
             }
 
-            break;
+            controller->PollAxis();
+        }
+        else
+        {
+            SDL_ShowCursor(SDL_DISABLE);
+            SetControllerInputDevice(controller);
+
+            controller->Poll();
         }
 
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-            hid::g_inputDevice = hid::EInputDevice::Keyboard;
-            break;
+        break;
+    }
 
-        case SDL_MOUSEMOTION:
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+        hid::g_inputDevice = hid::EInputDevice::Keyboard;
+        break;
+
+    case SDL_MOUSEMOTION:
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+    {
+        if (!GameWindow::IsFullscreen() || GameWindow::s_isFullscreenCursorVisible)
+            SDL_ShowCursor(SDL_ENABLE);
+
+        hid::g_inputDevice = hid::EInputDevice::Mouse;
+
+        break;
+    }
+
+    case SDL_WINDOWEVENT:
+    {
+        if (event->window.event == SDL_WINDOWEVENT_FOCUS_LOST)
         {
-            if (!GameWindow::IsFullscreen() || GameWindow::s_isFullscreenCursorVisible)
-                SDL_ShowCursor(SDL_ENABLE);
-
-            hid::g_inputDevice = hid::EInputDevice::Mouse;
-
-            break;
-        }
-
-        case SDL_WINDOWEVENT:
-        {
-            if (event->window.event == SDL_WINDOWEVENT_FOCUS_LOST)
-            {
-                // Stop vibrating controllers on focus lost.
-                for (auto& controller : g_controllers)
-                    controller.SetVibration({ 0, 0 });
-            }
-
-            break;
-        }
-
-        case SDL_USER_EVILSONIC:
-        {
+            // Stop vibrating controllers on focus lost.
             for (auto& controller : g_controllers)
-                SetControllerTimeOfDayLED(controller, event->user.code);
-
-            break;
+                controller.SetVibration({ 0, 0 });
         }
+
+        break;
+    }
+
+    case SDL_USER_EVILSONIC:
+    {
+        for (auto& controller : g_controllers)
+            SetControllerTimeOfDayLED(controller, event->user.code);
+
+        break;
+    }
     }
 
     return 0;
 }
+
+
 
 void hid::Init()
 {
