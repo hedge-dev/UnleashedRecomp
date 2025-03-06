@@ -303,7 +303,7 @@ endif()
 if (UNLEASHED_RECOMP_FLATPAK)
     target_compile_definitions(UnleashedRecomp PRIVATE 
         "UNLEASHED_RECOMP_FLATPAK"
-        "GAME_INSTALL_DIRECTORY=\"/var/data\""
+        "GAME_INSTALL_DIRECTORY_PREPROC=\"/var/data\""
     )
 endif()
 

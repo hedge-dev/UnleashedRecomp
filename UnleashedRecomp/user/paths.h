@@ -4,18 +4,15 @@
 
 #define USER_DIRECTORY "UnleashedRecomp"
 
-#ifndef GAME_INSTALL_DIRECTORY
-#define GAME_INSTALL_DIRECTORY "."
+#ifndef GAME_INSTALL_DIRECTORY_PREPROC
+#define GAME_INSTALL_DIRECTORY_PREPROC "."
 #endif
-
-inline std::filesystem::path GetGamePath()
-{
-    return GAME_INSTALL_DIRECTORY;
-}
 
 bool CheckPortable();
 std::filesystem::path BuildUserPath();
 const std::filesystem::path& GetUserPath();
+extern const std::string g_gamepath;
+std::filesystem::path GetGamePath();
 
 inline std::filesystem::path GetSavePath(bool checkForMods)
 {

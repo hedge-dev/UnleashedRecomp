@@ -2,6 +2,8 @@
 
 #include <locale/locale.h>
 
+extern const bool g_isRuntimeFlatpak;
+
 class IConfigDef
 {
 public:

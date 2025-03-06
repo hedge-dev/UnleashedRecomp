@@ -8,6 +8,12 @@ std::vector<IConfigDef*> g_configDefinitions;
 #define CONFIG_DEFINE_ENUM_TEMPLATE(type) \
     static std::unordered_map<std::string, type> g_##type##_template =
 
+#if defined(__linux__)
+    const bool g_isRuntimeFlatpak = getenv("FLATPAK_SANDBOX_DIR") != nullptr;
+#else
+    const bool g_isRuntimeFlatpak = false;
+#endif
+
 CONFIG_DEFINE_ENUM_TEMPLATE(ELanguage)
 {
     { "English",  ELanguage::English },

@@ -51,8 +51,8 @@ void KiSystemStartup()
 {
     const auto gameContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Game");
     const auto updateContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Update");
-    XamRegisterContent(gameContent, GAME_INSTALL_DIRECTORY "/game");
-    XamRegisterContent(updateContent, GAME_INSTALL_DIRECTORY "/update");
+    XamRegisterContent(gameContent, g_gamepath + "/game");
+    XamRegisterContent(updateContent, g_gamepath + "/update");
 
     const auto saveFilePath = GetSaveFilePath(true);
     bool saveFileExists = std::filesystem::exists(saveFilePath);
@@ -84,7 +84,7 @@ void KiSystemStartup()
     XamContentCreateEx(0, "D", &gameContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
 
     std::error_code ec;
-    for (auto& file : std::filesystem::directory_iterator(GAME_INSTALL_DIRECTORY "/dlc", ec))
+    for (auto& file : std::filesystem::directory_iterator(g_gamepath + "/dlc", ec))
     {
         if (file.is_directory())
         {
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
     HostStartup();
 
     std::filesystem::path modulePath;
-    bool isGameInstalled = Installer::checkGameInstall(GAME_INSTALL_DIRECTORY, modulePath);
+    bool isGameInstalled = Installer::checkGameInstall(g_gamepath, modulePath);
     bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
     if (runInstallerWizard)
     {
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
             std::_Exit(1);
         }
 
-        if (!InstallerWizard::Run(GAME_INSTALL_DIRECTORY, isGameInstalled && forceDLCInstaller))
+        if (!InstallerWizard::Run(g_gamepath, isGameInstalled && forceDLCInstaller))
         {
             std::_Exit(0);
         }
