@@ -547,7 +547,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
             { EAspectRatio::Wide, { "16:9", "16:9: locks the game to a widescreen aspect ratio." } },
             { EAspectRatio::Narrow, { "4:3", "4:3: locks the game to a narrow aspect ratio." } },
             { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: locks the game to a narrow aspect ratio and retains parity with the game's original implementation." } },
-            { EAspectRatio::Custom, { "Custom", "The aspect ratio is set to the values in 'Aspect Width' and 'Aspect Height'." } }
+            { EAspectRatio::Custom, { "Custom", "Custom: The aspect ratio is set to the values in 'Aspect Width' and 'Aspect Height'." } }
         }
     },
     {
@@ -563,10 +563,10 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
         ELanguage::German,
         {
             { EAspectRatio::Auto, { "AUTO", "Auto: Das Seitenverhältnis passt sich automatisch der Fenstergröße an." } },
-            { EAspectRatio::Wide, { "16:9", "16:9: Stellt das Spiel in einem Breitbildschirm-Vormat dar." } },
-            { EAspectRatio::Narrow, { "4:3", "4:3: Stellt das Spiel in einem Mittel-Vormat dar." } },
-            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: Stellt das Spiel in einem Mittel-Vormat dar, was der ursprünglichen Implementation originalgetreut bleibt." } },
-            { EAspectRatio::Custom, { "Benutzerdefiniert", "Das Seitenverhältnis entspricht den Werten in 'Seitenverhältnis-Breite' und 'Seitenverhältnis-Höhe'." } }
+            { EAspectRatio::Wide, { "16:9", "16:9: Stellt das Spiel in einem Breitbildschirm-Format dar." } },
+            { EAspectRatio::Narrow, { "4:3", "4:3: Stellt das Spiel in einem Mittel-Format dar." } },
+            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: Stellt das Spiel in einem Mittel-Format dar, was der ursprünglichen Implementation originalgetreut bleibt." } },
+            { EAspectRatio::Custom, { "Benutzerdefiniert", "Benutzerdefiniert:\nDas Seitenverhältnis entspricht den Werten in 'Seitenverhältnis-\nBreite' und 'Seitenverhältnis-\nHöhe'." } }
         }
     },
     {
