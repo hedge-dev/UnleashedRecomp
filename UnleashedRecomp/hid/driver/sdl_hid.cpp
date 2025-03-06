@@ -38,20 +38,23 @@ public:
 
     SDL_GameControllerType GetControllerType() const
     {
-        return SDL_GameControllerTypeForIndex(index);
+        return SDL_GameControllerGetType(controller);
     }
 
     hid::EInputDevice GetInputDevice() const
     {
         switch (GetControllerType())
         {
-            case SDL_CONTROLLER_TYPE_PS3:
-            case SDL_CONTROLLER_TYPE_PS4:
-            case SDL_CONTROLLER_TYPE_PS5:
-                return hid::EInputDevice::PlayStation;
+        case SDL_CONTROLLER_TYPE_PS3:
+        case SDL_CONTROLLER_TYPE_PS4:
+        case SDL_CONTROLLER_TYPE_PS5:
+            return hid::EInputDevice::PlayStation;
+        case SDL_CONTROLLER_TYPE_XBOX360:
+        case SDL_CONTROLLER_TYPE_XBOXONE:
+            return hid::EInputDevice::Xbox;
+        default:
+            return hid::EInputDevice::Unknown;
         }
-
-        return hid::EInputDevice::Xbox;
     }
 
     void Close()
@@ -133,6 +136,7 @@ public:
         SDL_GameControllerSetLED(controller, r, g, b);
     }
 };
+
 
 std::array<Controller, 4> g_controllers;
 Controller* g_activeController;
@@ -310,6 +314,8 @@ void hid::Init()
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
     SDL_SetHint(SDL_HINT_XINPUT_ENABLED, "1");
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAM, "1");
+
     SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "0");
 
     SDL_InitSubSystem(SDL_INIT_EVENTS);
@@ -317,6 +323,7 @@ void hid::Init()
 
     SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
 }
+
 
 uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
 {
