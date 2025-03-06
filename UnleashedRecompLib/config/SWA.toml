@@ -181,8 +181,8 @@ jump_address_on_true = 0x829E40A0
 # Disable Chip hints for shoe upgrades
 [[midasm_hook]]
 name = "DisableHintsMidAsmHook"
-address = 0x82691CB0
-jump_address_on_true = 0x82691E24
+address = 0x82691DD0
+jump_address_on_true = 0x82691DD4
 
 # Disable navigation volumes
 [[midasm_hook]]
