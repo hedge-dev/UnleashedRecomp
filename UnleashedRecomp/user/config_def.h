@@ -79,7 +79,9 @@ CONFIG_DEFINE_HIDDEN("Codes", bool, AllowCancellingUnleash, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, DisableAutoSaveWarning, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, DisableBoostFilter, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, DisableDLCIcon, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, DisableDPadMovement, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, DisableDWMRoundedCorners, false);
+CONFIG_DEFINE_HIDDEN("Codes", bool, DisableLowResolutionFontOnCustomUI, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, EnableEventCollisionDebugView, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, EnableGIMipLevelDebugView, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, EnableObjectCollisionDebugView, false);
@@ -92,7 +94,5 @@ CONFIG_DEFINE_HIDDEN("Codes", bool, SaveScoreAtCheckpoints, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, SkipIntroLogos, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, UseArrowsForTimeOfDayTransition, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, UseOfficialTitleOnTitleBar, false);
-CONFIG_DEFINE_HIDDEN("Codes", bool, DisableLowResolutionFontOnCustomUI, false);
-CONFIG_DEFINE_HIDDEN("Codes", bool, DisableDPadAsAnalogInput, false);
 
 CONFIG_DEFINE("Update", time_t, LastChecked, 0);
