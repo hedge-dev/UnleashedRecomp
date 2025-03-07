@@ -95,13 +95,6 @@ void PostUnleashMidAsmHook(PPCRegister& r30)
     g_isUnleashCancelled = false;
 }
 
-void SetXButtonHomingMidAsmHook(PPCRegister& r1)
-{
-    auto pXButtonHoming = (bool*)(g_memory.base + r1.u32 + 0x63);
-    
-    *pXButtonHoming = !Config::HomingAttackOnJump;
-}
-
 // SWA::Player::CEvilSonicContext
 PPC_FUNC_IMPL(__imp__sub_823B49D8);
 PPC_FUNC(sub_823B49D8)
