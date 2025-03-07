@@ -377,7 +377,7 @@ target_link_libraries(UnleashedRecomp PRIVATE
     CURL::libcurl
 )
 
-if (NOT ENABLE_IM_FONT_ATLAS_SNAPSHOT)
+if (NOT UNLEASHED_RECOMP_ENABLE_IM_FONT_ATLAS_SNAPSHOT)
     target_link_libraries(UnleashedRecomp PRIVATE
         msdf-atlas-gen::msdf-atlas-gen
     )
