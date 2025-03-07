@@ -10,6 +10,13 @@
 #define TRANSLATE_INPUT(S, X) SDL_GameControllerGetButton(controller, S) << FirstBitLow(X)
 #define VIBRATION_TIMEOUT_MS 5000
 
+struct LEDColor
+{
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+};
+
 class Controller
 {
 public:
@@ -19,6 +26,7 @@ public:
     XAMINPUT_GAMEPAD state{};
     XAMINPUT_VIBRATION vibration{ 0, 0 };
     int index{};
+    LEDColor ledColor{ 0, 0, 0 };
 
     Controller() = default;
 
@@ -131,12 +139,15 @@ public:
         SDL_GameControllerRumble(controller, vibration.wLeftMotorSpeed * 256, vibration.wRightMotorSpeed * 256, VIBRATION_TIMEOUT_MS);
     }
 
-    void SetLED(const uint8_t r, const uint8_t g, const uint8_t b) const
+    void SetLED(const uint8_t r, const uint8_t g, const uint8_t b)
     {
-        SDL_GameControllerSetLED(controller, r, g, b);
+        if (SDL_GameControllerHasLED(controller))
+        {
+            SDL_GameControllerSetLED(controller, r, g, b);
+            ledColor = { r, g, b };
+        }
     }
 };
-
 
 std::array<Controller, 4> g_controllers;
 Controller* g_activeController;
@@ -197,13 +208,19 @@ static void SetControllerTimeOfDayLED(Controller& controller, bool isNight)
     auto g = isNight ? 0 : 37;
     auto b = isNight ? 101 : 184;
 
-    // Ensure the lightbar is set correctly
-    if (SDL_GameControllerHasLED(controller.controller))
-    {
-        SDL_GameControllerSetLED(controller.controller, r, g, b);
-    }
+    controller.SetLED(r, g, b);
 }
 
+static void UpdateAllControllerLEDs(bool isNight)
+{
+    for (auto& controller : g_controllers)
+    {
+        if (controller.CanPoll())
+        {
+            SetControllerTimeOfDayLED(controller, isNight);
+        }
+    }
+}
 
 int HID_OnSDLEvent(void*, SDL_Event* event)
 {
@@ -219,7 +236,8 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
             g_controllers[freeIndex] = controller;
 
-            SetControllerTimeOfDayLED(controller, App::s_isWerehog);
+            // Reapply the stored LED color state
+            controller.SetLED(controller.ledColor.r, controller.ledColor.g, controller.ledColor.b);
 
             // Ensure Player 1's controller is always the active controller
             if (freeIndex == 0)
@@ -316,8 +334,8 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
     case SDL_USER_EVILSONIC:
     {
-        for (auto& controller : g_controllers)
-            SetControllerTimeOfDayLED(controller, event->user.code);
+        // Update all controller LEDs to follow Player 1's LED
+        UpdateAllControllerLEDs(event->user.code);
 
         break;
     }
@@ -325,8 +343,6 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
     return 0;
 }
-
-
 
 void hid::Init()
 {
@@ -336,7 +352,7 @@ void hid::Init()
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5, "1");
-    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_PLAYER_LED, "1");
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_PLAYER_LED, "0"); // Disable Player LED for PS5 controllers
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
     SDL_SetHint(SDL_HINT_XINPUT_ENABLED, "1");
@@ -348,7 +364,6 @@ void hid::Init()
 
     SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
 }
-
 
 uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
 {
