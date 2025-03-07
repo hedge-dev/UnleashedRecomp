@@ -82,6 +82,11 @@ public:
         return controller;
     }
 
+    void ClearState()
+    {
+        memset(&state, 0, sizeof(state));
+    }
+
     void PollAxis()
     {
         if (!CanPoll())
@@ -184,6 +189,11 @@ inline Controller* FindController(int which)
 
 static void SetControllerInputDevice(Controller* controller)
 {
+    if (g_activeController && g_activeController != controller)
+    {
+        g_activeController->ClearState();
+    }
+
     g_activeController = controller;
 
     if (App::s_isLoading)
@@ -415,3 +425,4 @@ uint32_t hid::GetCapabilities(uint32_t dwUserIndex, XAMINPUT_CAPABILITIES* pCaps
 
     return ERROR_SUCCESS;
 }
+
