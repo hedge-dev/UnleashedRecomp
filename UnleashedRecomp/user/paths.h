@@ -10,14 +10,20 @@
 
 extern std::filesystem::path g_executableRoot;
 
-inline std::filesystem::path GetGamePath()
+inline std::string GetGamePath()
 {
-    return GAME_INSTALL_DIRECTORY;
+    const char* homeDir = getenv("HOME");
+    if (homeDir == nullptr)
+        return g_executableRoot.string();
+    std::filesystem::path homePath = homeDir;
+    std::filesystem::path gamePath = homePath / ".local/share" / USER_DIRECTORY;
+    return gamePath.string();
 }
 
 bool CheckPortable();
 std::filesystem::path BuildUserPath();
 const std::filesystem::path& GetUserPath();
+extern const std::string g_gamepath;
 
 inline std::filesystem::path GetSavePath(bool checkForMods)
 {
