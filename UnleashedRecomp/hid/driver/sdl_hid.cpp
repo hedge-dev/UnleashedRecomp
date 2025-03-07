@@ -74,12 +74,6 @@ public:
         return controller;
     }
 
-    void ClearState()
-    {
-        memset(&state, 0, sizeof(state));
-    }
-
-
     void PollAxis()
     {
         if (!CanPoll())
@@ -179,11 +173,6 @@ inline Controller* FindController(int which)
 
 static void SetControllerInputDevice(Controller* controller)
 {
-    if (g_activeController && g_activeController != controller)
-    {
-        g_activeController->ClearState();
-    }
-
     g_activeController = controller;
 
     if (App::s_isLoading)
@@ -208,13 +197,8 @@ static void SetControllerTimeOfDayLED(Controller& controller, bool isNight)
     auto g = isNight ? 0 : 37;
     auto b = isNight ? 101 : 184;
 
-    // Ensure the lightbar is set correctly
-    if (SDL_GameControllerHasLED(controller.controller))
-    {
-        SDL_GameControllerSetLED(controller.controller, r, g, b);
-    }
+    controller.SetLED(r, g, b);
 }
-
 
 int HID_OnSDLEvent(void*, SDL_Event* event)
 {
@@ -231,12 +215,6 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
             g_controllers[freeIndex] = controller;
 
             SetControllerTimeOfDayLED(controller, App::s_isWerehog);
-
-            // Ensure Player 1's controller is always the active controller
-            if (freeIndex == 0)
-            {
-                SetControllerInputDevice(&g_controllers[0]);
-            }
         }
 
         break;
@@ -248,19 +226,6 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
         if (controller)
             controller->Close();
-
-        // If Player 1's controller is removed, set the next available controller as active
-        if (controller == &g_controllers[0])
-        {
-            for (auto& ctrl : g_controllers)
-            {
-                if (ctrl.CanPoll())
-                {
-                    SetControllerInputDevice(&ctrl);
-                    break;
-                }
-            }
-        }
 
         break;
     }
@@ -336,8 +301,6 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
     return 0;
 }
-
-
 
 void hid::Init()
 {
