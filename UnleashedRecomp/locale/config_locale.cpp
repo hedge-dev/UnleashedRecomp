@@ -547,7 +547,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
             { EAspectRatio::Wide, { "16:9", "16:9: locks the game to a widescreen aspect ratio." } },
             { EAspectRatio::Narrow, { "4:3", "4:3: locks the game to a narrow aspect ratio." } },
             { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: locks the game to a narrow aspect ratio and retains parity with the game's original implementation." } },
-            { EAspectRatio::Custom, { "Custom", "Custom: The aspect ratio is set to the values in 'Aspect Width' and 'Aspect Height'." } }
+            { EAspectRatio::Custom, { "Custom", "Custom:\nThe aspect ratio is set by using the CustomAspectRatio value in the config.toml file." } }
         }
     },
     {
@@ -566,7 +566,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
             { EAspectRatio::Wide, { "16:9", "16:9: Stellt das Spiel in einem Breitbildschirm-Format dar." } },
             { EAspectRatio::Narrow, { "4:3", "4:3: Stellt das Spiel in einem Mittel-Format dar." } },
             { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: Stellt das Spiel in einem Mittel-Format dar, was der ursprünglichen Implementation originalgetreut bleibt." } },
-            { EAspectRatio::Custom, { "Benutzerdefiniert", "Benutzerdefiniert:\nDas Seitenverhältnis entspricht den Werten in 'Seitenverhältnis-\nBreite' und 'Seitenverhältnis-\nHöhe'." } }
+            { EAspectRatio::Custom, { "Benutzerdefiniert", "Benutzerdefiniert:\nDas Seitenverhältnis entspricht dem Wert CustomAspectRatio in der Datei config.toml." } }
         }
     },
     {
@@ -596,18 +596,6 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
             { EAspectRatio::OriginalNarrow, { "4:3 ORIGINALE", "4:3 Originale: blocca il gioco a un rapporto d'aspetto stretto e mantiene la parità con l'implementazione originale del gioco." } }
         }
     }
-};
-
-CONFIG_DEFINE_LOCALE(AspectWidth)
-{
-    { ELanguage::English, { "Aspect Width", "Adjust aspect width for custom aspect ratios." } },
-    { ELanguage::German,  { "Seitenverhältnis-Breite", "Passe die Breite für benutzerdefinierte Seitenverhältnisse an." } }
-};
-
-CONFIG_DEFINE_LOCALE(AspectHeight)
-{
-    { ELanguage::English, { "Aspect Height", "Adjust aspect height for custom aspect ratios." } },
-    { ELanguage::German,  { "Seitenverhältnis-Höhe", "Passe die Höhe für benutzerdefinierte Seitenverhältnisse an." } }
 };
 
 // Japanese Notes: This localization should include furigana.

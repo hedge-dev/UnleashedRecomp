@@ -2922,19 +2922,17 @@ void Video::ComputeViewportDimensions()
     
     case EAspectRatio::Custom:
     {
-        uint32_t horzAspect = Config::AspectWidth;
-        uint32_t vertAspect = Config::AspectHeight;
-        float customAspectRatio = float(horzAspect) / float(vertAspect);
+        float customAspectRatio = Config::CustomAspectRatio;
 
         if (aspectRatio > customAspectRatio)
         {
-            s_viewportWidth = height * horzAspect / vertAspect;
+            s_viewportWidth = height * customAspectRatio;
             s_viewportHeight = height;
         }
         else
         {
             s_viewportWidth = width;
-            s_viewportHeight = width * vertAspect / horzAspect;
+            s_viewportHeight = width * (1. / customAspectRatio);
         }
 
         break;
@@ -7370,8 +7368,6 @@ void VideoConfigValueChangedCallback(IConfigDef* config)
     // Config options that require internal resolution resize
     g_needsResize |=
         config == &Config::AspectRatio ||
-        config == &Config::AspectWidth ||
-        config == &Config::AspectHeight ||
         config == &Config::ResolutionScale ||
         config == &Config::AntiAliasing ||
         config == &Config::ShadowResolution;
