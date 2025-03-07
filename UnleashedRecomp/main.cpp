@@ -1,4 +1,5 @@
 #include <stdafx.h>
+#include <cpuid.h>
 #include <cpu/guest_thread.h>
 #include <gpu/video.h>
 #include <kernel/function.h>
@@ -25,6 +26,15 @@
 
 #ifdef _WIN32
 #include <timeapi.h>
+#endif
+
+#if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
+static std::array<std::string_view, 3> g_D3D12RequiredModules =
+{
+    "D3D12/D3D12Core.dll",
+    "dxcompiler.dll",
+    "dxil.dll"
+};
 #endif
 
 const size_t XMAIOBegin = 0x7FEA0000;
@@ -147,6 +157,29 @@ uint32_t LdrLoadModule(const std::filesystem::path &path)
     return entry;
 }
 
+__attribute__((constructor(101), target("no-avx,no-avx2"), noinline))
+void init()
+{
+#ifdef __x86_64__
+    uint32_t eax, ebx, ecx, edx;
+
+    // Execute CPUID for processor info and feature bits.
+    __get_cpuid(1, &eax, &ebx, &ecx, &edx);
+
+    // Check for AVX support.
+    if ((ecx & (1 << 28)) == 0)
+    {
+        printf("[*] CPU does not support the AVX instruction set.\n");
+
+#ifdef _WIN32
+        MessageBoxA(nullptr, "Your CPU does not meet the minimum system requirements.", "Unleashed Recompiled", MB_ICONERROR);
+#endif
+
+        std::_Exit(1);
+    }
+#endif
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef _WIN32
@@ -156,7 +189,7 @@ int main(int argc, char *argv[])
     os::process::CheckConsole();
 
     if (!os::registry::Init())
-        LOGN_WARNING("OS doesn't support registry");
+        LOGN_WARNING("OS does not support registry.");
 
     os::logger::Init();
 
@@ -179,6 +212,19 @@ int main(int argc, char *argv[])
     }
 
     Config::Load();
+
+#if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
+    for (auto& dll : g_D3D12RequiredModules)
+    {
+        if (!std::filesystem::exists(g_executableRoot / dll))
+        {
+            char text[512];
+            snprintf(text, sizeof(text), Localise("System_Win32_MissingDLLs").c_str(), dll.data());
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), text, GameWindow::s_pWindow);
+            std::_Exit(1);
+        }
+    }
+#endif
 
     // Check the time since the last time an update was checked. Store the new time if the difference is more than six hours.
     constexpr double TimeBetweenUpdateChecksInSeconds = 6 * 60 * 60;

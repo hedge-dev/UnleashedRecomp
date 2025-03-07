@@ -38,6 +38,11 @@ static void CreateAudioDevice()
 
 void XAudioInitializeSystem()
 {
+#ifdef _WIN32
+    // Force wasapi on Windows.
+    SDL_setenv("SDL_AUDIODRIVER", "wasapi", true);
+#endif
+
     SDL_SetHint(SDL_HINT_AUDIO_CATEGORY, "playback");
     SDL_SetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME, "Unleashed Recompiled");
 

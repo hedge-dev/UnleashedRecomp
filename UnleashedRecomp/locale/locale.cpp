@@ -693,6 +693,17 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         }
     },
     {
+        "System_Win32_MissingDLLs",
+        {
+            { ELanguage::English,  "The module \"%s\" could not be found.\n\nPlease make sure that:\n\n- You extracted this copy of Unleashed Recompiled fully and not just the *.exe file.\n- You are not running Unleashed Recompiled from a *.zip file." },
+            { ELanguage::Japanese, "モジュール\"%s\"が見つかりませんでした\n\n次の点を確認してください：\n\n※Unleashed Recompiledの*.exeファイルだけを抽出していなく、 コピーを完全に抽出してること\n※Unleashed Recompiledを*.zipファイルから実行していないこと" },
+            { ELanguage::German,   "Das Modul \"%s\" konnte nicht gefunden werden.\n\nBitte stelle sicher, dass:\n\n- Diese Kopie von Unleashed Recompiled vollständig entpackt wurde und nicht nur die *.exe-Datei.\n- Unleashed Recompiled nicht direkt aus einer *.zip-Datei ausgeführt wird." },
+            { ELanguage::French,   "Le module \"%s\" n'a pas pu être trouvé.\n\nVeuillez vous assurer que :\n\n- Vous avez extrait Unleashed Recompiled dans son entièreté et pas seulement le fichier *.exe.\n- Vous n'exécutez pas Unleashed Recompiled à partir d'un fichier *.zip." },
+            { ELanguage::Spanish,  "No se pudo encontrar el módulo \"%s\".\n\nAsegúrese de que:\n\n- Ha extraido esta copia de Unleashed Recompiled por completo y no solo el archivo *.exe.\n- No está ejecutando Unleashed Recompiled desde un archivo *.zip." },
+            { ELanguage::Italian,  "Impossibile trovare il modulo \"%s\".\n\nAssicurati che:\n\n- Hai estratto questa copia di Unleashed Recompiled correttamente e non solo il file *.exe.\n- Non stai eseguendo Unleashed Recompiled da un file *.zip." }
+        }
+    },
+    {
         "Common_On",
         {
             { ELanguage::English,  "ON" },

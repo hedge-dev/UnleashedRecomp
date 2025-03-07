@@ -34,8 +34,14 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
     switch (event->type)
     {
         case SDL_QUIT:
+        {
+            if (App::s_isSaving)
+                break;
+
             App::Exit();
+
             break;
+        }
 
         case SDL_KEYDOWN:
         {
