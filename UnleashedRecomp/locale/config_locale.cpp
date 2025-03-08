@@ -142,7 +142,7 @@ CONFIG_DEFINE_LOCALE(ControlTutorial)
     { ELanguage::English,  { "Control Tutorial", "Show controller hints during gameplay.\n\nThe Werehog Critical Attack prompt will be unaffected." } },
     { ELanguage::Japanese, { "アクションナビ", "ゲーム[内:ない]に\u200Bアクションナビを\u200B[表示:ひょうじ]するか\u200B[選択:せんたく]できます\n\n「チャンスアタック」の\u200B[表示:ひょうじ]は\u200B[影響:えいきょう]されません" } },
     { ELanguage::German,   { "Steuerungsanleitung", "Zeige Steuerungshinweise während des Spiels.\n\nKritische Angriffe des Werehogs werden hiervon nicht beeinflusst." } },
-    { ELanguage::French,   { "Indication des commandes", "Affiche les indications des commandes pendant le jeu.\n\nCeci n'affecte pas les Coup critiques du Werehog." } },
+    { ELanguage::French,   { "Indication des commandes", "Affiche les indications des commandes pendant le jeu.\n\nCeci n'affecte pas les Coup critique du Werehog." } },
     { ELanguage::Spanish,  { "Tutorial de controles", "Muestra pistas de controles durante el juego.\n\nEl indicador de ataque crítico del Werehog no se verá afectado." } },
     { ELanguage::Italian,  { "Tutorial dei comandi", "Mostra i tutorial dei comandi durante il gioco.\n\nIl tutorial per l'attacco critico del Werehog non verrà influenzato da questa opzione." } }
 };
@@ -196,7 +196,7 @@ CONFIG_DEFINE_ENUM_LOCALE(ETimeOfDayTransition)
     {
         ELanguage::French,
         {
-            { ETimeOfDayTransition::Xbox,        { "XBOX", "Xbox : la scène de transformation sera jouée avec des temps de chargements artificiels." } },
+            { ETimeOfDayTransition::Xbox,        { "XBOX", "Xbox : la scène de transformation sera jouée avec des temps de chargement artificiels." } },
             { ETimeOfDayTransition::PlayStation, { "PLAYSTATION", "PlayStation : un écran de chargement avec une médaille tournoyante sera utilisé à la place." } }
         }
     },
@@ -257,7 +257,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
     {
         ELanguage::French,
         {
-            { EControllerIcons::Auto,        { "AUTO", "Auto: le jeu déterminera automatiquement quelles icônes utiliser en fonction du périphérique d'entrée." } },
+            { EControllerIcons::Auto,        { "AUTO", "Auto : le jeu déterminera automatiquement quelles icônes utiliser en fonction du périphérique d'entrée." } },
             { EControllerIcons::Xbox,        { "XBOX", "" } },
             { EControllerIcons::PlayStation, { "PLAYSTATION", "" } }
         }
@@ -570,10 +570,10 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
     {
         ELanguage::French,
         {
-            { EAspectRatio::Auto, { "AUTO", "Auto: le format d'image s'adapte automatiquement à la taille de la fenêtre." } },
-            { EAspectRatio::Wide, { "16:9", "16:9: force le jeu sur un format d'image large." } },
-            { EAspectRatio::Narrow, { "4:3", "4:3: force le jeu sur un format d'image carré." } },
-            { EAspectRatio::OriginalNarrow, { "4:3 ORIGINAL", "4:3 Original: force le jeu à un format d'image carré et conserve la parité avec l'implémentation d'origine du jeu." } }
+            { EAspectRatio::Auto, { "AUTO", "Auto : le format d'image s'adapte automatiquement à la taille de la fenêtre." } },
+            { EAspectRatio::Wide, { "16:9", "16:9 : force le jeu sur un format d'image large." } },
+            { EAspectRatio::Narrow, { "4:3", "4:3 : force le jeu sur un format d'image carré." } },
+            { EAspectRatio::OriginalNarrow, { "4:3 ORIGINAL", "4:3 original : force le jeu à un format d'image carré et conserve la parité avec l'implémentation d'origine du jeu." } }
         }
     },
     {
@@ -646,7 +646,7 @@ CONFIG_DEFINE_LOCALE(Brightness)
     { ELanguage::English,  { "Brightness", "Adjust the brightness level until the symbol on the left is barely visible." } },
     { ELanguage::Japanese, { "[明:おか]るさの[設定:せってい]", "[画面:がめん]の\u200B[明:おか]るさを\u200B[調整:ちょうせい]できます" } },
     { ELanguage::German,   { "Helligkeit", "Passe die Helligkeit des Spiels an bis das linke Symbol noch gerade so sichtbar ist." } },
-    { ELanguage::French,   { "Luminosité", "Règle le niveau de luminosité jusqu'à ce que le symbole à gauche soit à peine visible." } },
+    { ELanguage::French,   { "Luminosité", "Réglez le niveau de luminosité jusqu'à ce que le symbole à gauche soit à peine visible." } },
     { ELanguage::Spanish,  { "Brillo", "Ajusta el nivel de brillo hasta que el símbolo a la izquierda sea apenas visible." } },
     { ELanguage::Italian,  { "Luminosità", "Regola la luminosità dello schermo fino a quando il simbolo a sinistra diventa leggermente visibile." } }
 };
@@ -935,7 +935,7 @@ CONFIG_DEFINE_ENUM_LOCALE(ECutsceneAspectRatio)
     {
         ELanguage::French,
         {
-            { ECutsceneAspectRatio::Original, { "ORIGINAL", "Original: force les cinématiques dans leur format 16:9 d'origine." } },
+            { ECutsceneAspectRatio::Original, { "ORIGINAL", "Original : force les cinématiques dans leur format 16:9 d'origine." } },
             { ECutsceneAspectRatio::Unlocked, { "LIBRE", "Libre : permet aux cinématiques d'adapter leur format d'image à la taille de la fenêtre.\n\nATTENTION : au dela du format 16:9 d'origine, des bugs visuels apparaitront." } },
         }
     },
@@ -993,7 +993,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EUIAlignmentMode)
     {
         ELanguage::French,
         {
-            { EUIAlignmentMode::Edge,    { "BORD", "Bord: l'interface utilisateur sera alignée sur les bords de l'écran." } },
+            { EUIAlignmentMode::Edge,    { "BORD", "Bord : l'interface utilisateur sera alignée sur les bords de l'écran." } },
             { EUIAlignmentMode::Centre,  { "CENTRÉE", "Centrée : l'interface utilisateur sera alignée sur le centre de l'écran." } },
         }
     },
