@@ -196,8 +196,8 @@ CONFIG_DEFINE_ENUM_LOCALE(ETimeOfDayTransition)
     {
         ELanguage::French,
         {
-            { ETimeOfDayTransition::Xbox,        { "XBOX", "Xbox: la scène de transformation sera jouée avec des temps de chargement artificiel." } },
-            { ETimeOfDayTransition::PlayStation, { "PLAYSTATION", "PlayStation: un écran de chargement avec une médaille tournoyante sera utilisé à la place." } }
+            { ETimeOfDayTransition::Xbox,        { "XBOX", "Xbox: la scène de transformation sera jouée avec des temps de chargements artificiels." } },
+            { ETimeOfDayTransition::PlayStation, { "PLAYSTATION", "PlayStation : un écran de chargement avec une médaille tournoyante sera utilisé à la place." } }
         }
     },
     {
@@ -233,7 +233,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EControllerIcons)
     {
         ELanguage::English,
         {
-            { EControllerIcons::Auto,        { "AUTO", "Auto: the game will determine which icons to use based on the current input device." } },
+            { EControllerIcons::Auto,        { "AUTO", "Auto : the game will determine which icons to use based on the current input device." } },
             { EControllerIcons::Xbox,        { "XBOX", "" } },
             { EControllerIcons::PlayStation, { "PLAYSTATION", "" } }
         }
@@ -354,7 +354,7 @@ CONFIG_DEFINE_LOCALE(Vibration)
     { ELanguage::English,  { "Vibration", "Toggle controller vibration." } },
     { ELanguage::Japanese, { "[振動:しんどう]", "[振動:しんどう]の\u200B[有無:うむ]を\u200B[選択:せんたく]できます" } },
     { ELanguage::German,   { "Vibration", "Schalte die Controllervibration an oder aus." } },
-    { ELanguage::French,   { "Vibration", "Active les vibrations manette." } },
+    { ELanguage::French,   { "Vibration", "Active les vibrations de la manette." } },
     { ELanguage::Spanish,  { "Vibración", "Activa o desactiva la vibración del mando." } },
     { ELanguage::Italian,  { "Vibrazione", "Attiva/disattiva la vibrazione del controller." } }
 };
@@ -499,8 +499,8 @@ CONFIG_DEFINE_LOCALE(BattleTheme)
     { ELanguage::English,  { "Battle Theme", "Play the Werehog battle theme during combat.\n\nThis option will apply the next time you're in combat.\n\nExorcism missions and miniboss themes will be unaffected." } },
     { ELanguage::Japanese, { "バトルテーマ", "バトル[中:ちゅう]に\u200Bウェアホッグの\u200Bバトルテーマを\u200B[再生:さいせい]するか\u200B[選択:せんたく]できます\n\nこのオプションは\u200B[次回:じかい]のバトルに\u200B[適用:てきよう]されます\n\n[\u2005除\u2005霊\u2005:エクソシズム]ミッションと\u200Bミニボステーマは\u200B[影響:えいきょう]されません" } },
     { ELanguage::German,   { "Kampfmusik", "Spiele die Kampfmusik des Werehogs während dem Kämpfen ab.\n\nDiese Option tritt das nächste Mal, wenn du in einen Kampf gerätst, in Kraft.\n\nExorzismen und Mini-Bosse werden hiervon nicht beeinflusst." } },
-    { ELanguage::French,   { "Thème de combat", "Joue le thème de combat du Werehog pendant les combat.\n\nCette option s'appliquera la prochaine fois que vous serez en combat.\n\nLes missions d'exorcisme et les thèmes des miniboss ne seront pas affectés." } },
-    { ELanguage::Spanish,  { "Tema de batalla", "Reproduce el tema de batalla del Werehog durante el combate.\n\nEsta opción se aplicará la próxima vez que entres en combate.\n\nLas misiones de exorcismo y los temas de los minijefes no se verán afectados." } },
+    { ELanguage::French,   { "Thème de combat", "Joue le thème de combat du Werehog pendant ces derniers.\n\nCette option s'appliquera la prochaine fois que vous serez en combat.\n\nLes missions d'exorcisme et les thèmes des miniboss ne seront pas affectés." } },
+    { ELanguage::Spanish,  { "Tema de b atalla", "Reproduce el tema de batalla del Werehog durante el combate.\n\nEsta opción se aplicará la próxima vez que entres en combate.\n\nLas misiones de exorcismo y los temas de los minijefes no se verán afectados." } },
     { ELanguage::Italian,  { "Musica di combattimento", "Riproduci la musica di combattimento del Werehog quando inizi una battaglia.\n\nQuesta opzione verrà applicata la prossima volta che sei in battaglia.\n\nLa traccia musicale verrà riprodotta ugualmente nelle missioni di Esorcismo e i miniboss." } }
 };
 
@@ -613,7 +613,7 @@ CONFIG_DEFINE_LOCALE(Fullscreen)
     { ELanguage::English,  { "Fullscreen", "Toggle between borderless fullscreen or windowed mode." } },
     { ELanguage::Japanese, { "フルスクリーン", "ボーダーレス\u200Bフルスクリーンか\u200Bウィンドウモードを\u200B[選択:せんたく]できます" } },
     { ELanguage::German,   { "Vollbild", "Wechsle zwischen dem randlosen Vollbildmodus und dem Fenstermodus." } },
-    { ELanguage::French,   { "Plein écran", "Alterne entre le mode plein écran sans bordure et le mode fenêtré." } },
+    { ELanguage::French,   { "Plein écran", "Alterne entre le mode plein écran sans bordures et le mode fenêtré." } },
     { ELanguage::Spanish,  { "Pantalla completa", "Cambia entre modo de pantalla completa o ventana." } },
     { ELanguage::Italian,  { "Schermo pieno", "Attiva/disattiva tra modalità finestra senza cornice e modalità finestra." } }
 };
@@ -635,7 +635,7 @@ CONFIG_DEFINE_LOCALE(FPS)
     { ELanguage::English,  { "FPS", "Set the max frame rate the game can run at.\n\nWARNING: this may introduce glitches at frame rates higher than 60 FPS." } },
     { ELanguage::Japanese, { "フレームレート[上限:じょうげん]", "ゲームの\u200B[最大:さいだい]フレームレートを\u200B[設定:せってい]できます\n\n[警告:けいこく]: 60 FPSを\u200B[超:こ]えるフレームレートで\u200B[不具合:ふぐあい]が\u200B[発生:はっせい]する\u200B[可能性:かのうせい]が\u200Bあります" } },
     { ELanguage::German,   { "FPS", "Setze die maximale Anzahl der Bilder pro Sekunde, die das Spiel darstellen kann.\n\nWARNUNG: Das Spiel kann bei höheren FPS als 60 ungewolltes Verhalten aufweisen." } },
-    { ELanguage::French,   { "FPS", "Détermine la fréquence d'images maximale du jeu.\n\nATTENTION: cela peut entraîner des problèmes à des taux de rafraîchissement supérieurs à 60 FPS." } },
+    { ELanguage::French,   { "IPS", "Détermine la fréquence d'images maximale du jeu.\n\nATTENTION : cela peut entraîner des problèmes à des taux de rafraîchissement supérieurs à 60 IPS." } },
     { ELanguage::Spanish,  { "FPS", "Establece la tasa de fotogramas máxima a la que puede correr el juego.\n\nADVERTENCIA: esto puede introducir fallos en tasas mayores a 60 FPS." } },
     { ELanguage::Italian,  { "FPS", "Imposta il frame rate massimo del gioco.\n\nATTENZIONE: questa opzione può causare dei glitch a frame rate più alti di 60 FPS." } }
 };
@@ -719,7 +719,7 @@ CONFIG_DEFINE_LOCALE(ShadowResolution)
     { ELanguage::English,  { "Shadow Resolution", "Set the resolution of real-time shadows." } },
     { ELanguage::Japanese, { "[影:かげ]の[解像度:かいぞうど]", "[影:かげ]の[解像度:かいぞうど]を\u200B[設定:せってい]できます" } },
     { ELanguage::German,   { "Schattenauflösung", "Stelle die Auflösung der Echtzeit-Schatten ein." } },
-    { ELanguage::French,   { "Résolution des ombres", "Défini la résolution des ombres en temps réel." } },
+    { ELanguage::French,   { "Résolution des ombres", "Définit la résolution des ombres en temps réel." } },
     { ELanguage::Spanish,  { "Resolución de sombras", "Establece la resolución de las sombras de tiempo real." } },
     { ELanguage::Italian,  { "Risoluzione ombre", "Imposta la risoluzioni delle ombre in tempo reale." } }
 };
@@ -748,7 +748,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EShadowResolution)
     {
         ELanguage::French,
         {
-            { EShadowResolution::Original, { "ORIGINALE", "Originale: le jeu déterminera automatiquement la résolution des ombres." } }
+            { EShadowResolution::Original, { "ORIGINALE", "Originale : le jeu déterminera automatiquement la résolution des ombres." } }
         }
     },
     {
@@ -865,7 +865,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EMotionBlur)
         {
             { EMotionBlur::Off,      { "AUCUN", "" } },
             { EMotionBlur::Original, { "ORIGINAL", "" } },
-            { EMotionBlur::Enhanced, { "AMÉLIORÉ", "Amélioré: utilise plus d'échantillons pour un flou de mouvement plus lisse au détriment des performances." } }
+            { EMotionBlur::Enhanced, { "AMÉLIORÉ", "Amélioré : utilise plus d'échantillons pour un flou de mouvement plus lisse au détriment des performances." } }
         }
     },
     {
@@ -936,7 +936,7 @@ CONFIG_DEFINE_ENUM_LOCALE(ECutsceneAspectRatio)
         ELanguage::French,
         {
             { ECutsceneAspectRatio::Original, { "ORIGINAL", "Original: force les cinématiques dans leur format 16:9 d'origine." } },
-            { ECutsceneAspectRatio::Unlocked, { "LIBRE", "Libre: permet aux cinématiques d'adapter leur format d'image à la taille de la fenêtre.\n\nAttention: au dela du format 16:9 d'origine, des bugs visuels apparaitront." } },
+            { ECutsceneAspectRatio::Unlocked, { "LIBRE", "Libre : permet aux cinématiques d'adapter leur format d'image à la taille de la fenêtre.\n\nATTENTION : au dela du format 16:9 d'origine, des bugs visuels apparaitront." } },
         }
     },
     {
@@ -994,7 +994,7 @@ CONFIG_DEFINE_ENUM_LOCALE(EUIAlignmentMode)
         ELanguage::French,
         {
             { EUIAlignmentMode::Edge,    { "BORD", "Bord: l'interface utilisateur sera alignée sur les bords de l'écran." } },
-            { EUIAlignmentMode::Centre,  { "CENTRÉE", "Centrée: l'interface utilisateur sera alignée sur le centre de l'écran." } },
+            { EUIAlignmentMode::Centre,  { "CENTRÉE", "Centrée : l'interface utilisateur sera alignée sur le centre de l'écran." } },
         }
     },
     {
