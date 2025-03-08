@@ -366,7 +366,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Installation complete!\nThis project is brought to you by:" },
             { ELanguage::Japanese, "インストール[完了:かんりょう]！\nプロジェクト[制作:せいさく]：" },
             { ELanguage::German,   "Installation abgeschlossen!\nDieses Projekt wird präsentiert von:" },
-            { ELanguage::French,   "Installation terminée !\nCe projet vous est présenté par:" },
+            { ELanguage::French,   "Installation terminée !\nCe projet vous est présenté par :" },
             { ELanguage::Spanish,  "¡Instalación completada!\nEste proyecto ha sido posible gracias a:" },
             { ELanguage::Italian,  "Installazione completata!\nQuesto progetto è stato creato da:" }
         }
