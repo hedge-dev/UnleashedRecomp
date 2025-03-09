@@ -4,6 +4,7 @@ namespace Hedgehog::Database
 {
     class CDatabase;
 }
+
 namespace Hedgehog::Mirage
 {
     class CLightFieldManager;
@@ -44,7 +45,7 @@ namespace SWA
             boost::shared_ptr<CParameterEditor> m_spParameterEditor;
             boost::shared_ptr<CParameterEditor2nd> m_spParameterEditor2nd;
             SWA_INSERT_PADDING(0x40);
-            boost::shared_ptr<Hedgehog::Mirage::CLightFieldManager> m_spLightfieldManager;
+            boost::shared_ptr<Hedgehog::Mirage::CLightFieldManager> m_spLightFieldManager;
             SWA_INSERT_PADDING(0x10);
             Hedgehog::Base::CSharedString m_StageName;
             xpointer<CSoundAdministrator> m_pSoundAdministrator;
@@ -76,7 +77,7 @@ namespace SWA
     SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_spDatabase, 0x1C);
     SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_spParameterEditor, 0x44);
     SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_spParameterEditor2nd, 0x4C);
-    SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_spLightfieldManager, 0x94);
+    SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_spLightFieldManager, 0x94);
     SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_StageName, 0xAC);
     SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_pSoundAdministrator, 0xB0);
     SWA_ASSERT_OFFSETOF(CGameDocument::CMember, m_pGeneralWindow, 0xFC);
