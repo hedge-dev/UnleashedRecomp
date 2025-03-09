@@ -217,7 +217,7 @@ jobs:
     runs-on: macos-15
     strategy:
       matrix:
-        arch: [ "x86_64", "arm64" ]
+        arch: [ "arm64" ]
         preset: ["macos-debug", "macos-release", "macos-relwithdebinfo"]
     env:
       CMAKE_PRESET: ${{ matrix.preset }}
