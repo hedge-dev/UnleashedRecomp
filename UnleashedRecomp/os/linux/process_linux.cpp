@@ -15,6 +15,11 @@ std::filesystem::path os::process::GetExecutablePath()
     }
 }
 
+std::filesystem::path os::process::GetExecutableRoot()
+{
+    return GetExecutablePath().remove_filename();
+}
+
 std::filesystem::path os::process::GetWorkingDirectory()
 {
     char cwd[PATH_MAX] = {};
