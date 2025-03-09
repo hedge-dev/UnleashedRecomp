@@ -53,6 +53,16 @@ void WerehogBattleMusicMidAsmHook(PPCRegister& r11)
         r11.u8 = 3;
 }
 
+bool UseAlternateTitleMidAsmHook()
+{
+    auto isSWA = Config::Language == ELanguage::Japanese;
+
+    if (Config::UseAlternateTitle)
+        isSWA = !isSWA;
+
+    return isSWA;
+}
+
 /* Hook function that gets the game region
    and force result to zero for Japanese
    to display the correct logos. */
