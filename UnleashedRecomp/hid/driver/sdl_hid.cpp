@@ -183,13 +183,25 @@ static void SetControllerInputDevice(Controller* controller)
 
     auto controllerType = (hid::EInputDeviceExplicit)controller->GetControllerType();
 
+    // Only proceed if the controller type changes
     if (hid::g_inputDeviceExplicit != controllerType)
     {
         hid::g_inputDeviceExplicit = controllerType;
 
-        LOGFN("Detected controller: {}", hid::GetInputDeviceName());
+        // Handle Unknown Type specifically
+        if (controllerType == hid::EInputDeviceExplicit::Unknown)
+        {
+            const char* controllerName = SDL_GameControllerName(controller->controller);
+            LOGFN("Controller connected: {} (Unknown Controller Type)", controllerName ? controllerName : "Unknown Device");
+        }
+        else
+        {
+            // For known types, only use the EInputDeviceExplicit name
+            LOGFN("Controller connected: {}", hid::GetInputDeviceName());
+        }
     }
 }
+
 
 static void SetControllerTimeOfDayLED(Controller& controller, bool isNight)
 {
