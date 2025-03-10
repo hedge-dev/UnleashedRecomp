@@ -42,10 +42,10 @@ std::string hid::GetInputDeviceName()
     switch (g_inputDeviceExplicit)
     {
         case EInputDeviceExplicit::Xbox360:
-            return "Xbox 360";
+            return "Xbox 360 Controller";
 
         case EInputDeviceExplicit::XboxOne:
-            return "Xbox One";
+            return "Xbox Wireless Controller";
 
         case EInputDeviceExplicit::DualShock3:
             return "DualShock 3";
@@ -54,22 +54,22 @@ std::string hid::GetInputDeviceName()
             return "DualShock 4";
 
         case EInputDeviceExplicit::SwitchPro:
-            return "Nintendo Switch Pro";
+            return "Nintendo Switch Pro Controller";
 
         case EInputDeviceExplicit::Virtual:
-            return "Virtual";
+            return "Virtual Controller";
 
         case EInputDeviceExplicit::DualSense:
             return "DualSense";
 
         case EInputDeviceExplicit::Luna:
-            return "Amazon Luna";
+            return "Amazon Luna Controller";
 
         case EInputDeviceExplicit::Stadia:
-            return "Google Stadia";
+            return "Google Stadia Controller";
 
         case EInputDeviceExplicit::NvShield:
-            return "NVIDIA Shield";
+            return "NVIDIA SHIELD Controller";
 
         case EInputDeviceExplicit::SwitchJCLeft:
             return "Nintendo Switch Joy-Con (Left)";
