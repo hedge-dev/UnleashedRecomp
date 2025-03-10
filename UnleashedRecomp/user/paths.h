@@ -14,7 +14,12 @@ inline std::filesystem::path GetGamePath()
         return "/var/data";
     else
 #endif
-        return ".";
+    const char* homeDir = getenv("HOME");
+    if (homeDir == nullptr)
+        return g_executableRoot;
+    std::filesystem::path homePath = homeDir;
+    std::filesystem::path gamePath = homePath / ".local" / "share" / USER_DIRECTORY;
+    return gamePath;
 }
 
 bool CheckPortable();
