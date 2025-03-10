@@ -23,7 +23,7 @@ inline std::string GetGamePath()
 bool CheckPortable();
 std::filesystem::path BuildUserPath();
 const std::filesystem::path& GetUserPath();
-extern const std::string g_gamepath;
+extern const std::string g_gameInstallPath;
 
 inline std::filesystem::path GetSavePath(bool checkForMods)
 {

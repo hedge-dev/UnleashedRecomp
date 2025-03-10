@@ -3,7 +3,7 @@
 
 std::filesystem::path g_executableRoot = os::process::GetExecutablePath().remove_filename();
 std::filesystem::path g_userPath = BuildUserPath();
-extern const std::string g_gamepath = GetGamePath();
+extern const std::string g_gameInstallPath = GetGamePath();
 
 bool CheckPortable()
 {

@@ -33,7 +33,7 @@ PPC_FUNC_IMPL(__imp__sub_824EB490);
 PPC_FUNC(sub_824EB490)
 {
     App::s_isInit = true;
-    App::s_isMissingDLC = !Installer::checkAllDLC(g_gamepath);
+    App::s_isMissingDLC = !Installer::checkAllDLC(g_gameInstallPath);
     App::s_language = Config::Language;
 
     SWA::SGlobals::Init();
