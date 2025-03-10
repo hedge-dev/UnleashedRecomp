@@ -936,7 +936,7 @@ CONFIG_DEFINE_ENUM_LOCALE(ECutsceneAspectRatio)
         ELanguage::French,
         {
             { ECutsceneAspectRatio::Original, { "ORIGINAL", "Original : force les cinématiques dans leur format 16:9 d'origine." } },
-            { ECutsceneAspectRatio::Unlocked, { "LIBRE", "Libre : permet aux cinématiques d'adapter leur format d'image à la taille de la fenêtre.\n\nATTENTION : au dela du format 16:9 d'origine, des bugs visuels apparaitront." } },
+            { ECutsceneAspectRatio::Unlocked, { "LIBRE", "Libre : permet aux cinématiques d'adapter leur format d'image à la taille de la fenêtre.\n\nATTENTION : au delà du format 16:9 d'origine, des bugs visuels apparaitront." } },
         }
     },
     {
