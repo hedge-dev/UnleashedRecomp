@@ -1,17 +1,3 @@
-> [!WARNING]
-> This repository is a fork of the Unleashed Recompiled project, specifically designed to support binary Arch Linux packaging through the AUR and the PKGBUILD system. For Windows builds, please refer to the upstream repository.
-> **Do not attempt to compile the content of this repository with Windows targets**.
-> Please be also aware this package, unlike the Flatpak version provided upstream, may not be compatible with the Hedgemod Manager differently from the Flatpak version provided upstream.
-
-Binaries from this repository are built using:
-
-```
-$ cmake -DCMAKE_AR=/usr/bin/llvm-ar -DCMAKE_RANLIB=/usr/bin/llvm-ranlib  . --preset linux-release
-$ cmake --build ./out/build/linux-release --target UnleashedRecomp
-```
-
----
-
 <p align="center">
     <img src="https://raw.githubusercontent.com/hedge-dev/UnleashedRecompResources/refs/heads/main/images/logo/Logo.png" width="512"/>
 </p>
