@@ -63,3 +63,47 @@ inline std::unique_ptr<uint8_t[]> ReadAllBytes(const char* filePath, size_t& fil
 
     return data;
 }
+
+#ifndef __cpp_lib_atomic_ref
+// Polyfill for std::atomic_ref
+namespace std {
+template <typename value_type>
+class atomic_ref
+{
+public:
+    atomic_ref(value_type& ref)
+    {
+        ptr = reinterpret_cast<std::atomic<value_type>*>(&ref);
+    }
+
+    void store(value_type desired)
+    {
+        ptr->store(desired);
+    }
+
+    bool compare_exchange_weak(value_type& expected, value_type desired)
+    {
+        return ptr->compare_exchange_weak(expected, desired);
+    }
+
+    void wait(value_type old)
+    {
+        ptr->wait(old);
+    }
+
+    void notify_one()
+    {
+        ptr->notify_one();
+    }
+
+    bool operator=(const value_type& rhs)
+    {
+        store(rhs);
+    }
+
+private:
+    std::atomic<value_type>* ptr;
+};
+}
+#endif
+

@@ -1,6 +1,6 @@
 [submodule "tools/XenonRecomp"]
 	path = tools/XenonRecomp
-	url = https://github.com/hedge-dev/XenonRecomp.git
+	url = https://github.com/squidbus/XenonRecomp.git
 [submodule "thirdparty/ddspp"]
 	path = thirdparty/ddspp
 	url = https://github.com/redorav/ddspp.git
@@ -58,3 +58,9 @@
 [submodule "thirdparty/json"]
 	path = thirdparty/json
 	url = https://github.com/nlohmann/json
+[submodule "thirdparty/MoltenVK/MoltenVK"]
+	path = thirdparty/MoltenVK/MoltenVK
+	url = https://github.com/KhronosGroup/MoltenVK.git
+[submodule "thirdparty/MoltenVK/SPIRV-Cross"]
+	path = thirdparty/MoltenVK/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git
