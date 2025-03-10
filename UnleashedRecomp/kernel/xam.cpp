@@ -315,11 +315,11 @@ uint32_t XamContentCreateEx(uint32_t dwUserIndex, const char* szRootName, const 
             }
             else if (pContentData->dwContentType == XCONTENTTYPE_DLC)
             {
-                root = GAME_INSTALL_DIRECTORY "/dlc";
+                root = g_gameInstallPath / "dlc";
             }
             else
             {
-                root = GAME_INSTALL_DIRECTORY;
+                root = g_gameInstallPath;
             }
 
             XamRegisterContent(*pContentData, root);
