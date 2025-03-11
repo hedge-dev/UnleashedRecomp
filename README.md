@@ -284,7 +284,7 @@ Unleashed Recompiled is not associated with any Discord servers. Use the [Issues
 
 ### Do you have a website?
 
-Unleashed Recompiled does not have an official website. Please link to here when directing anyone to the project.
+Unleashed Recompiled does not have an official website. Please link here when directing anyone to the project.
 
 > [!CAUTION]
 > Do not download builds of Unleashed Recompiled from anywhere but our [Releases](https://github.com/hedge-dev/UnleashedRecomp/releases/latest) page.
