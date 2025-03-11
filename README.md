@@ -282,6 +282,15 @@ Simply booting at least once in Desktop Mode will enable the Deck to use the fil
 
 Unleashed Recompiled is not associated with any Discord servers. Use the [Issues](https://github.com/hedge-dev/UnleashedRecomp/issues) page if you need support.
 
+### Do you have a website?
+
+Unleashed Recompiled does not have an official website. Please link to here when directing anyone to the project.
+
+> [!CAUTION]
+> Do not download builds of Unleashed Recompiled from anywhere but our [Releases](https://github.com/hedge-dev/UnleashedRecomp/releases/latest) page.
+>
+> **We will never distribute builds on other websites or via third-party update tools.**
+
 ### Why does the installer say my files are invalid?
 
 The installer may display this error for several reasons. Please check the following to ensure your files are valid:
