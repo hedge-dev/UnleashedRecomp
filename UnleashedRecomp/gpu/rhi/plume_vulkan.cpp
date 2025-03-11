@@ -53,14 +53,12 @@ namespace plume {
         VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
 #   elif defined(__APPLE__)
         VK_EXT_METAL_SURFACE_EXTENSION_NAME,
-        // Used to configure MoltenVK.
-        VK_EXT_LAYER_SETTINGS_EXTENSION_NAME,
 #   endif
     };
 
     static const std::unordered_set<std::string> OptionalInstanceExtensions = {
 #   if defined(__APPLE__)
-        // Optional, as it is only needed for system libvulkan loader.
+        // Tells the system Vulkan loader to enumerate portability drivers, if supported.
         VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
 #   endif
     };
@@ -86,10 +84,8 @@ namespace plume {
         VK_KHR_PRESENT_ID_EXTENSION_NAME,
         VK_KHR_PRESENT_WAIT_EXTENSION_NAME,
         VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME,
-#   ifdef __APPLE__
-        // Vulkan spec requires this to be enabled if supported.
+        // Vulkan spec requires this to be enabled if supported by the driver.
         VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
-#   endif
     };
 
     // Common functions.
@@ -3729,12 +3725,10 @@ namespace plume {
         bufferDeviceAddressFeatures.pNext = featuresChain;
         featuresChain = &bufferDeviceAddressFeatures;
 
-#ifdef __APPLE__
         VkPhysicalDevicePortabilitySubsetFeaturesKHR portabilityFeatures = {};
         portabilityFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR;
         portabilityFeatures.pNext = featuresChain;
         featuresChain = &portabilityFeatures;
-#endif
 
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
         deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -3806,10 +3800,11 @@ namespace plume {
             createDeviceChain = &bufferDeviceAddressFeatures;
         }
 
-#ifdef __APPLE__
-        portabilityFeatures.pNext = createDeviceChain;
-        createDeviceChain = &portabilityFeatures;
-#endif
+        const bool portabilitySubset = supportedOptionalExtensions.find(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME) != supportedOptionalExtensions.end();
+        if (portabilitySubset) {
+            portabilityFeatures.pNext = createDeviceChain;
+            createDeviceChain = &portabilityFeatures;
+        }
 
         // Retrieve the information for the queue families.
         uint32_t queueFamilyCount = 0;
@@ -3823,6 +3818,7 @@ namespace plume {
             uint32_t familyIndex = 0;
             uint32_t familySetBits = sizeof(uint32_t) * 8;
             uint32_t familyQueueCount = 0;
+            bool familyUsed = false;
             for (uint32_t i = 0; i < queueFamilyCount; i++) {
                 const VkQueueFamilyProperties &props = queueFamilyProperties[i];
 
@@ -3832,11 +3828,14 @@ namespace plume {
                 }
 
                 // Prefer picking the queues with the least amount of bits set that match the mask we're looking for.
+                // If the queue families have matching capabilities but one is already used, prefer the unused one.
                 uint32_t setBits = numberOfSetBits(props.queueFlags);
-                if ((setBits < familySetBits) || ((setBits == familySetBits) && (props.queueCount > familyQueueCount))) {
+                bool used = queueFamilyUsed[i];
+                if ((setBits < familySetBits) || ((setBits == familySetBits) && ((props.queueCount > familyQueueCount) || (familyUsed && !used)))) {
                     familyIndex = i;
                     familySetBits = setBits;
                     familyQueueCount = props.queueCount;
+                    familyUsed = used;
                 }
             }
 
@@ -4295,22 +4294,6 @@ namespace plume {
 
 #   ifdef __APPLE__
         createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-
-        // Enable specialized queue families, ensuring that the queue family heuristics
-        // will pick up correct families for the graphics and copy queues.
-        // Additionally, make sure the semaphore support style ensures support
-        // for multiple queues.
-        constexpr VkBool32 specializedQueueFamilies = true;
-        const uint32_t semaphoreSupportStyle = 2; // METAL_EVENTS
-        const VkLayerSettingEXT settings[] = {
-            {"MoltenVK", "MVK_CONFIG_SPECIALIZED_QUEUE_FAMILIES", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &specializedQueueFamilies},
-            {"MoltenVK", "MVK_CONFIG_VK_SEMAPHORE_SUPPORT_STYLE", VK_LAYER_SETTING_TYPE_UINT32_EXT, 1, &semaphoreSupportStyle},
-        };
-        VkLayerSettingsCreateInfoEXT settingsCreateInfo = {};
-        settingsCreateInfo.sType = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
-        settingsCreateInfo.settingCount = std::size(settings);
-        settingsCreateInfo.pSettings = settings;
-        createInfo.pNext = &settingsCreateInfo;
 #   endif
 
         // Check for extensions.
