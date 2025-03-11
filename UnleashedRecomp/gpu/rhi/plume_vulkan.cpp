@@ -72,7 +72,7 @@ namespace plume {
         VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
         VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
 #   ifdef VULKAN_OBJECT_NAMES_ENABLED
-        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME
 #   endif
     };
     
@@ -2937,9 +2937,7 @@ namespace plume {
             viewportVector.clear();
 
             for (uint32_t i = 0; i < count; i++) {
-                float width = std::max(viewports[i].width, 1.f);
-                float height = std::max(viewports[i].height, 1.f);
-                viewportVector.emplace_back(VkViewport{ viewports[i].x, viewports[i].y, width, height, viewports[i].minDepth, viewports[i].maxDepth });
+                viewportVector.emplace_back(VkViewport{ viewports[i].x, viewports[i].y, viewports[i].width, viewports[i].height, viewports[i].minDepth, viewports[i].maxDepth });
             }
 
             if (!viewportVector.empty()) {
@@ -2948,9 +2946,7 @@ namespace plume {
         }
         else {
             // Single element fast path.
-            float width = std::max(viewports[0].width, 1.f);
-            float height = std::max(viewports[0].height, 1.f);
-            VkViewport viewport = VkViewport{ viewports[0].x, viewports[0].y, width, height, viewports[0].minDepth, viewports[0].maxDepth };
+            VkViewport viewport = VkViewport{ viewports[0].x, viewports[0].y, viewports[0].width, viewports[0].height, viewports[0].minDepth, viewports[0].maxDepth };
             vkCmdSetViewport(vk, 0, 1, &viewport);
         }
     }
