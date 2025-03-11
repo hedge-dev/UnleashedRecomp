@@ -125,7 +125,7 @@
                     "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
                     "type": "FILEPATH"
                 },
-                "CMAKE_OSX_DEPLOYMENT_TARGET": "11.0"
+                "CMAKE_OSX_DEPLOYMENT_TARGET": "13.0"
             },
             "environment": {
                 "VCPKG_ROOT": "${sourceDir}/thirdparty/vcpkg"
