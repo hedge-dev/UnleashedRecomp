@@ -145,13 +145,11 @@ jobs:
           Move-Item -Path ".\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\dxil.dll" -Destination ".\release\dxil.dll"
           Move-Item -Path ".\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\UnleashedRecomp.exe" -Destination ".\release\UnleashedRecomp.exe"
 
-          Compress-Archive -Path .\release\* -DestinationPath .\UnleashedRecomp-Windows.zip
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: UnleashedRecomp-Windows-${{ env.CMAKE_PRESET }}
-          path: .\UnleashedRecomp-Windows.zip
+          path: .\release
 
       - name: Upload PDB
         uses: actions/upload-artifact@v4
