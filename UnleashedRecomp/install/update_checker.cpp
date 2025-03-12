@@ -130,6 +130,7 @@ void UpdateChecker::initialize()
 
 bool UpdateChecker::start()
 {
+#ifdef CHECK_FOR_UPDATES
     if (g_updateCheckerInProgress)
     {
         return false;
@@ -139,12 +140,14 @@ bool UpdateChecker::start()
     g_updateCheckerFinished = false;
     std::thread thread(&updateCheckerThread);
     thread.detach();
+#endif
 
     return true;
 }
 
 UpdateChecker::Result UpdateChecker::check()
 {
+#ifdef CHECK_FOR_UPDATES
     if (g_updateCheckerFinished)
     {
         return g_updateCheckerResult;
@@ -157,6 +160,9 @@ UpdateChecker::Result UpdateChecker::check()
     {
         return UpdateChecker::Result::NotStarted;
     }
+#endif
+
+    return = UpdateChecker::Result::AlreadyUpToDate;
 }
 
 void UpdateChecker::visitWebsite()
