@@ -7,7 +7,8 @@ namespace hid
         Keyboard,
         Mouse,
         Xbox,
-        PlayStation
+        PlayStation,
+        Unknown
     };
 
     enum class EInputDeviceExplicit
