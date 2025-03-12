@@ -38,20 +38,23 @@ public:
 
     SDL_GameControllerType GetControllerType() const
     {
-        return SDL_GameControllerTypeForIndex(index);
+        return SDL_GameControllerGetType(controller);
     }
 
     hid::EInputDevice GetInputDevice() const
     {
         switch (GetControllerType())
         {
-            case SDL_CONTROLLER_TYPE_PS3:
-            case SDL_CONTROLLER_TYPE_PS4:
-            case SDL_CONTROLLER_TYPE_PS5:
-                return hid::EInputDevice::PlayStation;
+        case SDL_CONTROLLER_TYPE_PS3:
+        case SDL_CONTROLLER_TYPE_PS4:
+        case SDL_CONTROLLER_TYPE_PS5:
+            return hid::EInputDevice::PlayStation;
+        case SDL_CONTROLLER_TYPE_XBOX360:
+        case SDL_CONTROLLER_TYPE_XBOXONE:
+            return hid::EInputDevice::Xbox;
+        default:
+            return hid::EInputDevice::Unknown;
         }
-
-        return hid::EInputDevice::Xbox;
     }
 
     void Close()
@@ -134,6 +137,7 @@ public:
     }
 };
 
+
 std::array<Controller, 4> g_controllers;
 Controller* g_activeController;
 
@@ -179,13 +183,25 @@ static void SetControllerInputDevice(Controller* controller)
 
     auto controllerType = (hid::EInputDeviceExplicit)controller->GetControllerType();
 
+    // Only proceed if the controller type changes
     if (hid::g_inputDeviceExplicit != controllerType)
     {
         hid::g_inputDeviceExplicit = controllerType;
 
-        LOGFN("Detected controller: {}", hid::GetInputDeviceName());
+        // Handle Unknown Type specifically
+        if (controllerType == hid::EInputDeviceExplicit::Unknown)
+        {
+            const char* controllerName = SDL_GameControllerName(controller->controller);
+            LOGFN("Controller connected: {} (Unknown Controller Type)", controllerName ? controllerName : "Unknown Device");
+        }
+        else
+        {
+            // For known types, only use the EInputDeviceExplicit name
+            LOGFN("Controller connected: {}", hid::GetInputDeviceName());
+        }
     }
 }
+
 
 static void SetControllerTimeOfDayLED(Controller& controller, bool isNight)
 {
@@ -200,99 +216,99 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 {
     switch (event->type)
     {
-        case SDL_CONTROLLERDEVICEADDED:
+    case SDL_CONTROLLERDEVICEADDED:
+    {
+        const auto freeIndex = FindFreeController();
+
+        if (freeIndex != -1)
         {
-            const auto freeIndex = FindFreeController();
+            auto controller = Controller(event->cdevice.which);
 
-            if (freeIndex != -1)
-            {
-                auto controller = Controller(event->cdevice.which);
+            g_controllers[freeIndex] = controller;
 
-                g_controllers[freeIndex] = controller;
-
-                SetControllerTimeOfDayLED(controller, App::s_isWerehog);
-            }
-
-            break;
+            SetControllerTimeOfDayLED(controller, App::s_isWerehog);
         }
 
-        case SDL_CONTROLLERDEVICEREMOVED:
-        {
-            auto* controller = FindController(event->cdevice.which);
+        break;
+    }
 
-            if (controller)
-                controller->Close();
+    case SDL_CONTROLLERDEVICEREMOVED:
+    {
+        auto* controller = FindController(event->cdevice.which);
 
+        if (controller)
+            controller->Close();
+
+        break;
+    }
+
+    case SDL_CONTROLLERBUTTONDOWN:
+    case SDL_CONTROLLERBUTTONUP:
+    case SDL_CONTROLLERAXISMOTION:
+    case SDL_CONTROLLERTOUCHPADDOWN:
+    {
+        auto* controller = FindController(event->cdevice.which);
+
+        if (!controller)
             break;
-        }
 
-        case SDL_CONTROLLERBUTTONDOWN:
-        case SDL_CONTROLLERBUTTONUP:
-        case SDL_CONTROLLERAXISMOTION:
-        case SDL_CONTROLLERTOUCHPADDOWN:
+        if (event->type == SDL_CONTROLLERAXISMOTION)
         {
-            auto* controller = FindController(event->cdevice.which);
-
-            if (!controller)
-                break;
-
-            if (event->type == SDL_CONTROLLERAXISMOTION)
-            {
-                if (abs(event->caxis.value) > 8000)
-                {
-                    SDL_ShowCursor(SDL_DISABLE);
-                    SetControllerInputDevice(controller);
-                }
-
-                controller->PollAxis();
-            }
-            else
+            if (abs(event->caxis.value) > 8000)
             {
                 SDL_ShowCursor(SDL_DISABLE);
                 SetControllerInputDevice(controller);
-
-                controller->Poll();
             }
 
-            break;
+            controller->PollAxis();
+        }
+        else
+        {
+            SDL_ShowCursor(SDL_DISABLE);
+            SetControllerInputDevice(controller);
+
+            controller->Poll();
         }
 
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-            hid::g_inputDevice = hid::EInputDevice::Keyboard;
-            break;
+        break;
+    }
 
-        case SDL_MOUSEMOTION:
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+        hid::g_inputDevice = hid::EInputDevice::Keyboard;
+        break;
+
+    case SDL_MOUSEMOTION:
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+    {
+        if (!GameWindow::IsFullscreen() || GameWindow::s_isFullscreenCursorVisible)
+            SDL_ShowCursor(SDL_ENABLE);
+
+        hid::g_inputDevice = hid::EInputDevice::Mouse;
+
+        break;
+    }
+
+    case SDL_WINDOWEVENT:
+    {
+        if (event->window.event == SDL_WINDOWEVENT_FOCUS_LOST)
         {
-            if (!GameWindow::IsFullscreen() || GameWindow::s_isFullscreenCursorVisible)
-                SDL_ShowCursor(SDL_ENABLE);
-
-            hid::g_inputDevice = hid::EInputDevice::Mouse;
-
-            break;
-        }
-
-        case SDL_WINDOWEVENT:
-        {
-            if (event->window.event == SDL_WINDOWEVENT_FOCUS_LOST)
-            {
-                // Stop vibrating controllers on focus lost.
-                for (auto& controller : g_controllers)
-                    controller.SetVibration({ 0, 0 });
-            }
-
-            break;
-        }
-
-        case SDL_USER_EVILSONIC:
-        {
+            // Stop vibrating controllers on focus lost.
             for (auto& controller : g_controllers)
-                SetControllerTimeOfDayLED(controller, event->user.code);
-
-            break;
+                controller.SetVibration({ 0, 0 });
         }
+
+        break;
+    }
+
+    case SDL_USER_EVILSONIC:
+    {
+        for (auto& controller : g_controllers)
+            SetControllerTimeOfDayLED(controller, event->user.code);
+
+        break;
+    }
     }
 
     return 0;
@@ -311,11 +327,14 @@ void hid::Init()
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
     SDL_SetHint(SDL_HINT_XINPUT_ENABLED, "1");
 
+    SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "0"); // Uses Button Labels. This hint is disabled for Nintendo Controllers.
+
     SDL_InitSubSystem(SDL_INIT_EVENTS);
     SDL_AddEventWatch(HID_OnSDLEvent, nullptr);
 
     SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
 }
+
 
 uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
 {
