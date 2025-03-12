@@ -324,7 +324,7 @@ endif()
 
 if (UNLEASHED_RECOMP_ENABLE_IM_FONT_ATLAS_SNAPSHOT)
     target_compile_definitions(UnleashedRecomp PRIVATE -DENABLE_IM_FONT_ATLAS_SNAPSHOT)
-else()
+endif()
 
 find_package(directx-dxc REQUIRED)
 find_package(CURL REQUIRED)
