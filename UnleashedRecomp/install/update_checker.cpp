@@ -162,7 +162,7 @@ UpdateChecker::Result UpdateChecker::check()
     }
 #endif
 
-    return = UpdateChecker::Result::AlreadyUpToDate;
+    return UpdateChecker::Result::AlreadyUpToDate;
 }
 
 void UpdateChecker::visitWebsite()
