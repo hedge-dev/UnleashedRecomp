@@ -67,6 +67,73 @@ static std::unique_ptr<VirtualFileSystem> createFileSystemFromPath(const std::fi
     }
 }
 
+static bool checkFile(const FilePair &pair, const uint64_t *fileHashes, const std::filesystem::path &targetDirectory, std::vector<uint8_t> &fileData, Journal &journal, const std::function<bool()> &progressCallback, bool checkSizeOnly) {
+    const std::string fileName(pair.first);
+    const uint32_t hashCount = pair.second;
+    const std::filesystem::path filePath = targetDirectory / fileName;
+    if (!std::filesystem::exists(filePath))
+    {
+        journal.lastResult = Journal::Result::FileMissing;
+        journal.lastErrorMessage = fmt::format("File {} does not exist.", fileName);
+        return false;
+    }
+
+    std::error_code ec;
+    size_t fileSize = std::filesystem::file_size(filePath, ec);
+    if (ec)
+    {
+        journal.lastResult = Journal::Result::FileReadFailed;
+        journal.lastErrorMessage = fmt::format("Failed to read file size for {}.", fileName);
+        return false;
+    }
+
+    if (checkSizeOnly)
+    {
+        journal.progressTotal += fileSize;
+    }
+    else
+    {
+        std::ifstream fileStream(filePath, std::ios::binary);
+        if (fileStream.is_open())
+        {
+            fileData.resize(fileSize);
+            fileStream.read((char *)(fileData.data()), fileSize);
+        }
+
+        if (!fileStream.is_open() || fileStream.bad())
+        {
+            journal.lastResult = Journal::Result::FileReadFailed;
+            journal.lastErrorMessage = fmt::format("Failed to read file {}.", fileName);
+            return false;
+        }
+
+        uint64_t fileHash = XXH3_64bits(fileData.data(), fileSize);
+        bool fileHashFound = false;
+        for (uint32_t i = 0; i < hashCount && !fileHashFound; i++)
+        {
+            fileHashFound = fileHash == fileHashes[i];
+        }
+
+        if (!fileHashFound)
+        {
+            journal.lastResult = Journal::Result::FileHashFailed;
+            journal.lastErrorMessage = fmt::format("File {} did not match any of the known hashes.", fileName);
+            return false;
+        }
+
+        journal.progressCounter += fileSize;
+    }
+
+    if (!progressCallback())
+    {
+        journal.lastResult = Journal::Result::Cancelled;
+        journal.lastErrorMessage = "Check was cancelled.";
+        return false;
+    }
+
+    return true;
+}
+
 static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, bool skipHashChecks, std::vector<uint8_t> &fileData, Journal &journal, const std::function<bool()> &progressCallback) {
     const std::string filename(pair.first);
     const uint32_t hashCount = pair.second;
@@ -204,6 +271,45 @@ static DLC detectDLC(const std::filesystem::path &sourcePath, VirtualFileSystem 
     }
 }
 
+static bool fillDLCSource(DLC dlc, Installer::DLCSource &dlcSource) 
+{
+    switch (dlc)
+    {
+    case DLC::Spagonia:
+        dlcSource.filePairs = { SpagoniaFiles, SpagoniaFilesSize };
+        dlcSource.fileHashes = SpagoniaHashes;
+        dlcSource.targetSubDirectory = SpagoniaDirectory;
+        return true;
+    case DLC::Chunnan:
+        dlcSource.filePairs = { ChunnanFiles, ChunnanFilesSize };
+        dlcSource.fileHashes = ChunnanHashes;
+        dlcSource.targetSubDirectory = ChunnanDirectory;
+        return true;
+    case DLC::Mazuri:
+        dlcSource.filePairs = { MazuriFiles, MazuriFilesSize };
+        dlcSource.fileHashes = MazuriHashes;
+        dlcSource.targetSubDirectory = MazuriDirectory;
+        return true;
+    case DLC::Holoska:
+        dlcSource.filePairs = { HoloskaFiles, HoloskaFilesSize };
+        dlcSource.fileHashes = HoloskaHashes;
+        dlcSource.targetSubDirectory = HoloskaDirectory;
+        return true;
+    case DLC::ApotosShamar:
+        dlcSource.filePairs = { ApotosShamarFiles, ApotosShamarFilesSize };
+        dlcSource.fileHashes = ApotosShamarHashes;
+        dlcSource.targetSubDirectory = ApotosShamarDirectory;
+        return true;
+    case DLC::EmpireCityAdabat:
+        dlcSource.filePairs = { EmpireCityAdabatFiles, EmpireCityAdabatFilesSize };
+        dlcSource.fileHashes = EmpireCityAdabatHashes;
+        dlcSource.targetSubDirectory = EmpireCityAdabatDirectory;
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool Installer::checkGameInstall(const std::filesystem::path &baseDirectory, std::filesystem::path &modulePath)
 {
     modulePath = baseDirectory / PatchedDirectory / GameExecutableFile;
@@ -254,6 +360,40 @@ bool Installer::checkAllDLC(const std::filesystem::path& baseDirectory)
     return result;
 }
 
+bool Installer::checkInstallIntegrity(const std::filesystem::path &baseDirectory, Journal &journal, const std::function<bool()> &progressCallback)
+{
+    // Run the file checks twice: once to fill out the progress counter and the file sizes, and another pass to do the hash integrity checks.
+    for (uint32_t checkPass = 0; checkPass < 2; checkPass++)
+    {
+        bool checkSizeOnly = (checkPass == 0);
+        if (!checkFiles({ GameFiles, GameFilesSize }, GameHashes, baseDirectory / GameDirectory, journal, progressCallback, checkSizeOnly))
+        {
+            return false;
+        }
+
+        if (!checkFiles({ UpdateFiles, UpdateFilesSize }, UpdateHashes, baseDirectory / UpdateDirectory, journal, progressCallback, checkSizeOnly))
+        {
+            return false;
+        }
+
+        for (int i = 1; i < (int)DLC::Count; i++)
+        {
+            if (checkDLCInstall(baseDirectory, (DLC)i))
+            {
+                Installer::DLCSource dlcSource;
+                fillDLCSource((DLC)i, dlcSource);
+
+                if (!checkFiles(dlcSource.filePairs, dlcSource.fileHashes, baseDirectory / dlcSource.targetSubDirectory, journal, progressCallback, checkSizeOnly))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 bool Installer::computeTotalSize(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, Journal &journal, uint64_t &totalSize)
 {
     for (FilePair pair : filePairs)
@@ -267,6 +407,27 @@ bool Installer::computeTotalSize(std::span<const FilePair> filePairs, const uint
         }
 
         totalSize += sourceVfs.getSize(filename);
+    }
+
+    return true;
+}
+
+bool Installer::checkFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, const std::filesystem::path &targetDirectory, Journal &journal, const std::function<bool()> &progressCallback, bool checkSizeOnly)
+{
+    FilePair validationPair = {};
+    uint32_t validationHashIndex = 0;
+    uint32_t hashIndex = 0;
+    uint32_t hashCount = 0;
+    std::vector<uint8_t> fileData;
+    for (FilePair pair : filePairs)
+    {
+        hashIndex = hashCount;
+        hashCount += pair.second;
+
+        if (!checkFile(pair, &fileHashes[hashIndex], targetDirectory, fileData, journal, progressCallback, checkSizeOnly))
+        {
+            return false;
+        }
     }
 
     return true;
@@ -387,39 +548,8 @@ bool Installer::parseSources(const Input &input, Journal &journal, Sources &sour
         }
 
         DLC dlc = detectDLC(path, *dlcSource.sourceVfs, journal);
-        switch (dlc)
+        if (!fillDLCSource(dlc, dlcSource))
         {
-        case DLC::Spagonia:
-            dlcSource.filePairs = { SpagoniaFiles, SpagoniaFilesSize };
-            dlcSource.fileHashes = SpagoniaHashes;
-            dlcSource.targetSubDirectory = SpagoniaDirectory;
-            break;
-        case DLC::Chunnan:
-            dlcSource.filePairs = { ChunnanFiles, ChunnanFilesSize };
-            dlcSource.fileHashes = ChunnanHashes;
-            dlcSource.targetSubDirectory = ChunnanDirectory;
-            break;
-        case DLC::Mazuri:
-            dlcSource.filePairs = { MazuriFiles, MazuriFilesSize };
-            dlcSource.fileHashes = MazuriHashes;
-            dlcSource.targetSubDirectory = MazuriDirectory;
-            break;
-        case DLC::Holoska:
-            dlcSource.filePairs = { HoloskaFiles, HoloskaFilesSize };
-            dlcSource.fileHashes = HoloskaHashes;
-            dlcSource.targetSubDirectory = HoloskaDirectory;
-            break;
-        case DLC::ApotosShamar:
-            dlcSource.filePairs = { ApotosShamarFiles, ApotosShamarFilesSize };
-            dlcSource.fileHashes = ApotosShamarHashes;
-            dlcSource.targetSubDirectory = ApotosShamarDirectory;
-            break;
-        case DLC::EmpireCityAdabat:
-            dlcSource.filePairs = { EmpireCityAdabatFiles, EmpireCityAdabatFilesSize };
-            dlcSource.fileHashes = EmpireCityAdabatHashes;
-            dlcSource.targetSubDirectory = EmpireCityAdabatDirectory;
-            break;
-        default:
             return false;
         }
 

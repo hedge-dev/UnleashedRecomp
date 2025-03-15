@@ -704,6 +704,28 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         }
     },
     {
+        "IntegrityCheck_Success",
+        {
+            { ELanguage::English,  "Installation check has finished.\n\nAll files seem to be correct.\n\nThe game will now close. Remove the launch argument to play the game." },
+            { ELanguage::Japanese, "Installation check has finished.\n\nAll files seem to be correct.\n\nThe game will now close. Remove the launch argument to play the game." }, // TODO
+            { ELanguage::German,   "Installation check has finished.\n\nAll files seem to be correct.\n\nThe game will now close. Remove the launch argument to play the game." }, // TODO
+            { ELanguage::French,   "Installation check has finished.\n\nAll files seem to be correct.\n\nThe game will now close. Remove the launch argument to play the game." }, // TODO
+            { ELanguage::Spanish,  "Installation check has finished.\n\nAll files seem to be correct.\n\nThe game will now close. Remove the launch argument to play the game." }, // TODO
+            { ELanguage::Italian,  "Installation check has finished.\n\nAll files seem to be correct.\n\nThe game will now close. Remove the launch argument to play the game." }, // TODO
+        }
+    },
+    {
+        "IntegrityCheck_Failed",
+        {
+            { ELanguage::English,  "Installation check has failed.\n\nError: %s\n\nThe game will now close. Try reinstalling the game by using the --install launch argument." },
+            { ELanguage::Japanese, "Installation check has failed.\n\nError: %s\n\nThe game will now close. Try reinstalling the game by using the --install launch argument." }, // TODO
+            { ELanguage::German,   "Installation check has failed.\n\nError: %s\n\nThe game will now close. Try reinstalling the game by using the --install launch argument." }, // TODO
+            { ELanguage::French,   "Installation check has failed.\n\nError: %s\n\nThe game will now close. Try reinstalling the game by using the --install launch argument." }, // TODO
+            { ELanguage::Spanish,  "Installation check has failed.\n\nError: %s\n\nThe game will now close. Try reinstalling the game by using the --install launch argument." }, // TODO
+            { ELanguage::Italian,  "Installation check has failed.\n\nError: %s\n\nThe game will now close. Try reinstalling the game by using the --install launch argument." }, // TODO
+        }
+    },
+    {
         "Common_On",
         {
             { ELanguage::English,  "ON" },
