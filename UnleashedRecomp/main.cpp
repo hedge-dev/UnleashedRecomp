@@ -250,13 +250,13 @@ int main(int argc, char *argv[])
         uint32_t messageBoxStyle;
         if (journal.lastResult == Journal::Result::Success)
         {
-            snprintf(resultText, sizeof(resultText), "Installation check has finished.\n\nAll files seem to be correct.\n\nThe game will now close. Remove the launch argument to play the game.");
+            snprintf(resultText, sizeof(resultText), "%s", Localise("IntegrityCheck_Success").c_str());
             fprintf(stdout, "%s\n", resultText);
             messageBoxStyle = SDL_MESSAGEBOX_INFORMATION;
         }
         else
         {
-            snprintf(resultText, sizeof(resultText), "Installation check has failed.\n\nError: %s\n\nThe game will now close. Try reinstalling the game by using the --install launch argument.", journal.lastErrorMessage.c_str());
+            snprintf(resultText, sizeof(resultText), Localise("IntegrityCheck_Failed").c_str(), journal.lastErrorMessage.c_str());
             fprintf(stderr, "%s\n", resultText);
             messageBoxStyle = SDL_MESSAGEBOX_ERROR;
         }
