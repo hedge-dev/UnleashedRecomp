@@ -4,6 +4,7 @@
 
 enum class EAchStatus
 {
+    Unknown,
     Success,
     IOError,
     BadFileSize,
@@ -16,7 +17,7 @@ class AchievementManager
 {
 public:
     static inline AchievementData Data{};
-    static inline EAchStatus Status{};
+    static inline EAchStatus Status{ EAchStatus::Unknown };
 
     static std::filesystem::path GetDataPath(bool checkForMods)
     {
