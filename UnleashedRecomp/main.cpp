@@ -13,6 +13,7 @@
 #include <hid/hid.h>
 #include <user/config.h>
 #include <user/paths.h>
+#include <user/persistent_storage_manager.h>
 #include <user/registry.h>
 #include <kernel/xdbf.h>
 #include <install/installer.h>
@@ -212,6 +213,7 @@ int main(int argc, char *argv[])
     }
 
     Config::Load();
+    PersistentStorageManager::LoadBinary();
 
 #if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
     for (auto& dll : g_D3D12RequiredModules)

@@ -80,9 +80,13 @@ namespace SWA
             boost::shared_ptr<Hedgehog::Mirage::CRenderScene> m_spRenderScene;
             SWA_INSERT_PADDING(0x04);
             boost::shared_ptr<CGameParameter> m_spGameParameter;
-            SWA_INSERT_PADDING(0x78);
+            SWA_INSERT_PADDING(0x0C);
+            boost::anonymous_shared_ptr m_spItemParamManager;
+            SWA_INSERT_PADDING(0x64);
             boost::shared_ptr<Hedgehog::Base::CCriticalSection> m_spCriticalSection;
-            SWA_INSERT_PADDING(0x20);
+            SWA_INSERT_PADDING(0x14);
+            bool m_ShowDLCInfo;
+            SWA_INSERT_PADDING(0x08);
         };
 
         // TODO: Hedgehog::Base::TSynchronizedPtr<CApplicationDocument>
@@ -111,7 +115,9 @@ namespace SWA
     SWA_ASSERT_OFFSETOF(CApplicationDocument::CMember, m_Field10C, 0x10C);
     SWA_ASSERT_OFFSETOF(CApplicationDocument::CMember, m_spRenderScene, 0x12C);
     SWA_ASSERT_OFFSETOF(CApplicationDocument::CMember, m_spGameParameter, 0x138);
+    SWA_ASSERT_OFFSETOF(CApplicationDocument::CMember, m_spItemParamManager, 0x14C);
     SWA_ASSERT_OFFSETOF(CApplicationDocument::CMember, m_spCriticalSection, 0x1B8);
+    SWA_ASSERT_OFFSETOF(CApplicationDocument::CMember, m_ShowDLCInfo, 0x1D4);
     SWA_ASSERT_SIZEOF(CApplicationDocument::CMember, 0x1E0);
 
     SWA_ASSERT_OFFSETOF(CApplicationDocument, m_pMember, 0x04);
