@@ -213,6 +213,8 @@ int main(int argc, char *argv[])
         }
     }
 
+    Config::Load();
+
     if (foceInstallationCheck)
     {
         Journal journal;
@@ -262,8 +264,6 @@ int main(int argc, char *argv[])
         SDL_ShowSimpleMessageBox(messageBoxStyle, GameWindow::GetTitle(), resultText, GameWindow::s_pWindow);
         std::_Exit(int(journal.lastResult));
     }
-
-    Config::Load();
 
 #if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
     for (auto& dll : g_D3D12RequiredModules)
