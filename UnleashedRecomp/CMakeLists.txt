@@ -310,7 +310,11 @@ endif()
 if (UNLEASHED_RECOMP_D3D12)
     find_package(directx-headers CONFIG REQUIRED)
     find_package(directx12-agility CONFIG REQUIRED)
-    target_compile_definitions(UnleashedRecomp PRIVATE UNLEASHED_RECOMP_D3D12)
+    target_compile_definitions(UnleashedRecomp PRIVATE 
+        UNLEASHED_RECOMP_D3D12
+        D3D12MA_USING_DIRECTX_HEADERS
+        D3D12MA_OPTIONS16_SUPPORTED
+    )
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")

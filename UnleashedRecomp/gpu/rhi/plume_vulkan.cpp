@@ -808,6 +808,12 @@ namespace plume {
             bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
             createInfo.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
             break;
+        case RenderHeapType::GPU_UPLOAD:
+            bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            createInfo.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+            createInfo.requiredFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+            break;
         default:
             assert(false && "Unknown heap type.");
             break;
@@ -3907,6 +3913,7 @@ namespace plume {
         capabilities.preferHDR = memoryHeapSize > (512 * 1024 * 1024);
         capabilities.triangleFan = true;
         capabilities.dynamicDepthBias = true;
+        capabilities.gpuUploadHeap = true; // TODO: Do a test buffer allocation with the required flags to set this.
 
         // Fill Vulkan-only capabilities.
         loadStoreOpNoneSupported = supportedOptionalExtensions.find(VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME) != supportedOptionalExtensions.end();

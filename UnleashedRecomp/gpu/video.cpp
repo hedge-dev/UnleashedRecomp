@@ -2112,36 +2112,46 @@ static void* LockVertexBuffer(GuestBuffer* buffer, uint32_t, uint32_t, uint32_t 
 template<typename T>
 static void UnlockBuffer(GuestBuffer* buffer, bool useCopyQueue)
 {
-    auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(buffer->dataSize));
+    auto copyBuffer = [&](T* dest)
+        {
+            auto src = reinterpret_cast<const T*>(buffer->mappedMemory);
 
-    auto dest = reinterpret_cast<T*>(uploadBuffer->map());
-    auto src = reinterpret_cast<const T*>(buffer->mappedMemory);
-
-    for (size_t i = 0; i < buffer->dataSize; i += sizeof(T))
-    {
-        *dest = ByteSwap(*src);
-        ++dest;
-        ++src;
-    }
-
-    uploadBuffer->unmap();
-
-    if (useCopyQueue)
-    {
-        ExecuteCopyCommandList([&]
+            for (size_t i = 0; i < buffer->dataSize; i += sizeof(T))
             {
-                g_copyCommandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
-            });
+                *dest = ByteSwap(*src);
+                ++dest;
+                ++src;
+            }
+        };
+
+    if (useCopyQueue && (g_capabilities.uma || g_capabilities.gpuUploadHeap))
+    {
+        copyBuffer(reinterpret_cast<T*>(buffer->buffer->map()));
+        buffer->buffer->unmap();
     }
     else
     {
-        auto& commandList = g_commandLists[g_frame];
+        auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(buffer->dataSize));
+        copyBuffer(reinterpret_cast<T*>(uploadBuffer->map()));
+        uploadBuffer->unmap();
 
-        commandList->barriers(RenderBarrierStage::COPY, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::WRITE));
-        commandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
-        commandList->barriers(RenderBarrierStage::GRAPHICS, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::READ));
+        if (useCopyQueue)
+        {
+            ExecuteCopyCommandList([&]
+                {
+                    g_copyCommandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
+                });
+        }
+        else
+        {
+            auto& commandList = g_commandLists[g_frame];
 
-        g_tempBuffers[g_frame].emplace_back(std::move(uploadBuffer));
+            commandList->barriers(RenderBarrierStage::COPY, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::WRITE));
+            commandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
+            commandList->barriers(RenderBarrierStage::GRAPHICS, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::READ));
+
+            g_tempBuffers[g_frame].emplace_back(std::move(uploadBuffer));
+        }
     }
 }
 
@@ -2339,6 +2349,7 @@ static void DrawProfiler()
         ImGui::Text("Device Type: %s", DeviceTypeName(g_device->getDescription().type));
         ImGui::Text("VRAM: %.2f MiB", (double)(g_device->getDescription().dedicatedVideoMemory) / (1024.0 * 1024.0));
         ImGui::Text("UMA: %s", g_capabilities.uma ? "Supported" : "Unsupported");
+        ImGui::Text("GPU Upload Heap: %s", g_capabilities.gpuUploadHeap ? "Supported" : "Unsupported");
 
         const char* sdlVideoDriver = SDL_GetCurrentVideoDriver();
         if (sdlVideoDriver != nullptr)
@@ -3019,10 +3030,15 @@ static GuestTexture* CreateTexture(uint32_t width, uint32_t height, uint32_t dep
     return texture;
 }
 
+static RenderHeapType GetBufferHeapType()
+{
+    return g_capabilities.gpuUploadHeap ? RenderHeapType::GPU_UPLOAD : RenderHeapType::DEFAULT;
+}
+
 static GuestBuffer* CreateVertexBuffer(uint32_t length) 
 {
     auto buffer = g_userHeap.AllocPhysical<GuestBuffer>(ResourceType::VertexBuffer);
-    buffer->buffer = g_device->createBuffer(RenderBufferDesc::VertexBuffer(length, RenderHeapType::DEFAULT, RenderBufferFlag::INDEX));
+    buffer->buffer = g_device->createBuffer(RenderBufferDesc::VertexBuffer(length, GetBufferHeapType(), RenderBufferFlag::INDEX));
     buffer->dataSize = length;
 #ifdef _DEBUG 
     buffer->buffer->setName(fmt::format("Vertex Buffer {:X}", g_memory.MapVirtual(buffer)));
@@ -3033,7 +3049,7 @@ static GuestBuffer* CreateVertexBuffer(uint32_t length)
 static GuestBuffer* CreateIndexBuffer(uint32_t length, uint32_t, uint32_t format)
 {
     auto buffer = g_userHeap.AllocPhysical<GuestBuffer>(ResourceType::IndexBuffer);
-    buffer->buffer = g_device->createBuffer(RenderBufferDesc::IndexBuffer(length, RenderHeapType::DEFAULT));
+    buffer->buffer = g_device->createBuffer(RenderBufferDesc::IndexBuffer(length, GetBufferHeapType()));
     buffer->dataSize = length;
     buffer->format = ConvertFormat(format);
     buffer->guestFormat = format;

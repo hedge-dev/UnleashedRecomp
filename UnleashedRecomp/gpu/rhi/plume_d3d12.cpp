@@ -442,6 +442,8 @@ namespace plume {
             return D3D12_HEAP_TYPE_UPLOAD;
         case RenderHeapType::READBACK:
             return D3D12_HEAP_TYPE_READBACK;
+        case RenderHeapType::GPU_UPLOAD:
+            return D3D12_HEAP_TYPE_GPU_UPLOAD;
         default:
             assert(false && "Unknown heap type.");
             return D3D12_HEAP_TYPE_DEFAULT;
@@ -3391,12 +3393,14 @@ namespace plume {
                 triangleFanSupportOption = d3d12Options15.TriangleFanSupported;
             }
 
-            // Check if dynamic depth bias is supported.
+            // Check if dynamic depth bias and GPU upload heap are supported.
             bool dynamicDepthBiasOption = false;
+            bool gpuUploadHeapOption = false;
             D3D12_FEATURE_DATA_D3D12_OPTIONS16 d3d12Options16 = {};
             res = deviceOption->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &d3d12Options16, sizeof(d3d12Options16));
             if (SUCCEEDED(res)) {
                 dynamicDepthBiasOption = d3d12Options16.DynamicDepthBiasSupported;
+                gpuUploadHeapOption = d3d12Options16.GPUUploadHeapSupported;
             }
 
             // Check if the architecture has UMA.
@@ -3431,6 +3435,7 @@ namespace plume {
                 capabilities.triangleFan = triangleFanSupportOption;
                 capabilities.dynamicDepthBias = dynamicDepthBiasOption;
                 capabilities.uma = uma;
+                capabilities.gpuUploadHeap = gpuUploadHeapOption;
                 description.name = deviceName;
                 description.dedicatedVideoMemory = adapterDesc.DedicatedVideoMemory;
                 description.vendor = RenderDeviceVendor(adapterDesc.VendorId);
