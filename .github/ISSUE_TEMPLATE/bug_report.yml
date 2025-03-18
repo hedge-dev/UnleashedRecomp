@@ -55,7 +55,7 @@ body:
       required: true
     attributes:
       label: Steps to Reproduce
-      description: Steps to reproduce the bug:
+      description: Steps to reproduce the bug
       placeholder: |
         1. Go to '...'
         2. etc.
@@ -79,7 +79,7 @@ body:
       required: true
     attributes:
       label: Specifications
-      description: Fill out the following details:
+      description: Fill out the following details
       placeholder: |
        - CPU: (e.g. Intel Core [...], AMD Ryzen [...], etc.)
        - GPU: (e.g. NVIDIA GeForce [...], Radeon HD [...], Intel HD [...], etc.)
