@@ -3601,7 +3601,7 @@ namespace plume {
     }
     
     std::unique_ptr<RenderBuffer> D3D12Device::createBuffer(const RenderBufferDesc &desc) {
-        if ((desc.heapType == RenderHeapType::GPU_UPLOAD) && capabilities.uma && !capabilities.gpuUploadHeap) {
+        if ((desc.heapType == RenderHeapType::GPU_UPLOAD) && gpuUploadHeapFallback) {
             return std::make_unique<D3D12Buffer>(this, customUploadPool.get(), desc);
         }
         else {
