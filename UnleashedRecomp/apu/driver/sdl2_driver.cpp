@@ -150,18 +150,3 @@ void XAudioSubmitFrame(void* samples)
         SDL_QueueAudio(g_audioDevice, &audioFrames, sizeof(audioFrames));
     }
 }
-
-void XAudioConfigValueChangedCallback(IConfigDef* configDef)
-{
-    if (configDef == &Config::ChannelConfiguration)
-    {
-        if (g_audioThread->joinable())
-        {
-            g_audioThreadShouldExit = true;
-            g_audioThread->join();
-        }
-
-        CreateAudioDevice();
-        CreateAudioThread();
-    }
-}
