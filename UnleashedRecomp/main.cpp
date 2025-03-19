@@ -186,9 +186,6 @@ int main(int argc, char *argv[])
     timeBeginPeriod(1);
 #endif
 
-    // Set the current working directory to the executable's path.
-    std::filesystem::current_path(os::process::GetExecutablePath().parent_path());
-
     os::process::CheckConsole();
 
     if (!os::registry::Init())
@@ -198,12 +195,14 @@ int main(int argc, char *argv[])
 
     bool forceInstaller = false;
     bool forceDLCInstaller = false;
+    bool useDefaultWorkingDirectory = false;
     const char *sdlVideoDriver = nullptr;
 
     for (uint32_t i = 1; i < argc; i++)
     {
         forceInstaller = forceInstaller || (strcmp(argv[i], "--install") == 0);
         forceDLCInstaller = forceDLCInstaller || (strcmp(argv[i], "--install-dlc") == 0);
+        useDefaultWorkingDirectory = useDefaultWorkingDirectory || (strcmp(argv[i], "--use-cwd") == 0);
 
         if (strcmp(argv[i], "--sdl-video-driver") == 0)
         {
@@ -212,6 +211,12 @@ int main(int argc, char *argv[])
             else
                 LOGN_WARNING("No argument was specified for --sdl-video-driver. Option will be ignored.");
         }
+    }
+
+    if (!useDefaultWorkingDirectory)
+    {
+        // Set the current working directory to the executable's path.
+        std::filesystem::current_path(os::process::GetExecutablePath().parent_path());
     }
 
     Config::Load();
