@@ -75,7 +75,9 @@ struct Installer
     static bool checkGameInstall(const std::filesystem::path &baseDirectory, std::filesystem::path &modulePath);
     static bool checkDLCInstall(const std::filesystem::path &baseDirectory, DLC dlc);
     static bool checkAllDLC(const std::filesystem::path &baseDirectory);
+    static bool checkInstallIntegrity(const std::filesystem::path &baseDirectory, Journal &journal, const std::function<bool()> &progressCallback);
     static bool computeTotalSize(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, Journal &journal, uint64_t &totalSize);
+    static bool checkFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, const std::filesystem::path &targetDirectory, Journal &journal, const std::function<bool()> &progressCallback, bool checkSizeOnly);
     static bool copyFiles(std::span<const FilePair> filePairs, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, const std::string &validationFile, bool skipHashChecks, Journal &journal, const std::function<bool()> &progressCallback);
     static bool parseContent(const std::filesystem::path &sourcePath, std::unique_ptr<VirtualFileSystem> &targetVfs, Journal &journal);
     static bool parseSources(const Input &input, Journal &journal, Sources &sources);
