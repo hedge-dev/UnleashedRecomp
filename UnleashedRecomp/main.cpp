@@ -180,11 +180,26 @@ void init()
 #endif
 }
 
+void SetWorkingDirectoryToExecutable()
+{
+    std::filesystem::path exePath;
+
+#ifdef _WIN32
+    exePath = std::filesystem::canonical(std::filesystem::path(_pgmptr));
+#else
+    exePath = std::filesystem::canonical("/proc/self/exe");
+#endif
+
+    std::filesystem::current_path(exePath.parent_path());
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef _WIN32
     timeBeginPeriod(1);
 #endif
+
+    SetWorkingDirectoryToExecutable();
 
     os::process::CheckConsole();
 
