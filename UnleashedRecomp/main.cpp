@@ -185,7 +185,10 @@ void SetWorkingDirectoryToExecutable()
     std::filesystem::path exePath;
 
 #ifdef _WIN32
-    exePath = std::filesystem::canonical(std::filesystem::path(_pgmptr));
+    wchar_t path[MAX_PATH];
+    GetModuleFileNameW(NULL, path, sizeof(path));
+
+    exePath = path;
 #else
     exePath = std::filesystem::canonical("/proc/self/exe");
 #endif
