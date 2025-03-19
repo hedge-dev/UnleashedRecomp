@@ -711,8 +711,6 @@ static const xxHashMap<CsdModifier> g_modifiers =
 
     // ui_shop
     { HashStr("ui_shop/footer/shop_footer"), { ALIGN_BOTTOM } },
-    { HashStr("ui_shop/header/ring"), { ALIGN_TOP } },
-    { HashStr("ui_shop/header/shop_nametag"), { ALIGN_TOP } },
 
     // ui_start
     { HashStr("ui_start/Clear/position/bg/bg_1"), { STRETCH } },
