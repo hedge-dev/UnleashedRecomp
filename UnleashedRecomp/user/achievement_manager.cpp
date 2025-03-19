@@ -1,5 +1,6 @@
 #include "achievement_manager.h"
 #include <os/logger.h>
+#include <kernel/memory.h>
 #include <ui/achievement_overlay.h>
 #include <user/config.h>
 
@@ -84,6 +85,24 @@ void AchievementManager::UnlockAll()
 void AchievementManager::Reset()
 {
     Data = {};
+
+    // The first usage of the shoe upgrades get stored within a session persistent boolean flag.
+    // This causes issues with popping the achievement for the use of these abilities when the player
+    // starts a new save file after they already used them in a session as these bools are never reset
+    // unless the game is exited.
+    // As a solution we reset these flags whenever the achievement data is being reset too.
+
+    // Lay the Smackdown
+    *(bool*)g_memory.Translate(0x833647C5) = false;
+
+    // Wall Crawler
+    *(bool*)g_memory.Translate(0x83363004) = false;
+    
+    // Airdevil
+    *(bool*)g_memory.Translate(0x833647BC) = false;
+    
+    // Hyperdrive
+    *(bool*)g_memory.Translate(0x833647C4) = false;
 }
 
 void AchievementManager::Load()
