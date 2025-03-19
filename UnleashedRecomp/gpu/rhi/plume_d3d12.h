@@ -430,6 +430,7 @@ namespace plume {
         std::unique_ptr<D3D12DescriptorHeapAllocator> samplerHeapAllocator;
         std::unique_ptr<D3D12DescriptorHeapAllocator> colorTargetHeapAllocator;
         std::unique_ptr<D3D12DescriptorHeapAllocator> depthTargetHeapAllocator;
+        std::unique_ptr<D3D12Pool> customUploadPool;
         RenderDeviceCapabilities capabilities;
         RenderDeviceDescription description;
         uint64_t timestampFrequency = 1;

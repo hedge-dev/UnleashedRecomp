@@ -2109,6 +2109,8 @@ static void* LockVertexBuffer(GuestBuffer* buffer, uint32_t, uint32_t, uint32_t 
     return LockBuffer(buffer, flags);
 }
 
+static std::atomic<uint32_t> g_bufferUploadCount = 0;
+
 template<typename T>
 static void UnlockBuffer(GuestBuffer* buffer, bool useCopyQueue)
 {
@@ -2124,7 +2126,7 @@ static void UnlockBuffer(GuestBuffer* buffer, bool useCopyQueue)
             }
         };
 
-    if (useCopyQueue && (g_capabilities.uma || g_capabilities.gpuUploadHeap))
+    if (useCopyQueue && g_capabilities.gpuUploadHeap)
     {
         copyBuffer(reinterpret_cast<T*>(buffer->buffer->map()));
         buffer->buffer->unmap();
@@ -2153,6 +2155,8 @@ static void UnlockBuffer(GuestBuffer* buffer, bool useCopyQueue)
             g_tempBuffers[g_frame].emplace_back(std::move(uploadBuffer));
         }
     }
+
+    g_bufferUploadCount++;
 }
 
 template<typename T>
@@ -2330,10 +2334,11 @@ static void DrawProfiler()
             std::lock_guard lock(g_userHeap.physicalMutex);
             physicalDiagnostics = o1heapGetDiagnostics(g_userHeap.physicalHeap);
         }
-
+        
         ImGui::Text("Heap Allocated: %d MB", int32_t(diagnostics.allocated / (1024 * 1024)));
         ImGui::Text("Physical Heap Allocated: %d MB", int32_t(physicalDiagnostics.allocated / (1024 * 1024)));
         ImGui::Text("GPU Waits: %d", int32_t(g_waitForGPUCount));
+        ImGui::Text("Buffer Uploads: %d", int32_t(g_bufferUploadCount));
         ImGui::NewLine();
 
         ImGui::Text("Present Wait: %s", g_capabilities.presentWait ? "Supported" : "Unsupported");
