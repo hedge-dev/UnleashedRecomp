@@ -442,6 +442,8 @@ namespace plume {
             return D3D12_HEAP_TYPE_UPLOAD;
         case RenderHeapType::READBACK:
             return D3D12_HEAP_TYPE_READBACK;
+        case RenderHeapType::GPU_UPLOAD:
+            return D3D12_HEAP_TYPE_GPU_UPLOAD;
         default:
             assert(false && "Unknown heap type.");
             return D3D12_HEAP_TYPE_DEFAULT;
@@ -2385,7 +2387,7 @@ namespace plume {
             range.End = readRange->end;
         }
 
-        void *outputData;
+        void *outputData = nullptr;
         d3d->Map(subresource, (readRange != nullptr) ? &range : nullptr, &outputData);
         return outputData;
     }
@@ -2629,14 +2631,22 @@ namespace plume {
 
     // D3D12Pool
 
-    D3D12Pool::D3D12Pool(D3D12Device *device, const RenderPoolDesc &desc) {
+    D3D12Pool::D3D12Pool(D3D12Device *device, const RenderPoolDesc &desc, bool gpuUploadHeapFallback) {
         assert(device != nullptr);
 
         this->device = device;
         this->desc = desc;
 
         D3D12MA::POOL_DESC poolDesc = {};
-        poolDesc.HeapProperties.Type = toD3D12(desc.heapType);
+
+        // When using an UMA architecture without explicit support for GPU Upload heaps, we instead just make a custom heap with the same properties as Upload heaps.
+        if ((desc.heapType == RenderHeapType::GPU_UPLOAD) && gpuUploadHeapFallback) {
+            poolDesc.HeapProperties = device->d3d->GetCustomHeapProperties(0, D3D12_HEAP_TYPE_UPLOAD);
+        }
+        else {
+            poolDesc.HeapProperties.Type = toD3D12(desc.heapType);
+        }
+
         poolDesc.MinBlockCount = desc.minBlockCount;
         poolDesc.MaxBlockCount = desc.maxBlockCount;
         poolDesc.Flags |= desc.useLinearAlgorithm ? D3D12MA::POOL_FLAG_ALGORITHM_LINEAR : D3D12MA::POOL_FLAG_NONE;
@@ -3390,13 +3400,15 @@ namespace plume {
             if (SUCCEEDED(res)) {
                 triangleFanSupportOption = d3d12Options15.TriangleFanSupported;
             }
-
-            // Check if dynamic depth bias is supported.
+            
+            // Check if dynamic depth bias and GPU upload heap are supported.
             bool dynamicDepthBiasOption = false;
+            bool gpuUploadHeapOption = false;
             D3D12_FEATURE_DATA_D3D12_OPTIONS16 d3d12Options16 = {};
             res = deviceOption->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &d3d12Options16, sizeof(d3d12Options16));
             if (SUCCEEDED(res)) {
                 dynamicDepthBiasOption = d3d12Options16.DynamicDepthBiasSupported;
+                gpuUploadHeapOption = d3d12Options16.GPUUploadHeapSupported;
             }
 
             // Check if the architecture has UMA.
@@ -3431,6 +3443,11 @@ namespace plume {
                 capabilities.triangleFan = triangleFanSupportOption;
                 capabilities.dynamicDepthBias = dynamicDepthBiasOption;
                 capabilities.uma = uma;
+
+                // Pretend GPU Upload heaps are supported if UMA is supported, as the backend has a workaround using a custom pool for it.
+                capabilities.gpuUploadHeap = uma || gpuUploadHeapOption;
+                gpuUploadHeapFallback = uma && !gpuUploadHeapOption;
+
                 description.name = deviceName;
                 description.dedicatedVideoMemory = adapterDesc.DedicatedVideoMemory;
                 description.vendor = RenderDeviceVendor(adapterDesc.VendorId);
@@ -3528,6 +3545,13 @@ namespace plume {
         colorTargetHeapAllocator = std::make_unique<D3D12DescriptorHeapAllocator>(this, TargetDescriptorHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
         depthTargetHeapAllocator = std::make_unique<D3D12DescriptorHeapAllocator>(this, TargetDescriptorHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
+        // Create the custom upload pool that will be used as the fallback when using an UMA architecture without explicit support for GPU Upload heaps.
+        if (gpuUploadHeapFallback) {
+            RenderPoolDesc poolDesc;
+            poolDesc.heapType = RenderHeapType::GPU_UPLOAD;
+            customUploadPool = std::make_unique<D3D12Pool>(this, poolDesc, true);
+        }
+
         // Create a command queue only for retrieving the timestamp frequency. Delete it immediately afterwards.
         std::unique_ptr<D3D12CommandQueue> timestampCommandQueue = std::make_unique<D3D12CommandQueue>(this, RenderCommandListType::DIRECT);
         res = timestampCommandQueue->d3d->GetTimestampFrequency(&timestampFrequency);
@@ -3577,7 +3601,12 @@ namespace plume {
     }
     
     std::unique_ptr<RenderBuffer> D3D12Device::createBuffer(const RenderBufferDesc &desc) {
-        return std::make_unique<D3D12Buffer>(this, nullptr, desc);
+        if ((desc.heapType == RenderHeapType::GPU_UPLOAD) && gpuUploadHeapFallback) {
+            return std::make_unique<D3D12Buffer>(this, customUploadPool.get(), desc);
+        }
+        else {
+            return std::make_unique<D3D12Buffer>(this, nullptr, desc);
+        }
     }
 
     std::unique_ptr<RenderTexture> D3D12Device::createTexture(const RenderTextureDesc &desc) {
@@ -3589,7 +3618,7 @@ namespace plume {
     }
 
     std::unique_ptr<RenderPool> D3D12Device::createPool(const RenderPoolDesc &desc) {
-        return std::make_unique<D3D12Pool>(this, desc);
+        return std::make_unique<D3D12Pool>(this, desc, gpuUploadHeapFallback);
     }
 
     std::unique_ptr<RenderPipelineLayout> D3D12Device::createPipelineLayout(const RenderPipelineLayoutDesc &desc) {
