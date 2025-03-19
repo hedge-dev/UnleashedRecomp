@@ -180,29 +180,14 @@ void init()
 #endif
 }
 
-void SetWorkingDirectoryToExecutable()
-{
-    std::filesystem::path exePath;
-
-#ifdef _WIN32
-    wchar_t path[MAX_PATH];
-    GetModuleFileNameW(NULL, path, sizeof(path));
-
-    exePath = path;
-#else
-    exePath = std::filesystem::canonical("/proc/self/exe");
-#endif
-
-    std::filesystem::current_path(exePath.parent_path());
-}
-
 int main(int argc, char *argv[])
 {
 #ifdef _WIN32
     timeBeginPeriod(1);
 #endif
 
-    SetWorkingDirectoryToExecutable();
+    // Set the current working directory to the executable's path.
+    std::filesystem::current_path(os::process::GetExecutablePath().parent_path());
 
     os::process::CheckConsole();
 
