@@ -839,7 +839,7 @@ namespace plume {
         }
 
         if (res != VK_SUCCESS) {
-            fprintf(stderr, "vkCreateBuffer failed with error code 0x%X.\n", res);
+            fprintf(stderr, "vmaCreateBuffer failed with error code 0x%X.\n", res);
             return;
         }
     }
@@ -3893,6 +3893,15 @@ namespace plume {
         VkDeviceSize memoryHeapSize = 0;
         const VkPhysicalDeviceMemoryProperties *memoryProps = nullptr;
         vmaGetMemoryProperties(allocator, &memoryProps);
+
+        constexpr VkMemoryPropertyFlags uploadHeapPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        bool hasHostVisibleDeviceLocalMemory = false;
+        for (uint32_t i = 0; i < memoryProps->memoryTypeCount; i++) {
+            if ((memoryProps->memoryTypes[i].propertyFlags & uploadHeapPropertyFlags) == uploadHeapPropertyFlags) {
+                hasHostVisibleDeviceLocalMemory = true;
+            }
+        }
+
         for (uint32_t i = 0; i < memoryProps->memoryHeapCount; i++) {
             if (memoryProps->memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
                 memoryHeapSize = std::max(memoryProps->memoryHeaps[i].size, memoryHeapSize);
@@ -3913,7 +3922,8 @@ namespace plume {
         capabilities.preferHDR = memoryHeapSize > (512 * 1024 * 1024);
         capabilities.triangleFan = true;
         capabilities.dynamicDepthBias = true;
-        capabilities.gpuUploadHeap = true; // TODO: Do a test buffer allocation with the required flags to set this.
+        capabilities.uma = (description.type == RenderDeviceType::INTEGRATED) && hasHostVisibleDeviceLocalMemory;
+        capabilities.gpuUploadHeap = capabilities.uma;
 
         // Fill Vulkan-only capabilities.
         loadStoreOpNoneSupported = supportedOptionalExtensions.find(VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME) != supportedOptionalExtensions.end();
