@@ -282,7 +282,12 @@ const char* GameWindow::GetTitle()
 {
     if (Config::UseOfficialTitleOnTitleBar)
     {
-        return Config::Language == ELanguage::Japanese
+        auto isSWA = Config::Language == ELanguage::Japanese;
+
+        if (Config::UseAlternateTitle)
+            isSWA = !isSWA;
+
+        return isSWA
             ? "SONIC WORLD ADVENTURE"
             : "SONIC UNLEASHED";
     }
