@@ -37,10 +37,15 @@ In the installer, you must select the following **Workloads** and **Individual c
 - C++ CMake tools for Windows
 
 ### Linux
-The following command will install the required dependencies on a distro that uses `apt` (such as Ubuntu), but you can find the equivalent packages for your preferred distro.
+The following command will install the required dependencies on a distro that uses `apt` (such as Debian-based distros).
 ```bash
 sudo apt install autoconf automake libtool pkg-config curl cmake ninja-build clang clang-tools libgtk-3-dev
 ```
+The following command will install the required dependencies on a distro that uses `pacman` (such as Arch-based distros).
+```bash
+sudo pacman -S base-devel ninja lld clang gtk3
+```
+You can also find the equivalent packages for your preferred distro.
 
 > [!NOTE]
 > This list may not be comprehensive for your particular distro and you may be required to install additional packages, should an error occur during configuration.

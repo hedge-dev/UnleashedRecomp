@@ -29,9 +29,11 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
   - Intel: Sandy Bridge (Intel Core 2nd Generation)
   - AMD: Bulldozer (AMD FX series)
 - GPU with support for Direct3D 12.0 (Shader Model 6) or Vulkan 1.2:
-  - NVIDIA: GeForce GT 630
+  - NVIDIA: GeForce GT 630 (Kepler)
   - AMD: Radeon HD 7750 (2012, not the RX 7000)
   - Intel: HD Graphics 510 (Skylake)
+- Memory:
+  - 8 GB minimum
 - Operating System:
   - Windows 10 (version 1909)
   - A modern Linux distro such as Ubuntu 22.04 LTS
@@ -180,6 +182,9 @@ Many options have been integrated to address some common quality of life improve
 - The day/night transformation cutscene in towns can use either the Xbox 360 or PlayStation 3 version, with the Xbox version artificially extending loading times for the full video play out, whilst the PlayStation version ends as soon as it's done loading.
 - Music Attenuation is a feature that was originally present in the Xbox 360 version of the game, where it'd automatically mute the background music if the console's media player was in use. This feature has been implemented using information provided by the [Windows Media Control](https://learn.microsoft.com/en-us/uwp/api/windows.media.control?view=winrt-26100) APIs in [WinRT](https://en.wikipedia.org/wiki/Windows_Runtime). Applications that interface with Windows 10/11 to display media controls are supported.
 
+> [!TIP]
+> You may refer to Music Presence's [list of supported media players](https://github.com/ungive/discord-music-presence/blob/master/documentation/supported-media-players.md) for players that work with Music Attenuation out of the box.
+
 > [!NOTE]
 > Please note that Music Attenuation is not currently available on Linux. Support for this feature may be added in a future update.
 
@@ -204,6 +209,8 @@ Modded files for the Xbox 360 version of the game are compatible with Unleashed 
 
 > [!NOTE]
 > Code modding is currently not possible and is [planned for a future update](#code-modding). As a workaround for the time being, some codes have been directly embedded into the game and can be accessed through Hedge Mod Manager's Codes tab.
+>
+> For information on the mod format, check out Hedge Mod Manager's [Basic Mod File Structure](https://github.com/thesupersonic16/HedgeModManager/wiki/Basic-Mod-File-Structure) wiki page.
 
 ## Update Roadmap
 
@@ -271,9 +278,16 @@ Simply booting at least once in Desktop Mode will enable the Deck to use the fil
 
 ## FAQ
 
-### Do you have a Discord server?
+### Do you have a website or Discord server?
 
-Unleashed Recompiled is not associated with any Discord servers. Use the [Issues](https://github.com/hedge-dev/UnleashedRecomp/issues) page if you need support.
+Unleashed Recompiled does not have an official website, nor is it affiliated with any Discord servers.
+
+**Please link here when directing anyone to the project.**
+
+> [!CAUTION]
+> Do not download builds of Unleashed Recompiled from anywhere but our [Releases](https://github.com/hedge-dev/UnleashedRecomp/releases/latest) page.
+>
+> **We will never distribute builds on other websites, via Discord servers or via third-party update tools.**
 
 ### Why does the installer say my files are invalid?
 

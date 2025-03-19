@@ -95,7 +95,7 @@ enum class ETripleBuffering : uint32_t
 };
 
 static constexpr int32_t FPS_MIN = 15;
-static constexpr int32_t FPS_MAX = 240;
+static constexpr int32_t FPS_MAX = 241;
 
 enum class EAntiAliasing : uint32_t
 {
