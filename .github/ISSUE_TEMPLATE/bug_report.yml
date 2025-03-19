@@ -10,7 +10,7 @@ body:
       - label: I have checked the [Issues](https://github.com/hedge-dev/UnleashedRecomp/issues) page to see if my problem has already been reported
         required: true
       - label: I have confirmed that this bug does not occur in the original game running on original Xbox 360 hardware
-        required: true
+        required: false
   - id: dlc-installed
     type: checkboxes
     attributes:
@@ -43,7 +43,7 @@ body:
       label: If you have codes enabled, please specify which ones you have.
       description: Provide a list of your enabled codes in Hedge Mod Manager here.
   - id: describe-bug
-    type: input
+    type: textarea
     validations:
       required: true
     attributes:
@@ -55,12 +55,12 @@ body:
       required: true
     attributes:
       label: Steps to Reproduce
-      description: Steps to reproduce the bug
+      description: Step-by-step instructions on how to reproduce the bug.
       placeholder: |
         1. Go to '...'
         2. etc.
   - id: expected-behavior
-    type: input
+    type: textarea
     validations:
       required: true
     attributes:
@@ -73,13 +73,13 @@ body:
     attributes:
       label: Footage
       description: Attach a screenshot or video of the bug. If possible, please also provide footage of the expected behaviour on original Xbox 360 hardware.
-  - id: specifications
+  - id: system-specifications
     type: textarea
     validations:
       required: true
     attributes:
-      label: Specifications
-      description: Fill out the following details
+      label: System Specifications
+      description: Fill out the following details.
       placeholder: |
        - CPU: (e.g. Intel Core [...], AMD Ryzen [...], etc.)
        - GPU: (e.g. NVIDIA GeForce [...], Radeon HD [...], Intel HD [...], etc.)
