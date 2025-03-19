@@ -61,8 +61,12 @@ void KiSystemStartup()
 {
     const auto gameContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Game");
     const auto updateContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Update");
-    XamRegisterContent(gameContent, (g_gameInstallPath / "game").string());
-    XamRegisterContent(updateContent, (g_gameInstallPath / "update").string());
+
+    std::u8string gamePathU8 = (g_gameInstallPath / "game").u8string();
+    std::u8string updatePathU8 = (g_gameInstallPath / "update").u8string();
+
+    XamRegisterContent(gameContent, (const char*)(gamePathU8.c_str()));
+    XamRegisterContent(updateContent, (const char*)(updatePathU8.c_str()));
 
     const auto saveFilePath = GetSaveFilePath(true);
     bool saveFileExists = std::filesystem::exists(saveFilePath);
