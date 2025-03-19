@@ -2631,7 +2631,7 @@ namespace plume {
 
     // D3D12Pool
 
-    D3D12Pool::D3D12Pool(D3D12Device *device, const RenderPoolDesc &desc) {
+    D3D12Pool::D3D12Pool(D3D12Device *device, const RenderPoolDesc &desc, bool gpuUploadHeapFallback) {
         assert(device != nullptr);
 
         this->device = device;
@@ -2640,7 +2640,7 @@ namespace plume {
         D3D12MA::POOL_DESC poolDesc = {};
 
         // When using an UMA architecture without explicit support for GPU Upload heaps, we instead just make a custom heap with the same properties as Upload heaps.
-        if (desc.heapType == RenderHeapType::GPU_UPLOAD && device->capabilities.uma && !device->capabilities.gpuUploadHeap) {
+        if ((desc.heapType == RenderHeapType::GPU_UPLOAD) && gpuUploadHeapFallback) {
             poolDesc.HeapProperties = device->d3d->GetCustomHeapProperties(0, D3D12_HEAP_TYPE_UPLOAD);
         }
         else {
@@ -3446,6 +3446,7 @@ namespace plume {
 
                 // Pretend GPU Upload heaps are supported if UMA is supported, as the backend has a workaround using a custom pool for it.
                 capabilities.gpuUploadHeap = uma || gpuUploadHeapOption;
+                gpuUploadHeapFallback = uma && !gpuUploadHeapOption;
 
                 description.name = deviceName;
                 description.dedicatedVideoMemory = adapterDesc.DedicatedVideoMemory;
@@ -3545,10 +3546,10 @@ namespace plume {
         depthTargetHeapAllocator = std::make_unique<D3D12DescriptorHeapAllocator>(this, TargetDescriptorHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
         // Create the custom upload pool that will be used as the fallback when using an UMA architecture without explicit support for GPU Upload heaps.
-        if (capabilities.uma && !capabilities.gpuUploadHeap) {
+        if (gpuUploadHeapFallback) {
             RenderPoolDesc poolDesc;
             poolDesc.heapType = RenderHeapType::GPU_UPLOAD;
-            customUploadPool = std::make_unique<D3D12Pool>(this, poolDesc);
+            customUploadPool = std::make_unique<D3D12Pool>(this, poolDesc, true);
         }
 
         // Create a command queue only for retrieving the timestamp frequency. Delete it immediately afterwards.
@@ -3617,7 +3618,7 @@ namespace plume {
     }
 
     std::unique_ptr<RenderPool> D3D12Device::createPool(const RenderPoolDesc &desc) {
-        return std::make_unique<D3D12Pool>(this, desc);
+        return std::make_unique<D3D12Pool>(this, desc, gpuUploadHeapFallback);
     }
 
     std::unique_ptr<RenderPipelineLayout> D3D12Device::createPipelineLayout(const RenderPipelineLayoutDesc &desc) {
