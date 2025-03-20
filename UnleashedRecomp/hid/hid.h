@@ -4,11 +4,11 @@ namespace hid
 {
     enum class EInputDevice
     {
+        Unknown,
         Keyboard,
         Mouse,
         Xbox,
-        PlayStation,
-        Unknown
+        PlayStation
     };
 
     enum class EInputDeviceExplicit
