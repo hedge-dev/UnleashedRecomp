@@ -57,6 +57,16 @@ public:
         }
     }
 
+    const char* GetControllerName() const
+    {
+        auto result = SDL_GameControllerName(controller);
+
+        if (!result)
+            return "Unknown Device";
+
+        return result;
+    }
+
     void Close()
     {
         if (!controller)
@@ -137,7 +147,6 @@ public:
     }
 };
 
-
 std::array<Controller, 4> g_controllers;
 Controller* g_activeController;
 
@@ -182,22 +191,20 @@ static void SetControllerInputDevice(Controller* controller)
     hid::g_inputDeviceController = hid::g_inputDevice;
 
     auto controllerType = (hid::EInputDeviceExplicit)controller->GetControllerType();
+    auto controllerName = controller->GetControllerName();
 
-    // Only proceed if the controller type changes
+    // Only proceed if the controller type changes.
     if (hid::g_inputDeviceExplicit != controllerType)
     {
         hid::g_inputDeviceExplicit = controllerType;
 
-        // Handle Unknown Type specifically
         if (controllerType == hid::EInputDeviceExplicit::Unknown)
         {
-            const char* controllerName = SDL_GameControllerName(controller->controller);
-            LOGFN("Controller connected: {} (Unknown Controller Type)", controllerName ? controllerName : "Unknown Device");
+            LOGFN("Detected controller: {} (Unknown Controller Type)", controllerName);
         }
         else
         {
-            // For known types, only use the EInputDeviceExplicit name
-            LOGFN("Controller connected: {}", hid::GetInputDeviceName());
+            LOGFN("Detected controller: {}", controllerName);
         }
     }
 }
