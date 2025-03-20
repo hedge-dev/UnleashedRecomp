@@ -213,7 +213,9 @@ int main(int argc, char *argv[])
     }
 
     Config::Load();
-    PersistentStorageManager::LoadBinary();
+    
+    if (!PersistentStorageManager::LoadBinary())
+        LOGFN_ERROR("Failed to load persistent storage binary... (status code {})", (int)PersistentStorageManager::BinStatus);
 
 #if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
     for (auto& dll : g_D3D12RequiredModules)

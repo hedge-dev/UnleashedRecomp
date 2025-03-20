@@ -34,7 +34,7 @@ bool PersistentStorageManager::ShouldDisplayDLCMessage(bool setOffendingDLCFlag)
     return result;
 }
 
-void PersistentStorageManager::LoadBinary()
+bool PersistentStorageManager::LoadBinary()
 {
     BinStatus = EBinStatus::Success;
 
@@ -46,7 +46,7 @@ void PersistentStorageManager::LoadBinary()
         dataPath = GetDataPath(false);
 
         if (!std::filesystem::exists(dataPath))
-            return;
+            return false;
     }
 
     std::error_code ec;
@@ -56,7 +56,7 @@ void PersistentStorageManager::LoadBinary()
     if (fileSize != dataSize)
     {
         BinStatus = EBinStatus::BadFileSize;
-        return;
+        return false;
     }
 
     std::ifstream file(dataPath, std::ios::binary);
@@ -64,7 +64,7 @@ void PersistentStorageManager::LoadBinary()
     if (!file)
     {
         BinStatus = EBinStatus::IOError;
-        return;
+        return false;
     }
 
     PersistentData data{};
@@ -75,17 +75,16 @@ void PersistentStorageManager::LoadBinary()
     {
         BinStatus = EBinStatus::BadSignature;
         file.close();
-        return;
+        return false;
     }
 
     file.read((char*)&data.Header.Version, sizeof(data.Header.Version));
 
-    // TODO: upgrade in future if the version changes.
     if (!data.VerifyVersion())
     {
         BinStatus = EBinStatus::BadVersion;
         file.close();
-        return;
+        return false;
     }
 
     file.read((char*)&data.Header.HeaderSize, sizeof(data.Header.HeaderSize));
@@ -94,7 +93,7 @@ void PersistentStorageManager::LoadBinary()
     {
         BinStatus = EBinStatus::BadHeader;
         file.close();
-        return;
+        return false;
     }
 
     file.seekg(0);
@@ -102,9 +101,11 @@ void PersistentStorageManager::LoadBinary()
     file.close();
 
     memcpy(&Data, &data, dataSize);
+
+    return true;
 }
 
-void PersistentStorageManager::SaveBinary()
+bool PersistentStorageManager::SaveBinary()
 {
     LOGN("Saving persistent storage binary...");
 
@@ -113,11 +114,13 @@ void PersistentStorageManager::SaveBinary()
     if (!file)
     {
         LOGN_ERROR("Failed to write persistent storage binary.");
-        return;
+        return false;
     }
 
     file.write((const char*)&Data, sizeof(PersistentData));
     file.close();
 
     BinStatus = EBinStatus::Success;
+
+    return true;
 }

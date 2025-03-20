@@ -9,7 +9,7 @@ bool PersistentData::VerifySignature() const
 
 bool PersistentData::VerifyVersion() const
 {
-    return Header.Version == ExtVersion EXT_VERSION;
+    return Header.Version <= EXT_VERSION;
 }
 
 bool PersistentData::VerifyHeader() const

@@ -86,7 +86,7 @@ void AchievementManager::Reset()
     Data = {};
 }
 
-void AchievementManager::Load()
+bool AchievementManager::Load()
 {
     AchievementManager::Reset();
 
@@ -100,7 +100,7 @@ void AchievementManager::Load()
         dataPath = GetDataPath(false);
 
         if (!std::filesystem::exists(dataPath))
-            return;
+            return false;
     }
 
     std::error_code ec;
@@ -110,7 +110,7 @@ void AchievementManager::Load()
     if (fileSize != dataSize)
     {
         Status = EAchStatus::BadFileSize;
-        return;
+        return false;
     }
 
     std::ifstream file(dataPath, std::ios::binary);
@@ -118,7 +118,7 @@ void AchievementManager::Load()
     if (!file)
     {
         Status = EAchStatus::IOError;
-        return;
+        return false;
     }
 
     AchievementData data{};
@@ -129,17 +129,16 @@ void AchievementManager::Load()
     {
         Status = EAchStatus::BadSignature;
         file.close();
-        return;
+        return false;
     }
 
     file.read((char*)&data.Version, sizeof(data.Version));
 
-    // TODO: upgrade in future if the version changes.
     if (!data.VerifyVersion())
     {
         Status = EAchStatus::BadVersion;
         file.close();
-        return;
+        return false;
     }
 
     file.seekg(0);
@@ -149,20 +148,22 @@ void AchievementManager::Load()
     {
         Status = EAchStatus::BadChecksum;
         file.close();
-        return;
+        return false;
     }
 
     file.close();
 
     memcpy(&Data, &data, dataSize);
+
+    return true;
 }
 
-void AchievementManager::Save(bool ignoreStatus)
+bool AchievementManager::Save(bool ignoreStatus)
 {
     if (!ignoreStatus && Status != EAchStatus::Success)
     {
         LOGN_WARNING("Achievement data will not be saved in this session!");
-        return;
+        return false;
     }
 
     LOGN("Saving achievements...");
@@ -172,7 +173,7 @@ void AchievementManager::Save(bool ignoreStatus)
     if (!file)
     {
         LOGN_ERROR("Failed to write achievement data.");
-        return;
+        return false;
     }
 
     Data.Checksum = Data.CalculateChecksum();
@@ -181,4 +182,6 @@ void AchievementManager::Save(bool ignoreStatus)
     file.close();
 
     Status = EAchStatus::Success;
+
+    return true;
 }

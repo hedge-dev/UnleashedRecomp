@@ -25,6 +25,6 @@ public:
     }
 
     static bool ShouldDisplayDLCMessage(bool setOffendingDLCFlag);
-    static void LoadBinary();
-    static void SaveBinary();
+    static bool LoadBinary();
+    static bool SaveBinary();
 };

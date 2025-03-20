@@ -2,6 +2,7 @@
 #include <api/SWA.h>
 #include <install/update_checker.h>
 #include <locale/locale.h>
+#include <os/logger.h>
 #include <ui/fader.h>
 #include <ui/message_window.h>
 #include <user/achievement_manager.h>
@@ -135,7 +136,8 @@ void PressStartSaveLoadThreadMidAsmHook()
         g_faderBegun.wait(true);
     }
 
-    AchievementManager::Load();
+    if (!AchievementManager::Load())
+        LOGFN_ERROR("Failed to load achievement data... (status code {})", (int)AchievementManager::Status);
 
     if (AchievementManager::Status != EAchStatus::Success)
     {

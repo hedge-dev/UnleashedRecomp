@@ -30,6 +30,6 @@ public:
     static void Unlock(uint16_t id);
     static void UnlockAll();
     static void Reset();
-    static void Load();
-    static void Save(bool ignoreStatus = false);
+    static bool Load();
+    static bool Save(bool ignoreStatus = false);
 };
