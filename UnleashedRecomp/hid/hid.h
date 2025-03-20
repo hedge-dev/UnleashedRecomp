@@ -46,5 +46,4 @@ namespace hid
     void SetProhibitedInputs(uint16_t wButtons = 0, bool leftStick = false, bool rightStick = false);
     bool IsInputAllowed();
     bool IsInputDeviceController();
-    std::string GetInputDeviceName();
 }
