@@ -38,7 +38,7 @@ public:
 
     SDL_GameControllerType GetControllerType() const
     {
-        return SDL_GameControllerTypeForIndex(index);
+        return SDL_GameControllerGetType(controller);
     }
 
     hid::EInputDevice GetInputDevice() const
@@ -49,9 +49,22 @@ public:
             case SDL_CONTROLLER_TYPE_PS4:
             case SDL_CONTROLLER_TYPE_PS5:
                 return hid::EInputDevice::PlayStation;
+            case SDL_CONTROLLER_TYPE_XBOX360:
+            case SDL_CONTROLLER_TYPE_XBOXONE:
+                return hid::EInputDevice::Xbox;
+            default:
+                return hid::EInputDevice::Unknown;
         }
+    }
 
-        return hid::EInputDevice::Xbox;
+    const char* GetControllerName() const
+    {
+        auto result = SDL_GameControllerName(controller);
+
+        if (!result)
+            return "Unknown Device";
+
+        return result;
     }
 
     void Close()
@@ -178,12 +191,21 @@ static void SetControllerInputDevice(Controller* controller)
     hid::g_inputDeviceController = hid::g_inputDevice;
 
     auto controllerType = (hid::EInputDeviceExplicit)controller->GetControllerType();
+    auto controllerName = controller->GetControllerName();
 
+    // Only proceed if the controller type changes.
     if (hid::g_inputDeviceExplicit != controllerType)
     {
         hid::g_inputDeviceExplicit = controllerType;
 
-        LOGFN("Detected controller: {}", hid::GetInputDeviceName());
+        if (controllerType == hid::EInputDeviceExplicit::Unknown)
+        {
+            LOGFN("Detected controller: {} (Unknown Controller Type)", controllerName);
+        }
+        else
+        {
+            LOGFN("Detected controller: {}", controllerName);
+        }
     }
 }
 
