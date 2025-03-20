@@ -1043,6 +1043,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             }
 
             config->Value = it->first;
+            config->SnapToNearestAccessibleValue(rightTapped);
 
             if (increment || decrement)
                 Game_PlaySound("sys_actstg_pausecursor");
@@ -1271,7 +1272,7 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::VSync, true);
             DrawConfigOption(rowCount++, yOffset, &Config::FPS, true, nullptr, FPS_MIN, 120, FPS_MAX);
             DrawConfigOption(rowCount++, yOffset, &Config::Brightness, true);
-            DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing, Config::AntiAliasing.InaccessibleValues.size() != 3, &Localise("Options_Desc_NotAvailableHardware"));
             DrawConfigOption(rowCount++, yOffset, &Config::TransparencyAntiAliasing, Config::AntiAliasing != EAntiAliasing::None, &Localise("Options_Desc_NotAvailableMSAA"));
             DrawConfigOption(rowCount++, yOffset, &Config::ShadowResolution, true);
             DrawConfigOption(rowCount++, yOffset, &Config::GITextureFiltering, true);
