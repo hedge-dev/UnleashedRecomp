@@ -11,7 +11,7 @@ bool AchievementData::VerifySignature() const
 
 bool AchievementData::VerifyVersion() const
 {
-    return Version == AchVersion ACH_VERSION;
+    return Version <= ACH_VERSION;
 }
 
 bool AchievementData::VerifyChecksum()
