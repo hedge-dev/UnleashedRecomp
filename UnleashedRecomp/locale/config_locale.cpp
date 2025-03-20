@@ -546,7 +546,8 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
             { EAspectRatio::Auto, { "AUTO", "Auto: the aspect ratio will dynamically adjust to the window size." } },
             { EAspectRatio::Wide, { "16:9", "16:9: locks the game to a widescreen aspect ratio." } },
             { EAspectRatio::Narrow, { "4:3", "4:3: locks the game to a narrow aspect ratio." } },
-            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: locks the game to a narrow aspect ratio and retains parity with the game's original implementation." } }
+            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: locks the game to a narrow aspect ratio and retains parity with the game's original implementation." } },
+            { EAspectRatio::Custom, { "Custom", "Custom:\nThe aspect ratio is set by using the CustomAspectRatio value in the config.toml file." } }
         }
     },
     {
@@ -564,7 +565,8 @@ CONFIG_DEFINE_ENUM_LOCALE(EAspectRatio)
             { EAspectRatio::Auto, { "AUTO", "Auto: Das Seitenverhältnis passt sich automatisch der Fenstergröße an." } },
             { EAspectRatio::Wide, { "16:9", "16:9: Stellt das Spiel in einem Breitbildschirm-Format dar." } },
             { EAspectRatio::Narrow, { "4:3", "4:3: Stellt das Spiel in einem Mittel-Format dar." } },
-            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: Stellt das Spiel in einem Mittel-Format dar, was der ursprünglichen Implementation originalgetreut bleibt." } }
+            { EAspectRatio::OriginalNarrow, { "ORIGINAL 4:3", "Original 4:3: Stellt das Spiel in einem Mittel-Format dar, was der ursprünglichen Implementation originalgetreut bleibt." } },
+            { EAspectRatio::Custom, { "Benutzerdefiniert", "Benutzerdefiniert:\nDas Seitenverhältnis entspricht dem Wert CustomAspectRatio in der Datei config.toml." } }
         }
     },
     {
