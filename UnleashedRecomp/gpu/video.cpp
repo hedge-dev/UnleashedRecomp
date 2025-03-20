@@ -1736,6 +1736,21 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
         ApplyLowEndDefaults();
     }
 
+    const RenderSampleCounts colourSampleCount = g_device->getSampleCountsSupported(RenderFormat::R16G16B16A16_FLOAT);
+    const RenderSampleCounts depthSampleCount  = g_device->getSampleCountsSupported(RenderFormat::D32_FLOAT);
+    const RenderSampleCounts commonSampleCount = colourSampleCount & depthSampleCount;
+
+    // Disable specific MSAA levels if they are not supported.
+    if ((commonSampleCount & RenderSampleCount::COUNT_2) == 0)
+        Config::AntiAliasing.InaccessibleValues.emplace(EAntiAliasing::MSAA2x);
+    if ((commonSampleCount & RenderSampleCount::COUNT_4) == 0)
+        Config::AntiAliasing.InaccessibleValues.emplace(EAntiAliasing::MSAA4x);
+    if ((commonSampleCount & RenderSampleCount::COUNT_8) == 0)
+        Config::AntiAliasing.InaccessibleValues.emplace(EAntiAliasing::MSAA8x);
+
+    // Set Anti-Aliasing to nearest supported level.
+    Config::AntiAliasing.SnapToNearestAccessibleValue(false);
+
     g_queue = g_device->createCommandQueue(RenderCommandListType::DIRECT);
 
     for (auto& commandList : g_commandLists)

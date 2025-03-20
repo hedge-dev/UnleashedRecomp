@@ -20,6 +20,7 @@ public:
     virtual std::string GetDefinition(bool withSection = false) const = 0;
     virtual std::string ToString(bool strWithQuotes = true) const = 0;
     virtual void GetLocaleStrings(std::vector<std::string_view>& localeStrings) const = 0;
+    virtual void SnapToNearestAccessibleValue(bool searchUp) = 0;
 };
 
 #define CONFIG_LOCALE            std::unordered_map<ELanguage, std::tuple<std::string, std::string>>
@@ -158,7 +159,8 @@ public:
     CONFIG_LOCALE* Locale{};
     T DefaultValue{};
     T Value{ DefaultValue };
-    std::unordered_map<std::string, T>* EnumTemplate;
+    std::set<T> InaccessibleValues{};
+    std::unordered_map<std::string, T>* EnumTemplate{};
     std::map<T, std::string> EnumTemplateReverse{};
     CONFIG_ENUM_LOCALE(T)* EnumLocale{};
     std::function<void(ConfigDef<T, isHidden>*)> Callback;
@@ -183,25 +185,20 @@ public:
     ~ConfigDef();
 
     bool IsHidden() override;
-
     void ReadValue(toml::v3::ex::parse_result& toml) override;
     void MakeDefault() override;
-
     std::string_view GetSection() const override;
     std::string_view GetName() const override;
     std::string GetNameLocalised(ELanguage language) const override;
     std::string GetDescription(ELanguage language) const override;
-
     bool IsDefaultValue() const override;
     const void* GetValue() const override;
-
     std::string GetValueLocalised(ELanguage language) const override;
     std::string GetValueDescription(ELanguage language) const override;
-
     std::string GetDefinition(bool withSection = false) const override;
     std::string ToString(bool strWithQuotes = true) const override;
-
     void GetLocaleStrings(std::vector<std::string_view>& localeStrings) const override;
+    void SnapToNearestAccessibleValue(bool searchUp) override;
 
     operator T() const
     {
