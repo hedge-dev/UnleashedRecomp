@@ -23,6 +23,7 @@
 #include <ui/game_window.h>
 #include <ui/installer_wizard.h>
 #include <mod/mod_loader.h>
+#include <preload_executable.h>
 
 #ifdef _WIN32
 #include <timeapi.h>
@@ -192,6 +193,9 @@ int main(int argc, char *argv[])
         LOGN_WARNING("OS does not support registry.");
 
     os::logger::Init();
+
+    PreloadContext preloadContext;
+    preloadContext.PreloadExecutable();
 
     bool forceInstaller = false;
     bool forceDLCInstaller = false;
