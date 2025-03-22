@@ -220,14 +220,32 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
         if (freeIndex != -1)
         {
+            // Initialize the new controller
             auto controller = Controller(event->cdevice.which);
             g_controllers[freeIndex] = controller;
 
-            // Use App::s_isWerehog to determine if it is night or day
-            SetControllerTimeOfDayLED(g_controllers[0], App::s_isWerehog);
+            // Instantly force the Player LED assignment
+            if (freeIndex != 0) // External controller
+            {
+                SDL_GameControllerSetPlayerIndex(controller.controller, freeIndex); // Set Player LED immediately
+            }
+            else
+            {
+                // Disable Player LED for Player 0 immediately
+                SDL_GameControllerSetPlayerIndex(controller.controller, -1); // Ensure Player 0 stays virtual
+            }
 
-            // Enforce Player 1's lightbar on the newly added controller instantly
+            // Immediately apply lightbar settings for Player 1 and sync with in-game logic
+            SetControllerTimeOfDayLED(g_controllers[0], App::s_isWerehog);
             SetControllerTimeOfDayLED(controller, App::s_isWerehog);
+
+            // Forcefully override any lingering system defaults right after Lightbar reassignment
+            SDL_GameControllerSetLED(
+                controller.controller,
+                App::s_isWerehog ? 22 : 0,
+                App::s_isWerehog ? 0 : 37,
+                App::s_isWerehog ? 101 : 184
+            );
         }
         break;
     }
@@ -240,7 +258,7 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
         {
             controller->Close();
 
-            // If Player 1's controller is removed, set the next available controller as active
+            // If Player 1's controller is removed, assign the next available controller as Player 1
             if (controller == &g_controllers[0])
             {
                 for (auto& ctrl : g_controllers)
@@ -250,10 +268,20 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
                         SetControllerInputDevice(&ctrl);
                         g_controllers[0] = ctrl;
 
-                        // Reapply the lightbar color to ensure custom in-game settings
+                        // Instantly reapply Player 1's lightbar and Player LED settings
                         SetControllerTimeOfDayLED(ctrl, App::s_isWerehog);
+                        SDL_GameControllerSetPlayerIndex(ctrl.controller, 1); // Set as Player 1
                         break;
                     }
+                }
+            }
+
+            for (std::size_t i = 0; i < g_controllers.size(); ++i)
+            {
+                if (g_controllers[i].CanPoll())
+                {
+                    SDL_GameControllerSetPlayerIndex(g_controllers[i].controller, static_cast<int>(i)); // Set Player LEDs
+                    SetControllerTimeOfDayLED(g_controllers[i], App::s_isWerehog); // Sync lightbar
                 }
             }
         }
