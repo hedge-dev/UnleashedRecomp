@@ -3,6 +3,10 @@
 #include <ui/game_window.h>
 #include <user/paths.h>
 
+#if defined(__linux__)
+    const bool g_isRunningUnderFlatpak = std::filesystem::exists("/.flatpak-info");
+#endif
+
 std::vector<IConfigDef*> g_configDefinitions;
 
 #define CONFIG_DEFINE_ENUM_TEMPLATE(type) \

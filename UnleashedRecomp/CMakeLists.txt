@@ -4,10 +4,6 @@ if (WIN32)
     option(UNLEASHED_RECOMP_D3D12 "Add D3D12 support for rendering" ON)
 endif()
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    option(UNLEASHED_RECOMP_FLATPAK "Configure the build for Flatpak compatibility." OFF)
-endif()
-
 function(BIN2C)
     cmake_parse_arguments(BIN2C_ARGS "" "TARGET_OBJ;SOURCE_FILE;DEST_FILE;ARRAY_NAME;COMPRESSION_TYPE" "" ${ARGN})
 
@@ -298,13 +294,6 @@ if (WIN32)
     endif()
 else()
     add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES})
-endif()
-
-if (UNLEASHED_RECOMP_FLATPAK)
-    target_compile_definitions(UnleashedRecomp PRIVATE 
-        "UNLEASHED_RECOMP_FLATPAK"
-        "GAME_INSTALL_DIRECTORY=\"/var/data\""
-    )
 endif()
 
 if (UNLEASHED_RECOMP_D3D12)
