@@ -51,14 +51,20 @@ void HostStartup()
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
 
-    g_userHeap.Init();
-
     hid::Init();
 }
 
 // Name inspired from nt's entry point
 void KiSystemStartup()
 {
+    if (g_memory.base == nullptr)
+    {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("System_MemoryAllocationFailed").c_str(), GameWindow::s_pWindow);
+        std::_Exit(1);
+    }
+
+    g_userHeap.Init();
+
     const auto gameContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Game");
     const auto updateContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Update");
     XamRegisterContent(gameContent, GAME_INSTALL_DIRECTORY "/game");
