@@ -216,7 +216,8 @@ int main(int argc, char *argv[])
     if (!useDefaultWorkingDirectory)
     {
         // Set the current working directory to the executable's path.
-        std::filesystem::current_path(os::process::GetExecutablePath().parent_path());
+        std::error_code ec;
+        std::filesystem::current_path(os::process::GetExecutablePath().parent_path(), ec);
     }
 
     Config::Load();
