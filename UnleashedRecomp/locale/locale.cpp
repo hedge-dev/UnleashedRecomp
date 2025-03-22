@@ -704,6 +704,17 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         }
     },
     {
+        "System_MemoryAllocationFailed",
+        {
+            { ELanguage::English,  "Memory allocation failed blablabla enable your pagefile, ensure it's minimum 4 or 8 GB blablablabla" },
+            { ELanguage::Japanese, "" },
+            { ELanguage::German,   "" },
+            { ELanguage::French,   "" },
+            { ELanguage::Spanish,  "" },
+            { ELanguage::Italian,  "" }
+        }
+    },
+    {
         "Common_On",
         {
             { ELanguage::English,  "ON" },
