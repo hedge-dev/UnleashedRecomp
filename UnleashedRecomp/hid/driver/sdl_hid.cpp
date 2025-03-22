@@ -189,110 +189,173 @@ static void SetControllerInputDevice(Controller* controller)
 
 static void SetControllerTimeOfDayLED(Controller& controller, bool isNight)
 {
+    // Determine the lightbar color based on night of day. 
     auto r = isNight ? 22 : 0;
     auto g = isNight ? 0 : 37;
     auto b = isNight ? 101 : 184;
 
+    // Set the LED for the given controller
     controller.SetLED(r, g, b);
+
+    // Ensure all other controllers mirror Player 1's lightbar
+    if (controller.controller == g_controllers[0].controller) // Check if it's Player 1
+    {
+        for (auto& ctrl : g_controllers)
+        {
+            if (ctrl.controller != g_controllers[0].controller) // Skip Player 1 itself
+            {
+                ctrl.SetLED(r, g, b); // Mirror Player 1's lightbar
+            }
+        }
+    }
 }
 
 int HID_OnSDLEvent(void*, SDL_Event* event)
 {
     switch (event->type)
     {
-        case SDL_CONTROLLERDEVICEADDED:
-        {
-            const auto freeIndex = FindFreeController();
+    case SDL_CONTROLLERDEVICEADDED:
+    {
+        const auto freeIndex = FindFreeController();
 
-            if (freeIndex != -1)
+        if (freeIndex != -1)
+        {
+            // Initialize the new controller
+            auto controller = Controller(event->cdevice.which);
+            g_controllers[freeIndex] = controller;
+
+            // Instantly force the Player LED assignment
+            if (freeIndex != 0) // External controller
             {
-                auto controller = Controller(event->cdevice.which);
-
-                g_controllers[freeIndex] = controller;
-
-                SetControllerTimeOfDayLED(controller, App::s_isWerehog);
-            }
-
-            break;
-        }
-
-        case SDL_CONTROLLERDEVICEREMOVED:
-        {
-            auto* controller = FindController(event->cdevice.which);
-
-            if (controller)
-                controller->Close();
-
-            break;
-        }
-
-        case SDL_CONTROLLERBUTTONDOWN:
-        case SDL_CONTROLLERBUTTONUP:
-        case SDL_CONTROLLERAXISMOTION:
-        case SDL_CONTROLLERTOUCHPADDOWN:
-        {
-            auto* controller = FindController(event->cdevice.which);
-
-            if (!controller)
-                break;
-
-            if (event->type == SDL_CONTROLLERAXISMOTION)
-            {
-                if (abs(event->caxis.value) > 8000)
-                {
-                    SDL_ShowCursor(SDL_DISABLE);
-                    SetControllerInputDevice(controller);
-                }
-
-                controller->PollAxis();
+                SDL_GameControllerSetPlayerIndex(controller.controller, freeIndex); // Set Player LED immediately
             }
             else
             {
+                // Disable Player LED for Player 0 immediately
+                SDL_GameControllerSetPlayerIndex(controller.controller, -1); // Ensure Player 0 stays virtual
+            }
+
+            // Immediately apply lightbar settings for Player 1 and sync with in-game logic
+            SetControllerTimeOfDayLED(g_controllers[0], App::s_isWerehog);
+            SetControllerTimeOfDayLED(controller, App::s_isWerehog);
+
+            // Forcefully override any lingering system defaults right after Lightbar reassignment
+            SDL_GameControllerSetLED(
+                controller.controller,
+                App::s_isWerehog ? 22 : 0,
+                App::s_isWerehog ? 0 : 37,
+                App::s_isWerehog ? 101 : 184
+            );
+        }
+        break;
+    }
+
+    case SDL_CONTROLLERDEVICEREMOVED:
+    {
+        auto* controller = FindController(event->cdevice.which);
+
+        if (controller)
+        {
+            controller->Close();
+
+            // If Player 1's controller is removed, assign the next available controller as Player 1
+            if (controller == &g_controllers[0])
+            {
+                for (auto& ctrl : g_controllers)
+                {
+                    if (ctrl.CanPoll())
+                    {
+                        SetControllerInputDevice(&ctrl);
+                        g_controllers[0] = ctrl;
+
+                        // Instantly reapply Player 1's lightbar and Player LED settings
+                        SetControllerTimeOfDayLED(ctrl, App::s_isWerehog);
+                        SDL_GameControllerSetPlayerIndex(ctrl.controller, 1); // Set as Player 1
+                        break;
+                    }
+                }
+            }
+
+            for (std::size_t i = 0; i < g_controllers.size(); ++i)
+            {
+                if (g_controllers[i].CanPoll())
+                {
+                    SDL_GameControllerSetPlayerIndex(g_controllers[i].controller, static_cast<int>(i)); // Set Player LEDs
+                    SetControllerTimeOfDayLED(g_controllers[i], App::s_isWerehog); // Sync lightbar
+                }
+            }
+        }
+        break;
+    }
+
+    case SDL_CONTROLLERBUTTONDOWN:
+    case SDL_CONTROLLERBUTTONUP:
+    case SDL_CONTROLLERAXISMOTION:
+    case SDL_CONTROLLERTOUCHPADDOWN:
+    {
+        auto* controller = FindController(event->cdevice.which);
+
+        if (!controller)
+            break;
+
+        if (event->type == SDL_CONTROLLERAXISMOTION)
+        {
+            if (abs(event->caxis.value) > 8000)
+            {
                 SDL_ShowCursor(SDL_DISABLE);
                 SetControllerInputDevice(controller);
-
-                controller->Poll();
             }
 
-            break;
+            controller->PollAxis();
+        }
+        else
+        {
+            SDL_ShowCursor(SDL_DISABLE);
+            SetControllerInputDevice(controller);
+
+            controller->Poll();
         }
 
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-            hid::g_inputDevice = hid::EInputDevice::Keyboard;
-            break;
+        // Reapply the lightbar color to override system changes during input events
+        SetControllerTimeOfDayLED(*controller, App::s_isWerehog);
+        break;
+    }
 
-        case SDL_MOUSEMOTION:
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+        hid::g_inputDevice = hid::EInputDevice::Keyboard;
+        break;
+
+    case SDL_MOUSEMOTION:
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+    {
+        if (!GameWindow::IsFullscreen() || GameWindow::s_isFullscreenCursorVisible)
+            SDL_ShowCursor(SDL_ENABLE);
+
+        hid::g_inputDevice = hid::EInputDevice::Mouse;
+        break;
+    }
+
+    case SDL_WINDOWEVENT:
+    {
+        if (event->window.event == SDL_WINDOWEVENT_FOCUS_LOST)
         {
-            if (!GameWindow::IsFullscreen() || GameWindow::s_isFullscreenCursorVisible)
-                SDL_ShowCursor(SDL_ENABLE);
-
-            hid::g_inputDevice = hid::EInputDevice::Mouse;
-
-            break;
-        }
-
-        case SDL_WINDOWEVENT:
-        {
-            if (event->window.event == SDL_WINDOWEVENT_FOCUS_LOST)
-            {
-                // Stop vibrating controllers on focus lost.
-                for (auto& controller : g_controllers)
-                    controller.SetVibration({ 0, 0 });
-            }
-
-            break;
-        }
-
-        case SDL_USER_EVILSONIC:
-        {
+            // Stop vibrating controllers on focus lost.
             for (auto& controller : g_controllers)
-                SetControllerTimeOfDayLED(controller, event->user.code);
-
-            break;
+                controller.SetVibration({ 0, 0 });
         }
+        break;
+    }
+
+    case SDL_USER_EVILSONIC:
+    {
+        // Refresh all controllers to ensure consistent lightbar colors
+        for (auto& controller : g_controllers)
+            SetControllerTimeOfDayLED(controller, event->user.code);
+
+        break;
+    }
     }
 
     return 0;
