@@ -38,23 +38,20 @@ public:
 
     SDL_GameControllerType GetControllerType() const
     {
-        return SDL_GameControllerGetType(controller);
+        return SDL_GameControllerTypeForIndex(index);
     }
 
     hid::EInputDevice GetInputDevice() const
     {
         switch (GetControllerType())
         {
-        case SDL_CONTROLLER_TYPE_PS3:
-        case SDL_CONTROLLER_TYPE_PS4:
-        case SDL_CONTROLLER_TYPE_PS5:
-            return hid::EInputDevice::PlayStation;
-        case SDL_CONTROLLER_TYPE_XBOX360:
-        case SDL_CONTROLLER_TYPE_XBOXONE:
-            return hid::EInputDevice::Xbox;
-        default:
-            return hid::EInputDevice::Unknown;
+            case SDL_CONTROLLER_TYPE_PS3:
+            case SDL_CONTROLLER_TYPE_PS4:
+            case SDL_CONTROLLER_TYPE_PS5:
+                return hid::EInputDevice::PlayStation;
         }
+
+        return hid::EInputDevice::Xbox;
     }
 
     void Close()
@@ -73,12 +70,6 @@ public:
     {
         return controller;
     }
-
-    void ClearState()
-    {
-        memset(&state, 0, sizeof(state));
-    }
-
 
     void PollAxis()
     {
@@ -143,7 +134,6 @@ public:
     }
 };
 
-
 std::array<Controller, 4> g_controllers;
 Controller* g_activeController;
 
@@ -179,11 +169,6 @@ inline Controller* FindController(int which)
 
 static void SetControllerInputDevice(Controller* controller)
 {
-    if (g_activeController && g_activeController != controller)
-    {
-        g_activeController->ClearState();
-    }
-
     g_activeController = controller;
 
     if (App::s_isLoading)
@@ -204,17 +189,26 @@ static void SetControllerInputDevice(Controller* controller)
 
 static void SetControllerTimeOfDayLED(Controller& controller, bool isNight)
 {
+    // Determine the lightbar color based on night of day. 
     auto r = isNight ? 22 : 0;
     auto g = isNight ? 0 : 37;
     auto b = isNight ? 101 : 184;
 
-    // Ensure the lightbar is set correctly
-    if (SDL_GameControllerHasLED(controller.controller))
+    // Set the LED for the given controller
+    controller.SetLED(r, g, b);
+
+    // Ensure all other controllers mirror Player 1's lightbar
+    if (controller.controller == g_controllers[0].controller) // Check if it's Player 1
     {
-        SDL_GameControllerSetLED(controller.controller, r, g, b);
+        for (auto& ctrl : g_controllers)
+        {
+            if (ctrl.controller != g_controllers[0].controller) // Skip Player 1 itself
+            {
+                ctrl.SetLED(r, g, b); // Mirror Player 1's lightbar
+            }
+        }
     }
 }
-
 
 int HID_OnSDLEvent(void*, SDL_Event* event)
 {
@@ -227,18 +221,14 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
         if (freeIndex != -1)
         {
             auto controller = Controller(event->cdevice.which);
-
             g_controllers[freeIndex] = controller;
 
+            // Use App::s_isWerehog to determine if it is night or day
+            SetControllerTimeOfDayLED(g_controllers[0], App::s_isWerehog);
+
+            // Enforce Player 1's lightbar on the newly added controller instantly
             SetControllerTimeOfDayLED(controller, App::s_isWerehog);
-
-            // Ensure Player 1's controller is always the active controller
-            if (freeIndex == 0)
-            {
-                SetControllerInputDevice(&g_controllers[0]);
-            }
         }
-
         break;
     }
 
@@ -247,21 +237,26 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
         auto* controller = FindController(event->cdevice.which);
 
         if (controller)
+        {
             controller->Close();
 
-        // If Player 1's controller is removed, set the next available controller as active
-        if (controller == &g_controllers[0])
-        {
-            for (auto& ctrl : g_controllers)
+            // If Player 1's controller is removed, set the next available controller as active
+            if (controller == &g_controllers[0])
             {
-                if (ctrl.CanPoll())
+                for (auto& ctrl : g_controllers)
                 {
-                    SetControllerInputDevice(&ctrl);
-                    break;
+                    if (ctrl.CanPoll())
+                    {
+                        SetControllerInputDevice(&ctrl);
+                        g_controllers[0] = ctrl;
+
+                        // Reapply the lightbar color to ensure custom in-game settings
+                        SetControllerTimeOfDayLED(ctrl, App::s_isWerehog);
+                        break;
+                    }
                 }
             }
         }
-
         break;
     }
 
@@ -293,6 +288,8 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
             controller->Poll();
         }
 
+        // Reapply the lightbar color to override system changes during input events
+        SetControllerTimeOfDayLED(*controller, App::s_isWerehog);
         break;
     }
 
@@ -309,7 +306,6 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
             SDL_ShowCursor(SDL_ENABLE);
 
         hid::g_inputDevice = hid::EInputDevice::Mouse;
-
         break;
     }
 
@@ -321,12 +317,12 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
             for (auto& controller : g_controllers)
                 controller.SetVibration({ 0, 0 });
         }
-
         break;
     }
 
     case SDL_USER_EVILSONIC:
     {
+        // Refresh all controllers to ensure consistent lightbar colors
         for (auto& controller : g_controllers)
             SetControllerTimeOfDayLED(controller, event->user.code);
 
@@ -336,8 +332,6 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
     return 0;
 }
-
-
 
 void hid::Init()
 {
@@ -352,14 +346,11 @@ void hid::Init()
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
     SDL_SetHint(SDL_HINT_XINPUT_ENABLED, "1");
 
-    SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "0"); // Uses Button Labels. This hint is disabled for Nintendo Controllers.
-
     SDL_InitSubSystem(SDL_INIT_EVENTS);
     SDL_AddEventWatch(HID_OnSDLEvent, nullptr);
 
     SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
 }
-
 
 uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
 {
