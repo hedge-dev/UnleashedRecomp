@@ -706,7 +706,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
     {
         "System_MemoryAllocationFailed",
         {
-            { ELanguage::English,  "Memory allocation failed blablabla enable your pagefile, ensure it's minimum 4 or 8 GB blablablabla" },
+            { ELanguage::English,  "Failed to allocate game memory.\n\nPlease make sure that:\n\n- You meet the minimum system requirements (8 GB).\n- Your pagefile is configured with at least 4-8 GB of virtual memory." },
             { ELanguage::Japanese, "" },
             { ELanguage::German,   "" },
             { ELanguage::French,   "" },
