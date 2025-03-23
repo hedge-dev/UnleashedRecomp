@@ -17,7 +17,7 @@ class AchievementManager
 {
 public:
     static inline AchievementData Data{};
-    static inline EAchStatus Status{ EAchStatus::Unknown };
+    static inline EAchStatus BinStatus{ EAchStatus::Unknown };
 
     static std::filesystem::path GetDataPath(bool checkForMods)
     {
@@ -30,6 +30,6 @@ public:
     static void Unlock(uint16_t id);
     static void UnlockAll();
     static void Reset();
-    static bool Load();
-    static bool Save(bool ignoreStatus = false);
+    static bool LoadBinary();
+    static bool SaveBinary(bool ignoreStatus = false);
 };

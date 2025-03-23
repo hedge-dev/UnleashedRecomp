@@ -106,7 +106,7 @@ PPC_FUNC(sub_824E5170)
 
         if (!isSavedExtraData)
         {
-            AchievementManager::Save();
+            AchievementManager::SaveBinary();
             PersistentStorageManager::SaveBinary();
 
             isSavedExtraData = true;

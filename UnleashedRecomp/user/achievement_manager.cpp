@@ -86,11 +86,11 @@ void AchievementManager::Reset()
     Data = {};
 }
 
-bool AchievementManager::Load()
+bool AchievementManager::LoadBinary()
 {
     AchievementManager::Reset();
 
-    Status = EAchStatus::Success;
+    BinStatus = EAchStatus::Success;
 
     auto dataPath = GetDataPath(true);
 
@@ -109,7 +109,7 @@ bool AchievementManager::Load()
 
     if (fileSize != dataSize)
     {
-        Status = EAchStatus::BadFileSize;
+        BinStatus = EAchStatus::BadFileSize;
         return false;
     }
 
@@ -117,7 +117,7 @@ bool AchievementManager::Load()
 
     if (!file)
     {
-        Status = EAchStatus::IOError;
+        BinStatus = EAchStatus::IOError;
         return false;
     }
 
@@ -127,7 +127,7 @@ bool AchievementManager::Load()
 
     if (!data.VerifySignature())
     {
-        Status = EAchStatus::BadSignature;
+        BinStatus = EAchStatus::BadSignature;
         file.close();
         return false;
     }
@@ -136,7 +136,7 @@ bool AchievementManager::Load()
 
     if (!data.VerifyVersion())
     {
-        Status = EAchStatus::BadVersion;
+        BinStatus = EAchStatus::BadVersion;
         file.close();
         return false;
     }
@@ -146,7 +146,7 @@ bool AchievementManager::Load()
 
     if (!data.VerifyChecksum())
     {
-        Status = EAchStatus::BadChecksum;
+        BinStatus = EAchStatus::BadChecksum;
         file.close();
         return false;
     }
@@ -158,9 +158,9 @@ bool AchievementManager::Load()
     return true;
 }
 
-bool AchievementManager::Save(bool ignoreStatus)
+bool AchievementManager::SaveBinary(bool ignoreStatus)
 {
-    if (!ignoreStatus && Status != EAchStatus::Success)
+    if (!ignoreStatus && BinStatus != EAchStatus::Success)
     {
         LOGN_WARNING("Achievement data will not be saved in this session!");
         return false;
@@ -181,7 +181,7 @@ bool AchievementManager::Save(bool ignoreStatus)
     file.write((const char*)&Data, sizeof(AchievementData));
     file.close();
 
-    Status = EAchStatus::Success;
+    BinStatus = EAchStatus::Success;
 
     return true;
 }

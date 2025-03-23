@@ -65,16 +65,16 @@ static bool ProcessCorruptAchievementsMessage()
     if (!g_corruptAchievementsMessageOpen)
         return false;
 
-    auto message = AchievementManager::Status == EAchStatus::IOError
+    auto message = AchievementManager::BinStatus == EAchStatus::IOError
         ? Localise("Title_Message_AchievementDataIOError")
         : Localise("Title_Message_AchievementDataCorrupt");
 
     if (MessageWindow::Open(message, &g_corruptAchievementsMessageResult) == MSG_CLOSED)
     {
-        // Allow user to proceed if the achievement data couldn't be loaded.
-        // Restarting may fix this error, so it isn't worth clearing the data for.
-        if (AchievementManager::Status != EAchStatus::IOError)
-            AchievementManager::Save(true);
+        // Create a new save file if the file was successfully loaded and failed validation.
+        // If the file couldn't be opened, restarting may fix this error, so it isn't worth clearing the data for.
+        if (AchievementManager::BinStatus != EAchStatus::IOError)
+            AchievementManager::SaveBinary(true);
 
         g_corruptAchievementsMessageOpen = false;
         g_corruptAchievementsMessageOpen.notify_one();
@@ -136,10 +136,10 @@ void PressStartSaveLoadThreadMidAsmHook()
         g_faderBegun.wait(true);
     }
 
-    if (!AchievementManager::Load())
-        LOGFN_ERROR("Failed to load achievement data... (status code {})", (int)AchievementManager::Status);
+    if (!AchievementManager::LoadBinary())
+        LOGFN_ERROR("Failed to load achievement data... (status code {})", (int)AchievementManager::BinStatus);
 
-    if (AchievementManager::Status != EAchStatus::Success)
+    if (AchievementManager::BinStatus != EAchStatus::Success)
     {
         g_corruptAchievementsMessageOpen = true;
         g_corruptAchievementsMessageOpen.wait(true);
