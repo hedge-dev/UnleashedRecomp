@@ -4,7 +4,11 @@
 #include <user/paths.h>
 
 #if defined(__linux__)
-    const bool g_isRunningUnderFlatpak = std::filesystem::exists("/.flatpak-info");
+    const bool g_isRunningUnderFlatpak = []()
+    { 
+        std::error_code ec;
+        return std::filesystem::exists("/.flatpak-info", ec);
+    }();
 #endif
 
 std::vector<IConfigDef*> g_configDefinitions;
