@@ -158,6 +158,7 @@ struct GuestTexture : GuestBaseTexture
     void* mappedMemory = nullptr;
     std::unique_ptr<RenderFramebuffer> framebuffer;
     std::unique_ptr<GuestTexture> patchedTexture;
+    std::unique_ptr<GuestTexture> recreatedCubeMapTexture;
     struct GuestSurface* sourceSurface = nullptr;
 };
 

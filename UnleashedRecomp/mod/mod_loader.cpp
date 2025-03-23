@@ -191,7 +191,10 @@ void ModLoader::Init()
             {
                 std::string includeDirU8 = modIni.getString("Main", fmt::format("IncludeDir{}", j), "");
                 if (!includeDirU8.empty())
+                {
+                    std::replace(includeDirU8.begin(), includeDirU8.end(), '\\', '/');
                     mod.includeDirs.emplace_back(modDirectoryPath / std::u8string_view((const char8_t*)includeDirU8.c_str()));
+                }
             }
 
             if (!foundModSaveFilePath)

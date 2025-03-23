@@ -163,6 +163,8 @@ struct SharedConstants
     uint32_t samplerIndices[16]{};
     uint32_t booleans{};
     uint32_t swappedTexcoords{};
+    float halfPixelOffsetX{};
+    float halfPixelOffsetY{};
     float alphaThreshold{};
 };
 
@@ -679,7 +681,10 @@ static void DestructTempResources()
             g_textureDescriptorAllocator.free(texture->descriptorIndex);
 
             if (texture->patchedTexture != nullptr)
-                g_textureDescriptorAllocator.free(texture->patchedTexture->descriptorIndex);
+                g_textureDescriptorAllocator.free(texture->patchedTexture->descriptorIndex); 
+            
+            if (texture->recreatedCubeMapTexture != nullptr)
+                g_textureDescriptorAllocator.free(texture->recreatedCubeMapTexture->descriptorIndex);
 
             texture->~GuestTexture();
             break;
@@ -3089,8 +3094,6 @@ static void FlushViewport()
     if (g_dirtyStates.viewport)
     {
         auto viewport = g_viewport;
-        viewport.x += 0.5f;
-        viewport.y += 0.5f;
 
         if (viewport.minDepth > viewport.maxDepth)
             std::swap(viewport.minDepth, viewport.maxDepth);
@@ -3514,6 +3517,12 @@ static void SetFramebuffer(GuestSurface* renderTarget, GuestSurface* depthStenci
             g_framebuffer = nullptr;
         }
 
+        if (g_framebuffer != nullptr)
+        {
+            SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.halfPixelOffsetX, 1.0f / float(g_framebuffer->getWidth()));
+            SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.halfPixelOffsetY, -1.0f / float(g_framebuffer->getHeight()));
+        }
+
         g_dirtyStates.renderTargetAndDepthStencil = settingForClear;
     }
 }
@@ -3640,6 +3649,14 @@ static void SetTextureInRenderThread(uint32_t index, GuestTexture* texture)
 
     SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.texture3DIndices[index], texture != nullptr &&
         viewDimension == RenderTextureViewDimension::TEXTURE_3D ? texture->descriptorIndex : TEXTURE_DESCRIPTOR_NULL_TEXTURE_3D);
+
+    // Check if there's a cubemap texture we recreated and assign it if it's valid. The shader will pick whichever is correct.
+    if (viewDimension == RenderTextureViewDimension::TEXTURE_2D && texture->recreatedCubeMapTexture != nullptr)
+    {
+        texture = texture->recreatedCubeMapTexture.get();
+        AddBarrier(texture, RenderTextureLayout::SHADER_READ);
+        viewDimension = texture->viewDimension;
+    }
 
     SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.textureCubeIndices[index], texture != nullptr &&
         viewDimension == RenderTextureViewDimension::TEXTURE_CUBE ? texture->descriptorIndex : TEXTURE_DESCRIPTOR_NULL_TEXTURE_CUBE);
@@ -5471,20 +5488,29 @@ static RenderFormat ConvertDXGIFormat(ddspp::DXGIFormat format)
     }
 }
 
-static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping)
+static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping, bool forceCubeMap = false)
 {
     ddspp::Descriptor ddsDesc;
     if (ddspp::decode_header((unsigned char *)(data), ddsDesc) != ddspp::Error)
     {
+        forceCubeMap &= (ddsDesc.type == ddspp::Texture2D) && (ddsDesc.arraySize == 1);
+        uint32_t arraySize = ddsDesc.type == ddspp::TextureType::Cubemap ? (ddsDesc.arraySize * 6) : ddsDesc.arraySize;
+            
         RenderTextureDesc desc;
         desc.dimension = ConvertTextureDimension(ddsDesc.type);
         desc.width = ddsDesc.width;
         desc.height = ddsDesc.height;
         desc.depth = ddsDesc.depth;
         desc.mipLevels = ddsDesc.numMips;
-        desc.arraySize = ddsDesc.type == ddspp::TextureType::Cubemap ? ddsDesc.arraySize * 6 : ddsDesc.arraySize;
+        desc.arraySize = arraySize;
         desc.format = ConvertDXGIFormat(ddsDesc.format);
         desc.flags = ddsDesc.type == ddspp::TextureType::Cubemap ? RenderTextureFlag::CUBE : RenderTextureFlag::NONE;
+
+        if (forceCubeMap)
+        {
+            desc.arraySize = 6;
+            desc.flags = RenderTextureFlag::CUBE;
+        }
 
         texture.textureHolder = g_device->createTexture(desc);
         texture.texture = texture.textureHolder.get();
@@ -5495,6 +5521,10 @@ static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataS
         viewDesc.dimension = ConvertTextureViewDimension(ddsDesc.type);
         viewDesc.mipLevels = ddsDesc.numMips;
         viewDesc.componentMapping = componentMapping;
+
+        if (forceCubeMap)
+            viewDesc.dimension = RenderTextureViewDimension::TEXTURE_CUBE;
+
         texture.textureView = texture.texture->createTextureView(viewDesc);
         texture.descriptorIndex = g_textureDescriptorAllocator.allocate();
         g_textureDescriptorSet->setTexture(texture.descriptorIndex, texture.texture, RenderTextureLayout::SHADER_READ, texture.textureView.get());
@@ -5519,7 +5549,7 @@ static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataS
         uint32_t curSrcOffset = 0;
         uint32_t curDstOffset = 0;
 
-        for (uint32_t arraySlice = 0; arraySlice < desc.arraySize; arraySlice++)
+        for (uint32_t arraySlice = 0; arraySlice < arraySize; arraySlice++)
         {
             for (uint32_t mipSlice = 0; mipSlice < ddsDesc.numMips; mipSlice++)
             {
@@ -5569,13 +5599,24 @@ static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataS
             {
                 g_copyCommandList->barriers(RenderBarrierStage::COPY, RenderTextureBarrier(texture.texture, RenderTextureLayout::COPY_DEST));
 
-                for (size_t i = 0; i < slices.size(); i++)
-                {
-                    auto& slice = slices[i];
+                auto copyTextureRegion = [&](Slice& slice, uint32_t subresourceIndex)
+                    {
+                        g_copyCommandList->copyTextureRegion(
+                            RenderTextureCopyLocation::Subresource(texture.texture, subresourceIndex),
+                            RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), desc.format, slice.width, slice.height, slice.depth, (slice.dstRowPitch * 8) / ddsDesc.bitsPerPixelOrBlock * ddsDesc.blockWidth, slice.dstOffset));
+                    };
 
-                    g_copyCommandList->copyTextureRegion(
-                        RenderTextureCopyLocation::Subresource(texture.texture, i),
-                        RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), desc.format, slice.width, slice.height, slice.depth, (slice.dstRowPitch * 8) / ddsDesc.bitsPerPixelOrBlock * ddsDesc.blockWidth, slice.dstOffset));
+                for (size_t i = 0; i < slices.size(); i++)
+                    copyTextureRegion(slices[i], i);
+
+                // Duplicate the first face across the remaining 6 faces.
+                if (forceCubeMap)
+                {
+                    for (size_t i = 1; i < 6; i++)
+                    {
+                        for (size_t j = 0; j < slices.size(); j++)
+                            copyTextureRegion(slices[j], (slices.size() * i) + j);
+                    }
                 }
             });
 
@@ -5648,13 +5689,12 @@ std::unique_ptr<GuestTexture> LoadTexture(const uint8_t* data, size_t dataSize, 
     return nullptr;
 }
 
-static void DiffPatchTexture(GuestTexture& texture, uint8_t* data, uint32_t dataSize)
+static void DiffPatchTexture(GuestTexture& texture, uint8_t* data, uint32_t dataSize, XXH64_hash_t hash)
 {
     auto header = reinterpret_cast<BlockCompressionDiffPatchHeader*>(g_buttonBcDiff.get());
     auto entries = reinterpret_cast<BlockCompressionDiffPatchEntry*>(g_buttonBcDiff.get() + header->entriesOffset);
     auto end = entries + header->entryCount;
     
-    XXH64_hash_t hash = XXH3_64bits(data, dataSize);
     auto findResult = std::lower_bound(entries, end, hash, [](BlockCompressionDiffPatchEntry& lhs, XXH64_hash_t rhs)
         {
             return lhs.hash < rhs;
@@ -5687,8 +5727,19 @@ static void MakePictureData(GuestPictureData* pictureData, uint8_t* data, uint32
 #ifdef _DEBUG
             texture.texture->setName(reinterpret_cast<char*>(g_memory.Translate(pictureData->name + 2)));
 #endif
+            XXH64_hash_t hash = XXH3_64bits(data, dataSize);
 
-            DiffPatchTexture(texture, data, dataSize);
+            // The whale in Cool Edge has a 2D texture assigned as a cubemap which makes it not display in recomp.
+            // The hardware duplicates the first face to the remaining 6 faces, so to simulate that we'll recreate the asset.
+            bool forceCubeMap = (dataSize == 0xAB38) && (hash == 0x160E9E250FDE88A9);
+            if (forceCubeMap)
+            {
+                GuestTexture recreatedCubeMapTexture(ResourceType::Texture);
+                if (LoadTexture(recreatedCubeMapTexture, data, dataSize, {}, true))
+                    texture.recreatedCubeMapTexture = std::make_unique<GuestTexture>(std::move(recreatedCubeMapTexture));
+            }
+
+            DiffPatchTexture(texture, data, dataSize, hash);
 
             pictureData->texture = g_memory.MapVirtual(g_userHeap.AllocPhysical<GuestTexture>(std::move(texture)));
             pictureData->type = 0;
