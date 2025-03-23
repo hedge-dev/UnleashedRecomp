@@ -5501,7 +5501,10 @@ static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataS
         desc.flags = ddsDesc.type == ddspp::TextureType::Cubemap ? RenderTextureFlag::CUBE : RenderTextureFlag::NONE;
 
         if (forceCubeMap)
+        {
             desc.arraySize = 6;
+            desc.flags = RenderTextureFlag::CUBE;
+        }
 
         texture.textureHolder = g_device->createTexture(desc);
         texture.texture = texture.textureHolder.get();
