@@ -1050,7 +1050,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
         }
         else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int32_t>)
         {
-            float deltaTime = std::fmin(ImGui::GetIO().DeltaTime, 1f/15f);
+            float deltaTime = std::fmin(ImGui::GetIO().DeltaTime, 1.0f/15.0f);
 
             bool fastIncrement = isSlider && (leftIsHeld || rightIsHeld) && (time - g_lastTappedTime) > 0.5;
             bool isPlayIncrementSound = true;
