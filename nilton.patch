@@ -1,0 +1,169 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9032d76..94e1769 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -20,7 +20,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+ 
+ # Target Sandy Bridge for all projects
+ add_compile_options(
+-    -march=sandybridge
++    -march=native
+ )
+ 
+ add_subdirectory(${UNLEASHED_RECOMP_THIRDPARTY_ROOT})
+diff --git a/UnleashedRecomp/gpu/rhi/plume_d3d12.cpp b/UnleashedRecomp/gpu/rhi/plume_d3d12.cpp
+index 073ea68..8100108 100644
+--- a/UnleashedRecomp/gpu/rhi/plume_d3d12.cpp
++++ b/UnleashedRecomp/gpu/rhi/plume_d3d12.cpp
+@@ -2287,6 +2287,9 @@ namespace plume {
+     }
+ 
+     void D3D12CommandQueue::executeCommandLists(const RenderCommandList **commandLists, uint32_t commandListCount, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount, RenderCommandSemaphore **signalSemaphores, uint32_t signalSemaphoreCount, RenderCommandFence *signalFence) {
++        assert(commandLists != nullptr);
++        assert(commandListCount > 0);
++
+         for (uint32_t i = 0; i < waitSemaphoreCount; i++) {
+             D3D12CommandSemaphore *interfaceSemaphore = static_cast<D3D12CommandSemaphore *>(waitSemaphores[i]);
+             d3d->Wait(interfaceSemaphore->d3d, interfaceSemaphore->semaphoreValue);
+@@ -2299,9 +2302,7 @@ namespace plume {
+             executionVector.emplace_back(static_cast<ID3D12CommandList *>(interfaceCommandList->d3d));
+         }
+ 
+-        if (!executionVector.empty()) {
+-            d3d->ExecuteCommandLists(UINT(executionVector.size()), executionVector.data());
+-        }
++        d3d->ExecuteCommandLists(UINT(executionVector.size()), executionVector.data());
+ 
+         for (uint32_t i = 0; i < signalSemaphoreCount; i++) {
+             D3D12CommandSemaphore *interfaceSemaphore = static_cast<D3D12CommandSemaphore *>(signalSemaphores[i]);
+@@ -3827,10 +3828,6 @@ namespace plume {
+         return countsSupported;
+     }
+ 
+-    void D3D12Device::waitIdle() const {
+-        assert(false && "Use fences to replicate wait idle behavior on D3D12.");
+-    }
+-
+     void D3D12Device::release() {
+         if (d3d != nullptr) {
+             d3d->Release();
+diff --git a/UnleashedRecomp/gpu/rhi/plume_d3d12.h b/UnleashedRecomp/gpu/rhi/plume_d3d12.h
+index 34461c0..13a8586 100644
+--- a/UnleashedRecomp/gpu/rhi/plume_d3d12.h
++++ b/UnleashedRecomp/gpu/rhi/plume_d3d12.h
+@@ -461,7 +461,6 @@ namespace plume {
+         const RenderDeviceCapabilities &getCapabilities() const override;
+         const RenderDeviceDescription &getDescription() const override;
+         RenderSampleCounts getSampleCountsSupported(RenderFormat format) const override;
+-        void waitIdle() const override;
+         void release();
+         bool isValid() const;
+     };
+diff --git a/UnleashedRecomp/gpu/rhi/plume_render_interface.h b/UnleashedRecomp/gpu/rhi/plume_render_interface.h
+index e62db05..15f661e 100644
+--- a/UnleashedRecomp/gpu/rhi/plume_render_interface.h
++++ b/UnleashedRecomp/gpu/rhi/plume_render_interface.h
+@@ -200,7 +200,7 @@ namespace plume {
+ 
+         // Concrete implementation shortcuts.
+         inline void executeCommandLists(const RenderCommandList *commandList, RenderCommandFence *signalFence = nullptr) {
+-            executeCommandLists(commandList != nullptr ? &commandList : nullptr, commandList != nullptr ? 1 : 0, nullptr, 0, nullptr, 0, signalFence);
++            executeCommandLists(&commandList, 1, nullptr, 0, nullptr, 0, signalFence);
+         }
+     };
+ 
+@@ -242,7 +242,6 @@ namespace plume {
+         virtual const RenderDeviceCapabilities &getCapabilities() const = 0;
+         virtual const RenderDeviceDescription &getDescription() const = 0;
+         virtual RenderSampleCounts getSampleCountsSupported(RenderFormat format) const = 0;
+-        virtual void waitIdle() const = 0;
+     };
+ 
+     struct RenderInterface {
+diff --git a/UnleashedRecomp/gpu/rhi/plume_vulkan.cpp b/UnleashedRecomp/gpu/rhi/plume_vulkan.cpp
+index 94f91fa..1fb74c6 100644
+--- a/UnleashedRecomp/gpu/rhi/plume_vulkan.cpp
++++ b/UnleashedRecomp/gpu/rhi/plume_vulkan.cpp
+@@ -4207,10 +4207,6 @@ namespace plume {
+         }
+     }
+ 
+-    void VulkanDevice::waitIdle() const {
+-        vkDeviceWaitIdle(vk);
+-    }
+-
+     void VulkanDevice::release() {
+         if (allocator != VK_NULL_HANDLE) {
+             vmaDestroyAllocator(allocator);
+diff --git a/UnleashedRecomp/gpu/rhi/plume_vulkan.h b/UnleashedRecomp/gpu/rhi/plume_vulkan.h
+index e25e186..27cda00 100644
+--- a/UnleashedRecomp/gpu/rhi/plume_vulkan.h
++++ b/UnleashedRecomp/gpu/rhi/plume_vulkan.h
+@@ -430,7 +430,6 @@ namespace plume {
+         const RenderDeviceCapabilities &getCapabilities() const override;
+         const RenderDeviceDescription &getDescription() const override;
+         RenderSampleCounts getSampleCountsSupported(RenderFormat format) const override;
+-        void waitIdle() const override;
+         void release();
+         bool isValid() const;
+     };
+diff --git a/UnleashedRecomp/gpu/video.cpp b/UnleashedRecomp/gpu/video.cpp
+index 19c7fb6..1930c00 100644
+--- a/UnleashedRecomp/gpu/video.cpp
++++ b/UnleashedRecomp/gpu/video.cpp
+@@ -1978,23 +1978,21 @@ void Video::WaitForGPU()
+ {
+     g_waitForGPUCount++;
+ 
+-    if (g_vulkan)
+-    {
+-        g_device->waitIdle();
+-    }
+-    else 
++    // Wait for all queued frames to finish.
++    for (size_t i = 0; i < NUM_FRAMES; i++)
+     {
+-        for (size_t i = 0; i < NUM_FRAMES; i++)
++        if (g_commandListStates[i])
+         {
+-            if (g_commandListStates[i])
+-            {
+-                g_queue->waitForCommandFence(g_commandFences[i].get());
+-                g_commandListStates[i] = false;
+-            }
++            g_queue->waitForCommandFence(g_commandFences[i].get());
++            g_commandListStates[i] = false;
+         }
+-        g_queue->executeCommandLists(nullptr, g_commandFences[0].get());
+-        g_queue->waitForCommandFence(g_commandFences[0].get());
+     }
++
++    // Execute an empty command list and wait for it to end to guarantee that any remaining presentation has finished.
++    g_commandLists[0]->begin();
++    g_commandLists[0]->end();
++    g_queue->executeCommandLists(g_commandLists[0].get(), g_commandFences[0].get());
++    g_queue->waitForCommandFence(g_commandFences[0].get());
+ }
+ 
+ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, be<uint32_t>* a6)
+diff --git a/thirdparty/Vulkan-Headers b/thirdparty/Vulkan-Headers
+index 14345da..78c3597 160000
+--- a/thirdparty/Vulkan-Headers
++++ b/thirdparty/Vulkan-Headers
+@@ -1 +1 @@
+-Subproject commit 14345dab231912ee9601136e96ca67a6e1f632e7
++Subproject commit 78c359741d855213e8685278eb81bb62599f8e56
+diff --git a/thirdparty/VulkanMemoryAllocator b/thirdparty/VulkanMemoryAllocator
+index 1c35ba9..29b35ea 160000
+--- a/thirdparty/VulkanMemoryAllocator
++++ b/thirdparty/VulkanMemoryAllocator
+@@ -1 +1 @@
+-Subproject commit 1c35ba99ce775f8342d87a83a3f0f696f99c2a39
++Subproject commit 29b35ea4232688c0f42cdff0c10848290760a417
+diff --git a/thirdparty/vcpkg b/thirdparty/vcpkg
+index b322364..b1d8051 160000
+--- a/thirdparty/vcpkg
++++ b/thirdparty/vcpkg
+@@ -1 +1 @@
+-Subproject commit b322364f06308bdd24823f9d8f03fe0cc86fd46f
++Subproject commit b1d8051c9259b82fda906e0e8249e7d848efdbaa

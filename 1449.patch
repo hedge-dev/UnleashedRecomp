@@ -1,0 +1,27 @@
+From 220eaa19ac55f0de5beeb0794aba23f5e5e2b1de Mon Sep 17 00:00:00 2001
+From: AL2009man <67606569+AL2009man@users.noreply.github.com>
+Date: Thu, 20 Mar 2025 23:25:09 -0400
+Subject: [PATCH] Updated SDL2 Submodule to Version 2.32.x Release Build
+
+when UnleashedRecomp was released, it was running on SDL2 2.29.2 pre-release, this ultimately become 2.30.0. To closely align with the most up-to-date version of SDL2 and SDL2 Mixer: the submodule for both of them has been updated to be based on the 2.32.X branch.
+
+Specifically: SDL Version 2.32.2-9-g2708e08f4, and SDL2_mixer 2.8.1.
+---
+ thirdparty/SDL       | 2 +-
+ thirdparty/SDL_mixer | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/thirdparty/SDL b/thirdparty/SDL
+index 1edaad17..2708e08f 160000
+--- a/thirdparty/SDL
++++ b/thirdparty/SDL
+@@ -1 +1 @@
+-Subproject commit 1edaad17218d67b567c149badce9ef0fc67f65fa
++Subproject commit 2708e08f40933d57aee0ba5f3406f1f75f3d9f55
+diff --git a/thirdparty/SDL_mixer b/thirdparty/SDL_mixer
+index 43799269..942151a4 160000
+--- a/thirdparty/SDL_mixer
++++ b/thirdparty/SDL_mixer
+@@ -1 +1 @@
+-Subproject commit 437992692cf9300f2b2f04be35adc7445a9055bf
++Subproject commit 942151a4e8594a79037826963a5bc1e1add7bc3b

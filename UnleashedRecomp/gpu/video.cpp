@@ -1978,23 +1978,21 @@ void Video::WaitForGPU()
 {
     g_waitForGPUCount++;
 
-    if (g_vulkan)
+    // Wait for all queued frames to finish.
+    for (size_t i = 0; i < NUM_FRAMES; i++)
     {
-        g_device->waitIdle();
-    }
-    else 
-    {
-        for (size_t i = 0; i < NUM_FRAMES; i++)
+        if (g_commandListStates[i])
         {
-            if (g_commandListStates[i])
-            {
-                g_queue->waitForCommandFence(g_commandFences[i].get());
-                g_commandListStates[i] = false;
-            }
+            g_queue->waitForCommandFence(g_commandFences[i].get());
+            g_commandListStates[i] = false;
         }
-        g_queue->executeCommandLists(nullptr, g_commandFences[0].get());
-        g_queue->waitForCommandFence(g_commandFences[0].get());
     }
+
+    // Execute an empty command list and wait for it to end to guarantee that any remaining presentation has finished.
+    g_commandLists[0]->begin();
+    g_commandLists[0]->end();
+    g_queue->executeCommandLists(g_commandLists[0].get(), g_commandFences[0].get());
+    g_queue->waitForCommandFence(g_commandFences[0].get());
 }
 
 static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, be<uint32_t>* a6)

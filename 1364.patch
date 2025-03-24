@@ -1,0 +1,182 @@
+From 9b7625f03e96cccf4733b700f16c56e0b0fae42e Mon Sep 17 00:00:00 2001
+From: Dario <dariosamo@gmail.com>
+Date: Thu, 13 Mar 2025 19:08:35 -0300
+Subject: [PATCH 1/3] Remove the need for waitIdle from Vulkan.
+
+---
+ UnleashedRecomp/gpu/video.cpp | 24 +++++++++++-------------
+ 1 file changed, 11 insertions(+), 13 deletions(-)
+
+diff --git a/UnleashedRecomp/gpu/video.cpp b/UnleashedRecomp/gpu/video.cpp
+index e24ce4de..f9ba6820 100644
+--- a/UnleashedRecomp/gpu/video.cpp
++++ b/UnleashedRecomp/gpu/video.cpp
+@@ -1973,23 +1973,21 @@ void Video::WaitForGPU()
+ {
+     g_waitForGPUCount++;
+ 
+-    if (g_vulkan)
+-    {
+-        g_device->waitIdle();
+-    }
+-    else 
++    // Wait for all queue frames to finish.
++    for (size_t i = 0; i < NUM_FRAMES; i++)
+     {
+-        for (size_t i = 0; i < NUM_FRAMES; i++)
++        if (g_commandListStates[i])
+         {
+-            if (g_commandListStates[i])
+-            {
+-                g_queue->waitForCommandFence(g_commandFences[i].get());
+-                g_commandListStates[i] = false;
+-            }
++            g_queue->waitForCommandFence(g_commandFences[i].get());
++            g_commandListStates[i] = false;
+         }
+-        g_queue->executeCommandLists(nullptr, g_commandFences[0].get());
+-        g_queue->waitForCommandFence(g_commandFences[0].get());
+     }
++
++    // Execute an empty command list and wait for it to end to guarantee that any remaining presentation has finished.
++    g_commandLists[0]->begin();
++    g_commandLists[0]->end();
++    g_queue->executeCommandLists(g_commandLists[0].get(), g_commandFences[0].get());
++    g_queue->waitForCommandFence(g_commandFences[0].get());
+ }
+ 
+ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, be<uint32_t>* a6)
+
+From cb4eaae9ff98fd6d6f73f2a2badc556ff8ea7357 Mon Sep 17 00:00:00 2001
+From: Dario <dariosamo@gmail.com>
+Date: Thu, 13 Mar 2025 19:11:02 -0300
+Subject: [PATCH 2/3] Remove waitIdle and only accept valid pointers on
+ execute.
+
+---
+ UnleashedRecomp/gpu/rhi/plume_d3d12.cpp          | 11 ++++-------
+ UnleashedRecomp/gpu/rhi/plume_d3d12.h            |  1 -
+ UnleashedRecomp/gpu/rhi/plume_render_interface.h |  3 +--
+ UnleashedRecomp/gpu/rhi/plume_vulkan.cpp         |  4 ----
+ UnleashedRecomp/gpu/rhi/plume_vulkan.h           |  1 -
+ 5 files changed, 5 insertions(+), 15 deletions(-)
+
+diff --git a/UnleashedRecomp/gpu/rhi/plume_d3d12.cpp b/UnleashedRecomp/gpu/rhi/plume_d3d12.cpp
+index 395630c2..31e4dfac 100644
+--- a/UnleashedRecomp/gpu/rhi/plume_d3d12.cpp
++++ b/UnleashedRecomp/gpu/rhi/plume_d3d12.cpp
+@@ -2285,6 +2285,9 @@ namespace plume {
+     }
+ 
+     void D3D12CommandQueue::executeCommandLists(const RenderCommandList **commandLists, uint32_t commandListCount, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount, RenderCommandSemaphore **signalSemaphores, uint32_t signalSemaphoreCount, RenderCommandFence *signalFence) {
++        assert(commandLists != nullptr);
++        assert(commandListCount > 0);
++
+         for (uint32_t i = 0; i < waitSemaphoreCount; i++) {
+             D3D12CommandSemaphore *interfaceSemaphore = static_cast<D3D12CommandSemaphore *>(waitSemaphores[i]);
+             d3d->Wait(interfaceSemaphore->d3d, interfaceSemaphore->semaphoreValue);
+@@ -2297,9 +2300,7 @@ namespace plume {
+             executionVector.emplace_back(static_cast<ID3D12CommandList *>(interfaceCommandList->d3d));
+         }
+ 
+-        if (!executionVector.empty()) {
+-            d3d->ExecuteCommandLists(UINT(executionVector.size()), executionVector.data());
+-        }
++        d3d->ExecuteCommandLists(UINT(executionVector.size()), executionVector.data());
+ 
+         for (uint32_t i = 0; i < signalSemaphoreCount; i++) {
+             D3D12CommandSemaphore *interfaceSemaphore = static_cast<D3D12CommandSemaphore *>(signalSemaphores[i]);
+@@ -3798,10 +3799,6 @@ namespace plume {
+         return countsSupported;
+     }
+ 
+-    void D3D12Device::waitIdle() const {
+-        assert(false && "Use fences to replicate wait idle behavior on D3D12.");
+-    }
+-
+     void D3D12Device::release() {
+         if (d3d != nullptr) {
+             d3d->Release();
+diff --git a/UnleashedRecomp/gpu/rhi/plume_d3d12.h b/UnleashedRecomp/gpu/rhi/plume_d3d12.h
+index d4987fbc..83304b41 100644
+--- a/UnleashedRecomp/gpu/rhi/plume_d3d12.h
++++ b/UnleashedRecomp/gpu/rhi/plume_d3d12.h
+@@ -459,7 +459,6 @@ namespace plume {
+         const RenderDeviceCapabilities &getCapabilities() const override;
+         const RenderDeviceDescription &getDescription() const override;
+         RenderSampleCounts getSampleCountsSupported(RenderFormat format) const override;
+-        void waitIdle() const override;
+         void release();
+         bool isValid() const;
+     };
+diff --git a/UnleashedRecomp/gpu/rhi/plume_render_interface.h b/UnleashedRecomp/gpu/rhi/plume_render_interface.h
+index e62db052..15f661e7 100644
+--- a/UnleashedRecomp/gpu/rhi/plume_render_interface.h
++++ b/UnleashedRecomp/gpu/rhi/plume_render_interface.h
+@@ -200,7 +200,7 @@ namespace plume {
+ 
+         // Concrete implementation shortcuts.
+         inline void executeCommandLists(const RenderCommandList *commandList, RenderCommandFence *signalFence = nullptr) {
+-            executeCommandLists(commandList != nullptr ? &commandList : nullptr, commandList != nullptr ? 1 : 0, nullptr, 0, nullptr, 0, signalFence);
++            executeCommandLists(&commandList, 1, nullptr, 0, nullptr, 0, signalFence);
+         }
+     };
+ 
+@@ -242,7 +242,6 @@ namespace plume {
+         virtual const RenderDeviceCapabilities &getCapabilities() const = 0;
+         virtual const RenderDeviceDescription &getDescription() const = 0;
+         virtual RenderSampleCounts getSampleCountsSupported(RenderFormat format) const = 0;
+-        virtual void waitIdle() const = 0;
+     };
+ 
+     struct RenderInterface {
+diff --git a/UnleashedRecomp/gpu/rhi/plume_vulkan.cpp b/UnleashedRecomp/gpu/rhi/plume_vulkan.cpp
+index 477a431a..bfac73aa 100644
+--- a/UnleashedRecomp/gpu/rhi/plume_vulkan.cpp
++++ b/UnleashedRecomp/gpu/rhi/plume_vulkan.cpp
+@@ -4190,10 +4190,6 @@ namespace plume {
+         }
+     }
+ 
+-    void VulkanDevice::waitIdle() const {
+-        vkDeviceWaitIdle(vk);
+-    }
+-
+     void VulkanDevice::release() {
+         if (allocator != VK_NULL_HANDLE) {
+             vmaDestroyAllocator(allocator);
+diff --git a/UnleashedRecomp/gpu/rhi/plume_vulkan.h b/UnleashedRecomp/gpu/rhi/plume_vulkan.h
+index e25e1869..27cda006 100644
+--- a/UnleashedRecomp/gpu/rhi/plume_vulkan.h
++++ b/UnleashedRecomp/gpu/rhi/plume_vulkan.h
+@@ -430,7 +430,6 @@ namespace plume {
+         const RenderDeviceCapabilities &getCapabilities() const override;
+         const RenderDeviceDescription &getDescription() const override;
+         RenderSampleCounts getSampleCountsSupported(RenderFormat format) const override;
+-        void waitIdle() const override;
+         void release();
+         bool isValid() const;
+     };
+
+From 888f11e7f4472a3e4f67fe1a9c33318a44d097c9 Mon Sep 17 00:00:00 2001
+From: Dario <dariosamo@gmail.com>
+Date: Thu, 13 Mar 2025 19:12:05 -0300
+Subject: [PATCH 3/3] Update comment.
+
+---
+ UnleashedRecomp/gpu/video.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/UnleashedRecomp/gpu/video.cpp b/UnleashedRecomp/gpu/video.cpp
+index f9ba6820..f80e04fd 100644
+--- a/UnleashedRecomp/gpu/video.cpp
++++ b/UnleashedRecomp/gpu/video.cpp
+@@ -1973,7 +1973,7 @@ void Video::WaitForGPU()
+ {
+     g_waitForGPUCount++;
+ 
+-    // Wait for all queue frames to finish.
++    // Wait for all queued frames to finish.
+     for (size_t i = 0; i < NUM_FRAMES; i++)
+     {
+         if (g_commandListStates[i])

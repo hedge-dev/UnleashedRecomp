@@ -200,7 +200,7 @@ namespace plume {
 
         // Concrete implementation shortcuts.
         inline void executeCommandLists(const RenderCommandList *commandList, RenderCommandFence *signalFence = nullptr) {
-            executeCommandLists(commandList != nullptr ? &commandList : nullptr, commandList != nullptr ? 1 : 0, nullptr, 0, nullptr, 0, signalFence);
+            executeCommandLists(&commandList, 1, nullptr, 0, nullptr, 0, signalFence);
         }
     };
 
@@ -242,7 +242,6 @@ namespace plume {
         virtual const RenderDeviceCapabilities &getCapabilities() const = 0;
         virtual const RenderDeviceDescription &getDescription() const = 0;
         virtual RenderSampleCounts getSampleCountsSupported(RenderFormat format) const = 0;
-        virtual void waitIdle() const = 0;
     };
 
     struct RenderInterface {

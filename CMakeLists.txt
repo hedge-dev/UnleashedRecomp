@@ -20,7 +20,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 # Target Sandy Bridge for all projects
 add_compile_options(
-    -march=sandybridge
+    -march=native
 )
 
 add_subdirectory(${UNLEASHED_RECOMP_THIRDPARTY_ROOT})

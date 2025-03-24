@@ -2287,6 +2287,9 @@ namespace plume {
     }
 
     void D3D12CommandQueue::executeCommandLists(const RenderCommandList **commandLists, uint32_t commandListCount, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount, RenderCommandSemaphore **signalSemaphores, uint32_t signalSemaphoreCount, RenderCommandFence *signalFence) {
+        assert(commandLists != nullptr);
+        assert(commandListCount > 0);
+
         for (uint32_t i = 0; i < waitSemaphoreCount; i++) {
             D3D12CommandSemaphore *interfaceSemaphore = static_cast<D3D12CommandSemaphore *>(waitSemaphores[i]);
             d3d->Wait(interfaceSemaphore->d3d, interfaceSemaphore->semaphoreValue);
@@ -2299,9 +2302,7 @@ namespace plume {
             executionVector.emplace_back(static_cast<ID3D12CommandList *>(interfaceCommandList->d3d));
         }
 
-        if (!executionVector.empty()) {
-            d3d->ExecuteCommandLists(UINT(executionVector.size()), executionVector.data());
-        }
+        d3d->ExecuteCommandLists(UINT(executionVector.size()), executionVector.data());
 
         for (uint32_t i = 0; i < signalSemaphoreCount; i++) {
             D3D12CommandSemaphore *interfaceSemaphore = static_cast<D3D12CommandSemaphore *>(signalSemaphores[i]);
@@ -3825,10 +3826,6 @@ namespace plume {
         }
 
         return countsSupported;
-    }
-
-    void D3D12Device::waitIdle() const {
-        assert(false && "Use fences to replicate wait idle behavior on D3D12.");
     }
 
     void D3D12Device::release() {
