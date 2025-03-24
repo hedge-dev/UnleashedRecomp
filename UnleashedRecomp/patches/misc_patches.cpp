@@ -167,7 +167,7 @@ PPC_FUNC(sub_82B4DB48)
 {
     if (Config::DisableBoostFilter && strcmp((const char*)(base + ctx.r4.u32), "boost") == 0)
     {
-        ctx.f1.f64 = 0.0f;
+        ctx.f1.f64 = 0.0;
     }
 
     __imp__sub_82B4DB48(ctx, base);
