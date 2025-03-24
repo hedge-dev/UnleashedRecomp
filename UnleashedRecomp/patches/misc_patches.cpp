@@ -157,12 +157,18 @@ PPC_FUNC(sub_824C1E60)
     __imp__sub_824C1E60(ctx, base);
 }
 
-// Remove boost filter
-void DisableBoostFilterMidAsmHook(PPCRegister& r11)
+// This function is called in various places but primarily for the boost filter
+// when the second argument (r4) is set to "boost". Whilst boosting the third argument (f1)
+// will go up to 1.0f and then down to 0.0f as the player lets off of the boost button.
+// To avoid the boost filter from kicking in at all if the function is called with "boost"
+// we set the third argument to zero no matter what (if the code is on).
+PPC_FUNC_IMPL(__imp__sub_82B4DB48);
+PPC_FUNC(sub_82B4DB48)
 {
-    if (Config::DisableBoostFilter)
+    if (Config::DisableBoostFilter && strcmp((const char*)(base + ctx.r4.u32), "boost") == 0)
     {
-        if (r11.u32 == 1)
-            r11.u32 = 0;
+        ctx.f1.f64 = 0.0f;
     }
+
+    __imp__sub_82B4DB48(ctx, base);
 }
