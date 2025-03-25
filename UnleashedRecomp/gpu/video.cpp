@@ -3727,7 +3727,7 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
             else
             {
                 guestShader->shader = g_device->createShader(g_shaderCache.get() + guestShader->shaderCacheEntry->dxilOffset, 
-                    guestShader->shaderCacheEntry->dxilSize, "main", RenderShaderFormat::DXIL);
+                    guestShader->shaderCacheEntry->dxilSize, "shaderMain", RenderShaderFormat::DXIL);
             }
         }
 
@@ -3832,7 +3832,7 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
         const wchar_t* libraryNames[] = { specConstantsLibName, shaderLibName };
 
         ComPtr<IDxcOperationResult> result;
-        HRESULT hr = s_dxcLinker->Link(L"main", guestShader->type == ResourceType::VertexShader ? L"vs_6_0" : L"ps_6_0",
+        HRESULT hr = s_dxcLinker->Link(L"shaderMain", guestShader->type == ResourceType::VertexShader ? L"vs_6_0" : L"ps_6_0",
             libraryNames, std::size(libraryNames), nullptr, 0, result.GetAddressOf());
 
         assert(SUCCEEDED(hr) && result != nullptr);
@@ -3847,7 +3847,7 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
             auto& linkedShader = guestShader->linkedShaders[specConstants];
             if (linkedShader == nullptr)
             {
-                linkedShader = g_device->createShader(blob->GetBufferPointer(), blob->GetBufferSize(), "main", RenderShaderFormat::DXIL);
+                linkedShader = g_device->createShader(blob->GetBufferPointer(), blob->GetBufferSize(), "shaderMain", RenderShaderFormat::DXIL);
                 guestShader->shaderBlobs.push_back(std::move(blob));
             }
 
