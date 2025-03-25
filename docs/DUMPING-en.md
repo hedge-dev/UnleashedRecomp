@@ -1,9 +1,9 @@
 # Dumping
 
 > [!NOTE]
-> The following guide is for dumping the game directly from the Xbox 360 hard drive.
+> The following guide is for dumping the game from an Xbox 360 hard drive.
 >
-> If you want to use a USB storage device, use [this guide](DUMPING-en-usb.md) instead.
+> If you wish to use a USB storage device, use [this guide](DUMPING-USB-en.md) instead.
 
 ### Pre-requisites
 - Xbox 360 (modifications not necessary)
