@@ -6,7 +6,7 @@
 > If you wish to dump the game from your Xbox 360 hard drive, use [this guide](DUMPING-en.md) instead.
 
 ### Pre-requisites
-- Xbox 360 (modifications not necessary); see [note about Xbox 360 S](#xbox-360-s)
+- Xbox 360 (modifications not necessary)
 - USB Storage Device (16 GB minimum)
 - Sonic Unleashed for Xbox 360 (US or EU, **JP is not supported**)
     - Retail Disc or Digital Copy (can be purchased and downloaded from the [Xbox Store](https://www.xbox.com/en-US/games/store/sonic-unleashed/c098fgnmts8f)).
@@ -14,6 +14,11 @@
     - All available DLC (Adventure Packs) are optional, but **highly recommended**. **The DLC includes high quality lighting for the entire game**.
 - [7-Zip](https://7-zip.org/download.html) (for extracting Velocity)
 - [Velocity](https://github.com/Gualdimar/Velocity/releases/download/xex%2Biso-branch/Velocity-XEXISO.rar) (Gualdimar's fork)
+
+> [!NOTE]
+> Some Xbox 360 S|E consoles come with 4 GB of internal flash storage. These are **not compatible** with this method since you cannot set a USB storage device as a system drive on them.
+>
+> An exception is for versions with the Trinity motherboard, where the storage module is located on a separate daughterboard and can be disconnected (not recommended for inexperienced users). On other models, this module is soldered directly onto the motherboard and cannot be disconnected.
 
 ### Instructions
 
@@ -82,9 +87,3 @@
 
 26. Right-click on the file that begins with `TU_19KA20I` and click **Copy Selected to Local Disk**, then navigate to the folder you created in step 18 and select it. Velocity will now begin copying the title update to your PC.
 27. Once the transfer is complete, you should have all the necessary files for installation. You may now reconnect your hard drive to your console and restore your Xbox Live profile from the USB storage device. After that, [return to the readme and proceed to the next step](/README.md#how-to-install).
-
-### Xbox 360 S consoles
-> [!NOTE]
-> Some Xbox 360 S consoles come with 4 GB of internal flash storage. These are **not compatible** with this method since you cannot set a USB storage device as a system drive on them.
->
-> An exception is for versions with the Trinity motherboard, where the storage module is located on a separate daughterboard and can be disconnected (not recommended for inexperienced users). On other models, this module is soldered directly onto the motherboard and cannot be disconnected.
