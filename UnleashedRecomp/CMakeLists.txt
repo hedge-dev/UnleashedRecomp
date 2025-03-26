@@ -4,6 +4,10 @@ if (WIN32)
     option(UNLEASHED_RECOMP_D3D12 "Add D3D12 support for rendering" ON)
 endif()
 
+if (APPLE)
+    option(UNLEASHED_RECOMP_METAL "Add Metal support for rendering" ON)
+endif()
+
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     option(UNLEASHED_RECOMP_FLATPAK "Configure the build for Flatpak compatibility." OFF)
 endif()

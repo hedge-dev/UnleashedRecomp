@@ -785,6 +785,13 @@ static void LoadEmbeddedResources()
         g_shaderCache = std::make_unique<uint8_t[]>(g_spirvCacheDecompressedSize);
         ZSTD_decompress(g_shaderCache.get(), g_spirvCacheDecompressedSize, g_compressedSpirvCache, g_spirvCacheCompressedSize);
     }
+#ifdef UNLEASHED_RECOMP_METAL
+    else
+    {
+        g_shaderCache = std::make_unique<uint8_t[]>(g_airCacheDecompressedSize);
+        ZSTD_decompress(g_shaderCache.get(), g_airCacheDecompressedSize, g_compressedAirCache, g_airCacheCompressedSize);
+    }
+#endif
 #ifdef UNLEASHED_RECOMP_D3D12
     else
     {
