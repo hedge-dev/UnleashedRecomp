@@ -129,6 +129,9 @@ namespace plume
 #ifdef UNLEASHED_RECOMP_D3D12
     extern std::unique_ptr<RenderInterface> CreateD3D12Interface();
 #endif
+#ifdef UNLEASHED_RECOMP_METAL
+    extern std::unique_ptr<RenderInterface> CreateMetalInterface();
+#endif
 #ifdef SDL_VULKAN_ENABLED
     extern std::unique_ptr<RenderInterface> CreateVulkanInterface(RenderWindow sdlWindow);
 #else
@@ -309,16 +312,13 @@ static Profiler g_swapChainAcquireProfiler;
 static bool g_profilerVisible;
 static bool g_profilerWasToggled;
 
-#ifdef UNLEASHED_RECOMP_D3D12
-static bool g_vulkan = false;
+#if !defined(UNLEASHED_RECOMP_D3D12) && !defined(UNLEASHED_RECOMP_METAL)
+static constexpr Backend g_backend = Backend::VULKAN;
 #else
-static constexpr bool g_vulkan = true;
+static Backend g_backend;
 #endif
 
 static bool g_triangleStripWorkaround = false;
-
-static bool g_hardwareResolve = true;
-static bool g_hardwareDepthResolve = true;
 
 static std::unique_ptr<RenderInterface> g_interface;
 static std::unique_ptr<RenderDevice> g_device;
@@ -806,25 +806,27 @@ static std::unique_ptr<uint8_t[]> g_buttonBcDiff;
 
 static void LoadEmbeddedResources()
 {
-    if (g_vulkan)
+    switch (g_backend)
     {
+        case Backend::VULKAN:
         g_shaderCache = std::make_unique<uint8_t[]>(g_spirvCacheDecompressedSize);
         ZSTD_decompress(g_shaderCache.get(), g_spirvCacheDecompressedSize, g_compressedSpirvCache, g_spirvCacheCompressedSize);
-    }
+            break;
+#ifdef UNLEASHED_RECOM_D3D12
+        case Backend::D3D12:
+            g_shaderCache = std::make_unique<uint8_t[]>(g_dxilCacheDecompressedSize);
+            ZSTD_decompress(g_shaderCache.get(), g_dxilCacheDecompressedSize, g_compressedDxilCache, g_dxilCacheCompressedSize);
+            break;
+#endif
 #ifdef UNLEASHED_RECOMP_METAL
-    else
-    {
+        case Backend::METAL:
         g_shaderCache = std::make_unique<uint8_t[]>(g_airCacheDecompressedSize);
         ZSTD_decompress(g_shaderCache.get(), g_airCacheDecompressedSize, g_compressedAirCache, g_airCacheCompressedSize);
-    }
+            break;
+        default:
+            assert(false);
 #endif
-#ifdef UNLEASHED_RECOMP_D3D12
-    else
-    {
-        g_shaderCache = std::make_unique<uint8_t[]>(g_dxilCacheDecompressedSize);
-        ZSTD_decompress(g_shaderCache.get(), g_dxilCacheDecompressedSize, g_compressedDxilCache, g_dxilCacheCompressedSize);
     }
-#endif
 
     g_buttonBcDiff = decompressZstd(g_button_bc_diff, g_button_bc_diff_uncompressed_size);
 }
@@ -1331,10 +1333,19 @@ static std::unique_ptr<GuestShader> g_enhancedMotionBlurShader;
 
 #define CREATE_SHADER(NAME) \
     g_device->createShader( \
-        g_vulkan ? g_##NAME##_spirv : g_##NAME##_dxil, \
-        g_vulkan ? sizeof(g_##NAME##_spirv) : sizeof(g_##NAME##_dxil), \
+        (g_backend == Backend::VULKAN) ? g_##NAME##_spirv : g_##NAME##_dxil, \
+        (g_backend == Backend::VULKAN) ? sizeof(g_##NAME##_spirv) : sizeof(g_##NAME##_dxil), \
         "main", \
-        g_vulkan ? RenderShaderFormat::SPIRV : RenderShaderFormat::DXIL)
+        (g_backend == Backend::VULKAN) ? RenderShaderFormat::SPIRV : RenderShaderFormat::DXIL)
+
+#elif UNLEASHED_RECOMP_METAL
+
+#define CREATE_SHADER(NAME) \
+    g_device->createShader( \
+        (g_backend == Backend::VULKAN) ? g_##NAME##_spirv : g_##NAME##_air, \
+        (g_backend == Backend::VULKAN) ? sizeof(g_##NAME##_spirv) : sizeof(g_##NAME##_air), \
+        (g_backend == Backend::VULKAN) ? "main" : "shaderMain", \
+        (g_backend == Backend::VULKAN) ? RenderShaderFormat::SPIRV : RenderShaderFormat::METAL)
 
 #else
 
@@ -1705,7 +1716,12 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     GameWindow::Init(sdlVideoDriver);
 
 #ifdef UNLEASHED_RECOMP_D3D12
-    g_vulkan = DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan;
+    g_backend = (DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan) ? Backend::VULKAN : Backend::D3D12;
+#endif
+
+#ifdef UNLEASHED_RECOMP_METAL
+    // TODO: Set this based on a config value and change default to Metal
+    g_backend = Backend::METAL;
 #endif
 
     // Attempt to create the possible backends using a vector of function pointers. Whichever succeeds first will be the chosen API.
@@ -1716,11 +1732,21 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     if (graphicsApiRetry)
     {
         // If we are attempting to create again after a reboot due to a crash, swap the order.
-        g_vulkan = !g_vulkan;
+        if (g_backend == Backend::VULKAN)
+        {
+            g_backend = Backend::D3D12;
+        }
+        else
+        {
+            g_backend = Backend::VULKAN;
+        }
     }
-
-    interfaceFunctions.push_back(g_vulkan ? CreateVulkanInterfaceWrapper : CreateD3D12Interface);
-    interfaceFunctions.push_back(g_vulkan ? CreateD3D12Interface : CreateVulkanInterfaceWrapper);
+    
+    interfaceFunctions.push_back((g_backend == Backend::VULKAN) ? CreateVulkanInterfaceWrapper : CreateD3D12Interface);
+    interfaceFunctions.push_back((g_backend == Backend::VULKAN) ? CreateD3D12Interface : CreateVulkanInterfaceWrapper);
+#elif UNLEASHED_RECOMP_METAL
+    interfaceFunctions.push_back((g_backend == Backend::VULKAN) ? CreateVulkanInterfaceWrapper : CreateMetalInterface);
+    interfaceFunctions.push_back((g_backend == Backend::VULKAN) ? CreateMetalInterface : CreateVulkanInterfaceWrapper);
 #else
     interfaceFunctions.push_back(CreateVulkanInterfaceWrapper);
 #endif
@@ -1732,9 +1758,9 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
         __try
 #endif
         {
-            g_interface = interfaceFunction();
+        g_interface = interfaceFunction();
             if (g_interface == nullptr)
-            {
+        {
                 continue;
             }
 
@@ -1768,11 +1794,11 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
                     // Allow redirection to Vulkan only if we are not retrying after a crash, 
                     // so the user can at least boot the game with D3D12 if Vulkan fails to work.
                     if (!graphicsApiRetry && redirectToVulkan)
-                    {
-                        g_device.reset();
-                        g_interface.reset();
-                        continue;
-                    }
+                        {
+                            g_device.reset();
+                            g_interface.reset();
+                            continue;
+                        }
 
                     // Hardware resolve seems to be completely bugged on Intel D3D12 drivers.
                     g_hardwareResolve = (deviceDescription.vendor != RenderDeviceVendor::INTEL);
@@ -1815,7 +1841,7 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     if (graphicsApiRetry)
     {
         // If we managed to create a device after retrying it in a reboot, remember the one we picked.
-        Config::GraphicsAPI = g_vulkan ? EGraphicsAPI::Vulkan : EGraphicsAPI::D3D12;
+        Config::GraphicsAPI = (g_backend == Backend::VULKAN) ? EGraphicsAPI::Vulkan : EGraphicsAPI::D3D12;
     }
 #endif
 
@@ -1853,7 +1879,7 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     g_queue = g_device->createCommandQueue(RenderCommandListType::DIRECT);
 
     for (auto& commandList : g_commandLists)
-        commandList = g_device->createCommandList(RenderCommandListType::DIRECT);
+        commandList = g_queue->createCommandList();
 
     for (auto& commandFence : g_commandFences)
         commandFence = g_device->createCommandFence();
@@ -1862,7 +1888,7 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
         queryPool = g_device->createQueryPool(NUM_QUERIES);
 
     g_copyQueue = g_device->createCommandQueue(RenderCommandListType::COPY);
-    g_copyCommandList = g_device->createCommandList(RenderCommandListType::COPY);
+    g_copyCommandList = g_copyQueue->createCommandList();
     g_copyCommandFence = g_device->createCommandFence();
 
     uint32_t bufferCount = 2;
@@ -1870,17 +1896,19 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     switch (Config::TripleBuffering)
     {
     case ETripleBuffering::Auto:
-        if (g_vulkan)
-        {
+        switch (g_backend) {
+            case Backend::VULKAN:
             // Defaulting to 3 is fine if presentWait as supported, as the maximum frame latency allowed is only 1.
             bufferCount = g_device->getCapabilities().presentWait ? 3 : 2;
-        }
-        else
-        {
+                break;
+            case Backend::D3D12:
             // Defaulting to 3 is fine on D3D12 thanks to flip discard model.
             bufferCount = 3;
+                break;
+            case Backend::METAL:
+                bufferCount = 2;
+                break;
         }
-
         break;
     case ETripleBuffering::On:
         bufferCount = 3;
@@ -1975,7 +2003,7 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
 
     pipelineLayoutBuilder.addDescriptorSet(descriptorSetBuilder);
 
-    if (g_vulkan)
+    if (g_backend != Backend::D3D12)
     {
         pipelineLayoutBuilder.addPushConstant(0, 4, 24, RenderShaderStageFlag::VERTEX | RenderShaderStageFlag::PIXEL);
     }
@@ -2090,12 +2118,7 @@ void Video::WaitForGPU()
 {
     g_waitForGPUCount++;
 
-    if (g_vulkan)
-    {
-        g_device->waitIdle();
-    }
-    else 
-    {
+    // Wait for all queued frames to finish.
         for (size_t i = 0; i < NUM_FRAMES; i++)
         {
             if (g_commandListStates[i])
@@ -2104,9 +2127,11 @@ void Video::WaitForGPU()
                 g_commandListStates[i] = false;
             }
         }
-        g_queue->executeCommandLists(nullptr, g_commandFences[0].get());
+    // Execute an empty command list and wait for it to end to guarantee that any remaining presentation has finished.
+    g_commandLists[0]->begin();
+    g_commandLists[0]->end();
+    g_queue->executeCommandLists(g_commandLists[0].get(), g_commandFences[0].get());
         g_queue->waitForCommandFence(g_commandFences[0].get());
-    }
 }
 
 static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, be<uint32_t>* a6)
@@ -2244,14 +2269,14 @@ static void UnlockBuffer(GuestBuffer* buffer, bool useCopyQueue)
 {
     auto copyBuffer = [&](T* dest)
         {
-            auto src = reinterpret_cast<const T*>(buffer->mappedMemory);
+    auto src = reinterpret_cast<const T*>(buffer->mappedMemory);
 
-            for (size_t i = 0; i < buffer->dataSize; i += sizeof(T))
-            {
-                *dest = ByteSwap(*src);
-                ++dest;
-                ++src;
-            }
+    for (size_t i = 0; i < buffer->dataSize; i += sizeof(T))
+    {
+        *dest = ByteSwap(*src);
+        ++dest;
+        ++src;
+    }
         };
 
     if (useCopyQueue && g_capabilities.gpuUploadHeap)
@@ -2263,25 +2288,25 @@ static void UnlockBuffer(GuestBuffer* buffer, bool useCopyQueue)
     {
         auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(buffer->dataSize));
         copyBuffer(reinterpret_cast<T*>(uploadBuffer->map()));
-        uploadBuffer->unmap();
+    uploadBuffer->unmap();
 
-        if (useCopyQueue)
-        {
-            ExecuteCopyCommandList([&]
-                {
-                    g_copyCommandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
-                });
-        }
-        else
-        {
-            auto& commandList = g_commandLists[g_frame];
+    if (useCopyQueue)
+    {
+        ExecuteCopyCommandList([&]
+            {
+                g_copyCommandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
+            });
+    }
+    else
+    {
+        auto& commandList = g_commandLists[g_frame];
 
-            commandList->barriers(RenderBarrierStage::COPY, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::WRITE));
-            commandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
-            commandList->barriers(RenderBarrierStage::GRAPHICS, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::READ));
+        commandList->barriers(RenderBarrierStage::COPY, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::WRITE));
+        commandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
+        commandList->barriers(RenderBarrierStage::GRAPHICS, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::READ));
 
-            g_tempBuffers[g_frame].emplace_back(std::move(uploadBuffer));
-        }
+        g_tempBuffers[g_frame].emplace_back(std::move(uploadBuffer));
+    }
     }
 
     g_bufferUploadCount++;
@@ -2472,12 +2497,25 @@ static void DrawProfiler()
         ImGui::Text("Present Wait: %s", g_capabilities.presentWait ? "Supported" : "Unsupported");
         ImGui::Text("Triangle Fan: %s", g_capabilities.triangleFan ? "Supported" : "Unsupported");
         ImGui::Text("Dynamic Depth Bias: %s", g_capabilities.dynamicDepthBias ? "Supported" : "Unsupported");
+        ImGui::Text("Hardware Resolve Modes: %s", g_capabilities.resolveModes ? "Supported" : "Unsupported");
         ImGui::Text("Triangle Strip Workaround: %s", g_triangleStripWorkaround ? "Enabled" : "Disabled");
-        ImGui::Text("Hardware Resolve: %s", g_hardwareResolve ? "Enabled" : "Disabled");
-        ImGui::Text("Hardware Depth Resolve: %s", g_hardwareDepthResolve ? "Enabled" : "Disabled");
         ImGui::NewLine();
 
-        ImGui::Text("API: %s", g_vulkan ? "Vulkan" : "D3D12");
+        std::string backend;
+
+        switch (g_backend) {
+            case Backend::VULKAN:
+                backend = "Vulkan";
+                break;
+            case Backend::D3D12:
+                backend = "D3D12";
+                break;
+            case Backend::METAL:
+                backend = "Metal";
+                break;
+        }
+
+        ImGui::Text("API: %s", backend.c_str());
         ImGui::Text("Device: %s", g_device->getDescription().name.c_str());
         ImGui::Text("Device Type: %s", DeviceTypeName(g_device->getDescription().type));
         ImGui::Text("VRAM: %.2f MiB", (double)(g_device->getDescription().dedicatedVideoMemory) / (1024.0 * 1024.0));
@@ -2901,7 +2939,7 @@ static void SetRootDescriptor(const UploadAllocation& allocation, size_t index)
 {
     auto& commandList = g_commandLists[g_frame];
 
-    if (g_vulkan)
+    if (g_backend != Backend::D3D12)
         commandList->setGraphicsPushConstants(0, &allocation.deviceAddress, 8 * index, 8);
     else
         commandList->setGraphicsRootDescriptor(allocation.buffer->at(allocation.offset), index);
@@ -3388,12 +3426,9 @@ static bool PopulateBarriersForStretchRect(GuestSurface* renderTarget, GuestSurf
             RenderTextureLayout dstLayout;
             bool shaderResolve = true;
 
-            if (multiSampling && g_hardwareResolve)
+            if (multiSampling)
             {
-                // Hardware depth resolve is only supported on D3D12 when programmable sample positions are available.
-                bool hardwareDepthResolveAvailable = g_hardwareDepthResolve && !g_vulkan && g_capabilities.sampleLocations;
-
-                if (surface->format != RenderFormat::D32_FLOAT || hardwareDepthResolveAvailable)
+                if (surface->format != RenderFormat::D32_FLOAT || g_capabilities.resolveModes)
                 {
                     srcLayout = RenderTextureLayout::RESOLVE_SOURCE;
                     dstLayout = RenderTextureLayout::RESOLVE_DEST;
@@ -3433,11 +3468,9 @@ static void ExecutePendingStretchRectCommands(GuestSurface* renderTarget, GuestS
             {
                 bool shaderResolve = true;
 
-                if (multiSampling && g_hardwareResolve)
+                if (multiSampling)
                 {
-                    bool hardwareDepthResolveAvailable = g_hardwareDepthResolve && !g_vulkan && g_capabilities.sampleLocations;
-
-                    if (surface->format != RenderFormat::D32_FLOAT || hardwareDepthResolveAvailable)
+                    if (surface->format != RenderFormat::D32_FLOAT || g_capabilities.resolveModes)
                     {
                         if (surface->format == RenderFormat::D32_FLOAT)
                             commandList->resolveTextureRegion(texture->texture, 0, 0, surface->texture, nullptr, RenderResolveMode::MIN);
@@ -3553,7 +3586,7 @@ static void ExecutePendingStretchRectCommands(GuestSurface* renderTarget, GuestS
                     g_dirtyStates.pipelineState = true;
                     g_dirtyStates.scissorRect = true;
 
-                    if (g_vulkan)
+                    if (g_backend != Backend::D3D12)
                     {
                         g_dirtyStates.vertexShaderConstants = true; // The push constant call invalidates vertex shader constants.
                         g_dirtyStates.depthBias = true; // Static depth bias in copy pipeline invalidates dynamic depth bias.
@@ -3866,7 +3899,7 @@ static void ProcSetScissorRect(const RenderCommand& cmd)
 
 static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specConstants)
 {
-    if (g_vulkan ||
+    if (g_backend != Backend::D3D12 ||
         guestShader->shaderCacheEntry == nullptr || 
         guestShader->shaderCacheEntry->specConstantsMask == 0)
     {
@@ -3876,7 +3909,9 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
         {
             assert(guestShader->shaderCacheEntry != nullptr);
 
-            if (g_vulkan)
+            switch (g_backend)
+            {
+                case Backend::VULKAN:
             {
                 auto compressedSpirvData = g_shaderCache.get() + guestShader->shaderCacheEntry->spirvOffset;
 
@@ -3885,11 +3920,20 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
                 assert(result);
 
                 guestShader->shader = g_device->createShader(decoded.data(), decoded.size(), "shaderMain", RenderShaderFormat::SPIRV);
+                    break;
+                }
+                case Backend::METAL:
+                {
+                    guestShader->shader = g_device->createShader(g_shaderCache.get() + guestShader->shaderCacheEntry->airOffset,
+                    guestShader->shaderCacheEntry->airSize, "shaderMain", RenderShaderFormat::METAL);
+                    break;
             }
-            else
+                case Backend::D3D12:
             {
-                guestShader->shader = g_device->createShader(g_shaderCache.get() + guestShader->shaderCacheEntry->dxilOffset, 
+                    guestShader->shader = g_device->createShader(g_shaderCache.get() + guestShader->shaderCacheEntry->dxilOffset,
                     guestShader->shaderCacheEntry->dxilSize, "shaderMain", RenderShaderFormat::DXIL);
+                    break;
+                }
             }
         }
 
@@ -4507,7 +4551,7 @@ static void FlushRenderStateForRenderThread()
 
     // D3D12 resets depth bias values to the pipeline values, even if they are dynamic.
     // We can reduce unnecessary calls by making common depth bias values part of the pipeline.
-    if (g_capabilities.dynamicDepthBias && !g_vulkan)
+    if (g_capabilities.dynamicDepthBias && g_backend == Backend::D3D12)
     {
         bool useDepthBias = (g_depthBias != 0) || (g_slopeScaledDepthBias != 0.0f);
 
@@ -4523,7 +4567,7 @@ static void FlushRenderStateForRenderThread()
         commandList->setPipeline(CreateGraphicsPipelineInRenderThread(g_pipelineState));
 
         // D3D12 resets the depth bias values. Check if they need to be set again.
-        if (g_capabilities.dynamicDepthBias && !g_vulkan)
+        if (g_capabilities.dynamicDepthBias && g_backend == Backend::D3D12)
             g_dirtyStates.depthBias = (g_depthBias != g_pipelineState.depthBias) || (g_slopeScaledDepthBias != g_pipelineState.slopeScaledDepthBias);
     }
 
@@ -4557,7 +4601,7 @@ static void FlushRenderStateForRenderThread()
             g_inputSlots + g_dirtyStates.vertexStreamFirst);
     }
 
-    if (g_dirtyStates.indices && (!g_vulkan || g_indexBufferView.buffer.ref != nullptr))
+    if (g_dirtyStates.indices && (g_backend == Backend::D3D12 || g_indexBufferView.buffer.ref != nullptr))
         commandList->setIndexBuffer(&g_indexBufferView);
 
     g_dirtyStates = DirtyStates(false);
@@ -5746,10 +5790,10 @@ static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataS
                 g_copyCommandList->barriers(RenderBarrierStage::COPY, RenderTextureBarrier(texture.texture, RenderTextureLayout::COPY_DEST));
 
                 auto copyTextureRegion = [&](Slice& slice, uint32_t subresourceIndex)
-                    {
-                        g_copyCommandList->copyTextureRegion(
-                            RenderTextureCopyLocation::Subresource(texture.texture, subresourceIndex),
-                            RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), desc.format, slice.width, slice.height, slice.depth, (slice.dstRowPitch * 8) / ddsDesc.bitsPerPixelOrBlock * ddsDesc.blockWidth, slice.dstOffset));
+                {
+                    g_copyCommandList->copyTextureRegion(
+                        RenderTextureCopyLocation::Subresource(texture.texture, subresourceIndex % desc.mipLevels, subresourceIndex / desc.mipLevels),
+                        RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), desc.format, slice.width, slice.height, slice.depth, (slice.dstRowPitch * 8) / ddsDesc.bitsPerPixelOrBlock * ddsDesc.blockWidth, slice.dstOffset));
                     };
 
                 for (size_t i = 0; i < slices.size(); i++)
@@ -6492,7 +6536,7 @@ static void CompileMeshPipeline(const Mesh& mesh, CompilationArgs& args)
         if (g_capabilities.dynamicDepthBias)
         {
             // Put common depth bias values for reducing unnecessary calls.
-            if (!g_vulkan)
+            if (g_backend == Backend::D3D12)
             {
                 pipelineState.depthBias = COMMON_DEPTH_BIAS_VALUE;
                 pipelineState.slopeScaledDepthBias = COMMON_SLOPE_SCALED_DEPTH_BIAS_VALUE;
@@ -7254,7 +7298,7 @@ static void PipelineTaskConsumerThread()
                         pipelineState.primitiveTopology = RenderPrimitiveTopology::TRIANGLE_LIST;
 
                     // Zero out depth bias for Vulkan, we only store common values for D3D12.
-                    if (g_capabilities.dynamicDepthBias && g_vulkan)
+                    if (g_capabilities.dynamicDepthBias && g_backend != Backend::D3D12)
                     {
                         pipelineState.depthBias = 0;
                         pipelineState.slopeScaledDepthBias = 0.0f;
