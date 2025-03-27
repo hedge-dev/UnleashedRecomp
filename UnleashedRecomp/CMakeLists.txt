@@ -449,7 +449,7 @@ function(compile_shader FILE_PATH TARGET_NAME)
     if (UNLEASHED_RECOMP_METAL)
         add_custom_command(
                 OUTPUT ${MSL_FILE_PATH}.ir
-                COMMAND ${XCRUN_TOOL} -sdk macosx metal -o ${MSL_FILE_PATH}.ir -c ${MSL_FILE_PATH} -D__air__
+                COMMAND ${XCRUN_TOOL} -sdk macosx metal -o ${MSL_FILE_PATH}.ir -c ${MSL_FILE_PATH} -D__air__ -frecord-sources -gline-tables-only
                 DEPENDS ${MSL_FILE_PATH}
         )
         add_custom_command(
@@ -457,7 +457,7 @@ function(compile_shader FILE_PATH TARGET_NAME)
                 COMMAND ${XCRUN_TOOL} -sdk macosx metallib -o ${MSL_FILE_PATH}.metallib ${MSL_FILE_PATH}.ir
                 DEPENDS ${MSL_FILE_PATH}.ir
         )
-        BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${MSL_FILE_PATH}.metallib" DEST_FILE "${MSL_FILE_PATH}.metallib" ARRAY_NAME "g_${MSL_NAME}_air" COMPRESSION_TYPE "zstd")
+        BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${MSL_FILE_PATH}.metallib" DEST_FILE "${MSL_FILE_PATH}.metallib" ARRAY_NAME "g_${MSL_NAME}_air")
     endif()
     if (UNLEASHED_RECOMP_D3D12)
         add_custom_command(
