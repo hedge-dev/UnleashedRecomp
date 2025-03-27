@@ -17,6 +17,10 @@ endif()
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+if (APPLE)
+    enable_language(OBJC OBJCXX)
+endif()
+
 project("UnleashedRecomp-ALL")
 
 if (CMAKE_OSX_ARCHITECTURES)
