@@ -36,5 +36,4 @@ struct Interpolators
 struct PixelShaderOutput
 {
     float4 Color [[color(0)]];
-    float Depth [[depth(any)]];
 };

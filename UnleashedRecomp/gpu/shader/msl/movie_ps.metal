@@ -99,7 +99,6 @@ PixelShaderOutput shaderMain(Interpolators In [[stage_in]],
     
     if (any(In.UV < 0.0) || any(In.UV > 1.0))
         Out.Color.rgb = 0.0;
-    
-    Out.Depth = ValD;
+
     return Out;
 }
