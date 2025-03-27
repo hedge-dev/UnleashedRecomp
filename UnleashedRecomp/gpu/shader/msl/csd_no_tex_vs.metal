@@ -12,24 +12,24 @@ struct VertexShaderInput
 struct Interpolators
 {
     float4 oPos [[position]];
-    float4 oTexCoord0;
-    float4 oTexCoord1;
-    float4 oTexCoord2;
-    float4 oTexCoord3;
-    float4 oTexCoord4;
-    float4 oTexCoord5;
-    float4 oTexCoord6;
-    float4 oTexCoord7;
-    float4 oTexCoord8;
-    float4 oTexCoord9;
-    float4 oTexCoord10;
-    float4 oTexCoord11;
-    float4 oTexCoord12;
-    float4 oTexCoord13;
-    float4 oTexCoord14;
-    float4 oTexCoord15;
-    float4 oColor0;
-    float4 oColor1;
+    float4 oTexCoord0 [[user(TEXCOORD0)]];
+    float4 oTexCoord1 [[user(TEXCOORD1)]];
+    float4 oTexCoord2 [[user(TEXCOORD2)]];
+    float4 oTexCoord3 [[user(TEXCOORD3)]];
+    float4 oTexCoord4 [[user(TEXCOORD4)]];
+    float4 oTexCoord5 [[user(TEXCOORD5)]];
+    float4 oTexCoord6 [[user(TEXCOORD6)]];
+    float4 oTexCoord7 [[user(TEXCOORD7)]];
+    float4 oTexCoord8 [[user(TEXCOORD8)]];
+    float4 oTexCoord9 [[user(TEXCOORD9)]];
+    float4 oTexCoord10 [[user(TEXCOORD10)]];
+    float4 oTexCoord11 [[user(TEXCOORD11)]];
+    float4 oTexCoord12 [[user(TEXCOORD12)]];
+    float4 oTexCoord13 [[user(TEXCOORD13)]];
+    float4 oTexCoord14 [[user(TEXCOORD14)]];
+    float4 oTexCoord15 [[user(TEXCOORD15)]];
+    float4 oColor0 [[user(COLOR0)]];
+    float4 oColor1 [[user(COLOR1)]];
 };
 
 [[vertex]]

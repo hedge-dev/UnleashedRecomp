@@ -6,8 +6,8 @@
 struct Interpolators
 {
     float4 iPosition [[position]];
-    float4 iTexCoord0;
-    float4 iTexCoord1;
+    float4 iTexCoord0 [[user(TEXCOORD0)]];
+    float4 iTexCoord1 [[user(TEXCOORD1)]];
 };
 
 [[fragment]]

@@ -6,7 +6,7 @@
 
 struct Interpolators
 {
-    float4 iTexCoord0;
+    float4 iTexCoord0 [[user(TEXCOORD0)]];
 };
 
 [[fragment]]

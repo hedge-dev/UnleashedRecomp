@@ -14,7 +14,7 @@
 
 struct Interpolators
 {
-    float4 texCoord;
+    float4 texCoord [[user(TEXCOORD0)]];
 };
 
 [[fragment]]
