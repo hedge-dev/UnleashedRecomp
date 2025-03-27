@@ -128,7 +128,7 @@ float4 SampleSdfFont(float4 color, texture2d<float> texture, float2 uv, float2 s
 [[fragment]]
 float4 shaderMain(Interpolators interpolators [[stage_in]],
                   constant Texture2DDescriptorHeap& g_Texture2DDescriptorHeap [[buffer(0)]],
-                  constant SamplerDescriptorHeap& g_SamplerDescriptorHeap [[buffer(3)]],
+                  constant SamplerDescriptorHeap& g_SamplerDescriptorHeap [[buffer(1)]],
                   constant PushConstants& g_PushConstants [[buffer(8)]])
 {
     float4 color = interpolators.Color;
