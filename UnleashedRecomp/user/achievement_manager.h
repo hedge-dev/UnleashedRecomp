@@ -2,10 +2,11 @@
 
 #include <user/achievement_data.h>
 
-enum class EAchStatus
+enum class EAchBinStatus
 {
     Unknown,
     Success,
+    NoFile,
     IOError,
     BadFileSize,
     BadSignature,
@@ -17,7 +18,7 @@ class AchievementManager
 {
 public:
     static inline AchievementData Data{};
-    static inline EAchStatus BinStatus{ EAchStatus::Unknown };
+    static inline EAchBinStatus BinStatus{ EAchBinStatus::Unknown };
 
     static std::filesystem::path GetDataPath(bool checkForMods)
     {

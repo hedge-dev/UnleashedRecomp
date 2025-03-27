@@ -21,9 +21,9 @@ public:
 
     char Signature[4] ACH_SIGNATURE;
     uint32_t Version{ ACH_VERSION };
-    uint32_t Checksum;
-    uint32_t Reserved;
-    AchRecord Records[ACH_RECORDS];
+    uint32_t Checksum{};
+    uint32_t Reserved{};
+    AchRecord Records[ACH_RECORDS]{};
 
     bool VerifySignature() const;
     bool VerifyVersion() const;

@@ -5,10 +5,8 @@
 
 bool PersistentStorageManager::ShouldDisplayDLCMessage(bool setOffendingDLCFlag)
 {
-    auto result = false;
-
-    if (BinStatus != EBinStatus::Success)
-        return result;
+    if (BinStatus != EExtBinStatus::Success)
+        return true;
 
     static std::unordered_map<EDLCFlag, DLC> flags =
     {
@@ -19,6 +17,8 @@ bool PersistentStorageManager::ShouldDisplayDLCMessage(bool setOffendingDLCFlag)
         { EDLCFlag::Holoska, DLC::Holoska },
         { EDLCFlag::EmpireCityAndAdabat, DLC::EmpireCityAdabat }
     };
+
+    auto result = false;
 
     for (auto& pair : flags)
     {
@@ -36,7 +36,7 @@ bool PersistentStorageManager::ShouldDisplayDLCMessage(bool setOffendingDLCFlag)
 
 bool PersistentStorageManager::LoadBinary()
 {
-    BinStatus = EBinStatus::Success;
+    BinStatus = EExtBinStatus::Success;
 
     auto dataPath = GetDataPath(true);
 
@@ -46,7 +46,10 @@ bool PersistentStorageManager::LoadBinary()
         dataPath = GetDataPath(false);
 
         if (!std::filesystem::exists(dataPath))
+        {
+            BinStatus = EExtBinStatus::NoFile;
             return false;
+        }
     }
 
     std::error_code ec;
@@ -55,7 +58,7 @@ bool PersistentStorageManager::LoadBinary()
 
     if (fileSize != dataSize)
     {
-        BinStatus = EBinStatus::BadFileSize;
+        BinStatus = EExtBinStatus::BadFileSize;
         return false;
     }
 
@@ -63,35 +66,26 @@ bool PersistentStorageManager::LoadBinary()
 
     if (!file)
     {
-        BinStatus = EBinStatus::IOError;
+        BinStatus = EExtBinStatus::IOError;
         return false;
     }
 
     PersistentData data{};
 
-    file.read((char*)&data.Header.Signature, sizeof(data.Header.Signature));
+    file.read((char*)&data.Signature, sizeof(data.Signature));
 
     if (!data.VerifySignature())
     {
-        BinStatus = EBinStatus::BadSignature;
+        BinStatus = EExtBinStatus::BadSignature;
         file.close();
         return false;
     }
 
-    file.read((char*)&data.Header.Version, sizeof(data.Header.Version));
+    file.read((char*)&data.Version, sizeof(data.Version));
 
     if (!data.VerifyVersion())
     {
-        BinStatus = EBinStatus::BadVersion;
-        file.close();
-        return false;
-    }
-
-    file.read((char*)&data.Header.HeaderSize, sizeof(data.Header.HeaderSize));
-
-    if (!data.VerifyHeader())
-    {
-        BinStatus = EBinStatus::BadHeader;
+        BinStatus = EExtBinStatus::BadVersion;
         file.close();
         return false;
     }
@@ -120,7 +114,7 @@ bool PersistentStorageManager::SaveBinary()
     file.write((const char*)&Data, sizeof(PersistentData));
     file.close();
 
-    BinStatus = EBinStatus::Success;
+    BinStatus = EExtBinStatus::Success;
 
     return true;
 }

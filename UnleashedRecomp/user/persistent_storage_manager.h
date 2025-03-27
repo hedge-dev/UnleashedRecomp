@@ -2,22 +2,22 @@
 
 #include <user/persistent_data.h>
 
-enum class EBinStatus
+enum class EExtBinStatus
 {
     Unknown,
     Success,
+    NoFile,
     IOError,
     BadFileSize,
     BadSignature,
-    BadVersion,
-    BadHeader
+    BadVersion
 };
 
 class PersistentStorageManager
 {
 public:
     static inline PersistentData Data{};
-    static inline EBinStatus BinStatus{ EBinStatus::Unknown };
+    static inline EExtBinStatus BinStatus{ EExtBinStatus::Unknown };
 
     static std::filesystem::path GetDataPath(bool checkForMods)
     {

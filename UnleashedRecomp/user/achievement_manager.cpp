@@ -90,7 +90,7 @@ bool AchievementManager::LoadBinary()
 {
     AchievementManager::Reset();
 
-    BinStatus = EAchStatus::Success;
+    BinStatus = EAchBinStatus::Success;
 
     auto dataPath = GetDataPath(true);
 
@@ -100,7 +100,10 @@ bool AchievementManager::LoadBinary()
         dataPath = GetDataPath(false);
 
         if (!std::filesystem::exists(dataPath))
+        {
+            BinStatus = EAchBinStatus::NoFile;
             return false;
+        }
     }
 
     std::error_code ec;
@@ -109,7 +112,7 @@ bool AchievementManager::LoadBinary()
 
     if (fileSize != dataSize)
     {
-        BinStatus = EAchStatus::BadFileSize;
+        BinStatus = EAchBinStatus::BadFileSize;
         return false;
     }
 
@@ -117,7 +120,7 @@ bool AchievementManager::LoadBinary()
 
     if (!file)
     {
-        BinStatus = EAchStatus::IOError;
+        BinStatus = EAchBinStatus::IOError;
         return false;
     }
 
@@ -127,7 +130,7 @@ bool AchievementManager::LoadBinary()
 
     if (!data.VerifySignature())
     {
-        BinStatus = EAchStatus::BadSignature;
+        BinStatus = EAchBinStatus::BadSignature;
         file.close();
         return false;
     }
@@ -136,7 +139,7 @@ bool AchievementManager::LoadBinary()
 
     if (!data.VerifyVersion())
     {
-        BinStatus = EAchStatus::BadVersion;
+        BinStatus = EAchBinStatus::BadVersion;
         file.close();
         return false;
     }
@@ -146,7 +149,7 @@ bool AchievementManager::LoadBinary()
 
     if (!data.VerifyChecksum())
     {
-        BinStatus = EAchStatus::BadChecksum;
+        BinStatus = EAchBinStatus::BadChecksum;
         file.close();
         return false;
     }
@@ -160,7 +163,7 @@ bool AchievementManager::LoadBinary()
 
 bool AchievementManager::SaveBinary(bool ignoreStatus)
 {
-    if (!ignoreStatus && BinStatus != EAchStatus::Success)
+    if (!ignoreStatus && BinStatus != EAchBinStatus::Success)
     {
         LOGN_WARNING("Achievement data will not be saved in this session!");
         return false;
@@ -181,7 +184,7 @@ bool AchievementManager::SaveBinary(bool ignoreStatus)
     file.write((const char*)&Data, sizeof(AchievementData));
     file.close();
 
-    BinStatus = EAchStatus::Success;
+    BinStatus = EAchBinStatus::Success;
 
     return true;
 }

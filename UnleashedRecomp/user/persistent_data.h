@@ -20,18 +20,11 @@ enum class EDLCFlag
 class PersistentData
 {
 public:
-    struct ExtHeader
-    {
-        char Signature[4] EXT_SIGNATURE;
-        uint32_t Version{ EXT_VERSION };
-        uint32_t HeaderSize{ sizeof(ExtHeader) };
-        uint32_t Reserved;
-    };
-
-    ExtHeader Header;
-    bool DLCFlags[6];
+    char Signature[4] EXT_SIGNATURE;
+    uint32_t Version{ EXT_VERSION };
+    uint64_t Reserved{};
+    bool DLCFlags[6]{};
 
     bool VerifySignature() const;
     bool VerifyVersion() const;
-    bool VerifyHeader() const;
 };
