@@ -183,6 +183,8 @@ set(UNLEASHED_RECOMP_USER_CXX_SOURCES
     "user/config.cpp"
     "user/registry.cpp"
     "user/paths.cpp"
+    "user/persistent_data.cpp"
+    "user/persistent_storage_manager.cpp"
 )
 
 set(UNLEASHED_RECOMP_MOD_CXX_SOURCES
@@ -230,6 +232,7 @@ set(UNLEASHED_RECOMP_CXX_SOURCES
     "exports.cpp"
     "main.cpp"
     "misc_impl.cpp"
+    "preload_executable.cpp"
     "sdl_listener.cpp"
     "stdafx.cpp"
     "version.cpp"
@@ -310,7 +313,11 @@ endif()
 if (UNLEASHED_RECOMP_D3D12)
     find_package(directx-headers CONFIG REQUIRED)
     find_package(directx12-agility CONFIG REQUIRED)
-    target_compile_definitions(UnleashedRecomp PRIVATE UNLEASHED_RECOMP_D3D12)
+    target_compile_definitions(UnleashedRecomp PRIVATE 
+        UNLEASHED_RECOMP_D3D12
+        D3D12MA_USING_DIRECTX_HEADERS
+        D3D12MA_OPTIONS16_SUPPORTED
+    )
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")

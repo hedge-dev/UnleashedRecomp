@@ -2,10 +2,9 @@
 #include <hid/hid.h>
 #include <os/logger.h>
 #include <user/achievement_manager.h>
+#include <user/persistent_storage_manager.h>
 #include <user/config.h>
 #include <app.h>
-
-bool m_isSavedAchievementData = false;
 
 // SWA::Message::MsgRequestStartLoading::Impl
 PPC_FUNC_IMPL(__imp__sub_824DCF38);
@@ -99,20 +98,23 @@ PPC_FUNC(sub_824E5170)
 
     App::s_isSaving = pSaveIcon->m_IsVisible;
 
+    static bool isSavedExtraData = false;
+
     if (pSaveIcon->m_IsVisible)
     {
         App::s_isSaveDataCorrupt = false;
 
-        if (!m_isSavedAchievementData)
+        if (!isSavedExtraData)
         {
-            AchievementManager::Save();
+            AchievementManager::SaveBinary();
+            PersistentStorageManager::SaveBinary();
 
-            m_isSavedAchievementData = true;
+            isSavedExtraData = true;
         }
     }
     else
     {
-        m_isSavedAchievementData = false;
+        isSavedExtraData = false;
     }
 }
 

@@ -145,7 +145,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailable",
         {
             { ELanguage::English,  "This option is not available at this location." },
-            { ELanguage::Japanese, "この\u200Bオプションは\u200B[現在:げんざい]の\u200B[画面:がめん]で\u200B[変更:へんこう]\u200Bできません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200B[現在:げんざい]の\u200B[画面:がめん]では\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option ist an dieser Stelle nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible pour l'instant." },
             { ELanguage::Spanish,  "Esta opción no está disponible en este momento." },
@@ -158,7 +158,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailableFullscreen",
         {
             { ELanguage::English,  "This option is not available in fullscreen mode." },
-            { ELanguage::Japanese, "この\u200Bオプションは\u200Bフルスクリーンモードで\u200B[変更:へんこう]\u200Bできません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200Bフルスクリーンモードでは\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option ist im Vollbildmodus nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible en mode plein écran." },
             { ELanguage::Spanish,  "Esta opción no está disponible en modo pantalla completa." },
@@ -171,7 +171,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Options_Desc_NotAvailableWindowed",
         {
             { ELanguage::English,  "This option is not available in windowed mode." },
-            { ELanguage::Japanese, "この\u200Bオプションは\u200Bウィンドウモードで\u200B[変更:へんこう]\u200Bできません" },
+            { ELanguage::Japanese, "この\u200Bオプションは\u200Bウィンドウモードでは\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option ist im Fenstermodus nicht verfügbar." },
             { ELanguage::French,   "Cette option n'est pas disponible en mode fenêtré." },
             { ELanguage::Spanish,  "Esta opción no está disponible en modo ventana." },
@@ -304,7 +304,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         "Installer_Page_Introduction",
         {
             { ELanguage::English,  "Welcome to\nUnleashed Recompiled!\n\nYou'll need an Xbox 360 copy\nof Sonic Unleashed in order to proceed with the installation." },
-            { ELanguage::Japanese, "Unleashed Recompiledへようこそ！\nインストールにはXbox 360[版:ばん]の\n「ソニック ワールドアドベンチャー」\nが必要です" },
+            { ELanguage::Japanese, "Unleashed Recompiledへようこそ！\nインストールには\n[北米版:ほくべいばん]またはEU[版:ばん]のXbox 360[用:よう]\n「SONIC UNLEASHED」が[必要:ひつよう]です" },
             { ELanguage::German,   "Willkommen zu\nUnleashed Recompiled!\nEs wird eine Xbox 360 Kopie von Sonic Unleashed benötigt um mit der Installation fortfahren zu können." },
             { ELanguage::French,   "Bienvenue sur\nUnleashed Recompiled !\n\nVous aurez besoin d'une copie de Sonic Unleashed pour Xbox\n360 pour procéder à l'installation." },
             { ELanguage::Spanish,  "¡Bienvenido a\nUnleashed Recompiled!\n\nNecesitas una copia de\nSonic Unleashed de Xbox 360\npara continuar con la instalación." },
@@ -366,7 +366,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::English,  "Installation complete!\nThis project is brought to you by:" },
             { ELanguage::Japanese, "インストール[完了:かんりょう]！\nプロジェクト[制作:せいさく]：" },
             { ELanguage::German,   "Installation abgeschlossen!\nDieses Projekt wird präsentiert von:" },
-            { ELanguage::French,   "Installation terminée !\nCe projet vous est présenté par:" },
+            { ELanguage::French,   "Installation terminée !\nCe projet vous est présenté par :" },
             { ELanguage::Spanish,  "¡Instalación completada!\nEste proyecto ha sido posible gracias a:" },
             { ELanguage::Italian,  "Installazione completata!\nQuesto progetto è stato creato da:" }
         }
@@ -712,6 +712,28 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::French,   "Échec d'allocation de la mémoire du jeu.\n\nVeuillez vous assurer que :\n\n- Vous disposez de la configuration minimale requise (8 Go).\n- Votre fichier d’échange est configuré avec au moins 4 à 8 Go de mémoire virtuelle." },
             { ELanguage::Spanish,  "Fallo al asignar memoria del juego.\n\nPor favor, asegúrate de que:\n\n- Cumples los requisitos mínimos del sistema (8 GB).\n- Tu archivo de páginación está configurado con al menos 4 u 8 GB de memoria virtual." },
             { ELanguage::Italian,  "Impossibile allocare la memoria per il gioco.\n\nAssicurati che:\n\n- Soddisfi i requisiti minimi di sistema (8 GB).\n- Il tuo file di paging sia configurato con almeno 4 o 8 GB di memoria virtuale." }
+        }
+    },
+    {
+        "IntegrityCheck_Success",
+        {
+            { ELanguage::English,  "Installation check has finished.\n\nAll files seem to be correct.\n\nThe game will now close. Remove the launch argument to play the game." },
+            { ELanguage::Japanese, "インストールチェックが終了しました\n\nすべてのファイルは正しいようです\n\nゲームは終了します、ゲームをプレイするには起動引数を削除してください" },
+            { ELanguage::German,  "Die Installation wurde überprüft.\n\nAlle Dateien scheinen korrekt zu sein.\n\nDas Spiel wird nun geschlossen. Entferne die Startoption, um das Spiel zu spielen." },
+            { ELanguage::French,  "La vérification de l'installation est terminée.\n\nTous les fichiers semblent corrects.\n\nL'application va maintenant se fermer. Retirez l'argument de lancement pour pouvoir lancer le jeu." },
+            { ELanguage::Spanish,  "La verificación de la instalación ha terminado.\n\nTodos los archivos parecen correctos.\n\nEl juego se cerrará ahora. Elimina el argumento de lanzamiento para jugar al juego." },
+            { ELanguage::Italian,  "La verifica dei file d'installazione è terminata.\n\nTutti i file sembrano corretti.\n\nIl gioco si chiuderà. Rimuovi l'argomento di avvio per poter giocare." }
+        }
+    },
+    {
+        "IntegrityCheck_Failed",
+        {
+            { ELanguage::English,  "Installation check has failed.\n\nError: %s\n\nThe game will now close. Try reinstalling the game by using the --install launch argument." },
+            { ELanguage::Japanese, "インストールチェックに失敗しました\n\nエラー：%s\n\nゲームは終了します、--install 起動引数を使用してゲームを再インストールしてください" },
+            { ELanguage::German,  "Die Installationsprüfung ist fehlgeschlagen.\n\nFehler: %s\n\nDas Spiel wird nun geschlossen. Versuche das Spiel durch Verwendung der Startoption --install neu zu installieren." },
+            { ELanguage::French,  "La vérification de l'installation a échoué.\n\nErreur : %s\n\nL'application va maintenant se fermer. Essayez de réinstaller le jeu en utilisant l'argument de lancement --install." },
+            { ELanguage::Spanish,  "La verificación de la instalación ha fallado.\n\nError: %s\n\nEl juego se cerrará ahora. Intenta reinstalar el juego utilizando el argumento de lanzamiento --install." },
+            { ELanguage::Italian,  "La verifica dei file d'installazione non è andata a buon fine.\n\nErrore: %s\n\nIl gioco si chiuderà. Prova a reinstallare il gioco utilizzando l'argomento di avvio --install." }
         }
     },
     {
