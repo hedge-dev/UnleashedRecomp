@@ -4,9 +4,7 @@
 
 enum class EExtBinStatus
 {
-    Unknown,
     Success,
-    NoFile,
     IOError,
     BadFileSize,
     BadSignature,
@@ -17,7 +15,7 @@ class PersistentStorageManager
 {
 public:
     static inline PersistentData Data{};
-    static inline EExtBinStatus BinStatus{ EExtBinStatus::Unknown };
+    static inline EExtBinStatus BinStatus{ EExtBinStatus::Success };
 
     static std::filesystem::path GetDataPath(bool checkForMods)
     {

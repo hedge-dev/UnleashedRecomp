@@ -4,9 +4,7 @@
 
 enum class EAchBinStatus
 {
-    Unknown,
     Success,
-    NoFile,
     IOError,
     BadFileSize,
     BadSignature,
@@ -18,7 +16,7 @@ class AchievementManager
 {
 public:
     static inline AchievementData Data{};
-    static inline EAchBinStatus BinStatus{ EAchBinStatus::Unknown };
+    static inline EAchBinStatus BinStatus{ EAchBinStatus::Success };
 
     static std::filesystem::path GetDataPath(bool checkForMods)
     {

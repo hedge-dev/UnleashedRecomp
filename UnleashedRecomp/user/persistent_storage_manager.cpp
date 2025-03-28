@@ -46,10 +46,7 @@ bool PersistentStorageManager::LoadBinary()
         dataPath = GetDataPath(false);
 
         if (!std::filesystem::exists(dataPath))
-        {
-            BinStatus = EExtBinStatus::NoFile;
-            return false;
-        }
+            return true;
     }
 
     std::error_code ec;
