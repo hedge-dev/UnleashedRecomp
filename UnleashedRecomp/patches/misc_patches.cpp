@@ -1,6 +1,7 @@
 #include <api/SWA.h>
 #include <ui/game_window.h>
 #include <user/achievement_manager.h>
+#include <user/persistent_storage_manager.h>
 #include <user/config.h>
 
 void AchievementManagerUnlockMidAsmHook(PPCRegister& id)
@@ -171,4 +172,24 @@ PPC_FUNC(sub_82B4DB48)
     }
 
     __imp__sub_82B4DB48(ctx, base);
+}
+
+// DLC save data flag check.
+// 
+// The DLC checks are fundamentally broken in this game, resulting in this method always
+// returning true and displaying the DLC info message when it shouldn't be.
+// 
+// The original intent here seems to have been to display the message every time new DLC
+// content is installed, but the flags in the save data never get written to properly,
+// causing this function to always pass in some way.
+//
+// We bypass the save data completely and write to external persistent storage to store
+// whether we've seen the DLC info message instead. This way we can retain the original
+// broken game behaviour, whilst also providing a fix for this issue that is safe.
+PPC_FUNC_IMPL(__imp__sub_824EE620);
+PPC_FUNC(sub_824EE620)
+{
+    __imp__sub_824EE620(ctx, base);
+
+    ctx.r3.u32 = PersistentStorageManager::ShouldDisplayDLCMessage(true);
 }

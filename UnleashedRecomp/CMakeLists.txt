@@ -183,6 +183,8 @@ set(UNLEASHED_RECOMP_USER_CXX_SOURCES
     "user/config.cpp"
     "user/registry.cpp"
     "user/paths.cpp"
+    "user/persistent_data.cpp"
+    "user/persistent_storage_manager.cpp"
 )
 
 set(UNLEASHED_RECOMP_MOD_CXX_SOURCES

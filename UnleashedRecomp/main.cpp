@@ -13,6 +13,7 @@
 #include <hid/hid.h>
 #include <user/config.h>
 #include <user/paths.h>
+#include <user/persistent_storage_manager.h>
 #include <user/registry.h>
 #include <kernel/xdbf.h>
 #include <install/installer.h>
@@ -200,6 +201,7 @@ int main(int argc, char *argv[])
     bool forceInstaller = false;
     bool forceDLCInstaller = false;
     bool useDefaultWorkingDirectory = false;
+    bool forceInstallationCheck = false;
     bool graphicsApiRetry = false;
     const char *sdlVideoDriver = nullptr;
 
@@ -208,6 +210,7 @@ int main(int argc, char *argv[])
         forceInstaller = forceInstaller || (strcmp(argv[i], "--install") == 0);
         forceDLCInstaller = forceDLCInstaller || (strcmp(argv[i], "--install-dlc") == 0);
         useDefaultWorkingDirectory = useDefaultWorkingDirectory || (strcmp(argv[i], "--use-cwd") == 0);
+        forceInstallationCheck = forceInstallationCheck || (strcmp(argv[i], "--install-check") == 0);
         graphicsApiRetry = graphicsApiRetry || (strcmp(argv[i], "--graphics-api-retry") == 0);
 
         if (strcmp(argv[i], "--sdl-video-driver") == 0)
@@ -227,6 +230,62 @@ int main(int argc, char *argv[])
     }
 
     Config::Load();
+    
+    if (!PersistentStorageManager::LoadBinary())
+        LOGFN_ERROR("Failed to load persistent storage binary... (status code {})", (int)PersistentStorageManager::BinStatus);
+
+    if (forceInstallationCheck)
+    {
+        // Create the console to show progress to the user, otherwise it will seem as if the game didn't boot at all.
+        os::process::ShowConsole();
+
+        Journal journal;
+        double lastProgressMiB = 0.0;
+        double lastTotalMib = 0.0;
+        Installer::checkInstallIntegrity(GAME_INSTALL_DIRECTORY, journal, [&]()
+        {
+            constexpr double MiBDivisor = 1024.0 * 1024.0;
+            constexpr double MiBProgressThreshold = 128.0;
+            double progressMiB = double(journal.progressCounter) / MiBDivisor;
+            double totalMiB = double(journal.progressTotal) / MiBDivisor;
+            if (journal.progressCounter > 0)
+            {
+                if ((progressMiB - lastProgressMiB) > MiBProgressThreshold)
+                {
+                    fprintf(stdout, "Checking files: %0.2f MiB / %0.2f MiB\n", progressMiB, totalMiB);
+                    lastProgressMiB = progressMiB;
+                }
+            }
+            else
+            {
+                if ((totalMiB - lastTotalMib) > MiBProgressThreshold)
+                {
+                    fprintf(stdout, "Scanning files: %0.2f MiB\n", totalMiB);
+                    lastTotalMib = totalMiB;
+                }
+            }
+
+            return true;
+        });
+
+        char resultText[512];
+        uint32_t messageBoxStyle;
+        if (journal.lastResult == Journal::Result::Success)
+        {
+            snprintf(resultText, sizeof(resultText), "%s", Localise("IntegrityCheck_Success").c_str());
+            fprintf(stdout, "%s\n", resultText);
+            messageBoxStyle = SDL_MESSAGEBOX_INFORMATION;
+        }
+        else
+        {
+            snprintf(resultText, sizeof(resultText), Localise("IntegrityCheck_Failed").c_str(), journal.lastErrorMessage.c_str());
+            fprintf(stderr, "%s\n", resultText);
+            messageBoxStyle = SDL_MESSAGEBOX_ERROR;
+        }
+
+        SDL_ShowSimpleMessageBox(messageBoxStyle, GameWindow::GetTitle(), resultText, GameWindow::s_pWindow);
+        std::_Exit(int(journal.lastResult));
+    }
 
 #if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
     for (auto& dll : g_D3D12RequiredModules)
