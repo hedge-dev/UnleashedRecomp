@@ -2013,6 +2013,12 @@ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
     // Move backbuffer to guest memory.
     assert(!g_memory.IsInMemoryRange(g_backBuffer) && g_backBufferHolder != nullptr);
     g_backBuffer = g_userHeap.AllocPhysical<GuestSurface>(std::move(*g_backBufferHolder));
+
+    // Check for stale reference. BeginCommandList() gets called before CreateDevice() which is where the assignment happens.
+    if (g_renderTarget == g_backBufferHolder.get()) g_renderTarget = g_backBuffer;
+    if (g_depthStencil == g_backBufferHolder.get()) g_depthStencil = g_backBuffer;
+
+    // Free the host backbuffer.
     g_backBufferHolder = nullptr;
 
     auto device = g_userHeap.AllocPhysical<GuestDevice>();
