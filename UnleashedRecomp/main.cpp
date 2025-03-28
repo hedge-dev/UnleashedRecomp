@@ -230,6 +230,9 @@ int main(int argc, char *argv[])
 
     if (forceInstallationCheck)
     {
+        // Create the console to show progress to the user, otherwise it will seem as if the game didn't boot at all.
+        os::process::ShowConsole();
+
         Journal journal;
         double lastProgressMiB = 0.0;
         double lastTotalMib = 0.0;
