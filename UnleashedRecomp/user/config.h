@@ -2,6 +2,10 @@
 
 #include <locale/locale.h>
 
+#if defined(__linux__)
+    extern const bool g_isRunningUnderFlatpak;
+#endif
+
 class IConfigDef
 {
 public:
