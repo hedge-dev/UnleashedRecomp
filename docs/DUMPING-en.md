@@ -1,5 +1,10 @@
 # Dumping
 
+> [!NOTE]
+> The following guide is for dumping the game from an Xbox 360 hard drive.
+>
+> If you wish to use a USB storage device, use [this guide](DUMPING-USB-en.md) instead.
+
 ### Pre-requisites
 - Xbox 360 (modifications not necessary)
 - Xbox 360 Hard Drive (20 GB minimum)
