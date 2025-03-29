@@ -31,6 +31,7 @@
 #include <user/config.h>
 #include <sdl_listener.h>
 #include <xxHashMap.h>
+#include <os/process.h>
 
 #if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)
 #include <magic_enum/magic_enum.hpp>
@@ -1652,7 +1653,7 @@ static void ApplyLowEndDefaults()
     }
 }
 
-bool Video::CreateHostDevice(const char *sdlVideoDriver)
+bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
 {
     for (uint32_t i = 0; i < 16; i++)
         g_inputSlots[i].index = i;
@@ -1672,6 +1673,12 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     std::vector<RenderInterfaceFunction *> interfaceFunctions;
 
 #ifdef UNLEASHED_RECOMP_D3D12
+    if (graphicsApiRetry)
+    {
+        // If we are attempting to create again after a reboot due to a crash, swap the order.
+        g_vulkan = !g_vulkan;
+    }
+
     interfaceFunctions.push_back(g_vulkan ? CreateVulkanInterfaceWrapper : CreateD3D12Interface);
     interfaceFunctions.push_back(g_vulkan ? CreateD3D12Interface : CreateVulkanInterfaceWrapper);
 #else
@@ -1680,9 +1687,17 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
 
     for (RenderInterfaceFunction *interfaceFunction : interfaceFunctions)
     {
-        g_interface = interfaceFunction();
-        if (g_interface != nullptr)
+#ifdef UNLEASHED_RECOMP_D3D12
+        // Wrap the device creation in __try/__except to survive from driver crashes.
+        __try
+#endif
         {
+            g_interface = interfaceFunction();
+            if (g_interface == nullptr)
+            {
+                continue;
+            }
+
             g_device = g_interface->createDevice(Config::GraphicsDevice);
             if (g_device != nullptr)
             {
@@ -1719,12 +1734,36 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
                 break;
             }
         }
+#ifdef UNLEASHED_RECOMP_D3D12
+        __except (EXCEPTION_EXECUTE_HANDLER)
+        {
+            if (graphicsApiRetry)
+            {
+                // If we were retrying, and this also failed, then we'll show the user neither of the graphics APIs succeeded.
+                return false;
+            }
+            else
+            {
+                // If this is the first crash we ran into, reboot and try the other graphics API.
+                os::process::StartProcess(os::process::GetExecutablePath(), { "--graphics-api-retry" });
+                std::_Exit(0);
+            }
+        }
+#endif
     }
 
     if (g_device == nullptr)
     {
         return false;
     }
+
+#ifdef UNLEASHED_RECOMP_D3D12
+    if (graphicsApiRetry)
+    {
+        // If we managed to create a device after retrying it in a reboot, remember the one we picked.
+        Config::GraphicsAPI = g_vulkan ? EGraphicsAPI::Vulkan : EGraphicsAPI::D3D12;
+    }
+#endif
 
     g_capabilities = g_device->getCapabilities();
 

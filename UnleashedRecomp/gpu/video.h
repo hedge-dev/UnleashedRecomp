@@ -18,7 +18,7 @@ struct Video
     static inline uint32_t s_viewportWidth;
     static inline uint32_t s_viewportHeight;
 
-    static bool CreateHostDevice(const char *sdlVideoDriver);
+    static bool CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry);
     static void WaitOnSwapChain();
     static void Present();
     static void StartPipelinePrecompilation();
