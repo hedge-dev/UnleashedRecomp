@@ -1106,3 +1106,38 @@ name = "UseAlternateTitleMidAsmHook"
 address = 0x82580F44
 jump_address_on_true = 0x82580F48
 jump_address_on_false = 0x82580FA0
+
+[[midasm_hook]]
+name = "EndingTextAllocMidAsmHook"
+address = 0x8257E284
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "EndingTextAllocMidAsmHook"
+address = 0x8257E45C
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "EndingTextAllocMidAsmHook"
+address = 0x8257EDD8
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "EndingTextCtorRightMidAsmHook"
+address = 0x8257E304
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "EndingTextCtorLeftMidAsmHook"
+address = 0x8257E4DC
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "EndingTextCtorCenterMidAsmHook"
+address = 0x8257EE40
+registers = ["r3"]
+
+[[midasm_hook]]
+name = "EndingTextPositionMidAsmHook"
+address = 0x82580168
+registers = ["r31", "f13"]
