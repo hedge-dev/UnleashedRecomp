@@ -183,6 +183,8 @@ set(UNLEASHED_RECOMP_USER_CXX_SOURCES
     "user/config.cpp"
     "user/registry.cpp"
     "user/paths.cpp"
+    "user/persistent_data.cpp"
+    "user/persistent_storage_manager.cpp"
 )
 
 set(UNLEASHED_RECOMP_MOD_CXX_SOURCES
@@ -230,6 +232,7 @@ set(UNLEASHED_RECOMP_CXX_SOURCES
     "exports.cpp"
     "main.cpp"
     "misc_impl.cpp"
+    "preload_executable.cpp"
     "sdl_listener.cpp"
     "stdafx.cpp"
     "version.cpp"
@@ -310,7 +313,11 @@ endif()
 if (UNLEASHED_RECOMP_D3D12)
     find_package(directx-headers CONFIG REQUIRED)
     find_package(directx12-agility CONFIG REQUIRED)
-    target_compile_definitions(UnleashedRecomp PRIVATE UNLEASHED_RECOMP_D3D12)
+    target_compile_definitions(UnleashedRecomp PRIVATE 
+        UNLEASHED_RECOMP_D3D12
+        D3D12MA_USING_DIRECTX_HEADERS
+        D3D12MA_OPTIONS16_SUPPORTED
+    )
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -433,35 +440,6 @@ compile_pixel_shader(resolve_msaa_color_8x)
 compile_pixel_shader(resolve_msaa_depth_2x)
 compile_pixel_shader(resolve_msaa_depth_4x)
 compile_pixel_shader(resolve_msaa_depth_8x)
-
-function(generate_aggregate_header INPUT_DIRECTORY OUTPUT_FILE)
-    get_filename_component(ABS_OUTPUT_FILE "${OUTPUT_FILE}" ABSOLUTE)
-    file(GLOB_RECURSE HEADER_FILES "${INPUT_DIRECTORY}/*.h")
-    set(HEADER_CONTENT "#pragma once\n\n")
-
-    foreach(HEADER_FILE IN LISTS HEADER_FILES)
-        get_filename_component(ABS_HEADER_FILE "${HEADER_FILE}" ABSOLUTE)
-        if (ABS_HEADER_FILE STREQUAL ABS_OUTPUT_FILE)
-            continue()
-        endif()
-        file(RELATIVE_PATH RELATIVE_HEADER_FILE "${INPUT_DIRECTORY}" "${HEADER_FILE}")
-        string(APPEND HEADER_CONTENT "#include \"${RELATIVE_HEADER_FILE}\"\n")
-    endforeach()
-
-    if (EXISTS "${OUTPUT_FILE}")
-        file(READ "${OUTPUT_FILE}" EXISTING_CONTENT)
-        if (EXISTING_CONTENT STREQUAL HEADER_CONTENT)
-            return()
-        endif()
-    endif()
-
-    file(WRITE "${OUTPUT_FILE}" "${HEADER_CONTENT}")
-endfunction()
-
-generate_aggregate_header(
-    "${CMAKE_CURRENT_SOURCE_DIR}/api"
-    "${CMAKE_CURRENT_SOURCE_DIR}/api/SWA.h"
-)
 
 set(RESOURCES_SOURCE_PATH "${PROJECT_SOURCE_DIR}/../UnleashedRecompResources")
 set(RESOURCES_OUTPUT_PATH "${PROJECT_SOURCE_DIR}/res")

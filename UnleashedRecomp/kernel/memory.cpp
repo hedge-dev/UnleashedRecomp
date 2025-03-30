@@ -9,6 +9,9 @@ Memory::Memory()
     if (base == nullptr)
         base = (uint8_t*)VirtualAlloc(nullptr, PPC_MEMORY_SIZE, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
+    if (base == nullptr)
+        return;
+
     DWORD oldProtect;
     VirtualProtect(base, 4096, PAGE_NOACCESS, &oldProtect);
 #else
@@ -16,6 +19,9 @@ Memory::Memory()
 
     if (base == (uint8_t*)MAP_FAILED)
         base = (uint8_t*)mmap(NULL, PPC_MEMORY_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+
+    if (base == nullptr)
+        return;
 
     mprotect(base, 4096, PROT_NONE);
 #endif

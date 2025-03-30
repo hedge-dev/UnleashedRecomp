@@ -1,6 +1,7 @@
 #include <api/SWA.h>
 #include <ui/game_window.h>
 #include <user/achievement_manager.h>
+#include <user/persistent_storage_manager.h>
 #include <user/config.h>
 
 void AchievementManagerUnlockMidAsmHook(PPCRegister& id)
@@ -51,6 +52,16 @@ void WerehogBattleMusicMidAsmHook(PPCRegister& r11)
     // Swap CStateBattle for CStateNormal.
     if (r11.u8 == 4)
         r11.u8 = 3;
+}
+
+bool UseAlternateTitleMidAsmHook()
+{
+    auto isSWA = Config::Language == ELanguage::Japanese;
+
+    if (Config::UseAlternateTitle)
+        isSWA = !isSWA;
+
+    return isSWA;
 }
 
 /* Hook function that gets the game region
@@ -147,12 +158,38 @@ PPC_FUNC(sub_824C1E60)
     __imp__sub_824C1E60(ctx, base);
 }
 
-// Remove boost filter
-void DisableBoostFilterMidAsmHook(PPCRegister& r11)
+// This function is called in various places but primarily for the boost filter
+// when the second argument (r4) is set to "boost". Whilst boosting the third argument (f1)
+// will go up to 1.0f and then down to 0.0f as the player lets off of the boost button.
+// To avoid the boost filter from kicking in at all if the function is called with "boost"
+// we set the third argument to zero no matter what (if the code is on).
+PPC_FUNC_IMPL(__imp__sub_82B4DB48);
+PPC_FUNC(sub_82B4DB48)
 {
-    if (Config::DisableBoostFilter)
+    if (Config::DisableBoostFilter && strcmp((const char*)(base + ctx.r4.u32), "boost") == 0)
     {
-        if (r11.u32 == 1)
-            r11.u32 = 0;
+        ctx.f1.f64 = 0.0;
     }
+
+    __imp__sub_82B4DB48(ctx, base);
+}
+
+// DLC save data flag check.
+// 
+// The DLC checks are fundamentally broken in this game, resulting in this method always
+// returning true and displaying the DLC info message when it shouldn't be.
+// 
+// The original intent here seems to have been to display the message every time new DLC
+// content is installed, but the flags in the save data never get written to properly,
+// causing this function to always pass in some way.
+//
+// We bypass the save data completely and write to external persistent storage to store
+// whether we've seen the DLC info message instead. This way we can retain the original
+// broken game behaviour, whilst also providing a fix for this issue that is safe.
+PPC_FUNC_IMPL(__imp__sub_824EE620);
+PPC_FUNC(sub_824EE620)
+{
+    __imp__sub_824EE620(ctx, base);
+
+    ctx.r3.u32 = PersistentStorageManager::ShouldDisplayDLCMessage(true);
 }

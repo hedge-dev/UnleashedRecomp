@@ -163,6 +163,8 @@ struct SharedConstants
     uint32_t samplerIndices[16]{};
     uint32_t booleans{};
     uint32_t swappedTexcoords{};
+    float halfPixelOffsetX{};
+    float halfPixelOffsetY{};
     float alphaThreshold{};
 };
 
@@ -320,6 +322,7 @@ static constexpr RenderFormat BACKBUFFER_FORMAT = RenderFormat::B8G8R8A8_UNORM;
 static std::unique_ptr<RenderCommandSemaphore> g_acquireSemaphores[NUM_FRAMES];
 static std::unique_ptr<RenderCommandSemaphore> g_renderSemaphores[NUM_FRAMES];
 static uint32_t g_backBufferIndex;
+static std::unique_ptr<GuestSurface> g_backBufferHolder;
 static GuestSurface* g_backBuffer;
 
 static std::unique_ptr<RenderTexture> g_intermediaryBackBufferTexture;
@@ -679,7 +682,10 @@ static void DestructTempResources()
             g_textureDescriptorAllocator.free(texture->descriptorIndex);
 
             if (texture->patchedTexture != nullptr)
-                g_textureDescriptorAllocator.free(texture->patchedTexture->descriptorIndex);
+                g_textureDescriptorAllocator.free(texture->patchedTexture->descriptorIndex); 
+            
+            if (texture->recreatedCubeMapTexture != nullptr)
+                g_textureDescriptorAllocator.free(texture->recreatedCubeMapTexture->descriptorIndex);
 
             texture->~GuestTexture();
             break;
@@ -1736,6 +1742,21 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
         ApplyLowEndDefaults();
     }
 
+    const RenderSampleCounts colourSampleCount = g_device->getSampleCountsSupported(RenderFormat::R16G16B16A16_FLOAT);
+    const RenderSampleCounts depthSampleCount  = g_device->getSampleCountsSupported(RenderFormat::D32_FLOAT);
+    const RenderSampleCounts commonSampleCount = colourSampleCount & depthSampleCount;
+
+    // Disable specific MSAA levels if they are not supported.
+    if ((commonSampleCount & RenderSampleCount::COUNT_2) == 0)
+        Config::AntiAliasing.InaccessibleValues.emplace(EAntiAliasing::MSAA2x);
+    if ((commonSampleCount & RenderSampleCount::COUNT_4) == 0)
+        Config::AntiAliasing.InaccessibleValues.emplace(EAntiAliasing::MSAA4x);
+    if ((commonSampleCount & RenderSampleCount::COUNT_8) == 0)
+        Config::AntiAliasing.InaccessibleValues.emplace(EAntiAliasing::MSAA8x);
+
+    // Set Anti-Aliasing to nearest supported level.
+    Config::AntiAliasing.SnapToNearestAccessibleValue(false);
+
     g_queue = g_device->createCommandQueue(RenderCommandListType::DIRECT);
 
     for (auto& commandList : g_commandLists)
@@ -1948,7 +1969,10 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     desc.renderTargetCount = 1;
     g_gammaCorrectionPipeline = g_device->createGraphicsPipeline(desc);
 
-    g_backBuffer = g_userHeap.AllocPhysical<GuestSurface>(ResourceType::RenderTarget);
+    // NOTE: We initially allocate this on host memory to make the installer work, even if the 4 GB memory allocation fails.
+    g_backBufferHolder = std::make_unique<GuestSurface>(ResourceType::RenderTarget);
+
+    g_backBuffer = g_backBufferHolder.get();
     g_backBuffer->width = 1280;
     g_backBuffer->height = 720;
     g_backBuffer->format = BACKBUFFER_FORMAT;
@@ -2005,6 +2029,17 @@ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
         g_xdbfTextureCache[achievement.ID] =
             LoadTexture((uint8_t *)achievement.pImageBuffer, achievement.ImageBufferSize).release();
     }
+
+    // Move backbuffer to guest memory.
+    assert(!g_memory.IsInMemoryRange(g_backBuffer) && g_backBufferHolder != nullptr);
+    g_backBuffer = g_userHeap.AllocPhysical<GuestSurface>(std::move(*g_backBufferHolder));
+
+    // Check for stale reference. BeginCommandList() gets called before CreateDevice() which is where the assignment happens.
+    if (g_renderTarget == g_backBufferHolder.get()) g_renderTarget = g_backBuffer;
+    if (g_depthStencil == g_backBufferHolder.get()) g_depthStencil = g_backBuffer;
+
+    // Free the host backbuffer.
+    g_backBufferHolder = nullptr;
 
     auto device = g_userHeap.AllocPhysical<GuestDevice>();
     memset(device, 0, sizeof(*device));
@@ -2109,40 +2144,54 @@ static void* LockVertexBuffer(GuestBuffer* buffer, uint32_t, uint32_t, uint32_t 
     return LockBuffer(buffer, flags);
 }
 
+static std::atomic<uint32_t> g_bufferUploadCount = 0;
+
 template<typename T>
 static void UnlockBuffer(GuestBuffer* buffer, bool useCopyQueue)
 {
-    auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(buffer->dataSize));
+    auto copyBuffer = [&](T* dest)
+        {
+            auto src = reinterpret_cast<const T*>(buffer->mappedMemory);
 
-    auto dest = reinterpret_cast<T*>(uploadBuffer->map());
-    auto src = reinterpret_cast<const T*>(buffer->mappedMemory);
-
-    for (size_t i = 0; i < buffer->dataSize; i += sizeof(T))
-    {
-        *dest = ByteSwap(*src);
-        ++dest;
-        ++src;
-    }
-
-    uploadBuffer->unmap();
-
-    if (useCopyQueue)
-    {
-        ExecuteCopyCommandList([&]
+            for (size_t i = 0; i < buffer->dataSize; i += sizeof(T))
             {
-                g_copyCommandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
-            });
+                *dest = ByteSwap(*src);
+                ++dest;
+                ++src;
+            }
+        };
+
+    if (useCopyQueue && g_capabilities.gpuUploadHeap)
+    {
+        copyBuffer(reinterpret_cast<T*>(buffer->buffer->map()));
+        buffer->buffer->unmap();
     }
     else
     {
-        auto& commandList = g_commandLists[g_frame];
+        auto uploadBuffer = g_device->createBuffer(RenderBufferDesc::UploadBuffer(buffer->dataSize));
+        copyBuffer(reinterpret_cast<T*>(uploadBuffer->map()));
+        uploadBuffer->unmap();
 
-        commandList->barriers(RenderBarrierStage::COPY, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::WRITE));
-        commandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
-        commandList->barriers(RenderBarrierStage::GRAPHICS, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::READ));
+        if (useCopyQueue)
+        {
+            ExecuteCopyCommandList([&]
+                {
+                    g_copyCommandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
+                });
+        }
+        else
+        {
+            auto& commandList = g_commandLists[g_frame];
 
-        g_tempBuffers[g_frame].emplace_back(std::move(uploadBuffer));
+            commandList->barriers(RenderBarrierStage::COPY, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::WRITE));
+            commandList->copyBufferRegion(buffer->buffer->at(0), uploadBuffer->at(0), buffer->dataSize);
+            commandList->barriers(RenderBarrierStage::GRAPHICS, RenderBufferBarrier(buffer->buffer.get(), RenderBufferAccess::READ));
+
+            g_tempBuffers[g_frame].emplace_back(std::move(uploadBuffer));
+        }
     }
+
+    g_bufferUploadCount++;
 }
 
 template<typename T>
@@ -2320,10 +2369,11 @@ static void DrawProfiler()
             std::lock_guard lock(g_userHeap.physicalMutex);
             physicalDiagnostics = o1heapGetDiagnostics(g_userHeap.physicalHeap);
         }
-
+        
         ImGui::Text("Heap Allocated: %d MB", int32_t(diagnostics.allocated / (1024 * 1024)));
         ImGui::Text("Physical Heap Allocated: %d MB", int32_t(physicalDiagnostics.allocated / (1024 * 1024)));
         ImGui::Text("GPU Waits: %d", int32_t(g_waitForGPUCount));
+        ImGui::Text("Buffer Uploads: %d", int32_t(g_bufferUploadCount));
         ImGui::NewLine();
 
         ImGui::Text("Present Wait: %s", g_capabilities.presentWait ? "Supported" : "Unsupported");
@@ -2339,6 +2389,7 @@ static void DrawProfiler()
         ImGui::Text("Device Type: %s", DeviceTypeName(g_device->getDescription().type));
         ImGui::Text("VRAM: %.2f MiB", (double)(g_device->getDescription().dedicatedVideoMemory) / (1024.0 * 1024.0));
         ImGui::Text("UMA: %s", g_capabilities.uma ? "Supported" : "Unsupported");
+        ImGui::Text("GPU Upload Heap: %s", g_capabilities.gpuUploadHeap ? "Supported" : "Unsupported");
 
         const char* sdlVideoDriver = SDL_GetCurrentVideoDriver();
         if (sdlVideoDriver != nullptr)
@@ -3019,10 +3070,15 @@ static GuestTexture* CreateTexture(uint32_t width, uint32_t height, uint32_t dep
     return texture;
 }
 
+static RenderHeapType GetBufferHeapType()
+{
+    return g_capabilities.gpuUploadHeap ? RenderHeapType::GPU_UPLOAD : RenderHeapType::DEFAULT;
+}
+
 static GuestBuffer* CreateVertexBuffer(uint32_t length) 
 {
     auto buffer = g_userHeap.AllocPhysical<GuestBuffer>(ResourceType::VertexBuffer);
-    buffer->buffer = g_device->createBuffer(RenderBufferDesc::VertexBuffer(length, RenderHeapType::DEFAULT, RenderBufferFlag::INDEX));
+    buffer->buffer = g_device->createBuffer(RenderBufferDesc::VertexBuffer(length, GetBufferHeapType(), RenderBufferFlag::INDEX));
     buffer->dataSize = length;
 #ifdef _DEBUG 
     buffer->buffer->setName(fmt::format("Vertex Buffer {:X}", g_memory.MapVirtual(buffer)));
@@ -3033,7 +3089,7 @@ static GuestBuffer* CreateVertexBuffer(uint32_t length)
 static GuestBuffer* CreateIndexBuffer(uint32_t length, uint32_t, uint32_t format)
 {
     auto buffer = g_userHeap.AllocPhysical<GuestBuffer>(ResourceType::IndexBuffer);
-    buffer->buffer = g_device->createBuffer(RenderBufferDesc::IndexBuffer(length, RenderHeapType::DEFAULT));
+    buffer->buffer = g_device->createBuffer(RenderBufferDesc::IndexBuffer(length, GetBufferHeapType()));
     buffer->dataSize = length;
     buffer->format = ConvertFormat(format);
     buffer->guestFormat = format;
@@ -3089,8 +3145,6 @@ static void FlushViewport()
     if (g_dirtyStates.viewport)
     {
         auto viewport = g_viewport;
-        viewport.x += 0.5f;
-        viewport.y += 0.5f;
 
         if (viewport.minDepth > viewport.maxDepth)
             std::swap(viewport.minDepth, viewport.maxDepth);
@@ -3514,6 +3568,12 @@ static void SetFramebuffer(GuestSurface* renderTarget, GuestSurface* depthStenci
             g_framebuffer = nullptr;
         }
 
+        if (g_framebuffer != nullptr)
+        {
+            SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.halfPixelOffsetX, 1.0f / float(g_framebuffer->getWidth()));
+            SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.halfPixelOffsetY, -1.0f / float(g_framebuffer->getHeight()));
+        }
+
         g_dirtyStates.renderTargetAndDepthStencil = settingForClear;
     }
 }
@@ -3640,6 +3700,14 @@ static void SetTextureInRenderThread(uint32_t index, GuestTexture* texture)
 
     SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.texture3DIndices[index], texture != nullptr &&
         viewDimension == RenderTextureViewDimension::TEXTURE_3D ? texture->descriptorIndex : TEXTURE_DESCRIPTOR_NULL_TEXTURE_3D);
+
+    // Check if there's a cubemap texture we recreated and assign it if it's valid. The shader will pick whichever is correct.
+    if (viewDimension == RenderTextureViewDimension::TEXTURE_2D && texture->recreatedCubeMapTexture != nullptr)
+    {
+        texture = texture->recreatedCubeMapTexture.get();
+        AddBarrier(texture, RenderTextureLayout::SHADER_READ);
+        viewDimension = texture->viewDimension;
+    }
 
     SetDirtyValue(g_dirtyStates.sharedConstants, g_sharedConstants.textureCubeIndices[index], texture != nullptr &&
         viewDimension == RenderTextureViewDimension::TEXTURE_CUBE ? texture->descriptorIndex : TEXTURE_DESCRIPTOR_NULL_TEXTURE_CUBE);
@@ -5471,20 +5539,29 @@ static RenderFormat ConvertDXGIFormat(ddspp::DXGIFormat format)
     }
 }
 
-static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping)
+static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataSize, RenderComponentMapping componentMapping, bool forceCubeMap = false)
 {
     ddspp::Descriptor ddsDesc;
     if (ddspp::decode_header((unsigned char *)(data), ddsDesc) != ddspp::Error)
     {
+        forceCubeMap &= (ddsDesc.type == ddspp::Texture2D) && (ddsDesc.arraySize == 1);
+        uint32_t arraySize = ddsDesc.type == ddspp::TextureType::Cubemap ? (ddsDesc.arraySize * 6) : ddsDesc.arraySize;
+            
         RenderTextureDesc desc;
         desc.dimension = ConvertTextureDimension(ddsDesc.type);
         desc.width = ddsDesc.width;
         desc.height = ddsDesc.height;
         desc.depth = ddsDesc.depth;
         desc.mipLevels = ddsDesc.numMips;
-        desc.arraySize = ddsDesc.type == ddspp::TextureType::Cubemap ? ddsDesc.arraySize * 6 : ddsDesc.arraySize;
+        desc.arraySize = arraySize;
         desc.format = ConvertDXGIFormat(ddsDesc.format);
         desc.flags = ddsDesc.type == ddspp::TextureType::Cubemap ? RenderTextureFlag::CUBE : RenderTextureFlag::NONE;
+
+        if (forceCubeMap)
+        {
+            desc.arraySize = 6;
+            desc.flags = RenderTextureFlag::CUBE;
+        }
 
         texture.textureHolder = g_device->createTexture(desc);
         texture.texture = texture.textureHolder.get();
@@ -5495,6 +5572,10 @@ static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataS
         viewDesc.dimension = ConvertTextureViewDimension(ddsDesc.type);
         viewDesc.mipLevels = ddsDesc.numMips;
         viewDesc.componentMapping = componentMapping;
+
+        if (forceCubeMap)
+            viewDesc.dimension = RenderTextureViewDimension::TEXTURE_CUBE;
+
         texture.textureView = texture.texture->createTextureView(viewDesc);
         texture.descriptorIndex = g_textureDescriptorAllocator.allocate();
         g_textureDescriptorSet->setTexture(texture.descriptorIndex, texture.texture, RenderTextureLayout::SHADER_READ, texture.textureView.get());
@@ -5519,7 +5600,7 @@ static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataS
         uint32_t curSrcOffset = 0;
         uint32_t curDstOffset = 0;
 
-        for (uint32_t arraySlice = 0; arraySlice < desc.arraySize; arraySlice++)
+        for (uint32_t arraySlice = 0; arraySlice < arraySize; arraySlice++)
         {
             for (uint32_t mipSlice = 0; mipSlice < ddsDesc.numMips; mipSlice++)
             {
@@ -5569,13 +5650,24 @@ static bool LoadTexture(GuestTexture& texture, const uint8_t* data, size_t dataS
             {
                 g_copyCommandList->barriers(RenderBarrierStage::COPY, RenderTextureBarrier(texture.texture, RenderTextureLayout::COPY_DEST));
 
-                for (size_t i = 0; i < slices.size(); i++)
-                {
-                    auto& slice = slices[i];
+                auto copyTextureRegion = [&](Slice& slice, uint32_t subresourceIndex)
+                    {
+                        g_copyCommandList->copyTextureRegion(
+                            RenderTextureCopyLocation::Subresource(texture.texture, subresourceIndex),
+                            RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), desc.format, slice.width, slice.height, slice.depth, (slice.dstRowPitch * 8) / ddsDesc.bitsPerPixelOrBlock * ddsDesc.blockWidth, slice.dstOffset));
+                    };
 
-                    g_copyCommandList->copyTextureRegion(
-                        RenderTextureCopyLocation::Subresource(texture.texture, i),
-                        RenderTextureCopyLocation::PlacedFootprint(uploadBuffer.get(), desc.format, slice.width, slice.height, slice.depth, (slice.dstRowPitch * 8) / ddsDesc.bitsPerPixelOrBlock * ddsDesc.blockWidth, slice.dstOffset));
+                for (size_t i = 0; i < slices.size(); i++)
+                    copyTextureRegion(slices[i], i);
+
+                // Duplicate the first face across the remaining 6 faces.
+                if (forceCubeMap)
+                {
+                    for (size_t i = 1; i < 6; i++)
+                    {
+                        for (size_t j = 0; j < slices.size(); j++)
+                            copyTextureRegion(slices[j], (slices.size() * i) + j);
+                    }
                 }
             });
 
@@ -5648,13 +5740,12 @@ std::unique_ptr<GuestTexture> LoadTexture(const uint8_t* data, size_t dataSize, 
     return nullptr;
 }
 
-static void DiffPatchTexture(GuestTexture& texture, uint8_t* data, uint32_t dataSize)
+static void DiffPatchTexture(GuestTexture& texture, uint8_t* data, uint32_t dataSize, XXH64_hash_t hash)
 {
     auto header = reinterpret_cast<BlockCompressionDiffPatchHeader*>(g_buttonBcDiff.get());
     auto entries = reinterpret_cast<BlockCompressionDiffPatchEntry*>(g_buttonBcDiff.get() + header->entriesOffset);
     auto end = entries + header->entryCount;
     
-    XXH64_hash_t hash = XXH3_64bits(data, dataSize);
     auto findResult = std::lower_bound(entries, end, hash, [](BlockCompressionDiffPatchEntry& lhs, XXH64_hash_t rhs)
         {
             return lhs.hash < rhs;
@@ -5687,8 +5778,19 @@ static void MakePictureData(GuestPictureData* pictureData, uint8_t* data, uint32
 #ifdef _DEBUG
             texture.texture->setName(reinterpret_cast<char*>(g_memory.Translate(pictureData->name + 2)));
 #endif
+            XXH64_hash_t hash = XXH3_64bits(data, dataSize);
 
-            DiffPatchTexture(texture, data, dataSize);
+            // The whale in Cool Edge has a 2D texture assigned as a cubemap which makes it not display in recomp.
+            // The hardware duplicates the first face to the remaining 6 faces, so to simulate that we'll recreate the asset.
+            bool forceCubeMap = (dataSize == 0xAB38) && (hash == 0x160E9E250FDE88A9);
+            if (forceCubeMap)
+            {
+                GuestTexture recreatedCubeMapTexture(ResourceType::Texture);
+                if (LoadTexture(recreatedCubeMapTexture, data, dataSize, {}, true))
+                    texture.recreatedCubeMapTexture = std::make_unique<GuestTexture>(std::move(recreatedCubeMapTexture));
+            }
+
+            DiffPatchTexture(texture, data, dataSize, hash);
 
             pictureData->texture = g_memory.MapVirtual(g_userHeap.AllocPhysical<GuestTexture>(std::move(texture)));
             pictureData->type = 0;

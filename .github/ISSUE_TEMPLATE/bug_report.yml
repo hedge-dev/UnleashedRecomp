@@ -1,0 +1,95 @@
+name: Bug Report
+description: Report a bug, crash, or other type of error in Unleashed Recompiled
+type: Bug
+body:
+  - id: validation
+    type: checkboxes
+    attributes:
+      label: Validation
+      options:
+      - label: I have checked the [Issues](https://github.com/hedge-dev/UnleashedRecomp/issues) page to see if my problem has already been reported
+        required: true
+      - label: I have confirmed that this bug does not occur in the original game running on original Xbox 360 hardware
+        required: false
+  - id: dlc-installed
+    type: checkboxes
+    attributes:
+      label: If you have DLC installed, please specify which ones you have.
+      options:
+      - label: Apotos & Shamar Adventure Pack
+        required: false
+      - label: Chun-nan Adventure Pack
+        required: false
+      - label: Empire City & Adabat Adventure Pack
+        required: false
+      - label: Holoska Adventure Pack
+        required: false
+      - label: Mazuri Adventure Pack
+        required: false
+      - label: Spagonia Adventure Pack
+        required: false
+  - id: mods-used
+    type: textarea
+    validations:
+      required: false
+    attributes:
+      label: If you have mods enabled, please specify which ones you have.
+      description: Provide a list of your enabled mods in Hedge Mod Manager here. You will not receive support for issues *caused* by mods.
+  - id: codes-used
+    type: textarea
+    validations:
+      required: false
+    attributes:
+      label: If you have codes enabled, please specify which ones you have.
+      description: Provide a list of your enabled codes in Hedge Mod Manager here.
+  - id: describe-bug
+    type: textarea
+    validations:
+      required: true
+    attributes:
+      label: Describe the Bug
+      description: A clear and concise description of what the bug is.
+  - id: repro-steps
+    type: textarea
+    validations:
+      required: true
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions on how to reproduce the bug.
+      placeholder: |
+        1. Go to '...'
+        2. etc.
+  - id: expected-behavior
+    type: textarea
+    validations:
+      required: true
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+  - id: footage
+    type: textarea
+    validations:
+      required: true
+    attributes:
+      label: Footage
+      description: Attach a screenshot or video of the bug. If possible, please also provide footage of the expected behaviour on original Xbox 360 hardware.
+  - id: system-specifications
+    type: textarea
+    validations:
+      required: true
+    attributes:
+      label: System Specifications
+      description: Fill out the following details.
+      placeholder: |
+       - CPU: (e.g. Intel Core [...], AMD Ryzen [...], etc.)
+       - GPU: (e.g. NVIDIA GeForce [...], Radeon HD [...], Intel HD [...], etc.)
+       - GPU Driver: (e.g NVIDIA driver 545.XX, AMD driver 24.X.X, etc.)
+       - OS: (e.g. Windows 10, Windows 11, Linux distro)
+       - Version: (e.g. 1.0.0)
+  - id: additional-context
+    type: textarea
+    validations:
+      required: false
+    attributes:
+      label: Additional Context
+      description: Provide any other context about the problem here.
