@@ -1712,6 +1712,8 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
 #ifdef UNLEASHED_RECOMP_D3D12
                 if (interfaceFunction == CreateD3D12Interface)
                 {
+                    bool redirectToVulkan = false;
+
                     if (deviceDescription.vendor == RenderDeviceVendor::AMD)
                     {
                         // AMD Drivers before this version have a known issue where MSAA resolve targets will fail to work correctly.
@@ -1719,11 +1721,23 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
                         // just work incorrectly otherwise and result in visual glitches and 3D rendering not working in general.
                         constexpr uint64_t MinimumAMDDriverVersion = 0x1F00005DC2005CULL; // 31.0.24002.92
                         if ((Config::GraphicsAPI == EGraphicsAPI::Auto) && (deviceDescription.driverVersion < MinimumAMDDriverVersion))
-                        {
-                            g_device.reset();
-                            g_interface.reset();
-                            continue;
-                        }
+                            redirectToVulkan = true;
+                    }
+                    else if (deviceDescription.vendor == RenderDeviceVendor::INTEL)
+                    {
+                        // Intel drivers on D3D12 are extremely buggy, introducing various graphical glitches.
+                        // We will redirect users to Vulkan until a workaround can be found.
+                        if (Config::GraphicsAPI == EGraphicsAPI::Auto)
+                            redirectToVulkan = true;
+                    }
+
+                    // Allow redirection to Vulkan only if we are not retrying after a crash, 
+                    // so the user can at least boot the game with D3D12 if Vulkan fails to work.
+                    if (!graphicsApiRetry && redirectToVulkan)
+                    {
+                        g_device.reset();
+                        g_interface.reset();
+                        continue;
                     }
 
                     // Hardware resolve seems to be completely bugged on Intel D3D12 drivers.
