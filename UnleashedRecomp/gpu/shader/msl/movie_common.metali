@@ -1,0 +1,39 @@
+#pragma once
+
+#include "../../../../tools/XenosRecomp/XenosRecomp/shader_common.h"
+
+#define fZmin (*(reinterpret_cast<device float*>(g_PushConstants.PixelShaderConstants + 0)))
+#define fZmax (*(reinterpret_cast<device float*>(g_PushConstants.PixelShaderConstants + 16)))
+
+#define Tex0_ResourceDescriptorIndex (*(reinterpret_cast<device uint*>(g_PushConstants.SharedConstants + 0)))
+#define Tex1_ResourceDescriptorIndex (*(reinterpret_cast<device uint*>(g_PushConstants.SharedConstants + 4)))
+#define Tex2_ResourceDescriptorIndex (*(reinterpret_cast<device uint*>(g_PushConstants.SharedConstants + 8)))
+#define Tex3_ResourceDescriptorIndex (*(reinterpret_cast<device uint*>(g_PushConstants.SharedConstants + 12)))
+#define Tex4_ResourceDescriptorIndex (*(reinterpret_cast<device uint*>(g_PushConstants.SharedConstants + 16)))
+
+#define Tex0_SamplerDescriptorIndex (*(reinterpret_cast<device uint*>(g_PushConstants.SharedConstants + 64)))
+#define Tex1_SamplerDescriptorIndex (*(reinterpret_cast<device uint*>(g_PushConstants.SharedConstants + 68)))
+#define Tex2_SamplerDescriptorIndex (*(reinterpret_cast<device uint*>(g_PushConstants.SharedConstants + 72)))
+#define Tex3_SamplerDescriptorIndex (*(reinterpret_cast<device uint*>(g_PushConstants.SharedConstants + 76)))
+#define Tex4_SamplerDescriptorIndex (*(reinterpret_cast<device uint*>(g_PushConstants.SharedConstants + 80)))
+
+#define bCsc (g_Booleans & (1 << (16 + 0)))
+#define bAmv (g_Booleans & (1 << (16 + 1)))
+#define bZmv (g_Booleans & (1 << (16 + 2)))
+ 
+struct VertexShaderInput
+{
+    float4 ObjPos [[attribute(0)]];
+    float2 UV [[attribute(4)]];
+};
+
+struct Interpolators
+{
+    float4 ProjPos [[position]];
+    float2 UV;
+};
+
+struct PixelShaderOutput
+{
+    float4 Color [[color(0)]];
+};
