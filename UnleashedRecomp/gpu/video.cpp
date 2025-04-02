@@ -1679,10 +1679,16 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     std::vector<RenderInterfaceFunction *> interfaceFunctions;
 
 #ifdef UNLEASHED_RECOMP_D3D12
+    bool allowVulkanRedirection = true;
+
     if (graphicsApiRetry)
     {
         // If we are attempting to create again after a reboot due to a crash, swap the order.
         g_vulkan = !g_vulkan;
+
+        // Don't allow redirection to Vulkan if we are retrying after a crash, 
+        // so the user can at least boot the game with D3D12 if Vulkan fails to work.
+        allowVulkanRedirection = false;
     }
 
     interfaceFunctions.push_back(g_vulkan ? CreateVulkanInterfaceWrapper : CreateD3D12Interface);
@@ -1691,8 +1697,10 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     interfaceFunctions.push_back(CreateVulkanInterfaceWrapper);
 #endif
 
-    for (RenderInterfaceFunction *interfaceFunction : interfaceFunctions)
+    for (size_t i = 0; i < interfaceFunctions.size(); i++)
     {
+        RenderInterfaceFunction* interfaceFunction = interfaceFunctions[i];
+
 #ifdef UNLEASHED_RECOMP_D3D12
         // Wrap the device creation in __try/__except to survive from driver crashes.
         __try
@@ -1712,32 +1720,42 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
 #ifdef UNLEASHED_RECOMP_D3D12
                 if (interfaceFunction == CreateD3D12Interface)
                 {
-                    bool redirectToVulkan = false;
+                    if (allowVulkanRedirection)
+                    {
+                        bool redirectToVulkan = false;
 
-                    if (deviceDescription.vendor == RenderDeviceVendor::AMD)
-                    {
-                        // AMD Drivers before this version have a known issue where MSAA resolve targets will fail to work correctly.
-                        // If no specific graphics API was selected, we silently destroy this one and move to the next option as it'll
-                        // just work incorrectly otherwise and result in visual glitches and 3D rendering not working in general.
-                        constexpr uint64_t MinimumAMDDriverVersion = 0x1F00005DC2005CULL; // 31.0.24002.92
-                        if ((Config::GraphicsAPI == EGraphicsAPI::Auto) && (deviceDescription.driverVersion < MinimumAMDDriverVersion))
-                            redirectToVulkan = true;
-                    }
-                    else if (deviceDescription.vendor == RenderDeviceVendor::INTEL)
-                    {
-                        // Intel drivers on D3D12 are extremely buggy, introducing various graphical glitches.
-                        // We will redirect users to Vulkan until a workaround can be found.
-                        if (Config::GraphicsAPI == EGraphicsAPI::Auto)
-                            redirectToVulkan = true;
-                    }
+                        if (deviceDescription.vendor == RenderDeviceVendor::AMD)
+                        {
+                            // AMD Drivers before this version have a known issue where MSAA resolve targets will fail to work correctly.
+                            // If no specific graphics API was selected, we silently destroy this one and move to the next option as it'll
+                            // just work incorrectly otherwise and result in visual glitches and 3D rendering not working in general.
+                            constexpr uint64_t MinimumAMDDriverVersion = 0x1F00005DC2005CULL; // 31.0.24002.92
+                            if ((Config::GraphicsAPI == EGraphicsAPI::Auto) && (deviceDescription.driverVersion < MinimumAMDDriverVersion))
+                                redirectToVulkan = true;
+                        }
+                        else if (deviceDescription.vendor == RenderDeviceVendor::INTEL)
+                        {
+                            // Intel drivers on D3D12 are extremely buggy, introducing various graphical glitches.
+                            // We will redirect users to Vulkan until a workaround can be found.
+                            if (Config::GraphicsAPI == EGraphicsAPI::Auto)
+                                redirectToVulkan = true;
+                        }
 
-                    // Allow redirection to Vulkan only if we are not retrying after a crash, 
-                    // so the user can at least boot the game with D3D12 if Vulkan fails to work.
-                    if (!graphicsApiRetry && redirectToVulkan)
-                    {
-                        g_device.reset();
-                        g_interface.reset();
-                        continue;
+                        if (redirectToVulkan)
+                        {
+                            g_device.reset();
+                            g_interface.reset();
+
+                            // In case Vulkan fails to initialize, we will try D3D12 again afterwards, 
+                            // just to get the game to boot. This only really happens in very old Intel GPU drivers.
+                            if (!g_vulkan)
+                            {
+                                interfaceFunctions.push_back(CreateD3D12Interface);
+                                allowVulkanRedirection = false;
+                            }
+
+                            continue;
+                        }
                     }
 
                     // Hardware resolve seems to be completely bugged on Intel D3D12 drivers.
