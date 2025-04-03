@@ -8,6 +8,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     option(UNLEASHED_RECOMP_FLATPAK "Configure the build for Flatpak compatibility." OFF)
 endif()
 
+option(UNLEASHED_RECOMP_CHECK_FOR_UPDATES "Enables the update checker." OFF)
+
 function(BIN2C)
     cmake_parse_arguments(BIN2C_ARGS "" "TARGET_OBJ;SOURCE_FILE;DEST_FILE;ARRAY_NAME;COMPRESSION_TYPE" "" ${ARGN})
 
@@ -322,6 +324,10 @@ endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_compile_definitions(UnleashedRecomp PRIVATE SDL_VULKAN_ENABLED)
+endif()
+
+if (UNLEASHED_RECOMP_CHECK_FOR_UPDATES)
+    target_compile_definitions(UnleashedRecomp PRIVATE -DCHECK_FOR_UPDATES)
 endif()
 
 find_package(directx-dxc REQUIRED)

@@ -10,3 +10,5 @@ jobs:
     if: github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name
     uses: ./.github/workflows/validate.yml
     secrets: inherit
+    with:
+      cmake-flags: "-DUNLEASHED_RECOMP_CHECK_FOR_UPDATES=ON"
