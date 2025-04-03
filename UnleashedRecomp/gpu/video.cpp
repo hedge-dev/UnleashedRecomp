@@ -2437,18 +2437,22 @@ static void DrawProfiler()
 
         ImGui::NewLine();
 
-        O1HeapDiagnostics diagnostics, physicalDiagnostics;
+        if (g_userHeap.heap != nullptr && g_userHeap.physicalHeap != nullptr)
         {
-            std::lock_guard lock(g_userHeap.mutex);
-            diagnostics = o1heapGetDiagnostics(g_userHeap.heap);
+            O1HeapDiagnostics diagnostics, physicalDiagnostics;
+            {
+                std::lock_guard lock(g_userHeap.mutex);
+                diagnostics = o1heapGetDiagnostics(g_userHeap.heap);
+            }
+            {
+                std::lock_guard lock(g_userHeap.physicalMutex);
+                physicalDiagnostics = o1heapGetDiagnostics(g_userHeap.physicalHeap);
+            }
+
+            ImGui::Text("Heap Allocated: %d MB", int32_t(diagnostics.allocated / (1024 * 1024)));
+            ImGui::Text("Physical Heap Allocated: %d MB", int32_t(physicalDiagnostics.allocated / (1024 * 1024)));
         }
-        {
-            std::lock_guard lock(g_userHeap.physicalMutex);
-            physicalDiagnostics = o1heapGetDiagnostics(g_userHeap.physicalHeap);
-        }
-        
-        ImGui::Text("Heap Allocated: %d MB", int32_t(diagnostics.allocated / (1024 * 1024)));
-        ImGui::Text("Physical Heap Allocated: %d MB", int32_t(physicalDiagnostics.allocated / (1024 * 1024)));
+
         ImGui::Text("GPU Waits: %d", int32_t(g_waitForGPUCount));
         ImGui::Text("Buffer Uploads: %d", int32_t(g_bufferUploadCount));
         ImGui::NewLine();
