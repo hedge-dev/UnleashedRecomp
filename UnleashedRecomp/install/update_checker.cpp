@@ -166,6 +166,9 @@ void UpdateChecker::visitWebsite()
 #elif defined(__linux__)
     std::string command = "xdg-open " + std::string(VISIT_URL) + " &";
     std::system(command.c_str());
+#elif defined(__APPLE__)
+    std::string command = "open " + std::string(VISIT_URL) + " &";
+    std::system(command.c_str());
 #else
     static_assert(false, "Visit website not implemented for this platform.");
 #endif
