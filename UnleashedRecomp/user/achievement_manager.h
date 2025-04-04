@@ -2,7 +2,7 @@
 
 #include <user/achievement_data.h>
 
-enum class EAchStatus
+enum class EAchBinStatus
 {
     Success,
     IOError,
@@ -16,7 +16,7 @@ class AchievementManager
 {
 public:
     static inline AchievementData Data{};
-    static inline EAchStatus Status{};
+    static inline EAchBinStatus BinStatus{ EAchBinStatus::Success };
 
     static std::filesystem::path GetDataPath(bool checkForMods)
     {
@@ -29,6 +29,6 @@ public:
     static void Unlock(uint16_t id);
     static void UnlockAll();
     static void Reset();
-    static void Load();
-    static void Save(bool ignoreStatus = false);
+    static bool LoadBinary();
+    static bool SaveBinary(bool ignoreStatus = false);
 };

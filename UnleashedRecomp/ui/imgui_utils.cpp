@@ -510,6 +510,11 @@ std::vector<std::string> Split(const char* strStart, const ImFont* font, float f
                 if (*str == '\n')
                     str++;
 
+                if (strncmp(str, "\u200B", 3) == 0)
+                {
+                    str += 3;
+                }
+
                 lineStart = str;
                 continue;
             }

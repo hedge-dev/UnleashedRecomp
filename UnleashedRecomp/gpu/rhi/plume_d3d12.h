@@ -329,7 +329,7 @@ namespace plume {
         D3D12Device *device = nullptr;
         RenderPoolDesc desc;
 
-        D3D12Pool(D3D12Device *device, const RenderPoolDesc &desc);
+        D3D12Pool(D3D12Device *device, const RenderPoolDesc &desc, bool gpuUploadHeapFallback);
         ~D3D12Pool() override;
         std::unique_ptr<RenderBuffer> createBuffer(const RenderBufferDesc &desc) override;
         std::unique_ptr<RenderTexture> createTexture(const RenderTextureDesc &desc) override;
@@ -430,9 +430,11 @@ namespace plume {
         std::unique_ptr<D3D12DescriptorHeapAllocator> samplerHeapAllocator;
         std::unique_ptr<D3D12DescriptorHeapAllocator> colorTargetHeapAllocator;
         std::unique_ptr<D3D12DescriptorHeapAllocator> depthTargetHeapAllocator;
+        std::unique_ptr<D3D12Pool> customUploadPool;
         RenderDeviceCapabilities capabilities;
         RenderDeviceDescription description;
         uint64_t timestampFrequency = 1;
+        bool gpuUploadHeapFallback = false;
 
         D3D12Device(D3D12Interface *renderInterface, const std::string &preferredDeviceName);
         ~D3D12Device() override;

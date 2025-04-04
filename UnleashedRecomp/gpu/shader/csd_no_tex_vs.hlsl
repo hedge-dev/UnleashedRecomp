@@ -43,7 +43,7 @@ void main(
 	out float4 oColor0 : COLOR0,
 	out float4 oColor1 : COLOR1)
 {
-    oPos.xy = (iPosition0.xy - 0.5) * g_ViewportSize.zw * float2(2.0, -2.0) + float2(-1.0, 1.0);
+    oPos.xy = iPosition0.xy * g_ViewportSize.zw * float2(2.0, -2.0) + float2(-1.0, 1.0);
     oPos.z = g_Z.x;
     oPos.w = 1.0;
     oTexCoord0 = iColor0.wxyz;
