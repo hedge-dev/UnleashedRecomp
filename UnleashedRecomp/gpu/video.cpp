@@ -31,6 +31,7 @@
 #include <user/config.h>
 #include <sdl_listener.h>
 #include <xxHashMap.h>
+#include <os/process.h>
 
 #if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)
 #include <magic_enum/magic_enum.hpp>
@@ -735,10 +736,13 @@ static void DestructTempResources()
 }
 
 static std::thread::id g_presentThreadId = std::this_thread::get_id();
+static std::atomic<bool> g_readyForCommands;
 
 PPC_FUNC_IMPL(__imp__sub_824ECA00);
 PPC_FUNC(sub_824ECA00)
 {
+    // Guard against thread ownership changes when between command lists.
+    g_readyForCommands.wait(false);
     g_presentThreadId = std::this_thread::get_id();
     __imp__sub_824ECA00(ctx, base);
 }
@@ -1623,6 +1627,9 @@ static void BeginCommandList()
     commandList->setGraphicsDescriptorSet(g_textureDescriptorSet.get(), 1);
     commandList->setGraphicsDescriptorSet(g_textureDescriptorSet.get(), 2);
     commandList->setGraphicsDescriptorSet(g_samplerDescriptorSet.get(), 3);
+
+    g_readyForCommands = true;
+    g_readyForCommands.notify_one();
 }
 
 template<typename T>
@@ -1652,7 +1659,7 @@ static void ApplyLowEndDefaults()
     }
 }
 
-bool Video::CreateHostDevice(const char *sdlVideoDriver)
+bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
 {
     for (uint32_t i = 0; i < 16; i++)
         g_inputSlots[i].index = i;
@@ -1672,17 +1679,39 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
     std::vector<RenderInterfaceFunction *> interfaceFunctions;
 
 #ifdef UNLEASHED_RECOMP_D3D12
+    bool allowVulkanRedirection = true;
+
+    if (graphicsApiRetry)
+    {
+        // If we are attempting to create again after a reboot due to a crash, swap the order.
+        g_vulkan = !g_vulkan;
+
+        // Don't allow redirection to Vulkan if we are retrying after a crash, 
+        // so the user can at least boot the game with D3D12 if Vulkan fails to work.
+        allowVulkanRedirection = false;
+    }
+
     interfaceFunctions.push_back(g_vulkan ? CreateVulkanInterfaceWrapper : CreateD3D12Interface);
     interfaceFunctions.push_back(g_vulkan ? CreateD3D12Interface : CreateVulkanInterfaceWrapper);
 #else
     interfaceFunctions.push_back(CreateVulkanInterfaceWrapper);
 #endif
 
-    for (RenderInterfaceFunction *interfaceFunction : interfaceFunctions)
+    for (size_t i = 0; i < interfaceFunctions.size(); i++)
     {
-        g_interface = interfaceFunction();
-        if (g_interface != nullptr)
+        RenderInterfaceFunction* interfaceFunction = interfaceFunctions[i];
+
+#ifdef UNLEASHED_RECOMP_D3D12
+        // Wrap the device creation in __try/__except to survive from driver crashes.
+        __try
+#endif
         {
+            g_interface = interfaceFunction();
+            if (g_interface == nullptr)
+            {
+                continue;
+            }
+
             g_device = g_interface->createDevice(Config::GraphicsDevice);
             if (g_device != nullptr)
             {
@@ -1691,16 +1720,40 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
 #ifdef UNLEASHED_RECOMP_D3D12
                 if (interfaceFunction == CreateD3D12Interface)
                 {
-                    if (deviceDescription.vendor == RenderDeviceVendor::AMD)
+                    if (allowVulkanRedirection)
                     {
-                        // AMD Drivers before this version have a known issue where MSAA resolve targets will fail to work correctly.
-                        // If no specific graphics API was selected, we silently destroy this one and move to the next option as it'll
-                        // just work incorrectly otherwise and result in visual glitches and 3D rendering not working in general.
-                        constexpr uint64_t MinimumAMDDriverVersion = 0x1F00005DC2005CULL; // 31.0.24002.92
-                        if ((Config::GraphicsAPI == EGraphicsAPI::Auto) && (deviceDescription.driverVersion < MinimumAMDDriverVersion))
+                        bool redirectToVulkan = false;
+
+                        if (deviceDescription.vendor == RenderDeviceVendor::AMD)
+                        {
+                            // AMD Drivers before this version have a known issue where MSAA resolve targets will fail to work correctly.
+                            // If no specific graphics API was selected, we silently destroy this one and move to the next option as it'll
+                            // just work incorrectly otherwise and result in visual glitches and 3D rendering not working in general.
+                            constexpr uint64_t MinimumAMDDriverVersion = 0x1F00005DC2005CULL; // 31.0.24002.92
+                            if ((Config::GraphicsAPI == EGraphicsAPI::Auto) && (deviceDescription.driverVersion < MinimumAMDDriverVersion))
+                                redirectToVulkan = true;
+                        }
+                        else if (deviceDescription.vendor == RenderDeviceVendor::INTEL)
+                        {
+                            // Intel drivers on D3D12 are extremely buggy, introducing various graphical glitches.
+                            // We will redirect users to Vulkan until a workaround can be found.
+                            if (Config::GraphicsAPI == EGraphicsAPI::Auto)
+                                redirectToVulkan = true;
+                        }
+
+                        if (redirectToVulkan)
                         {
                             g_device.reset();
                             g_interface.reset();
+
+                            // In case Vulkan fails to initialize, we will try D3D12 again afterwards, 
+                            // just to get the game to boot. This only really happens in very old Intel GPU drivers.
+                            if (!g_vulkan)
+                            {
+                                interfaceFunctions.push_back(CreateD3D12Interface);
+                                allowVulkanRedirection = false;
+                            }
+
                             continue;
                         }
                     }
@@ -1719,12 +1772,36 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver)
                 break;
             }
         }
+#ifdef UNLEASHED_RECOMP_D3D12
+        __except (EXCEPTION_EXECUTE_HANDLER)
+        {
+            if (graphicsApiRetry)
+            {
+                // If we were retrying, and this also failed, then we'll show the user neither of the graphics APIs succeeded.
+                return false;
+            }
+            else
+            {
+                // If this is the first crash we ran into, reboot and try the other graphics API.
+                os::process::StartProcess(os::process::GetExecutablePath(), { "--graphics-api-retry" });
+                std::_Exit(0);
+            }
+        }
+#endif
     }
 
     if (g_device == nullptr)
     {
         return false;
     }
+
+#ifdef UNLEASHED_RECOMP_D3D12
+    if (graphicsApiRetry)
+    {
+        // If we managed to create a device after retrying it in a reboot, remember the one we picked.
+        Config::GraphicsAPI = g_vulkan ? EGraphicsAPI::Vulkan : EGraphicsAPI::D3D12;
+    }
+#endif
 
     g_capabilities = g_device->getCapabilities();
 
@@ -2360,18 +2437,22 @@ static void DrawProfiler()
 
         ImGui::NewLine();
 
-        O1HeapDiagnostics diagnostics, physicalDiagnostics;
+        if (g_userHeap.heap != nullptr && g_userHeap.physicalHeap != nullptr)
         {
-            std::lock_guard lock(g_userHeap.mutex);
-            diagnostics = o1heapGetDiagnostics(g_userHeap.heap);
+            O1HeapDiagnostics diagnostics, physicalDiagnostics;
+            {
+                std::lock_guard lock(g_userHeap.mutex);
+                diagnostics = o1heapGetDiagnostics(g_userHeap.heap);
+            }
+            {
+                std::lock_guard lock(g_userHeap.physicalMutex);
+                physicalDiagnostics = o1heapGetDiagnostics(g_userHeap.physicalHeap);
+            }
+
+            ImGui::Text("Heap Allocated: %d MB", int32_t(diagnostics.allocated / (1024 * 1024)));
+            ImGui::Text("Physical Heap Allocated: %d MB", int32_t(physicalDiagnostics.allocated / (1024 * 1024)));
         }
-        {
-            std::lock_guard lock(g_userHeap.physicalMutex);
-            physicalDiagnostics = o1heapGetDiagnostics(g_userHeap.physicalHeap);
-        }
-        
-        ImGui::Text("Heap Allocated: %d MB", int32_t(diagnostics.allocated / (1024 * 1024)));
-        ImGui::Text("Physical Heap Allocated: %d MB", int32_t(physicalDiagnostics.allocated / (1024 * 1024)));
+
         ImGui::Text("GPU Waits: %d", int32_t(g_waitForGPUCount));
         ImGui::Text("Buffer Uploads: %d", int32_t(g_bufferUploadCount));
         ImGui::NewLine();
@@ -2710,6 +2791,8 @@ static std::atomic<bool> g_executedCommandList;
 
 void Video::Present() 
 {
+    g_readyForCommands = false;
+
     RenderCommand cmd;
     cmd.type = RenderCommandType::ExecutePendingStretchRectCommands;
     g_renderQueue.enqueue(cmd);

@@ -208,6 +208,7 @@ int main(int argc, char *argv[])
     bool forceDLCInstaller = false;
     bool useDefaultWorkingDirectory = false;
     bool forceInstallationCheck = false;
+    bool graphicsApiRetry = false;
     const char *sdlVideoDriver = nullptr;
 
     for (uint32_t i = 1; i < argc; i++)
@@ -216,6 +217,7 @@ int main(int argc, char *argv[])
         forceDLCInstaller = forceDLCInstaller || (strcmp(argv[i], "--install-dlc") == 0);
         useDefaultWorkingDirectory = useDefaultWorkingDirectory || (strcmp(argv[i], "--use-cwd") == 0);
         forceInstallationCheck = forceInstallationCheck || (strcmp(argv[i], "--install-check") == 0);
+        graphicsApiRetry = graphicsApiRetry || (strcmp(argv[i], "--graphics-api-retry") == 0);
 
         if (strcmp(argv[i], "--sdl-video-driver") == 0)
         {
@@ -234,9 +236,6 @@ int main(int argc, char *argv[])
     }
 
     Config::Load();
-    
-    if (!PersistentStorageManager::LoadBinary())
-        LOGFN_ERROR("Failed to load persistent storage binary... (status code {})", (int)PersistentStorageManager::BinStatus);
 
     if (forceInstallationCheck)
     {
@@ -326,7 +325,7 @@ int main(int argc, char *argv[])
     bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
     if (runInstallerWizard)
     {
-        if (!Video::CreateHostDevice(sdlVideoDriver))
+        if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
         {
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
             std::_Exit(1);
@@ -340,13 +339,16 @@ int main(int argc, char *argv[])
 
     ModLoader::Init();
 
+    if (!PersistentStorageManager::LoadBinary())
+        LOGFN_ERROR("Failed to load persistent storage binary... (status code {})", (int)PersistentStorageManager::BinStatus);
+
     KiSystemStartup();
 
     uint32_t entry = LdrLoadModule(modulePath);
 
     if (!runInstallerWizard)
     {
-        if (!Video::CreateHostDevice(sdlVideoDriver))
+        if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
         {
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
             std::_Exit(1);

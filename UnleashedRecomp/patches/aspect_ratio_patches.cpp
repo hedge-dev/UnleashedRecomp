@@ -1650,3 +1650,39 @@ PPC_FUNC(sub_82E54950)
         __imp__sub_82E54950(ctx, base);
     }
 }
+
+// Credits while Sonic is running are offseted by 133 pixels at 16:9.
+// We can make this dynamic by remembering the anchoring and shifting accordingly.
+void EndingTextAllocMidAsmHook(PPCRegister& r3)
+{
+    r3.u32 += sizeof(uint32_t);
+}
+
+static constexpr uint32_t ENDING_TEXT_SIZE = 0x164;
+
+void EndingTextCtorRightMidAsmHook(PPCRegister& r3)
+{
+    *reinterpret_cast<uint32_t*>(g_memory.base + r3.u32 + ENDING_TEXT_SIZE) = ALIGN_RIGHT;
+}
+
+void EndingTextCtorLeftMidAsmHook(PPCRegister& r3)
+{
+    *reinterpret_cast<uint32_t*>(g_memory.base + r3.u32 + ENDING_TEXT_SIZE) = ALIGN_LEFT;
+}
+
+void EndingTextCtorCenterMidAsmHook(PPCRegister& r3)
+{
+    *reinterpret_cast<uint32_t*>(g_memory.base + r3.u32 + ENDING_TEXT_SIZE) = ALIGN_CENTER;
+}
+
+void EndingTextPositionMidAsmHook(PPCRegister& r31, PPCRegister& f13)
+{
+    uint32_t align = *reinterpret_cast<uint32_t*>(g_memory.base + r31.u32 + ENDING_TEXT_SIZE);
+
+    // Since widescreen is always forced, 133 offset will always be part of the position.
+    if (align == ALIGN_RIGHT)
+        f13.f64 += -133.0 * (1.0 - g_aspectRatioNarrowScale);
+
+    else if (align == ALIGN_LEFT)
+        f13.f64 += 133.0 * (1.0 - g_aspectRatioNarrowScale);
+}
