@@ -3437,6 +3437,7 @@ namespace plume {
                 adapter = adapterOption;
                 d3d = deviceOption;
                 shaderModel = dataShaderModel.HighestShaderModel;
+                capabilities.geometryShader = true;
                 capabilities.raytracing = rtSupportOption;
                 capabilities.raytracingStateUpdate = rtStateUpdateSupportOption;
                 capabilities.sampleLocations = samplePositionsOption;
