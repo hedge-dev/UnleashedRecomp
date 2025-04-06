@@ -80,6 +80,7 @@ static double g_lockedOnTime;
 static double g_lastTappedTime;
 static double g_lastIncrementTime;
 static double g_lastIncrementSoundTime;
+static double g_fastIncrementHoldTime;
 
 static constexpr size_t GRID_SIZE = 9;
 
@@ -98,6 +99,7 @@ static bool g_isEnterKeyBuffered = false;
 static bool g_canReset = false;
 static bool g_isLanguageOptionChanged = false;
 static bool g_titleAnimBegin = true;
+static EChannelConfiguration g_currentChannelConfig;
 
 static double g_appearTime = 0.0;
 
@@ -802,7 +804,6 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                             config->Callback(config);
 
                         VideoConfigValueChangedCallback(config);
-                        XAudioConfigValueChangedCallback(config);
 
                         Game_PlaySound("sys_worldmap_finaldecide");
                     }
@@ -835,7 +836,6 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                             if (config->Value != s_oldValue)
                             {
                                 VideoConfigValueChangedCallback(config);
-                                XAudioConfigValueChangedCallback(config);
 
                                 if (config->ApplyCallback)
                                     config->ApplyCallback(config);
@@ -864,7 +864,6 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                         config->MakeDefault();
 
                         VideoConfigValueChangedCallback(config);
-                        XAudioConfigValueChangedCallback(config);
 
                         if (config->Callback)
                             config->Callback(config);
@@ -1043,37 +1042,40 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
             }
 
             config->Value = it->first;
+            config->SnapToNearestAccessibleValue(rightTapped);
 
             if (increment || decrement)
                 Game_PlaySound("sys_actstg_pausecursor");
         }
         else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int32_t>)
         {
-            float deltaTime = ImGui::GetIO().DeltaTime;
+            float deltaTime = std::fmin(ImGui::GetIO().DeltaTime, 1.0f / 15.0f);
 
-            bool fastIncrement = (time - g_lastTappedTime) > 0.5;
+            bool fastIncrement = isSlider && (leftIsHeld || rightIsHeld) && (time - g_lastTappedTime) > 0.5;
             bool isPlayIncrementSound = true;
 
             constexpr double INCREMENT_TIME = 1.0 / 120.0;
             constexpr double INCREMENT_SOUND_TIME = 1.0 / 7.5;
 
-            if (isSlider)
+            if (fastIncrement)
+                g_fastIncrementHoldTime += deltaTime;
+            else
+                g_fastIncrementHoldTime = 0;
+
+            if (fastIncrement)
             {
-                if (fastIncrement)
-                {
-                    isPlayIncrementSound = (time - g_lastIncrementSoundTime) > INCREMENT_SOUND_TIME;
+                isPlayIncrementSound = (time - g_lastIncrementSoundTime) > INCREMENT_SOUND_TIME;
 
-                    if ((time - g_lastIncrementTime) < INCREMENT_TIME)
-                        fastIncrement = false;
-                    else
-                        g_lastIncrementTime = time;
-                }
+                if (g_fastIncrementHoldTime < INCREMENT_TIME)
+                    fastIncrement = false;
+                else
+                    g_lastIncrementTime = time;
+            }
 
-                if (fastIncrement)
-                {
-                    decrement = leftIsHeld;
-                    increment = rightIsHeld;
-                }
+            if (fastIncrement)
+            {
+                decrement = leftIsHeld;
+                increment = rightIsHeld;
             }
 
             do
@@ -1093,9 +1095,10 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
                         config->Value += 0.01f;
                 }
 
-                deltaTime -= INCREMENT_TIME;
+                if (fastIncrement)
+                    g_fastIncrementHoldTime -= INCREMENT_TIME;
             }
-            while (fastIncrement && deltaTime > 0.0f);
+            while (fastIncrement && g_fastIncrementHoldTime >= INCREMENT_TIME);
 
             bool isConfigValueInBounds = config->Value >= valueMin && config->Value <= valueMax;
 
@@ -1245,7 +1248,7 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::MasterVolume, true);
             DrawConfigOption(rowCount++, yOffset, &Config::MusicVolume, true);
             DrawConfigOption(rowCount++, yOffset, &Config::EffectsVolume, true);
-            DrawConfigOption(rowCount++, yOffset, &Config::ChannelConfiguration, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::ChannelConfiguration, !OptionsMenu::s_isPause, cmnReason);
             DrawConfigOption(rowCount++, yOffset, &Config::MusicAttenuation, AudioPatches::CanAttenuate(), &Localise("Options_Desc_OSNotSupported"));
             DrawConfigOption(rowCount++, yOffset, &Config::BattleTheme, true);
             break;
@@ -1271,7 +1274,7 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::VSync, true);
             DrawConfigOption(rowCount++, yOffset, &Config::FPS, true, nullptr, FPS_MIN, 120, FPS_MAX);
             DrawConfigOption(rowCount++, yOffset, &Config::Brightness, true);
-            DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::AntiAliasing, Config::AntiAliasing.InaccessibleValues.size() != 3, &Localise("Options_Desc_NotAvailableHardware"));
             DrawConfigOption(rowCount++, yOffset, &Config::TransparencyAntiAliasing, Config::AntiAliasing != EAntiAliasing::None, &Localise("Options_Desc_NotAvailableMSAA"));
             DrawConfigOption(rowCount++, yOffset, &Config::ShadowResolution, true);
             DrawConfigOption(rowCount++, yOffset, &Config::GITextureFiltering, true);
@@ -1786,7 +1789,7 @@ void OptionsMenu::Draw()
             DrawFadeTransition();
     }
 
-    s_isRestartRequired = Config::Language != App::s_language;
+    s_isRestartRequired = Config::Language != App::s_language || Config::ChannelConfiguration != g_currentChannelConfig;
 }
 
 void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
@@ -1802,6 +1805,7 @@ void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
     g_categoryAnimMax = { 0.0f, 0.0f };
     g_selectedItem = nullptr;
     g_titleAnimBegin = true;
+    g_currentChannelConfig = Config::ChannelConfiguration;
 
     /* Store button state so we can track it later
        and prevent the first item being selected. */
