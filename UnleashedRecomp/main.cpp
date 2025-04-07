@@ -13,6 +13,7 @@
 #include <hid/hid.h>
 #include <user/config.h>
 #include <user/paths.h>
+#include <user/persistent_storage_manager.h>
 #include <user/registry.h>
 #include <kernel/xdbf.h>
 #include <install/installer.h>
@@ -23,6 +24,7 @@
 #include <ui/game_window.h>
 #include <ui/installer_wizard.h>
 #include <mod/mod_loader.h>
+#include <preload_executable.h>
 
 #ifdef _WIN32
 #include <timeapi.h>
@@ -51,14 +53,20 @@ void HostStartup()
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #endif
 
-    g_userHeap.Init();
-
     hid::Init();
 }
 
 // Name inspired from nt's entry point
 void KiSystemStartup()
 {
+    if (g_memory.base == nullptr)
+    {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("System_MemoryAllocationFailed").c_str(), GameWindow::s_pWindow);
+        std::_Exit(1);
+    }
+
+    g_userHeap.Init();
+
     const auto gameContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Game");
     const auto updateContent = XamMakeContent(XCONTENTTYPE_RESERVED, "Update");
     XamRegisterContent(gameContent, GAME_INSTALL_DIRECTORY "/game");
@@ -193,14 +201,23 @@ int main(int argc, char *argv[])
 
     os::logger::Init();
 
+    PreloadContext preloadContext;
+    preloadContext.PreloadExecutable();
+
     bool forceInstaller = false;
     bool forceDLCInstaller = false;
+    bool useDefaultWorkingDirectory = false;
+    bool forceInstallationCheck = false;
+    bool graphicsApiRetry = false;
     const char *sdlVideoDriver = nullptr;
 
     for (uint32_t i = 1; i < argc; i++)
     {
         forceInstaller = forceInstaller || (strcmp(argv[i], "--install") == 0);
         forceDLCInstaller = forceDLCInstaller || (strcmp(argv[i], "--install-dlc") == 0);
+        useDefaultWorkingDirectory = useDefaultWorkingDirectory || (strcmp(argv[i], "--use-cwd") == 0);
+        forceInstallationCheck = forceInstallationCheck || (strcmp(argv[i], "--install-check") == 0);
+        graphicsApiRetry = graphicsApiRetry || (strcmp(argv[i], "--graphics-api-retry") == 0);
 
         if (strcmp(argv[i], "--sdl-video-driver") == 0)
         {
@@ -211,7 +228,67 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (!useDefaultWorkingDirectory)
+    {
+        // Set the current working directory to the executable's path.
+        std::error_code ec;
+        std::filesystem::current_path(os::process::GetExecutablePath().parent_path(), ec);
+    }
+
     Config::Load();
+
+    if (forceInstallationCheck)
+    {
+        // Create the console to show progress to the user, otherwise it will seem as if the game didn't boot at all.
+        os::process::ShowConsole();
+
+        Journal journal;
+        double lastProgressMiB = 0.0;
+        double lastTotalMib = 0.0;
+        Installer::checkInstallIntegrity(GAME_INSTALL_DIRECTORY, journal, [&]()
+        {
+            constexpr double MiBDivisor = 1024.0 * 1024.0;
+            constexpr double MiBProgressThreshold = 128.0;
+            double progressMiB = double(journal.progressCounter) / MiBDivisor;
+            double totalMiB = double(journal.progressTotal) / MiBDivisor;
+            if (journal.progressCounter > 0)
+            {
+                if ((progressMiB - lastProgressMiB) > MiBProgressThreshold)
+                {
+                    fprintf(stdout, "Checking files: %0.2f MiB / %0.2f MiB\n", progressMiB, totalMiB);
+                    lastProgressMiB = progressMiB;
+                }
+            }
+            else
+            {
+                if ((totalMiB - lastTotalMib) > MiBProgressThreshold)
+                {
+                    fprintf(stdout, "Scanning files: %0.2f MiB\n", totalMiB);
+                    lastTotalMib = totalMiB;
+                }
+            }
+
+            return true;
+        });
+
+        char resultText[512];
+        uint32_t messageBoxStyle;
+        if (journal.lastResult == Journal::Result::Success)
+        {
+            snprintf(resultText, sizeof(resultText), "%s", Localise("IntegrityCheck_Success").c_str());
+            fprintf(stdout, "%s\n", resultText);
+            messageBoxStyle = SDL_MESSAGEBOX_INFORMATION;
+        }
+        else
+        {
+            snprintf(resultText, sizeof(resultText), Localise("IntegrityCheck_Failed").c_str(), journal.lastErrorMessage.c_str());
+            fprintf(stderr, "%s\n", resultText);
+            messageBoxStyle = SDL_MESSAGEBOX_ERROR;
+        }
+
+        SDL_ShowSimpleMessageBox(messageBoxStyle, GameWindow::GetTitle(), resultText, GameWindow::s_pWindow);
+        std::_Exit(int(journal.lastResult));
+    }
 
 #if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
     for (auto& dll : g_D3D12RequiredModules)
@@ -248,7 +325,7 @@ int main(int argc, char *argv[])
     bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
     if (runInstallerWizard)
     {
-        if (!Video::CreateHostDevice(sdlVideoDriver))
+        if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
         {
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
             std::_Exit(1);
@@ -262,13 +339,16 @@ int main(int argc, char *argv[])
 
     ModLoader::Init();
 
+    if (!PersistentStorageManager::LoadBinary())
+        LOGFN_ERROR("Failed to load persistent storage binary... (status code {})", (int)PersistentStorageManager::BinStatus);
+
     KiSystemStartup();
 
     uint32_t entry = LdrLoadModule(modulePath);
 
     if (!runInstallerWizard)
     {
-        if (!Video::CreateHostDevice(sdlVideoDriver))
+        if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
         {
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
             std::_Exit(1);

@@ -58,3 +58,6 @@
 [submodule "thirdparty/json"]
 	path = thirdparty/json
 	url = https://github.com/nlohmann/json
+[submodule "UnleashedRecomp/api"]
+	path = UnleashedRecomp/api
+	url = https://github.com/hedge-dev/SWA.git

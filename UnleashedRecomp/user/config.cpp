@@ -494,6 +494,9 @@ template<typename T, bool isHidden>
 void ConfigDef<T, isHidden>::MakeDefault()
 {
     Value = DefaultValue;
+
+    if constexpr (std::is_enum_v<T>)
+        SnapToNearestAccessibleValue(false);
 }
 
 template<typename T, bool isHidden>
@@ -693,6 +696,51 @@ void ConfigDef<T, isHidden>::GetLocaleStrings(std::vector<std::string_view>& loc
                 localeStrings.push_back(std::get<1>(nameAndDesc));
             }
         }
+    }
+}
+
+template<typename T, bool isHidden>
+void ConfigDef<T, isHidden>::SnapToNearestAccessibleValue(bool searchUp)
+{
+    if constexpr (std::is_enum_v<T>)
+    {
+        if (EnumTemplateReverse.empty() || InaccessibleValues.empty())
+            return;
+
+        if (EnumTemplateReverse.size() == InaccessibleValues.size())
+        {
+            assert(false && "All enum values are marked inaccessible and the nearest accessible value cannot be determined.");
+            return;
+        }
+
+        auto it = EnumTemplateReverse.find(Value);
+
+        if (it == EnumTemplateReverse.end())
+        {
+            assert(false && "Enum value does not exist in the template.");
+            return;
+        }
+
+        // Skip the enum value if it's marked as inaccessible.
+        while (InaccessibleValues.find(it->first) != InaccessibleValues.end())
+        {
+            if (searchUp)
+            {
+                ++it;
+
+                if (it == EnumTemplateReverse.end())
+                    it = EnumTemplateReverse.begin();
+            }
+            else
+            {
+                if (it == EnumTemplateReverse.begin())
+                    it = EnumTemplateReverse.end();
+
+                --it;
+            }
+        }
+
+        Value = it->first;
     }
 }
 
