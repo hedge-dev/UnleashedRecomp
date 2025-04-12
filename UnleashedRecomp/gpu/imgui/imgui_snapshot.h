@@ -1,10 +1,5 @@
 #pragma once
 
-// Undefine this to generate a font atlas file in working directory.
-// You also need to do this if you are testing localization, as only
-// characters in the locale get added to the atlas.
-#define ENABLE_IM_FONT_ATLAS_SNAPSHOT
-
 struct ImFontAtlasSnapshot
 {
     std::vector<uint8_t> data;
