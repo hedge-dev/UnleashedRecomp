@@ -73,19 +73,48 @@ body:
     attributes:
       label: Footage
       description: Attach a screenshot or video of the bug. If possible, please also provide footage of the expected behaviour on original Xbox 360 hardware.
-  - id: system-specifications
-    type: textarea
+  - id: specs-version
+    type: input
     validations:
       required: true
     attributes:
-      label: System Specifications
-      description: Fill out the following details.
-      placeholder: |
-       - CPU: (e.g. Intel Core [...], AMD Ryzen [...], etc.)
-       - GPU: (e.g. NVIDIA GeForce [...], Radeon HD [...], Intel HD [...], etc.)
-       - GPU Driver: (e.g NVIDIA driver 545.XX, AMD driver 24.X.X, etc.)
-       - OS: (e.g. Windows 10, Windows 11, Linux distro)
-       - Version: (e.g. 1.0.0)
+      label: Version
+      description: The version of Unleashed Recompiled you are running (e.g. **v1.0.0**). This can be found at the bottom right corner of the installer wizard, options menu, or in the application metadata.
+  - id: specs-cpu
+    type: input
+    validations:
+      required: true
+    attributes:
+      label: CPU
+      description: The name of your CPU (e.g. **Intel Core [...]**, **AMD Ryzen [...]**, etc.).
+  - id: specs-gpu
+    type: input
+    validations:
+      required: true
+    attributes:
+      label: GPU
+      description: The name of your GPU (e.g. **NVIDIA GeForce [...]**, **AMD Radeon [...]**, **Intel [...]**, etc.).
+  - id: specs-gpu-driver
+    type: input
+    validations:
+      required: true
+    attributes:
+      label: GPU Driver
+      description: The version of your GPU driver (e.g. **NVIDIA Driver 572.XX**, **AMD Driver 25.X.X**, **Intel Driver 32.X.XXX.XXXX** etc.).
+  - id: specs-ram
+    type: input
+    validations:
+      required: true
+    attributes:
+      label: Memory
+      description: The amount of system memory you have (e.g. **8 GB**, **16 GB**, etc.).
+  - id: specs-os
+    type: input
+    validations:
+      required: true
+    attributes:
+      label: Operating System
+      description: The name of the operating system you are running (e.g. **Windows 10**, **Windows 11**, **Linux distro**).
   - id: additional-context
     type: textarea
     validations:
