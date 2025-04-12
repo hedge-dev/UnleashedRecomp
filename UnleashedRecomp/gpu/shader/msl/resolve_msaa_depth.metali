@@ -4,7 +4,7 @@
 
 struct Texture2DMSDescriptorHeap
 {
-    array<texture2d_ms<float>, 1> g [[id(0)]];
+    texture2d_ms<float> tex;
 };
 
 struct PixelShaderOutput
@@ -14,15 +14,15 @@ struct PixelShaderOutput
 
 [[fragment]]
 PixelShaderOutput shaderMain(float4 position [[position]],
-                       constant Texture2DMSDescriptorHeap& g_Texture2DMSDescriptorHeap [[buffer(0)]],
+                       constant Texture2DMSDescriptorHeap* g_Texture2DMSDescriptorHeap [[buffer(0)]],
                        constant PushConstants& g_PushConstants [[buffer(4)]])
 {
     PixelShaderOutput output = PixelShaderOutput{};
 
-    float result = g_Texture2DMSDescriptorHeap.g[g_PushConstants.ResourceDescriptorIndex].read(uint2(position.xy), 0).x;
+    float result = g_Texture2DMSDescriptorHeap[g_PushConstants.ResourceDescriptorIndex].tex.read(uint2(position.xy), 0).x;
     
     for (int i = 1; i < SAMPLE_COUNT; i++)
-        result = min(result, g_Texture2DMSDescriptorHeap.g[g_PushConstants.ResourceDescriptorIndex].read(uint2(position.xy), i).x);
+        result = min(result, g_Texture2DMSDescriptorHeap[g_PushConstants.ResourceDescriptorIndex].tex.read(uint2(position.xy), i).x);
 
     output.oDepth = result;
 

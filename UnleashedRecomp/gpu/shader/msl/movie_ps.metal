@@ -2,21 +2,21 @@
 
 [[fragment]]
 PixelShaderOutput shaderMain(Interpolators In [[stage_in]],
-                             constant Texture2DDescriptorHeap& g_Texture2DDescriptorHeap [[buffer(0)]],
-                             constant SamplerDescriptorHeap& g_SamplerDescriptorHeap [[buffer(3)]],
+                             constant Texture2DDescriptorHeap* g_Texture2DDescriptorHeap [[buffer(0)]],
+                             constant SamplerDescriptorHeap* g_SamplerDescriptorHeap [[buffer(3)]],
                              constant PushConstants& g_PushConstants [[buffer(4)]])
 {
-    texture2d<float> Tex0 = g_Texture2DDescriptorHeap.g[Tex0_ResourceDescriptorIndex];
-    texture2d<float> Tex1 = g_Texture2DDescriptorHeap.g[Tex1_ResourceDescriptorIndex];
-    texture2d<float> Tex2 = g_Texture2DDescriptorHeap.g[Tex2_ResourceDescriptorIndex];
-    texture2d<float> Tex3 = g_Texture2DDescriptorHeap.g[Tex3_ResourceDescriptorIndex];
-    texture2d<float> Tex4 = g_Texture2DDescriptorHeap.g[Tex4_ResourceDescriptorIndex];
+    texture2d<float> Tex0 = g_Texture2DDescriptorHeap[Tex0_ResourceDescriptorIndex].tex;
+    texture2d<float> Tex1 = g_Texture2DDescriptorHeap[Tex1_ResourceDescriptorIndex].tex;
+    texture2d<float> Tex2 = g_Texture2DDescriptorHeap[Tex2_ResourceDescriptorIndex].tex;
+    texture2d<float> Tex3 = g_Texture2DDescriptorHeap[Tex3_ResourceDescriptorIndex].tex;
+    texture2d<float> Tex4 = g_Texture2DDescriptorHeap[Tex4_ResourceDescriptorIndex].tex;
     
-    sampler Tex0_s = g_SamplerDescriptorHeap.g[Tex0_SamplerDescriptorIndex];
-    sampler Tex1_s = g_SamplerDescriptorHeap.g[Tex1_SamplerDescriptorIndex];
-    sampler Tex2_s = g_SamplerDescriptorHeap.g[Tex2_SamplerDescriptorIndex];
-    sampler Tex3_s = g_SamplerDescriptorHeap.g[Tex3_SamplerDescriptorIndex];
-    sampler Tex4_s = g_SamplerDescriptorHeap.g[Tex4_SamplerDescriptorIndex];
+    sampler Tex0_s = g_SamplerDescriptorHeap[Tex0_SamplerDescriptorIndex].samp;
+    sampler Tex1_s = g_SamplerDescriptorHeap[Tex1_SamplerDescriptorIndex].samp;
+    sampler Tex2_s = g_SamplerDescriptorHeap[Tex2_SamplerDescriptorIndex].samp;
+    sampler Tex3_s = g_SamplerDescriptorHeap[Tex3_SamplerDescriptorIndex].samp;
+    sampler Tex4_s = g_SamplerDescriptorHeap[Tex4_SamplerDescriptorIndex].samp;
     
     PixelShaderOutput Out;
     float ValY = Tex0.sample(Tex0_s, In.UV).r;

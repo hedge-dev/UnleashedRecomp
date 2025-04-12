@@ -79,10 +79,10 @@ float median(float r, float g, float b)
 }
 
 float4 SampleSdfFont(float4 color, texture2d<float> texture, float2 uv, float2 screenTexSize,
-                     constant SamplerDescriptorHeap& g_SamplerDescriptorHeap,
+                     constant SamplerDescriptorHeap* g_SamplerDescriptorHeap,
                      constant PushConstants& g_PushConstants)
 {
-    float4 textureColor = texture.sample(g_SamplerDescriptorHeap.g[0], uv);
+    float4 textureColor = texture.sample(g_SamplerDescriptorHeap[0].samp, uv);
     
     uint width = texture.get_width();
     uint height = texture.get_height();
@@ -127,8 +127,8 @@ float4 SampleSdfFont(float4 color, texture2d<float> texture, float2 uv, float2 s
 
 [[fragment]]
 float4 shaderMain(Interpolators interpolators [[stage_in]],
-                  constant Texture2DDescriptorHeap& g_Texture2DDescriptorHeap [[buffer(0)]],
-                  constant SamplerDescriptorHeap& g_SamplerDescriptorHeap [[buffer(1)]],
+                  constant Texture2DDescriptorHeap* g_Texture2DDescriptorHeap [[buffer(0)]],
+                  constant SamplerDescriptorHeap* g_SamplerDescriptorHeap [[buffer(1)]],
                   constant PushConstants& g_PushConstants [[buffer(4)]])
 {
     float4 color = interpolators.Color;
@@ -136,7 +136,7 @@ float4 shaderMain(Interpolators interpolators [[stage_in]],
     
     if (g_PushConstants.Texture2DDescriptorIndex != 0)
     {
-        texture2d<float> texture = g_Texture2DDescriptorHeap.g[g_PushConstants.Texture2DDescriptorIndex & 0x7FFFFFFF];
+        texture2d<float> texture = g_Texture2DDescriptorHeap[g_PushConstants.Texture2DDescriptorIndex & 0x7FFFFFFF].tex;
         
         if ((g_PushConstants.Texture2DDescriptorIndex & 0x80000000) != 0)
         {
@@ -180,7 +180,7 @@ float4 shaderMain(Interpolators interpolators [[stage_in]],
         }
         else
         {
-            color *= texture.sample(g_SamplerDescriptorHeap.g[0], interpolators.UV);
+            color *= texture.sample(g_SamplerDescriptorHeap[0].samp, interpolators.UV);
         }
     }
     

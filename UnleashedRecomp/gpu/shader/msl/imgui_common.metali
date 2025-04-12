@@ -32,10 +32,10 @@ struct Interpolators
 
 struct Texture2DDescriptorHeap
 {
-    array<texture2d<float>, 1> g [[id(0)]];
+    texture2d<float> tex;
 };
 
 struct SamplerDescriptorHeap
 {
-    array<sampler, 1> g [[id(0)]];
+    sampler samp;
 };

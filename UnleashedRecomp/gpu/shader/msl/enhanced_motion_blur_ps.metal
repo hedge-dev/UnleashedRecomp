@@ -20,17 +20,17 @@ struct Interpolators
 [[fragment]]
 float4 shaderMain(float4 position [[position]],
                   Interpolators input [[stage_in]],
-                  constant Texture2DDescriptorHeap& g_Texture2DDescriptorHeap [[buffer(0)]],
-                  constant SamplerDescriptorHeap& g_SamplerDescriptorHeap [[buffer(3)]],
+                  constant Texture2DDescriptorHeap* g_Texture2DDescriptorHeap [[buffer(0)]],
+                  constant SamplerDescriptorHeap* g_SamplerDescriptorHeap [[buffer(3)]],
                   constant PushConstants& g_PushConstants [[buffer(4)]])
 {
-    texture2d<float> sampColor = g_Texture2DDescriptorHeap.g[sampColor_Texture2DDescriptorIndex];
-    texture2d<float> sampVelocityMap = g_Texture2DDescriptorHeap.g[sampVelocityMap_Texture2DDescriptorIndex];
-    texture2d<float> sampZBuffer = g_Texture2DDescriptorHeap.g[sampZBuffer_Texture2DDescriptorIndex];
+    texture2d<float> sampColor = g_Texture2DDescriptorHeap[sampColor_Texture2DDescriptorIndex].tex;
+    texture2d<float> sampVelocityMap = g_Texture2DDescriptorHeap[sampVelocityMap_Texture2DDescriptorIndex].tex;
+    texture2d<float> sampZBuffer = g_Texture2DDescriptorHeap[sampZBuffer_Texture2DDescriptorIndex].tex;
     
-    sampler sampColor_s = g_SamplerDescriptorHeap.g[sampColor_SamplerDescriptorIndex];
-    sampler sampVelocityMap_s = g_SamplerDescriptorHeap.g[sampVelocityMap_SamplerDescriptorIndex];
-    sampler sampZBuffer_s = g_SamplerDescriptorHeap.g[sampZBuffer_SamplerDescriptorIndex];
+    sampler sampColor_s = g_SamplerDescriptorHeap[sampColor_SamplerDescriptorIndex].samp;
+    sampler sampVelocityMap_s = g_SamplerDescriptorHeap[sampVelocityMap_SamplerDescriptorIndex].samp;
+    sampler sampZBuffer_s = g_SamplerDescriptorHeap[sampZBuffer_SamplerDescriptorIndex].samp;
     
     float depth = sampZBuffer.sample(sampZBuffer_s, input.texCoord.xy, level(0)).x;
     float4 velocityMap = sampVelocityMap.sample(sampVelocityMap_s, input.texCoord.xy, level(0));

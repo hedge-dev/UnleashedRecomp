@@ -8,10 +8,10 @@
 
 [[fragment]]
 float4 shaderMain(float4 position [[position]],
-                  constant Texture2DDescriptorHeap& g_Texture2DDescriptorHeap [[buffer(0)]],
+                  constant Texture2DDescriptorHeap* g_Texture2DDescriptorHeap [[buffer(0)]],
                   constant PushConstants& g_PushConstants [[buffer(4)]])
 {
-    texture2d<float> texture = g_Texture2DDescriptorHeap.g[g_TextureDescriptorIndex];
+    texture2d<float> texture = g_Texture2DDescriptorHeap[g_TextureDescriptorIndex].tex;
     
     int2 movedPosition = int2(position.xy) - g_ViewportOffset;
     bool boxed = any(movedPosition < 0) || any(movedPosition >= g_ViewportSize);

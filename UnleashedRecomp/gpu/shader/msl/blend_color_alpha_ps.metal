@@ -12,12 +12,12 @@ struct Interpolators
 [[fragment]]
 float4 shaderMain(float4 iPos [[position]],
                   Interpolators input [[stage_in]],
-                  constant Texture2DDescriptorHeap& g_Texture2DDescriptorHeap [[buffer(0)]],
-                  constant SamplerDescriptorHeap& g_SamplerDescriptorHeap [[buffer(3)]],
+                  constant Texture2DDescriptorHeap* g_Texture2DDescriptorHeap [[buffer(0)]],
+                  constant SamplerDescriptorHeap* g_SamplerDescriptorHeap [[buffer(3)]],
                   constant PushConstants& g_PushConstants [[buffer(4)]])
 {
-    texture2d<float> texture = g_Texture2DDescriptorHeap.g[s0_Texture2DDescriptorIndex];
-    sampler samplerState = g_SamplerDescriptorHeap.g[s0_SamplerDescriptorIndex];
+    texture2d<float> texture = g_Texture2DDescriptorHeap[s0_Texture2DDescriptorIndex].tex;
+    sampler samplerState = g_SamplerDescriptorHeap[s0_SamplerDescriptorIndex].samp;
     
     float4 color = texture.sample(samplerState, input.iTexCoord0.xy);
     
