@@ -1101,11 +1101,34 @@ name = "ObjGrindDashPanelAllocMidAsmHook"
 address = 0x82614948
 registers = ["r3"]
 
+# Title screen logo
 [[midasm_hook]]
 name = "UseAlternateTitleMidAsmHook"
 address = 0x82580F44
 jump_address_on_true = 0x82580F48
 jump_address_on_false = 0x82580FA0
+
+# Advertise movie logo
+[[midasm_hook]]
+name = "UseAlternateTitleMidAsmHook"
+address = 0x82B73780
+jump_address_on_true = 0x82B73784
+jump_address_on_false = 0x82B737F8
+
+# Opening movie logo
+[[midasm_hook]]
+name = "UseAlternateTitleMidAsmHook"
+address = 0x82B73630
+jump_address_on_true = 0x82B73634
+jump_address_on_false = 0x82B736B0
+
+# Staff roll logo
+[[midasm_hook]]
+name = "UseAlternateTitleStaffRollMidAsmHook"
+address = 0x8257EBF0
+registers = ["r1"]
+jump_address_on_true = 0x8257EC7C
+jump_address_on_false = 0x8257ECC0
 
 [[midasm_hook]]
 name = "EndingTextAllocMidAsmHook"
