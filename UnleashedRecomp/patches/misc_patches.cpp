@@ -193,3 +193,14 @@ PPC_FUNC(sub_824EE620)
 
     ctx.r3.u32 = PersistentStorageManager::ShouldDisplayDLCMessage(true);
 }
+
+bool StageCollisionDebugViewMidAsmHook(PPCRegister& r27)
+{
+    if (Config::EnableStageCollisionDebugView)
+    {
+        r27.u32 = true;
+        return true;
+    }
+    
+    return false;
+}
