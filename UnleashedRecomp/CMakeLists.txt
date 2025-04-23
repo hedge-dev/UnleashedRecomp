@@ -386,6 +386,17 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(X11 REQUIRED)
     target_include_directories(UnleashedRecomp PRIVATE ${X11_INCLUDE_DIR})
     target_link_libraries(UnleashedRecomp PRIVATE ${X11_LIBRARIES})
+
+    find_package(PkgConfig)
+    pkg_check_modules(GIO gio-2.0)
+
+    if(GIO_FOUND)
+        add_compile_definitions(FOUND_GIO)
+        target_include_directories(UnleashedRecomp PRIVATE ${GIO_INCLUDE_DIRS})
+        target_link_libraries(UnleashedRecomp PRIVATE ${GIO_LIBRARIES})
+    else()
+        message(FATAL_ERROR "GIO not found")
+    endif()
 endif()
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${UNLEASHED_RECOMP_PRECOMPILED_HEADERS})
