@@ -428,7 +428,7 @@ static void EnqueuePipelineTask(PipelineTaskType type, const boost::shared_ptr<H
 
     {
         std::lock_guard lock(g_pipelineTaskMutex);
-        g_pipelineTaskQueue.emplace_back(type, databaseData);
+        g_pipelineTaskQueue.push_back(PipelineTask{type, databaseData});
     }
 
     if ((++g_pendingPipelineTaskCount) == 1)

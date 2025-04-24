@@ -153,6 +153,7 @@ struct GuestBaseTexture : GuestResource
 // Texture/VolumeTexture
 struct GuestTexture : GuestBaseTexture
 {
+    using GuestBaseTexture::GuestBaseTexture;
     uint32_t depth = 0;
     RenderTextureViewDimension viewDimension = RenderTextureViewDimension::UNKNOWN;
     void* mappedMemory = nullptr;
@@ -181,6 +182,7 @@ struct GuestBufferDesc
 // VertexBuffer/IndexBuffer
 struct GuestBuffer : GuestResource
 {
+    using GuestResource::GuestResource;
     std::unique_ptr<RenderBuffer> buffer;
     void* mappedMemory = nullptr;
     uint32_t dataSize = 0;
@@ -204,6 +206,7 @@ struct GuestSurfaceDesc
 // RenderTarget/DepthStencil
 struct GuestSurface : GuestBaseTexture
 {
+    using GuestBaseTexture::GuestBaseTexture;
     uint32_t guestFormat = 0;
     ankerl::unordered_dense::map<const RenderTexture*, std::unique_ptr<RenderFramebuffer>> framebuffers;
     RenderSampleCounts sampleCount = RenderSampleCount::COUNT_1;
@@ -270,6 +273,7 @@ struct GuestVertexElement
 
 struct GuestVertexDeclaration : GuestResource
 {
+    using GuestResource::GuestResource;
     XXH64_hash_t hash = 0;
     std::unique_ptr<RenderInputElement[]> inputElements;
     std::unique_ptr<GuestVertexElement[]> vertexElements;
@@ -284,6 +288,7 @@ struct GuestVertexDeclaration : GuestResource
 // VertexShader/PixelShader
 struct GuestShader : GuestResource
 {
+    using GuestResource::GuestResource;
     Mutex mutex;
     std::unique_ptr<RenderShader> shader;
     struct ShaderCacheEntry* shaderCacheEntry = nullptr;

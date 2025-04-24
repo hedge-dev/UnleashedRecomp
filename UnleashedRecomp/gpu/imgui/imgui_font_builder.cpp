@@ -197,8 +197,11 @@ static bool FontBuilder_Build(ImFontAtlas* atlas)
     for (auto& glyph : glyphs)
         glyph.edgeColoring(&msdfgen::edgeColoringByDistance, 3.0, 0);
 
-    for (auto& customRect : atlas->CustomRects)
-        customRects.emplace_back(0, 0, int(customRect.Width), int(customRect.Height));
+  for (auto &customRect : atlas->CustomRects)
+        customRects.push_back(
+            msdf_atlas::Rectangle{0, 0,
+                              int(customRect.Width),
+                              int(customRect.Height)});
 
     TightAtlasPacker packer;
     packer.spacing = 1;
