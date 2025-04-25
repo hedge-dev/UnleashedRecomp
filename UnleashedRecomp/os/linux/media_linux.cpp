@@ -1,10 +1,10 @@
 #include <algorithm>
 #include <atomic>
-#include <list>
 #include <optional>
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <ranges>
 #include <gio/gio.h>
 #include <os/media.h>
 #include <os/logger.h>
@@ -22,13 +22,10 @@ static const char* DBusPath = "/org/freedesktop/DBus";
 static const char* MPRIS2Interface = "org.mpris.MediaPlayer2";
 static const char* MPRIS2PlayerInterface = "org.mpris.MediaPlayer2.Player";
 static const char* MPRIS2Path = "/org/mpris/MediaPlayer2";
-static const char* MPRIS2PlayerctldBus = "org.mpris.MediaPlayer2.playerctld";
 
 static std::optional<std::thread> g_dbusThread;
-static std::string g_playerctldBus;
 static std::unordered_map<std::string, PlaybackStatus> g_playerStatus;
-static std::list<std::string> g_activePlayers;
-static std::atomic<PlaybackStatus> g_activeStatus;
+static std::atomic<bool> g_isPlaying = false;
 
 static PlaybackStatus PlaybackStatusFromString(const char* str)
 {
@@ -40,42 +37,16 @@ static PlaybackStatus PlaybackStatusFromString(const char* str)
         return PlaybackStatus::Stopped;
 }
 
-static bool ContainerHas(const auto& container, const auto& value)
-{
-    return std::find(container.begin(), container.end(), value) != container.end();
-}
-
 static void UpdateActiveStatus()
 {
-    if (!g_activePlayers.empty())
-        g_activeStatus = g_playerStatus[g_activePlayers.front()];
-    else
-        g_activeStatus = PlaybackStatus::Stopped;
+    g_isPlaying = std::ranges::any_of(
+            g_playerStatus | std::views::values,
+            [](PlaybackStatus status) { return status == PlaybackStatus::Playing; }
+    );
 }
 
 static void UpdateActivePlayers(const char* name, PlaybackStatus status)
 {
-    if (status == PlaybackStatus::Stopped)
-    {
-        // Don't remove playerctld from the queue, we want to prefer it for as long as it's available
-        if (!g_str_equal(name, g_playerctldBus.c_str()))
-        {
-            g_activePlayers.remove(name);
-        }
-    }
-    else if (!ContainerHas(g_activePlayers, name))
-    {
-        // Prioritise playerctld if and when it appears
-        if (g_str_equal(name, g_playerctldBus.c_str()))
-        {
-            g_activePlayers.emplace_front(name);
-        }
-        else
-        {
-            g_activePlayers.emplace_back(name);
-        }
-    }
-
     g_playerStatus.insert_or_assign(name, status);
     UpdateActiveStatus();
 }
@@ -137,7 +108,7 @@ static void DBusConnectionClosed(GDBusConnection* connection,
                                  gpointer userData)
 {
     LOG_ERROR("D-Bus connection closed");
-    g_activeStatus = PlaybackStatus::Stopped;
+    g_isPlaying = false;
     g_main_loop_quit((GMainLoop*)userData);
 }
 
@@ -157,15 +128,9 @@ static void DBusNameOwnerChanged(GDBusConnection* connection,
 
     if (g_str_has_prefix(name, MPRIS2Interface))
     {
-        if (g_str_equal(name, MPRIS2PlayerctldBus))
-        {
-            g_playerctldBus = newOwner;
-        }
-
         if (oldOwner[0])
         {
             g_playerStatus.erase(oldOwner);
-            g_activePlayers.remove(oldOwner);
         }
 
         UpdateActiveStatus();
@@ -206,11 +171,9 @@ static void MPRISPropertiesChanged(GDBusConnection* connection,
     g_variant_unref(changed);
 }
 
-/* Called upon connect to discover already active MPRIS2 players by looking for
+/* Called upon CONNECT to discover already active MPRIS2 players by looking for
    well-known bus names that begin with the MPRIS2 path.
-   We determine what their priority would be when pushed to the player queue
-   based on their current status.
-   The queue (and accompanying data structures) stores unique connection names,
+   g_playerStatus stores unique connection names,
    not their well-known ones, as the PropertiesChanged signal only provides the
    former. */
 static void DBusListNamesReceived(GObject* object, GAsyncResult* res, gpointer userData)
@@ -221,13 +184,10 @@ static void DBusListNamesReceived(GObject* object, GAsyncResult* res, gpointer u
     GVariant* tupleChild;
     GVariantIter iter;
     const gchar* name;
-    bool foundPlayerctld;
-    std::list<std::string> pausedPlayers;
 
     connection = G_DBUS_CONNECTION(object);
     error = NULL;
     response = g_dbus_connection_call_finish(connection, res, &error);
-    foundPlayerctld = false;
 
     if (!response)
     {
@@ -274,31 +234,10 @@ static void DBusListNamesReceived(GObject* object, GAsyncResult* res, gpointer u
         g_variant_get(ownerResponse, "(&s)", &ownerName);
         status = MPRISGetPlaybackStatus(connection, ownerName);
 
-        // Prioritise playerctld, even if current playback status is stopped
-        if (!foundPlayerctld && g_str_equal(name, MPRIS2PlayerctldBus))
-        {
-            foundPlayerctld = true;
-            g_playerctldBus = ownerName;
-            g_activePlayers.emplace_front(ownerName);
-        }
-        else if (status != PlaybackStatus::Stopped)
-        {
-            if (status == PlaybackStatus::Playing)
-            {
-                g_activePlayers.emplace_back(ownerName);
-            }
-            else
-            {
-                pausedPlayers.emplace_back(ownerName);
-            }
-        }
-
         g_playerStatus.insert_or_assign(ownerName, status);
         g_variant_unref(ownerResponse);
     }
 
-    // Put all the paused players at the end of the queue
-    g_activePlayers.splice(g_activePlayers.end(), pausedPlayers);
     UpdateActiveStatus();
 
     g_variant_unref(tupleChild);
@@ -385,5 +324,5 @@ bool os::media::IsExternalMediaPlaying()
         g_dbusThread->detach();
     }
 
-    return g_activeStatus == PlaybackStatus::Playing;
+    return g_isPlaying;
 }
