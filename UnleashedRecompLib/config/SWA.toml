@@ -1141,3 +1141,15 @@ registers = ["r3"]
 name = "EndingTextPositionMidAsmHook"
 address = 0x82580168
 registers = ["r31", "f13"]
+
+# Wall Leave - Left
+[[midasm_hook]]
+name = "CEvilSonicContext_CStateWall_LeaveRotationMidAsmHook"
+address = 0x824067BC
+registers = ["f1"]
+
+# Wall Leave - Right
+[[midasm_hook]]
+name = "CEvilSonicContext_CStateWall_LeaveRotationMidAsmHook"
+address = 0x82406774
+registers = ["f1"]
