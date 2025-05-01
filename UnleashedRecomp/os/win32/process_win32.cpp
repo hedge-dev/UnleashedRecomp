@@ -10,6 +10,11 @@ std::filesystem::path os::process::GetExecutablePath()
     return std::filesystem::path(exePath);
 }
 
+std::filesystem::path os::process::GetExecutableRoot()
+{
+    return GetExecutablePath().remove_filename();
+}
+
 std::filesystem::path os::process::GetWorkingDirectory()
 {
     WCHAR workPath[MAX_PATH];
