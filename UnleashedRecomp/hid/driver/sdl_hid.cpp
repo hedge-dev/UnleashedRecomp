@@ -344,6 +344,13 @@ void hid::Init()
     SDL_AddEventWatch(HID_OnSDLEvent, nullptr);
 
     SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+
+    // Load SDL_GameControllerDB mappings from file
+    const char* mappingFile = "gamecontrollerdb.txt";
+    int mappingsAdded = SDL_GameControllerAddMappingsFromFile(mappingFile);
+    if (mappingsAdded > 0) {
+        LOGFN("Loaded {} controller mapping(s) from SDL_GameControllerDB file", mappingsAdded, mappingFile);
+    }
 }
 
 uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
