@@ -660,7 +660,7 @@ void KeQueryBasePriorityThread()
 
 uint32_t NtSuspendThread(GuestThreadHandle* hThread, uint32_t* suspendCount)
 {
-    assert(hThread != GetKernelObject(CURRENT_THREAD_HANDLE) && hThread->thread.get_id() == std::this_thread::get_id());
+    assert(hThread != GetKernelObject(CURRENT_THREAD_HANDLE) && hThread->GetThreadId() == GuestThread::GetCurrentThreadId());
 
     hThread->suspended = true;
     hThread->suspended.wait(true);

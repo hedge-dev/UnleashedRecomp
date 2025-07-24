@@ -1146,7 +1146,11 @@ static void PickerStart(bool folderMode) {
     g_currentPickerVisible = true;
 
     // Optional single thread mode for testing on systems that do not interact well with the separate thread being used for NFD.
+#ifdef __APPLE__
+    constexpr bool singleThreadMode = true;
+#else
     constexpr bool singleThreadMode = false;
+#endif
     if (singleThreadMode)
         PickerThreadProcess();
     else

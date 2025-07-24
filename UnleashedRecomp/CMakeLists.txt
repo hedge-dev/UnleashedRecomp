@@ -97,6 +97,14 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
         "os/linux/user_linux.cpp"
         "os/linux/version_linux.cpp"
     )
+elseif (APPLE)
+    set(UNLEASHED_RECOMP_OS_CXX_SOURCES
+        "os/macos/logger_macos.cpp"
+        "os/macos/media_macos.cpp"
+        "os/macos/process_macos.cpp"
+        "os/macos/user_macos.cpp"
+        "os/macos/version_macos.cpp"
+    )
 endif()
 
 set(UNLEASHED_RECOMP_CPU_CXX_SOURCES
@@ -299,6 +307,55 @@ if (WIN32)
     if (${CMAKE_BUILD_TYPE} MATCHES "Release")
         target_link_options(UnleashedRecomp PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
     endif()
+elseif (APPLE)
+    # Create version number for app bundle.
+    CreateVersionString(
+        VERSION_TXT ${VERSION_TXT}
+        OUTPUT_VAR MACOS_BUNDLE_VERSION
+    )
+
+    add_executable(UnleashedRecomp MACOSX_BUNDLE
+        ${UNLEASHED_RECOMP_CXX_SOURCES}
+        res/macos/game_icon.icns
+    )
+    set_source_files_properties(res/macos/game_icon.icns PROPERTIES
+        MACOSX_PACKAGE_LOCATION Resources)
+    set_target_properties(UnleashedRecomp PROPERTIES
+        OUTPUT_NAME "Unleashed Recompiled"
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/macos/MacOSXBundleInfo.plist.in
+        MACOSX_BUNDLE_GUI_IDENTIFIER hedge-dev.UnleashedRecomp
+        MACOSX_BUNDLE_BUNDLE_NAME "Unleashed Recompiled"
+        MACOSX_BUNDLE_BUNDLE_VERSION ${MACOS_BUNDLE_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${MACOS_BUNDLE_VERSION}
+        MACOSX_BUNDLE_ICON_FILE "game_icon.icns"
+    )
+
+    # Linking with MoltenVK directly would prevent using the system Vulkan loader to load with debug layers.
+    # Instead, copy the MoltenVK dylib to the app bundle along with an ICD file for the loader to find it.
+    # In the event the loader is not installed, the MoltenVK dylib can still be picked up directly in the app bundle.
+    set(MVK_BUNDLED_PATH "Resources/vulkan/icd.d")
+    set(MVK_DST "${CMAKE_CURRENT_BINARY_DIR}/Unleashed Recompiled.app/Contents/${MVK_BUNDLED_PATH}")
+    set_property(TARGET UnleashedRecomp APPEND PROPERTY BUILD_RPATH "@executable_path/../${MVK_BUNDLED_PATH}")
+
+    set(MVK_ICD_SRC "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json")
+    set(MVK_ICD_DST "${MVK_DST}/MoltenVK_icd.json")
+    set(MVK_DYLIB_SRC "${CMAKE_BINARY_DIR}/thirdparty/MoltenVK/libMoltenVK.dylib")
+    set(MVK_DYLIB_DST "${MVK_DST}/libMoltenVK.dylib")
+
+    add_custom_command(
+        OUTPUT ${MVK_DST}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_DST})
+    add_custom_command(
+        OUTPUT ${MVK_ICD_DST}
+        DEPENDS ${MVK_ICD_SRC} ${MVK_DST}
+        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_ICD_SRC} ${MVK_ICD_DST})
+    add_custom_command(
+        OUTPUT ${MVK_DYLIB_DST}
+        DEPENDS ${MVK_DYLIB_SRC} ${MVK_DST}
+        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
+    add_custom_target(CopyMoltenVK DEPENDS ${MVK_ICD_DST} ${MVK_DYLIB_DST})
+    add_dependencies(CopyMoltenVK MoltenVK)
+    add_dependencies(UnleashedRecomp CopyMoltenVK)
 else()
     add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES})
 endif()
@@ -324,19 +381,17 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_compile_definitions(UnleashedRecomp PRIVATE SDL_VULKAN_ENABLED)
 endif()
 
-find_package(directx-dxc REQUIRED)
 find_package(CURL REQUIRED)
 
 if (UNLEASHED_RECOMP_D3D12)
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
     add_custom_command(TARGET UnleashedRecomp POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Core,IMPORTED_LOCATION_RELEASE> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Layers,IMPORTED_LOCATION_DEBUG> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
-       COMMAND_EXPAND_LISTS
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Core,IMPORTED_LOCATION_RELEASE> $<TARGET_FILE_DIR:UnleashedRecomp>/D3D12
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Layers,IMPORTED_LOCATION_DEBUG> $<TARGET_FILE_DIR:UnleashedRecomp>/D3D12
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectXShaderCompiler,IMPORTED_LOCATION> $<TARGET_FILE_DIR:UnleashedRecomp>
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DXIL,IMPORTED_LOCATION> $<TARGET_FILE_DIR:UnleashedRecomp>
+        COMMAND_EXPAND_LISTS
     )
-    
-    find_file(DIRECTX_DXIL_LIBRARY "dxil.dll")
-    file(COPY ${DIRECTX_DXIL_LIBRARY} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
     target_link_libraries(UnleashedRecomp PRIVATE
         Microsoft::DirectX-Headers 
@@ -347,8 +402,6 @@ if (UNLEASHED_RECOMP_D3D12)
         dxgi
     )
 endif()
-
-file(CHMOD ${DIRECTX_DXC_TOOL} PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 
 if (WIN32)
     target_link_libraries(UnleashedRecomp PRIVATE
@@ -411,11 +464,11 @@ function(compile_shader FILE_PATH TARGET_NAME)
 endfunction()
 
 function(compile_vertex_shader FILE_PATH)
-    compile_shader(${FILE_PATH} vs_6_0 -fvk-invert-y)
+    compile_shader(${FILE_PATH} vs_6_0 -fvk-invert-y -DUNLEASHED_RECOMP)
 endfunction()
 
 function(compile_pixel_shader FILE_PATH)
-    compile_shader(${FILE_PATH} ps_6_0)
+    compile_shader(${FILE_PATH} ps_6_0 -DUNLEASHED_RECOMP)
 endfunction()
 
 compile_pixel_shader(blend_color_alpha_ps)
