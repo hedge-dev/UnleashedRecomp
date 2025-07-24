@@ -52,7 +52,7 @@ jobs:
       - name: Install Dependencies (Linux)
         run: |-
           sudo apt update
-          sudo apt install -y ninja-build llvm-${{ env.LLVM_VERSION }}-dev libgtk-3-dev
+          sudo apt install -y ninja-build llvm-${{ env.LLVM_VERSION }}-dev libgtk-3-dev libasound2-dev libpulse-dev libpipewire-0.3-dev
 
       - name: Cache ccache Directory
         uses: actions/cache@v4
