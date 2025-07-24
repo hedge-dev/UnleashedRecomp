@@ -315,6 +315,10 @@ static std::unique_ptr<RenderCommandQueue> g_copyQueue;
 static std::unique_ptr<RenderCommandList> g_copyCommandList;
 static std::unique_ptr<RenderCommandFence> g_copyCommandFence;
 
+static Mutex g_discardMutex;
+static std::unique_ptr<RenderCommandList> g_discardCommandList;
+static std::unique_ptr<RenderCommandFence> g_discardCommandFence;
+
 static std::unique_ptr<RenderSwapChain> g_swapChain;
 static bool g_swapChainValid;
 
@@ -1849,6 +1853,12 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     g_copyCommandList = g_device->createCommandList(RenderCommandListType::COPY);
     g_copyCommandFence = g_device->createCommandFence();
 
+    if (!g_vulkan)
+    {
+        g_discardCommandList = g_device->createCommandList(RenderCommandListType::DIRECT);
+        g_discardCommandFence = g_device->createCommandFence();
+    }
+
     uint32_t bufferCount = 2;
 
     switch (Config::TripleBuffering)
@@ -3093,6 +3103,27 @@ static RenderFormat ConvertFormat(uint32_t format)
     }
 }
 
+static void DiscardTexture(GuestBaseTexture* texture, RenderTextureLayout layout)
+{
+    if (!g_vulkan)
+    {
+        std::lock_guard lock(g_discardMutex);
+
+        g_discardCommandList->begin();
+        if (texture->layout != layout)
+        {
+            g_discardCommandList->barriers(RenderBarrierStage::GRAPHICS, RenderTextureBarrier(texture->texture, layout));
+            texture->layout = layout;
+        }
+
+        g_discardCommandList->discardTexture(texture->texture);
+        g_discardCommandList->end();
+
+        g_queue->executeCommandLists(g_discardCommandList.get(), g_discardCommandFence.get());
+        g_queue->waitForCommandFence(g_discardCommandFence.get());
+    }
+}
+
 static GuestTexture* CreateTexture(uint32_t width, uint32_t height, uint32_t depth, uint32_t levels, uint32_t usage, uint32_t format, uint32_t pool, uint32_t type) 
 {
     const auto texture = g_userHeap.AllocPhysical<GuestTexture>(type == 17 ? ResourceType::VolumeTexture : ResourceType::Texture);
@@ -3149,6 +3180,12 @@ static GuestTexture* CreateTexture(uint32_t width, uint32_t height, uint32_t dep
 #ifdef _DEBUG 
     texture->texture->setName(fmt::format("Texture {:X}", g_memory.MapVirtual(texture)));
 #endif
+
+    if (desc.flags != RenderTextureFlag::NONE)
+    {
+        DiscardTexture(texture, desc.flags == RenderTextureFlag::RENDER_TARGET ?
+            RenderTextureLayout::COLOR_WRITE : RenderTextureLayout::DEPTH_WRITE);
+    }
 
     return texture;
 }
@@ -3217,6 +3254,9 @@ static GuestSurface* CreateSurface(uint32_t width, uint32_t height, uint32_t for
 #ifdef _DEBUG 
     surface->texture->setName(fmt::format("{} {:X}", desc.flags & RenderTextureFlag::RENDER_TARGET ? "Render Target" : "Depth Stencil", g_memory.MapVirtual(surface)));
 #endif
+
+    DiscardTexture(surface, desc.flags == RenderTextureFlag::RENDER_TARGET ?
+        RenderTextureLayout::COLOR_WRITE : RenderTextureLayout::DEPTH_WRITE);
 
     return surface;
 }
