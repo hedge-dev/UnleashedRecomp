@@ -4207,10 +4207,6 @@ namespace plume {
         }
     }
 
-    void VulkanDevice::waitIdle() const {
-        vkDeviceWaitIdle(vk);
-    }
-
     void VulkanDevice::release() {
         if (allocator != VK_NULL_HANDLE) {
             vmaDestroyAllocator(allocator);
