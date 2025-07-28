@@ -1141,3 +1141,9 @@ registers = ["r3"]
 name = "EndingTextPositionMidAsmHook"
 address = 0x82580168
 registers = ["r31", "f13"]
+
+[[midasm_hook]]
+name = "StageCollisionDebugViewMidAsmHook"
+address = 0x825648F8
+registers = ["r27"]
+jump_address_on_true = 0x825648FC
