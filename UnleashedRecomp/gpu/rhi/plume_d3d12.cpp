@@ -1566,6 +1566,10 @@ namespace plume {
         auto makeBarrier = [&](ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, bool supportsUAV, D3D12_RESOURCE_BARRIER &resourceBarrier) {
             resourceBarrier = {};
 
+            if (type == RenderCommandListType::COPY) {
+                return false;
+            }
+
             if (stateBefore != stateAfter) {
                 resourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
                 resourceBarrier.Transition.StateBefore = stateBefore;
@@ -2228,11 +2232,13 @@ namespace plume {
 
         this->device = device;
 
-        HRESULT res = device->d3d->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d));
+        HRESULT res = device->d3d->CreateFence(1, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d));
         if (FAILED(res)) {
             fprintf(stderr, "CreateFence failed with error code 0x%lX.\n", res);
             return;
         }
+
+        semaphoreValue = 1;
     }
 
     D3D12CommandSemaphore::~D3D12CommandSemaphore() {
