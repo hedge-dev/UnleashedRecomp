@@ -1728,23 +1728,10 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
                     {
                         bool redirectToVulkan = false;
 
-                        if (deviceDescription.vendor == RenderDeviceVendor::AMD)
-                        {
-                            // AMD Drivers before this version have a known issue where MSAA resolve targets will fail to work correctly.
-                            // If no specific graphics API was selected, we silently destroy this one and move to the next option as it'll
-                            // just work incorrectly otherwise and result in visual glitches and 3D rendering not working in general.
-                            constexpr uint64_t MinimumAMDDriverVersion = 0x1F00005DC2005CULL; // 31.0.24002.92
-                            if ((Config::GraphicsAPI == EGraphicsAPI::Auto) && (deviceDescription.driverVersion < MinimumAMDDriverVersion))
-                                redirectToVulkan = true;
-                        }
-                        else if (deviceDescription.vendor == RenderDeviceVendor::INTEL)
-                        {
-                            // Intel drivers on D3D12 are extremely buggy, introducing various graphical glitches.
-                            // We will redirect users to Vulkan until a workaround can be found.
-                            if (Config::GraphicsAPI == EGraphicsAPI::Auto)
-                                redirectToVulkan = true;
-                        }
-
+                        // ...
+                        // There used to be driver redirections here, but they are all free from Vulkan purgatory for now...
+                        // ...
+                        
                         if (redirectToVulkan)
                         {
                             g_device.reset();
@@ -1761,10 +1748,6 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
                             continue;
                         }
                     }
-
-                    // Hardware resolve seems to be completely bugged on Intel D3D12 drivers.
-                    g_hardwareResolve = (deviceDescription.vendor != RenderDeviceVendor::INTEL);
-                    g_hardwareDepthResolve = (deviceDescription.vendor != RenderDeviceVendor::INTEL);
                 }
 
                 g_vulkan = (interfaceFunction == CreateVulkanInterfaceWrapper);
