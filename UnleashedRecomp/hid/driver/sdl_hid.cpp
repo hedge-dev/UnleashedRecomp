@@ -347,7 +347,7 @@ void hid::Init()
 
     // Load controller mappings from SDL_GameControllerDB
     if (int mappings = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt"); mappings > 0) {
-        LOGFN("Loaded {} controller mappings", mappings);
+        LOGFN("Loaded {} controller mapping(s) from SDL_GameControllerDB file", mappings);
     }
 }
 
