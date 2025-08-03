@@ -352,23 +352,13 @@ if (UNLEASHED_RECOMP_FLATPAK)
     )
 endif()
 
-if (UNLEASHED_RECOMP_D3D12)
-    find_package(directx-headers CONFIG REQUIRED)
-    find_package(directx12-agility CONFIG REQUIRED)
-    target_compile_definitions(UnleashedRecomp PRIVATE 
-        UNLEASHED_RECOMP_D3D12
-        D3D12MA_USING_DIRECTX_HEADERS
-        D3D12MA_OPTIONS16_SUPPORTED
-    )
-endif()
-
-if (SDL_VULKAN_ENABLED)
-    target_compile_definitions(UnleashedRecomp PRIVATE SDL_VULKAN_ENABLED)
-endif()
-
 find_package(CURL REQUIRED)
 
 if (UNLEASHED_RECOMP_D3D12)
+    find_package(directx-headers CONFIG REQUIRED)
+    find_package(directx12-agility CONFIG REQUIRED)
+    target_compile_definitions(UnleashedRecomp PRIVATE UNLEASHED_RECOMP_D3D12)
+
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
     add_custom_command(TARGET UnleashedRecomp POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Core,IMPORTED_LOCATION_RELEASE> $<TARGET_FILE_DIR:UnleashedRecomp>/D3D12
@@ -379,9 +369,6 @@ if (UNLEASHED_RECOMP_D3D12)
     )
 
     target_link_libraries(UnleashedRecomp PRIVATE
-        Microsoft::DirectX-Headers 
-        Microsoft::DirectX-Guids 
-        Microsoft::DirectX12-Agility
         Microsoft::DirectXShaderCompiler
         Microsoft::DXIL
         dxgi
