@@ -1,4 +1,4 @@
-#include "../../../tools/XenosRecomp/XenosRecomp/shader_common.h"
+#include "../../../../tools/XenosRecomp/XenosRecomp/shader_common.h"
 
 #ifdef __spirv__
 
@@ -22,7 +22,7 @@ cbuffer SharedConstants : register(b2, space4)
 
 #endif
 
-float4 main(
+float4 shaderMain(
     in float4 iPos : SV_Position,
     in float4 iTexCoord0 : TEXCOORD0) : SV_Target0
 {

@@ -1,0 +1,4 @@
+*.ir
+*.metallib
+*.metal.*.c
+*.metal.*.h
