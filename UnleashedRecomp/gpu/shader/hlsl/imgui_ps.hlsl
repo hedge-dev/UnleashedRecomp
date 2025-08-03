@@ -123,7 +123,7 @@ float4 SampleSdfFont(float4 color, Texture2D<float4> texture, float2 uv, float2 
     return color;
 }
 
-float4 main(in Interpolators interpolators) : SV_Target
+float4 shaderMain(in Interpolators interpolators) : SV_Target
 {
     float4 color = interpolators.Color;
     color *= PixelAntialiasing(interpolators.Position.xy - g_PushConstants.ProceduralOrigin);

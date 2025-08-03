@@ -27,6 +27,12 @@ struct Video
     static void ComputeViewportDimensions();
 };
 
+enum class Backend {
+    VULKAN,
+    D3D12,
+    METAL
+};
+
 struct GuestSamplerState
 {
     be<uint32_t> data[6];
