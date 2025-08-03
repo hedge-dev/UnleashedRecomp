@@ -16,21 +16,9 @@
 [submodule "thirdparty/vcpkg"]
 	path = thirdparty/vcpkg
 	url = https://github.com/microsoft/vcpkg
-[submodule "thirdparty/volk"]
-	path = thirdparty/volk
-	url = https://github.com/zeux/volk
 [submodule "thirdparty/SDL"]
 	path = thirdparty/SDL
 	url = https://github.com/libsdl-org/SDL.git
-[submodule "thirdparty/Vulkan-Headers"]
-	path = thirdparty/Vulkan-Headers
-	url = https://github.com/KhronosGroup/Vulkan-Headers.git
-[submodule "thirdparty/VulkanMemoryAllocator"]
-	path = thirdparty/VulkanMemoryAllocator
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-[submodule "thirdparty/D3D12MemoryAllocator"]
-	path = thirdparty/D3D12MemoryAllocator
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator.git
 [submodule "thirdparty/stb"]
 	path = thirdparty/stb
 	url = https://github.com/nothings/stb.git
@@ -67,3 +55,6 @@
 [submodule "thirdparty/MoltenVK/SPIRV-Cross"]
 	path = thirdparty/MoltenVK/SPIRV-Cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "thirdparty/plume"]
+	path = thirdparty/plume
+	url = https://github.com/renderbag/plume.git

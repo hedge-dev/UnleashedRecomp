@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gpu/rhi/plume_render_interface_types.h>
+#include <plume_render_interface_types.h>
 #include <user/config.h>
 #include <sdl_events.h>
 

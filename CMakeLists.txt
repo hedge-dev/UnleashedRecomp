@@ -19,6 +19,14 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 project("UnleashedRecomp-ALL")
 
+if (APPLE)
+    enable_language(OBJC OBJCXX)
+endif()
+
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    set(SDL_VULKAN_ENABLED ON CACHE BOOL "")
+endif()
+
 if (CMAKE_OSX_ARCHITECTURES)
     set(UNLEASHED_RECOMP_ARCHITECTURE ${CMAKE_OSX_ARCHITECTURES})
 elseif(CMAKE_SYSTEM_PROCESSOR)

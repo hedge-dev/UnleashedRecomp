@@ -4,7 +4,7 @@
 /////////////////////////////////////////////////////////////////////#define PSO_CACHING
 //#define PSO_CACHING_CLEANUP
 
-#include "rhi/plume_render_interface.h"
+#include <plume_render_interface.h>
 
 #define D3DCLEAR_TARGET  0x1
 #define D3DCLEAR_ZBUFFER 0x10

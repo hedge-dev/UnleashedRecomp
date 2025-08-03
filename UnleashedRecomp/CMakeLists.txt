@@ -116,14 +116,7 @@ set(UNLEASHED_RECOMP_GPU_CXX_SOURCES
     "gpu/imgui/imgui_common.cpp"
     "gpu/imgui/imgui_font_builder.cpp"
     "gpu/imgui/imgui_snapshot.cpp"
-    "gpu/rhi/plume_vulkan.cpp"
 )
-
-if (UNLEASHED_RECOMP_D3D12)
-    list(APPEND UNLEASHED_RECOMP_GPU_CXX_SOURCES
-        "gpu/rhi/plume_d3d12.cpp"
-    )
-endif()
 
 set(UNLEASHED_RECOMP_APU_CXX_SOURCES
     "apu/audio.cpp"
@@ -221,17 +214,9 @@ set(UNLEASHED_RECOMP_THIRDPARTY_INCLUDES
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/magic_enum/include"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/stb"
     "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/unordered_dense/include"
-    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/volk"
-    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/Vulkan-Headers/include"
-    "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/VulkanMemoryAllocator/include"
     "${UNLEASHED_RECOMP_TOOLS_ROOT}/bc_diff"
     "${UNLEASHED_RECOMP_TOOLS_ROOT}/XenosRecomp/thirdparty/smol-v/source"
 )
-
-if (UNLEASHED_RECOMP_D3D12)
-    list(APPEND UNLEASHED_RECOMP_THIRDPARTY_INCLUDES "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/D3D12MemoryAllocator/include")
-    list(APPEND UNLEASHED_RECOMP_THIRDPARTY_SOURCES "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp")
-endif()
 
 set_source_files_properties(${UNLEASHED_RECOMP_THIRDPARTY_SOURCES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 
@@ -377,7 +362,7 @@ if (UNLEASHED_RECOMP_D3D12)
     )
 endif()
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+if (SDL_VULKAN_ENABLED)
     target_compile_definitions(UnleashedRecomp PRIVATE SDL_VULKAN_ENABLED)
 endif()
 
@@ -428,6 +413,7 @@ target_link_libraries(UnleashedRecomp PRIVATE
     UnleashedRecompLib
     xxHash::xxhash
     CURL::libcurl
+    plume
 )
 
 target_include_directories(UnleashedRecomp PRIVATE
