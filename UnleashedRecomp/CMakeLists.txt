@@ -4,6 +4,10 @@ if (WIN32)
     option(UNLEASHED_RECOMP_D3D12 "Add D3D12 support for rendering" ON)
 endif()
 
+if (APPLE)
+    option(UNLEASHED_RECOMP_METAL "Add Metal support for rendering" ON)
+endif()
+
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     option(UNLEASHED_RECOMP_FLATPAK "Configure the build for Flatpak compatibility." OFF)
 endif()
@@ -255,6 +259,10 @@ if (NOT ${CMAKE_BUILD_TYPE} MATCHES "Release")
     set(SHOW_GIT_INFO_AND_BUILD_TYPE 1)
 endif()
 
+if (UNLEASHED_RECOMP_METAL)
+    set(XCRUN_TOOL "/usr/bin/xcrun")
+endif()
+
 GenerateVersionSources(
     OUTPUT_DIR ${PROJECT_SOURCE_DIR}
     VERSION_TXT ${VERSION_TXT}
@@ -375,6 +383,10 @@ if (UNLEASHED_RECOMP_D3D12)
     )
 endif()
 
+if (UNLEASHED_RECOMP_METAL)
+    target_compile_definitions(UnleashedRecomp PRIVATE UNLEASHED_RECOMP_METAL)
+endif()
+
 if (WIN32)
     target_link_libraries(UnleashedRecomp PRIVATE
         comctl32
@@ -418,22 +430,37 @@ endif()
 target_precompile_headers(UnleashedRecomp PUBLIC ${UNLEASHED_RECOMP_PRECOMPILED_HEADERS})
 
 function(compile_shader FILE_PATH TARGET_NAME)
-    set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/${FILE_PATH}.hlsl)
-    cmake_path(GET FILE_PATH STEM VARIABLE_NAME)
+    set(HLSL_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/hlsl/${FILE_PATH}.hlsl)
+    set(MSL_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/msl/${FILE_PATH}.metal)
+    cmake_path(GET HLSL_FILE_PATH STEM HLSL_NAME)
+    cmake_path(GET MSL_FILE_PATH STEM MSL_NAME)
+    if (UNLEASHED_RECOMP_METAL)
+        add_custom_command(
+                OUTPUT ${MSL_FILE_PATH}.ir
+                COMMAND ${XCRUN_TOOL} -sdk macosx metal -o ${MSL_FILE_PATH}.ir -c ${MSL_FILE_PATH} -D__air__ -frecord-sources -gline-tables-only
+                DEPENDS ${MSL_FILE_PATH}
+        )
+        add_custom_command(
+                OUTPUT ${MSL_FILE_PATH}.metallib
+                COMMAND ${XCRUN_TOOL} -sdk macosx metallib -o ${MSL_FILE_PATH}.metallib ${MSL_FILE_PATH}.ir
+                DEPENDS ${MSL_FILE_PATH}.ir
+        )
+        BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${MSL_FILE_PATH}.metallib" DEST_FILE "${MSL_FILE_PATH}.metallib" ARRAY_NAME "g_${MSL_NAME}_air")
+    endif()
     if (UNLEASHED_RECOMP_D3D12)
         add_custom_command(
-            OUTPUT ${FILE_PATH}.dxil.h
-            COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil
-            DEPENDS ${FILE_PATH}
+            OUTPUT ${HLSL_FILE_PATH}.dxil.h
+            COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -E shaderMain -Fh ${HLSL_FILE_PATH}.dxil.h ${HLSL_FILE_PATH} -Vn g_${HLSL_NAME}_dxil
+            DEPENDS ${HLSL_FILE_PATH}
         )
-        target_sources(UnleashedRecomp PRIVATE ${FILE_PATH}.dxil.h)
+        target_sources(UnleashedRecomp PRIVATE ${HLSL_FILE_PATH}.dxil.h)
     endif()
     add_custom_command(
-        OUTPUT ${FILE_PATH}.spirv.h
-        COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -Fh ${FILE_PATH}.spirv.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_spirv
-        DEPENDS ${FILE_PATH}
+        OUTPUT ${HLSL_FILE_PATH}.spirv.h
+        COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -E shaderMain -Fh ${HLSL_FILE_PATH}.spirv.h ${HLSL_FILE_PATH} -Vn g_${HLSL_NAME}_spirv
+        DEPENDS ${HLSL_FILE_PATH}
     )
-    target_sources(UnleashedRecomp PRIVATE ${FILE_PATH}.spirv.h)
+    target_sources(UnleashedRecomp PRIVATE ${HLSL_FILE_PATH}.spirv.h)
 endfunction()
 
 function(compile_vertex_shader FILE_PATH)
