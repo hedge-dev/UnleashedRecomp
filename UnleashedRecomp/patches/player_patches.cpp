@@ -116,3 +116,42 @@ PPC_FUNC(sub_823B4590)
 
     SDL_User_EvilSonic(false);
 }
+
+// Change state to squat kick.
+PPC_FUNC_IMPL(__imp__sub_8236FE88);
+PPC_FUNC(sub_8236FE88)
+{
+    if (Config::DisableSquatKick)
+    {
+        ctx.r3.u32 = 0;
+        return;
+    }
+
+    __imp__sub_8236FE88(ctx, base);
+}
+
+// Change state to drift.
+PPC_FUNC_IMPL(__imp__sub_82370A50);
+PPC_FUNC(sub_82370A50)
+{
+    if (ctx.r4.u32)
+    {
+        if (Config::DisableDriftOnSlide)
+        {
+            if (auto pInputState = SWA::CInputState::GetInstance())
+            {
+                auto& rPadState = pInputState->GetPadState();
+
+                if (!rPadState.IsDown(SWA::eKeyState_LeftTrigger) && !rPadState.IsDown(SWA::eKeyState_RightTrigger))
+                    return;
+            }
+        }
+    }
+    else
+    {
+        if (Config::DisableDriftOnBrake)
+            return;
+    }
+
+    __imp__sub_82370A50(ctx, base);
+}
