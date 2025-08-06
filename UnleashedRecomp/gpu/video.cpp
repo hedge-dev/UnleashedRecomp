@@ -3052,6 +3052,24 @@ void Video::ComputeViewportDimensions()
 
         break;
     }
+    
+    case EAspectRatio::Custom:
+    {
+        float customAspectRatio = Config::CustomAspectRatio;
+
+        if (aspectRatio > customAspectRatio)
+        {
+            s_viewportWidth = height * customAspectRatio;
+            s_viewportHeight = height;
+        }
+        else
+        {
+            s_viewportWidth = width;
+            s_viewportHeight = width * (1. / customAspectRatio);
+        }
+
+        break;
+    }
 
     default:
         s_viewportWidth = width;
