@@ -40,6 +40,11 @@ if (UNLEASHED_RECOMP_ARCHITECTURE STREQUAL "x86_64" OR UNLEASHED_RECOMP_ARCHITEC
     )
 endif()
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # Normally only defined by Visual Studio, added for consistency
+    add_compile_definitions(_DEBUG)
+endif()
+
 add_subdirectory(${UNLEASHED_RECOMP_THIRDPARTY_ROOT})
 add_subdirectory(${UNLEASHED_RECOMP_TOOLS_ROOT})
 

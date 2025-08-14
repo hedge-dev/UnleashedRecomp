@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../tools/XenosRecomp/XenosRecomp/shader_common.h"
+#include "../../../../tools/XenosRecomp/XenosRecomp/shader_common.h"
 
 #ifdef __spirv__
 

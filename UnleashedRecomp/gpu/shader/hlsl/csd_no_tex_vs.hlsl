@@ -1,4 +1,4 @@
-#include "../../../tools/XenosRecomp/XenosRecomp/shader_common.h"
+#include "../../../../tools/XenosRecomp/XenosRecomp/shader_common.h"
 
 #ifdef __spirv__
 
@@ -20,10 +20,9 @@ cbuffer SharedConstants : register(b2, space4)
 
 #endif
 
-void main(
+void shaderMain(
 	[[vk::location(0)]] in float4 iPosition0 : POSITION0,
 	[[vk::location(8)]] in float4 iColor0 : COLOR0,
-	[[vk::location(4)]] in float4 iTexCoord0 : TEXCOORD0,
 	out float4 oPos : SV_Position,
 	out float4 oTexCoord0 : TEXCOORD0,
 	out float4 oTexCoord1 : TEXCOORD1,
@@ -43,13 +42,12 @@ void main(
 	out float4 oTexCoord15 : TEXCOORD15,
 	out float4 oColor0 : COLOR0,
 	out float4 oColor1 : COLOR1)
-{    
+{
     oPos.xy = iPosition0.xy * g_ViewportSize.zw * float2(2.0, -2.0) + float2(-1.0, 1.0);
     oPos.z = g_Z.x;
     oPos.w = 1.0;
     oTexCoord0 = iColor0.wxyz;
-    oTexCoord1.xy = iTexCoord0.xy;
-    oTexCoord1.zw = 0.0;
+    oTexCoord1 = 0.0;
     oTexCoord2 = 0.0;
     oTexCoord3 = 0.0;
     oTexCoord4 = 0.0;

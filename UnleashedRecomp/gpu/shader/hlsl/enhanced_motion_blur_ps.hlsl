@@ -1,4 +1,4 @@
-#include "../../../tools/XenosRecomp/XenosRecomp/shader_common.h"
+#include "../../../../tools/XenosRecomp/XenosRecomp/shader_common.h"
 
 #ifdef __spirv__
 
@@ -38,7 +38,7 @@ cbuffer SharedConstants : register(b2, space4)
 
 #endif
 
-float4 main(in float4 position : SV_Position, in float4 texCoord : TEXCOORD0) : SV_Target
+float4 shaderMain(in float4 position : SV_Position, in float4 texCoord : TEXCOORD0) : SV_Target
 {
     Texture2D<float4> sampColor = g_Texture2DDescriptorHeap[sampColor_Texture2DDescriptorIndex];
     Texture2D<float4> sampVelocityMap = g_Texture2DDescriptorHeap[sampVelocityMap_Texture2DDescriptorIndex];

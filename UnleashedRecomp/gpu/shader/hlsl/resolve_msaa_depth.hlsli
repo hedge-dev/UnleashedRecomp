@@ -4,7 +4,7 @@
 
 Texture2DMS<float, SAMPLE_COUNT> g_Texture2DMSDescriptorHeap[] : register(t0, space0);
 
-float main(in float4 position : SV_Position) : SV_Depth
+float shaderMain(in float4 position : SV_Position) : SV_Depth
 {
     float result = g_Texture2DMSDescriptorHeap[g_PushConstants.ResourceDescriptorIndex].Load(int2(position.xy), 0);
     
