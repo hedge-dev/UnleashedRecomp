@@ -2,6 +2,7 @@
 #include <os/logger.h>
 #include <ui/game_window.h>
 #include <user/paths.h>
+#include <gpu/video.h>
 
 std::vector<IConfigDef*> g_configDefinitions;
 
@@ -407,6 +408,12 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EUIAlignmentMode)
     extern CONFIG_ENUM_LOCALE(type) g_##type##_locale; \
     ConfigDef<type> Config::name{section, #name, &g_##name##_locale, defaultValue, &g_##type##_template, &g_##type##_locale};
 
+#undef  CONFIG_DEFINE_ENUM_LOCALISED_HIDDEN
+#define CONFIG_DEFINE_ENUM_LOCALISED_HIDDEN(section, type, name, defaultValue) \
+    extern CONFIG_LOCALE g_##name##_locale; \
+    extern CONFIG_ENUM_LOCALE(type) g_##type##_locale; \
+    ConfigDef<type, true> Config::name{section, #name, &g_##name##_locale, defaultValue, &g_##type##_template, &g_##type##_locale};
+
 #include "config_def.h"
 
 // CONFIG_DEFINE
@@ -595,6 +602,58 @@ std::string ConfigDef<T, isHidden>::GetValueLocalised(ELanguage language) const
 }
 
 template<typename T, bool isHidden>
+bool ConfigDef<T, isHidden>::ShouldShowCurrentAPI() const
+{
+    if constexpr (std::is_same_v<T, EGraphicsAPI>)
+    {
+        return Value == EGraphicsAPI::Auto && 
+               Config::GraphicsAPI.Value == EGraphicsAPI::Auto && 
+               Video::IsCurrentAPIChosenByAuto();
+    }
+    return false;
+}
+
+template<typename T, bool isHidden>
+std::string ConfigDef<T, isHidden>::GetCurrentAPIName(const ELanguage* languages, CONFIG_ENUM_LOCALE(T)* locale) const
+{
+    if constexpr (std::is_same_v<T, EGraphicsAPI>)
+    {
+        EGraphicsAPI currentAPI = Video::GetCurrentGraphicsAPI();
+        if (currentAPI == EGraphicsAPI::Auto) return "";
+        
+        for (auto langToFind : {languages[0], languages[1]})
+        {
+            auto langFindResult = locale->find(langToFind);
+            if (langFindResult != locale->end())
+            {
+                auto apiFindResult = langFindResult->second.find(currentAPI);
+                if (apiFindResult != langFindResult->second.end())
+                {
+                    return std::get<0>(apiFindResult->second);
+                }
+            }
+            if (langToFind == ELanguage::English) break;
+        }
+    }
+    return "";
+}
+
+template<typename T, bool isHidden>
+std::string ConfigDef<T, isHidden>::GetCurrentAPIText(ELanguage language, const std::string& apiName) const
+{
+    switch (language)
+    {
+        case ELanguage::English:  return " Currently using: " + apiName;
+        case ELanguage::Japanese: return " [現在:げんざい][使用中:しようちゅう]: " + apiName;
+        case ELanguage::German:   return " Derzeit verwendet: " + apiName;
+        case ELanguage::French:   return " Actuellement utilisé : " + apiName;
+        case ELanguage::Spanish:  return " Actualmente usando: " + apiName;
+        case ELanguage::Italian:  return " Attualmente in uso: " + apiName;
+        default:                  return " Currently using: " + apiName;
+    }
+}
+
+template<typename T, bool isHidden>
 std::string ConfigDef<T, isHidden>::GetValueDescription(ELanguage language) const
 {
     CONFIG_ENUM_LOCALE(T)* locale = nullptr;
@@ -620,7 +679,24 @@ std::string ConfigDef<T, isHidden>::GetValueDescription(ELanguage language) cons
             {
                 auto valueFindResult = languageFindResult->second.find(Value);
                 if (valueFindResult != languageFindResult->second.end())
-                    return std::get<1>(valueFindResult->second);
+                {
+                    std::string description = std::get<1>(valueFindResult->second);
+                    
+                    // Special case for EGraphicsAPI::Auto - append current API info
+                    if constexpr (std::is_same_v<T, EGraphicsAPI>)
+                    {
+                        if (ShouldShowCurrentAPI())
+                        {
+                            std::string currentAPIText = GetCurrentAPIName(languages, locale);
+                            if (!currentAPIText.empty())
+                            {
+                                description += GetCurrentAPIText(language, currentAPIText);
+                            }
+                        }
+                    }
+                    
+                    return description;
+                }
             }
 
             if (languageToFind == ELanguage::English)

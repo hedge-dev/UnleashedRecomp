@@ -5,6 +5,7 @@
 //#define PSO_CACHING_CLEANUP
 
 #include <plume_render_interface.h>
+#include <user/config.h>
 
 #define D3DCLEAR_TARGET  0x1
 #define D3DCLEAR_ZBUFFER 0x10
@@ -24,6 +25,8 @@ struct Video
     static void StartPipelinePrecompilation();
     static void WaitForGPU();
     static void ComputeViewportDimensions();
+    static EGraphicsAPI GetCurrentGraphicsAPI();
+    static bool IsCurrentAPIChosenByAuto();
 };
 
 struct GuestSamplerState

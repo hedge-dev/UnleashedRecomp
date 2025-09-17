@@ -527,6 +527,82 @@ CONFIG_DEFINE_LOCALE(Monitor)
 };
 
 // Japanese Notes: This localization should include furigana.
+CONFIG_DEFINE_LOCALE(GraphicsAPI)
+{
+    { ELanguage::English,  { "Graphics API", "Change the graphics API used for rendering. \n\nWARNING: Changing graphics api requires game restart" } },
+    { ELanguage::Japanese, { "グラフィックAPI", "レンダリングに[使用:しよう]するグラフィックAPIを[変更:へんこう]します。\n\n[警告:けいこく]: グラフィックAPIの[変更:へんこう]にはゲームの[再起動:さいきどう]が[必要:ひつよう]です" } },
+    { ELanguage::German,   { "Grafik-API", "Ändere die Grafik-API für das Rendering. \n\nWARNUNG: Das Ändern der Grafik-API erfordert einen Neustart des Spiels" } },
+    { ELanguage::French,   { "API graphique", "Modifie l'API graphique utilisée pour le rendu. \n\nATTENTION : Changer l'API graphique nécessite un redémarrage du jeu" } },
+    { ELanguage::Spanish,  { "API de gráficos", "Cambia la API de gráficos utilizada para el renderizado. \n\nADVERTENCIA: Cambiar la API de gráficos requiere reiniciar el juego" } },
+    { ELanguage::Italian,  { "API grafica", "Modifica l'API grafica utilizzata per il rendering. \n\nATTENZIONE: Cambiare l'API grafica richiede il riavvio del gioco" } }
+};
+
+// Japanese Notes: This localization should include furigana in its description.
+CONFIG_DEFINE_ENUM_LOCALE(EGraphicsAPI)
+{
+    {
+        ELanguage::English,
+        {
+            { EGraphicsAPI::Auto, { "AUTO", "Automatically selects the best available graphics API for your system." } },
+#ifdef UNLEASHED_RECOMP_D3D12
+            { EGraphicsAPI::D3D12, { "DX12", "use Microsoft's DirectX 12 API for graphics rendering." } },
+#endif
+            { EGraphicsAPI::Vulkan, { "VULKAN", "use Khronos Group's Vulkan API for graphics rendering." } }
+        }
+    },
+    {
+        ELanguage::Japanese,
+        {
+            { EGraphicsAPI::Auto, { "自動", "[自動:じどう]: [最適:さいてき]なグラフィックAPIを\u200B[自動的:じどうてき]に\u200B[選択:せんたく]します" } },
+#ifdef UNLEASHED_RECOMP_D3D12
+            { EGraphicsAPI::D3D12, { "DX12", "Microsoft の DirectX 12 API を\u200B[使用:しよう]してレンダリングします" } },
+#endif
+            { EGraphicsAPI::Vulkan, { "VULKAN", "Khronos Group の Vulkan API を\u200B[使用:しよう]してレンダリングします" } }
+        }
+    },
+    {
+        ELanguage::German,
+        {
+            { EGraphicsAPI::Auto, { "AUTO", "Wählt automatisch die beste verfügbare Grafik-API aus." } },
+#ifdef UNLEASHED_RECOMP_D3D12
+            { EGraphicsAPI::D3D12, { "DX12", "Verwendet Microsofts DirectX 12 API für das Rendering." } },
+#endif
+            { EGraphicsAPI::Vulkan, { "VULKAN", "Verwendet die Khronos Group's Vulkan API für das Rendering." } }
+        }
+    },
+    {
+        ELanguage::French,
+        {
+            { EGraphicsAPI::Auto, { "AUTO", "sélectionne automatiquement la meilleure API graphique disponible." } },
+#ifdef UNLEASHED_RECOMP_D3D12
+            { EGraphicsAPI::D3D12, { "DX12", "utilise l'API DirectX 12 de Microsoft pour le rendu." } },
+#endif
+            { EGraphicsAPI::Vulkan, { "VULKAN", "utilise l'API Vulkan du Khronos Group pour le rendu." } }
+        }
+    },
+    {
+        ELanguage::Spanish,
+        {
+            { EGraphicsAPI::Auto, { "AUTO", "selecciona automáticamente la mejor API de gráficos disponible." } },
+#ifdef UNLEASHED_RECOMP_D3D12
+            { EGraphicsAPI::D3D12, { "DX12", "utiliza la API DirectX 12 de Microsoft para el renderizado." } },
+#endif
+            { EGraphicsAPI::Vulkan, { "VULKAN", "utiliza la API Vulkan del Khronos Group para el renderizado." } }
+        }
+    },
+    {
+        ELanguage::Italian,
+        {
+            { EGraphicsAPI::Auto, { "AUTO", "seleziona automaticamente la migliore API grafica disponibile." } },
+#ifdef UNLEASHED_RECOMP_D3D12
+            { EGraphicsAPI::D3D12, { "DX12", "utilizza l'API DirectX 12 di Microsoft per il rendering." } },
+#endif
+            { EGraphicsAPI::Vulkan, { "VULKAN", "utilizza l'API Vulkan del Khronos Group per il rendering." } }
+        }
+    }
+};
+
+// Japanese Notes: This localization should include furigana.
 CONFIG_DEFINE_LOCALE(AspectRatio)
 {
     { ELanguage::English,  { "Aspect Ratio", "Change the aspect ratio." } },

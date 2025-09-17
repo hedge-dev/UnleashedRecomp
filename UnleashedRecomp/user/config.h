@@ -200,6 +200,13 @@ public:
     void GetLocaleStrings(std::vector<std::string_view>& localeStrings) const override;
     void SnapToNearestAccessibleValue(bool searchUp) override;
 
+private:
+    // Graphics API dynamic text
+    bool ShouldShowCurrentAPI() const;
+    std::string GetCurrentAPIName(const ELanguage* languages, CONFIG_ENUM_LOCALE(T)* locale) const;
+    std::string GetCurrentAPIText(ELanguage language, const std::string& apiName) const;
+
+public:
     operator T() const
     {
         return Value;
@@ -219,6 +226,7 @@ public:
 #define CONFIG_DEFINE_LOCALISED(section, type, name, defaultValue)              CONFIG_DECLARE(type, name)
 #define CONFIG_DEFINE_ENUM(section, type, name, defaultValue)                   CONFIG_DECLARE(type, name)
 #define CONFIG_DEFINE_ENUM_LOCALISED(section, type, name, defaultValue)         CONFIG_DECLARE(type, name)
+#define CONFIG_DEFINE_ENUM_LOCALISED_HIDDEN(section, type, name, defaultValue)  CONFIG_DECLARE_HIDDEN(type, name)
 
 class Config
 {

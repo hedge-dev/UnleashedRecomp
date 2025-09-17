@@ -1271,6 +1271,7 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::AspectRatio, true);
             DrawConfigOption(rowCount++, yOffset, &Config::ResolutionScale, true, nullptr, 0.25f, 1.0f, 2.0f);
             DrawConfigOption(rowCount++, yOffset, &Config::Fullscreen, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::GraphicsAPI, true);
             DrawConfigOption(rowCount++, yOffset, &Config::VSync, true);
             DrawConfigOption(rowCount++, yOffset, &Config::FPS, true, nullptr, FPS_MIN, 120, FPS_MAX);
             DrawConfigOption(rowCount++, yOffset, &Config::Brightness, true);

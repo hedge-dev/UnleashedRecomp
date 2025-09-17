@@ -299,6 +299,10 @@ static std::unique_ptr<RenderDevice> g_device;
 
 static RenderDeviceCapabilities g_capabilities;
 
+// Track the currently active graphics API for display purposes
+static EGraphicsAPI g_currentGraphicsAPI = EGraphicsAPI::Auto;
+static bool g_currentAPIChosenByAuto = false;
+
 static constexpr size_t NUM_FRAMES = 2;
 static constexpr size_t NUM_QUERIES = 2;
 
@@ -1673,6 +1677,12 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
 
 #ifdef UNLEASHED_RECOMP_D3D12
     g_vulkan = DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan;
+    
+    // Track if the Graphics API was chosen by Auto or manually selected
+    g_currentAPIChosenByAuto = (Config::GraphicsAPI == EGraphicsAPI::Auto);
+#else
+    // For Vulkan-only builds, check if Auto was selected
+    g_currentAPIChosenByAuto = (Config::GraphicsAPI == EGraphicsAPI::Auto);
 #endif
 
     // Attempt to create the possible backends using a vector of function pointers. Whichever succeeds first will be the chosen API.
@@ -1765,6 +1775,12 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
                 }
 
                 g_vulkan = (interfaceFunction == CreateVulkanInterfaceWrapper);
+                
+                // Track which graphics API is actually being used for display purposes
+                g_currentGraphicsAPI = g_vulkan ? EGraphicsAPI::Vulkan : EGraphicsAPI::D3D12;
+#else
+                // For Vulkan-only builds
+                g_currentGraphicsAPI = EGraphicsAPI::Vulkan;
 #endif
                 // Enable triangle strip workaround if we are on AMD, as there is a bug where
                 // restart indices cause triangles to be culled incorrectly. Converting them to degenerate triangles fixes it.
@@ -3060,6 +3076,16 @@ void Video::ComputeViewportDimensions()
     }
 
     AspectRatioPatches::ComputeOffsets();
+}
+
+EGraphicsAPI Video::GetCurrentGraphicsAPI()
+{
+    return g_currentGraphicsAPI;
+}
+
+bool Video::IsCurrentAPIChosenByAuto()
+{
+    return g_currentAPIChosenByAuto;
 }
 
 static RenderFormat ConvertFormat(uint32_t format)
