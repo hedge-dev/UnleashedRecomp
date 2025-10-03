@@ -9,7 +9,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-  
+
 jobs:
   build-linux:
     name: Build Linux
@@ -38,7 +38,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ccache-${{ runner.os }}-${{ matrix.preset }}
-  
+
       - name: Cache vcpkg
         uses: actions/cache@v4
         with:
@@ -119,7 +119,7 @@ jobs:
         run: |
           choco install ninja
           Remove-Item -Path "C:\ProgramData\Chocolatey\bin\ccache.exe" -Force -ErrorAction SilentlyContinue
-      
+
       - name: Configure Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
 
@@ -134,7 +134,7 @@ jobs:
 
       - name: Build Project
         run: cmake --build .\out\build\${{ env.CMAKE_PRESET }} --target UnleashedRecomp
-      
+
       - name: Pack Release
         run: |
           New-Item -ItemType Directory -Path .\release
@@ -162,8 +162,6 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       FLATPAK_ID: io.github.hedge_dev.unleashedrecomp
-      FREEDESKTOP_VERSION: 23.08
-      LLVM_VERSION: 18
 
     steps:
       - name: Checkout Repository
@@ -190,13 +188,11 @@ jobs:
           key: ccache-${{ runner.os }}
 
       - name: Prepare Project
-        run: cp ./private/* ./UnleashedRecompLib/private  
+        run: cp ./private/* ./UnleashedRecompLib/private
 
       - name: Prepare Flatpak
         run: |
           flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-          flatpak --user install -y flathub org.freedesktop.Sdk//${{ env.FREEDESKTOP_VERSION }}
-          flatpak --user install -y flathub org.freedesktop.Sdk.Extension.llvm${{ env.LLVM_VERSION }}//${{ env.FREEDESKTOP_VERSION }}
 
       - name: Build Flatpak
         run: |
