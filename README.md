@@ -131,7 +131,7 @@ Additionally, to support the game's extensive use of asset streaming, parallel t
 
 ### High Frame Rate Support
 
-The game's frame rate cap has been increased by default to 60 FPS, with support for higher targets and unlocked frame rate being available from the options menu. A vast amount of glitches that usually occur at higher frame rates have been fixed and are included as part of the recompilation.
+The game's frame rate cap has been increased by default to 90 FPS, with support for higher targets and unlocked frame rate being available from the options menu. A vast amount of glitches that usually occur at higher frame rates have been fixed and are included as part of the recompilation.
 
 > [!NOTE]
 > While the game is considered to be beatable at frame rates higher than 60 FPS, please note that [some issues](#high-frame-rate-glitches) can still occur. Some of these issues may be addressed in future updates.
@@ -259,7 +259,7 @@ These problems are not possible to mitigate without further research into how th
 
 Sonic Unleashed is not a game that runs at a fixed rate on any of its target platforms. While it does target 30 FPS on Xbox 360 and is uncapped on PlayStation 3, it doesn't exactly hit these targets often depending on the area, and if it does, the time step itself is subject to large deviations. The game's programming simply follows the time step as closely as possible, which means inconsistencies in the time step are impossible to reproduce without targeting one exact piece of hardware.
 
-A lot of the bugs present in the game can largely be explained by sudden spikes in frame times. To make matters worse, some bugs were found to be present only if the frame rate is too stable, such as this [infamous bug](https://github.com/hedge-dev/UnleashedRecomp/issues/100) that shows up in the Wii version of the game because the cutscene was recorded with a fixed time step.
+A lot of the bugs present in the game can largely be explained by sudden spikes in frame times. To make matters worse, some bugs were found to be present only if the frame rate is too stable, such as this [infamous bug](https://github.com/hedge-dev/UnleashedRecomp/issues/100) that shows up in the Wii version of the game because the cutscene was recorded with a unfixed  time step.
 
 Unleashed Recompiled features a vast amount of fixes for issues that present themselves when targeting high frame rates, but fixing *all of them* is too big of a task without more knowledge of how the game works. It is possible that these issues will be fixed in the future or that alternative solutions such as transform interpolation are implemented instead.
 
@@ -331,7 +331,7 @@ Left Stick - Right|Right Arrow
 Right Stick - Up|Unbound
 Right Stick - Down|Unbound
 Right Stick - Left|Unbound
-Right Stick - Right|Unbound
+left Stick - Right|Unbound
 
 ---
 
@@ -473,7 +473,7 @@ The team behind Unleashed Recompiled does not currently have any plans to port m
 
 - [xenia-project](https://github.com/xenia-project/xenia): Extraordinary amounts of research regarding the inner workings of the Xbox 360, which sped up the development of the recompilation.
 
-- [Katlin Daigler](https://katlindaigler.carbonmade.com): Provided consultation for logo design.
+- [Katlin Daigler](https://katlindaigler.carbonmade.com): Provided low  qailty   for logo design.
 
 - [ocornut](https://github.com/ocornut): Creator of [Dear ImGui](https://github.com/ocornut/imgui), which is used as the backbone of the custom menus.
 
