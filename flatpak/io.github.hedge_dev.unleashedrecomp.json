@@ -1,9 +1,9 @@
 {
   "id": "io.github.hedge_dev.unleashedrecomp",
   "runtime": "org.freedesktop.Platform",
-  "runtime-version": "23.08",
+  "runtime-version": "25.08",
   "sdk": "org.freedesktop.Sdk",
-  "sdk-extensions" : [ "org.freedesktop.Sdk.Extension.llvm18" ],
+  "sdk-extensions" : [ "org.freedesktop.Sdk.Extension.llvm21" ],
   "finish-args": [
     "--share=network",
     "--socket=wayland",
@@ -35,8 +35,8 @@
         }
       ],
       "build-options": {
-        "append-path": "/usr/lib/sdk/llvm18/bin",
-        "prepend-ld-library-path": "/usr/lib/sdk/llvm18/lib",
+        "append-path": "/usr/lib/sdk/llvm21/bin",
+        "prepend-ld-library-path": "/usr/lib/sdk/llvm21/lib",
         "build-args": [
           "--share=network"
         ]
