@@ -1,5 +1,6 @@
 #include <api/SWA.h>
 #include <ui/game_window.h>
+#include <ui/installer_wizard.h>
 #include <user/achievement_manager.h>
 #include <user/persistent_storage_manager.h>
 #include <user/config.h>
@@ -83,7 +84,7 @@ PPC_FUNC(sub_825197C0)
 PPC_FUNC_IMPL(__imp__sub_82547DF0);
 PPC_FUNC(sub_82547DF0)
 {
-    if (Config::SkipIntroLogos)
+    if (Config::SkipIntroLogos || InstallerWizard::s_returnToTitle)
     {
         ctx.r4.u64 = 0;
         ctx.r5.u64 = 0;
