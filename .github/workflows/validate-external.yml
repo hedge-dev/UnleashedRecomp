@@ -1,7 +1,9 @@
 name: validate-external
 on:
   pull_request_target:
-    types: [opened, synchronize]
+    branches:
+      - main
+    types: [edited, opened, synchronize]
 jobs:
   authorize:
     if: github.repository != github.event.pull_request.head.repo.full_name
@@ -18,3 +20,8 @@ jobs:
     secrets:
       ASSET_REPO: ${{ secrets.ASSET_REPO }}
       ASSET_REPO_TOKEN: ${{ secrets.ASSET_REPO_TOKEN }}
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
