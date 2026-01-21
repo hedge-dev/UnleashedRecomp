@@ -151,10 +151,13 @@ static bool IsMediaPlayerPlaying(DBusConnection* connection, const std::string& 
         return false;
     }
 
-    if (dbus_message_iter_get_arg_type(&rootIterator) != DBUS_TYPE_VARIANT)
+    if (dbus_message_iter_get_arg_type(&rootIterator) == DBUS_TYPE_VARIANT)
     {
-        LOG_ERROR("D-Bus message returned invalid type!");
-        return false;
+        dbus_message_iter_recurse(&rootIterator, &arrayIterator);
+    }
+    else
+    {
+        arrayIterator = rootIterator;
     }
 
     dbus_message_iter_recurse(&rootIterator, &arrayIterator);
