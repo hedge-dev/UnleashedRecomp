@@ -176,14 +176,18 @@ bool os::media::IsExternalMediaPlaying()
     if (!dbusConnection)
         return false;
 
+    bool result = false;
+
     std::vector<std::string> busNames = GetMediaPlayerBusNames(dbusConnection);
     for (const auto& bus : busNames)
     {
         if (IsMediaPlayerPlaying(dbusConnection, bus))
-            return true;
+        {
+            result = true;
+            break;
+        }
     }
 
     DestroyDBusConnection(dbusConnection);
-
-    return false;
+    return result;
 }
