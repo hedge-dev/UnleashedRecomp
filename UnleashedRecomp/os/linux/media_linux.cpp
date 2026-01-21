@@ -2,6 +2,13 @@
 #include <os/logger.h>
 #include <dbus/dbus.h>
 
+#include "app.h"
+
+#define MEDIA_CHECK_RATE 1
+
+static float g_mediaCheckTimer;
+static bool g_mediaLastResult;
+
 static DBusConnection* CreateDBusConnection()
 {
     DBusError dbusError;
@@ -170,6 +177,13 @@ static bool IsMediaPlayerPlaying(DBusConnection* connection, const std::string& 
 
 bool os::media::IsExternalMediaPlaying()
 {
+    //Calling D-Bus functions too much seems cause D-Bus to stop working, so perhaps it should be run less often.
+    g_mediaCheckTimer -= App::s_deltaTime;
+    if (g_mediaCheckTimer > 0)
+        return g_mediaLastResult;
+
+    g_mediaCheckTimer = MEDIA_CHECK_RATE;
+
     const auto dbusConnection = CreateDBusConnection();
     if (!dbusConnection)
         return false;
@@ -187,5 +201,6 @@ bool os::media::IsExternalMediaPlaying()
     }
 
     DestroyDBusConnection(dbusConnection);
+    g_mediaLastResult = result;
     return result;
 }
