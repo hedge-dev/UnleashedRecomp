@@ -1,7 +1,8 @@
 #include <os/media.h>
+#include <os/logger.h>
+#include <dbus/dbus.h>
 
 bool os::media::IsExternalMediaPlaying()
 {
-    // This functionality is not supported in Linux.
     return false;
 }
