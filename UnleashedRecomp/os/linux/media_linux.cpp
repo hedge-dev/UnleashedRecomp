@@ -27,7 +27,7 @@ static std::vector<std::string> GetMediaPlayerBusNames(DBusConnection* connectio
 {
     assert(connection != nullptr);
 
-    std::vector<std::string> result;
+    auto result = std::vector<std::string>();
 
     DBusMessageIter rootIterator;
     DBusMessageIter arrayIterator;
@@ -41,7 +41,7 @@ static std::vector<std::string> GetMediaPlayerBusNames(DBusConnection* connectio
     }
 
     dbus_message_iter_init_append(message, &rootIterator);
-    if (!dbus_connection_send_with_reply(connection, message, &pendingReturn, -1))
+    if (!dbus_connection_send_with_reply(connection, message, &pendingReturn, 40))
     {
         LOG_ERROR("Failed to create D-Bus Message!");
         return result;
@@ -121,7 +121,7 @@ static bool IsMediaPlayerPlaying(DBusConnection* connection, const std::string& 
         return false;
     }
 
-    if (!dbus_connection_send_with_reply(connection, message, &pendingReturn, -1))
+    if (!dbus_connection_send_with_reply(connection, message, &pendingReturn, 40))
     {
         LOG_ERROR("Failed to create D-Bus Message!");
         return false;
@@ -152,15 +152,10 @@ static bool IsMediaPlayerPlaying(DBusConnection* connection, const std::string& 
     }
 
     if (dbus_message_iter_get_arg_type(&rootIterator) == DBUS_TYPE_VARIANT)
-    {
         dbus_message_iter_recurse(&rootIterator, &arrayIterator);
-    }
     else
-    {
         arrayIterator = rootIterator;
-    }
 
-    dbus_message_iter_recurse(&rootIterator, &arrayIterator);
     if (dbus_message_iter_get_arg_type(&arrayIterator) != DBUS_TYPE_STRING)
     {
         LOG_ERROR("D-Bus message returned invalid type!");
