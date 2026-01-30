@@ -195,3 +195,11 @@ bool SparkleLocusMidAsmHook()
     // This has the side effect of the locus particle eventually snapping to the rest position during pause, but it's better than vertices exploding.
     return App::s_deltaTime < (1.0 / 60.0);
 }
+
+void CEvilSonicContext_CStateWall_LeaveRotationMidAsmHook(PPCRegister& f1)
+{
+    // The code in the Werehog's "wall" state for leaving walls adds a constant
+    // value of 0.05 to his transform every frame. This makes the value respect
+    // delta time whilst maintaining the original behaviour at 30 FPS.
+    f1.f64 = f1.f64 * (std::min(App::s_deltaTime, 1.0 / 15.0) / (1.0 / 30.0));
+}
