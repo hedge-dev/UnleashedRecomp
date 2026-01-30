@@ -10,6 +10,11 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
 
 [Check out the latest release here](https://github.com/hedge-dev/UnleashedRecomp/releases/latest).
 
+| Quick Download  | Windows | Linux |
+| --------------- | ------- | ----- |
+| Release         | [![Windows Release](https://img.shields.io/github/v/release/hedge-dev/UnleashedRecomp?label=Windows)](https://github.com/hedge-dev/UnleashedRecomp/releases/latest/download/UnleashedRecomp-Windows.zip) | [![Linux Release](https://img.shields.io/github/v/release/hedge-dev/UnleashedRecomp?logo=linux&label=Linux)](https://github.com/hedge-dev/UnleashedRecomp/releases/latest/download/UnleashedRecomp-Flatpak.zip) |
+| Latest Snapshot | [![Windows latest](https://img.shields.io/github/last-commit/hedge-dev/UnleashedRecomp?label=Windows)](https://nightly.link/hedge-dev/UnleashedRecomp/workflows/validate-internal/main/UnleashedRecomp-Windows-x64-Clang-Release.zip) | [![Linux latest](https://img.shields.io/github/last-commit/hedge-dev/UnleashedRecomp?logo=linux&label=Linux)](https://nightly.link/hedge-dev/UnleashedRecomp/workflows/validate-internal/main/UnleashedRecomp-Flatpak.zip) |
+
 [XenonRecomp](https://github.com/hedge-dev/XenonRecomp) and [XenosRecomp](https://github.com/hedge-dev/XenosRecomp) are the main recompilers used for converting the game's original PowerPC code and Xenos shaders into compatible C++ and HLSL code respectively. The development of these recompilers was directly inspired by [N64: Recompiled](https://github.com/N64Recomp/N64Recomp), which was used to create [Zelda 64: Recompiled](https://github.com/Zelda64Recomp/Zelda64Recomp).
 
 ## Table of Contents
