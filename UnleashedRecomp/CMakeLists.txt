@@ -413,6 +413,11 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(X11 REQUIRED)
     target_include_directories(UnleashedRecomp PRIVATE ${X11_INCLUDE_DIR})
     target_link_libraries(UnleashedRecomp PRIVATE ${X11_LIBRARIES})
+
+    set(DBus_DIR "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/dbus")
+    find_package(DBus REQUIRED)
+    include_directories(UnleashedRecomp PRIVATE ${DBUS_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${DBUS_LIBRARIES})
 endif()
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${UNLEASHED_RECOMP_PRECOMPILED_HEADERS})

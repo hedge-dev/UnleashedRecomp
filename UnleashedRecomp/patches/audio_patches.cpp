@@ -20,13 +20,19 @@ static be<float>* GetVolume(bool isMusic = true)
 
 bool AudioPatches::CanAttenuate()
 {
-#if _WIN32
+#if defined(_WIN32) || defined(__linux__)
     if (m_isAttenuationSupported >= 0)
         return m_isAttenuationSupported;
 
     auto version = os::version::GetOSVersion();
 
+#if defined(_WIN32)
     m_isAttenuationSupported = version.Major >= 10 && version.Build >= 17763;
+#endif
+
+#if defined(__linux__)
+    m_isAttenuationSupported = true;
+#endif
 
     return m_isAttenuationSupported;
 #else
