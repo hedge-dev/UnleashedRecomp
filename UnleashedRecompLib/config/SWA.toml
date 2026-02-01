@@ -1147,3 +1147,13 @@ name = "StageCollisionDebugViewMidAsmHook"
 address = 0x825648F8
 registers = ["r27"]
 jump_address_on_true = 0x825648FC
+
+[[midasm_hook]]
+name = "StageCollisionDebugViewStoreXmlTypeMidAsmHook"
+address = 0x8256422C
+registers = ["r1"]
+
+[[midasm_hook]]
+name = "StageCollisionDebugViewSingleTerrainBlockXmlMidAsmHook"
+address = 0x82564B00
+jump_address_on_true = 0x82564764
