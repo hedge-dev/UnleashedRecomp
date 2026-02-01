@@ -129,7 +129,9 @@ PPC_FUNC(sub_822C55B0)
 
 void PressStartSaveLoadThreadMidAsmHook()
 {
-    if (UpdateChecker::check() == UpdateChecker::Result::UpdateAvailable)
+    time_t timeNow = std::time(nullptr);
+    double timeDifferenceSeconds = difftime(timeNow, Config::LastChecked);
+    if (UpdateChecker::check() == UpdateChecker::Result::UpdateAvailable && timeDifferenceSeconds > g_timeBetweenUpdateChecksInSeconds)
     {
         g_updateAvailableMessageOpen = true;
         g_updateAvailableMessageOpen.wait(true);

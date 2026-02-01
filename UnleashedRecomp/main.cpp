@@ -307,11 +307,11 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    // Check the time since the last time an update was checked. Store the new time if the difference is more than six hours.
-    constexpr double TimeBetweenUpdateChecksInSeconds = 6 * 60 * 60;
+    // Check the time since the last time an update was checked.
+    // Store the new time if the difference is more than g_timeBetweenUpdateChecksInSeconds hours.
     time_t timeNow = std::time(nullptr);
     double timeDifferenceSeconds = difftime(timeNow, Config::LastChecked);
-    if (timeDifferenceSeconds > TimeBetweenUpdateChecksInSeconds)
+    if (timeDifferenceSeconds > g_timeBetweenUpdateChecksInSeconds)
     {
         UpdateChecker::initialize();
         UpdateChecker::start();
