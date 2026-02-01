@@ -1,3 +1,4 @@
+#include "misc_patches.h"
 #include <api/SWA.h>
 #include <ui/game_window.h>
 #include <user/achievement_manager.h>
@@ -192,4 +193,55 @@ PPC_FUNC(sub_824EE620)
     __imp__sub_824EE620(ctx, base);
 
     ctx.r3.u32 = PersistentStorageManager::ShouldDisplayDLCMessage(true);
+}
+
+bool StageCollisionDebugViewMidAsmHook(PPCRegister& r27)
+{
+    if (Config::EnableStageCollisionDebugView)
+    {
+        r27.u32 = true;
+        return true;
+    }
+    
+    return false;
+}
+
+// The game is set up so that after parsing the Stage.set.xml it checks if TerrainInfoFile is found or not.
+// Based on the result of that it will either draw terrain or debug collision (if enabled).
+//
+// The XMLs in the game are populated like this generally speaking:
+//  <Terrain>
+//    <TerrainInfoFile>terrain</TerrainInfoFile>
+//    <GIAtlas>1</GIAtlas>
+//  </Terrain>
+//  <Terrain>
+//    <RigidBodyContainer>collision</RigidBodyContainer>
+//    <IsCollisionRender>false</IsCollisionRender>
+//  </Terrain>
+//
+// In some cases however, the information in these two Terrain blocks is combined into one block,
+// which makes the logic checking TerrainInfoFile's contents only fire once, and with success only, as such
+// the logic for drawing collision will never execute.
+//
+// To combat this we check if both types returned with some value from the XML file, which indicates that its
+// a single Terrain block, and if so we store that information so we can later on re-use to manually fire the
+// logic controlling the drawing of the debug collision view.
+void StageCollisionDebugViewStoreXmlTypeMidAsmHook(PPCRegister& r1)
+{
+    uint8_t* base = g_memory.base;
+
+    const char* rigidBodyContainer = (const char*)(base + PPC_LOAD_U32(r1.u32 + 108));
+    const char* terrainInfoFile = (const char*)(base + PPC_LOAD_U32(r1.u32 + 132));
+    if (*rigidBodyContainer != '\0' && *terrainInfoFile != '\0')
+    {
+        g_singleTerrainBlockXml = true;
+    }
+}
+
+bool StageCollisionDebugViewSingleTerrainBlockXmlMidAsmHook()
+{
+    bool runCollisionViewDrawLogic = g_singleTerrainBlockXml;
+    g_singleTerrainBlockXml = false;
+
+    return runCollisionViewDrawLogic;
 }
