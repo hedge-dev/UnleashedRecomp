@@ -6,7 +6,7 @@
 	url = https://github.com/redorav/ddspp.git
 [submodule "tools/XenosRecomp"]
 	path = tools/XenosRecomp
-	url = https://github.com/hedge-dev/XenosRecomp.git
+	url = https://github.com/squidbus/XenosRecomp.git
 [submodule "UnleashedRecompResources"]
 	path = UnleashedRecompResources
 	url = https://github.com/hedge-dev/UnleashedRecompResources.git

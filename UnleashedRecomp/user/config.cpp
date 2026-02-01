@@ -306,6 +306,9 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EGraphicsAPI)
 #ifdef UNLEASHED_RECOMP_D3D12
     { "D3D12",  EGraphicsAPI::D3D12 },
 #endif
+#ifdef UNLEASHED_RECOMP_METAL
+    { "Metal",  EGraphicsAPI::Metal },
+#endif
     { "Vulkan", EGraphicsAPI::Vulkan }
 };
 

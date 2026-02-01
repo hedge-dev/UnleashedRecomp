@@ -1,0 +1,21 @@
+#pragma once
+
+#include "copy_common.metali"
+
+struct Texture2DMSDescriptorHeap
+{
+    texture2d_ms<float> tex;
+};
+
+[[fragment]]
+float4 shaderMain(float4 position [[position]],
+                  constant Texture2DMSDescriptorHeap* g_Texture2DMSDescriptorHeap [[buffer(0)]],
+                  constant PushConstants& g_PushConstants [[buffer(8)]])
+{
+    float4 result = g_Texture2DMSDescriptorHeap[g_PushConstants.ResourceDescriptorIndex].tex.read(uint2(position.xy), 0);
+    
+    for (int i = 1; i < SAMPLE_COUNT; i++)
+        result += g_Texture2DMSDescriptorHeap[g_PushConstants.ResourceDescriptorIndex].tex.read(uint2(position.xy), i);
+
+    return result / SAMPLE_COUNT;
+}

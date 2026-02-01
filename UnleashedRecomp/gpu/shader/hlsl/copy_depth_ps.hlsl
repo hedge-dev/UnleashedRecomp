@@ -1,8 +1,8 @@
 #include "copy_common.hlsli"
 
-Texture2D<float4> g_Texture2DDescriptorHeap[] : register(t0, space0);
+Texture2D<float> g_Texture2DDescriptorHeap[] : register(t0, space0);
 
-float4 main(in float4 position : SV_Position) : SV_Target
+float shaderMain(in float4 position : SV_Position) : SV_Depth
 {
     return g_Texture2DDescriptorHeap[g_PushConstants.ResourceDescriptorIndex].Load(int3(position.xy, 0));
 }

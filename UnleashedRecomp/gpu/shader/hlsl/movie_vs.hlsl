@@ -1,6 +1,6 @@
 #include "movie_common.hlsli"
 
-Interpolators main(in VertexShaderInput In)
+Interpolators shaderMain(in VertexShaderInput In)
 {
     Interpolators Out;
     Out.ProjPos = In.ObjPos;
