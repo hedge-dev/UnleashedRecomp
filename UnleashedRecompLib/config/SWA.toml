@@ -1153,3 +1153,8 @@ registers = ["f1"]
 name = "CEvilSonicContext_CStateWall_LeaveRotationMidAsmHook"
 address = 0x82406774
 registers = ["f1"]
+
+[[midasm_hook]]
+name = "AdvertiseLogoPlacementMidAsmHook"
+address = 0x82B729A0
+registers = ["f0", "f13", "f12", "f11"]
