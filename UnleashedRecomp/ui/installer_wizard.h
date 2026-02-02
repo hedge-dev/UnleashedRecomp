@@ -5,6 +5,7 @@
 struct InstallerWizard
 {
     static inline bool s_isVisible = false;
+    static inline bool s_returnToTitle = false;
 
     static void Init();
     static void Draw();

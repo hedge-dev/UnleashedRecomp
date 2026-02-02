@@ -337,7 +337,14 @@ int main(int argc, char *argv[])
 
         if (!InstallerWizard::Run(GetGamePath(), isGameInstalled && forceDLCInstaller))
         {
-            std::_Exit(0);
+            if (!forceDLCInstaller)
+            {
+                std::_Exit(0);
+            }
+            else
+            {
+                InstallerWizard::s_returnToTitle = true;
+            }
         }
     }
 
