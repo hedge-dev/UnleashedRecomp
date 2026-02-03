@@ -162,7 +162,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        preset: ["flatpak-debug", "flatpak-release"]
+        preset: ["Flatpak-Debug", "Flatpak-Release"]
     env:
       FLATPAK_ID: io.github.hedge_dev.unleashedrecomp
 
@@ -207,7 +207,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UnleashedRecomp-Flatpak
+          name: UnleashedRecomp-${{ matrix.preset }}
           path: ./${{ env.FLATPAK_ID }}.flatpak
   build-macos:
     name: Build macOS
