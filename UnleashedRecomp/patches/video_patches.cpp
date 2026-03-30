@@ -69,6 +69,37 @@ bool MotionBlurMidAsmHook()
     return Config::MotionBlur != EMotionBlur::Off;
 }
 
+// Xenia patch 0x82BAD958
+void DisableShadowMapsMidAsmHook(PPCRegister& r11)
+{
+    if (Config::DisableShadowMaps)
+        r11.u64 = 0;
+}
+
+bool DisableShadowMapsEarlyMidAsmHook()
+{
+    return Config::DisableShadowMaps;
+}
+
+// Xenia patch 0x82BB20F8
+void DisableDepthOfFieldInitMidAsmHook(PPCRegister& r11)
+{
+    if (Config::DisableDepthOfField)
+        r11.u64 = 0;
+}
+
+// Xenia patch 0x82BB21A4
+bool DisableDepthOfFieldStoreMidAsmHook()
+{
+    return Config::DisableDepthOfField;
+}
+
+// Xenia patch 0x82FC1F28
+bool DisableRadialBlurMidAsmHook()
+{
+    return Config::DisableRadialBlur;
+}
+
 // Hedgehog::MirageDebug::PrepareRenderPrimitive2D
 PPC_FUNC_IMPL(__imp__sub_830D25D8);
 PPC_FUNC(sub_830D25D8)

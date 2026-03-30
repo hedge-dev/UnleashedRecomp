@@ -92,6 +92,17 @@ address = 0x82BAD87C
 registers = ["r11"]
 
 [[midasm_hook]]
+name = "DisableShadowMapsEarlyMidAsmHook"
+address = 0x82BAD954
+jump_address_on_true = 0x82BADBE8
+
+[[midasm_hook]]
+name = "DisableShadowMapsMidAsmHook"
+address = 0x82BAD958
+registers = ["r11"]
+after_instruction = true
+
+[[midasm_hook]]
 name = "CameraAspectRatioMidAsmHook"
 address = 0x82468E78
 registers = ["r30", "r31"]
@@ -470,6 +481,17 @@ registers = ["r4", "f1", "f2"]
 name = "PostProcessResolutionFix"
 address = 0x82BA4064
 registers = ["r4", "f1", "f2"]
+
+[[midasm_hook]]
+name = "DisableDepthOfFieldInitMidAsmHook"
+address = 0x82BB20F8
+registers = ["r11"]
+after_instruction = true
+
+[[midasm_hook]]
+name = "DisableDepthOfFieldStoreMidAsmHook"
+address = 0x82BB21A4
+jump_address_on_true = 0x82BB21A8
 
 # Light shaft resolution fix
 [[midasm_hook]]
@@ -1079,6 +1101,11 @@ registers = ["r30", "f30"]
 name = "SparkleLocusMidAsmHook"
 address = 0x82E96804
 jump_address_on_true = 0x82E96808
+
+[[midasm_hook]]
+name = "DisableRadialBlurMidAsmHook"
+address = 0x82FC1F28
+jump_address_on_true = 0x82FC1F2C
 
 # Rooftop Run barrel fix (works at up to ~400 FPS)
 [[midasm_hook]]
