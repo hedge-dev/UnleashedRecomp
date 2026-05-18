@@ -7,6 +7,9 @@ IPA_DIR="$ROOT/out/ipa"
 PAYLOAD_DIR="$IPA_DIR/Payload"
 APP_PATH="$BUILD_DIR/Unleashed Recompiled.app"
 IPA_PATH="$IPA_DIR/UnleashedRecompiled.ipa"
+DEFAULT_SIGNING_IDENTITY="Apple Development: aroblesalago@gmail.com (MK28YRUCCG)"
+
+"$ROOT/tools/apply_ios_submodule_patches.sh"
 
 missing=0
 for file in \
@@ -20,6 +23,7 @@ for file in \
 done
 
 if [[ "$missing" -ne 0 ]]; then
+    printf '\nAdd these files from your own compatible Sonic Unleashed Xbox 360 dump before building an IPA.\n' >&2
     exit 1
 fi
 
@@ -35,11 +39,24 @@ rm -rf "$IPA_DIR"
 mkdir -p "$PAYLOAD_DIR"
 cp -R "$APP_PATH" "$PAYLOAD_DIR/"
 
-if [[ -n "${MOBILEPROVISION:-}" ]]; then
-    cp "$MOBILEPROVISION" "$PAYLOAD_DIR/Unleashed Recompiled.app/embedded.mobileprovision"
+if [[ -z "${CODESIGN_IDENTITY:-}" ]] && security find-identity -v -p codesigning | grep -q "$DEFAULT_SIGNING_IDENTITY"; then
+    CODESIGN_IDENTITY="$DEFAULT_SIGNING_IDENTITY"
+fi
+
+if [[ -n "${MOBILEPROVISION:-}" && ! -f "${MOBILEPROVISION:-}" ]]; then
+    printf 'Provisioning profile not found: %s\n' "$MOBILEPROVISION" >&2
+    exit 1
 fi
 
 if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
+    if [[ -z "${MOBILEPROVISION:-}" ]]; then
+        printf 'CODESIGN_IDENTITY is set, but MOBILEPROVISION is not. Producing an unsigned IPA for sideloading tools that sign on import.\n' >&2
+    else
+        cp "$MOBILEPROVISION" "$PAYLOAD_DIR/Unleashed Recompiled.app/embedded.mobileprovision"
+    fi
+fi
+
+if [[ -n "${CODESIGN_IDENTITY:-}" && -n "${MOBILEPROVISION:-}" ]]; then
     codesign --force --sign "$CODESIGN_IDENTITY" \
         ${ENTITLEMENTS:+--entitlements "$ENTITLEMENTS"} \
         "$PAYLOAD_DIR/Unleashed Recompiled.app"

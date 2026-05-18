@@ -1,0 +1,72 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6a7645a..bf336b9 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -8,10 +8,16 @@ if(APPLE)
+ endif()
+ 
+ string(COMPARE EQUAL ${CMAKE_SYSTEM_NAME} "Linux" IS_LINUX)
++string(COMPARE EQUAL ${CMAKE_SYSTEM_NAME} "iOS" IS_IOS)
++if(IS_LINUX OR IS_IOS)
++    set(IS_SDL_VULKAN_PLATFORM ON)
++else()
++    set(IS_SDL_VULKAN_PLATFORM OFF)
++endif()
+ 
+ # Project options
+ include(CMakeDependentOption)
+-cmake_dependent_option(SDL_VULKAN_ENABLED "Enable SDL Vulkan integration" OFF IS_LINUX OFF)
++cmake_dependent_option(SDL_VULKAN_ENABLED "Enable SDL Vulkan integration" OFF IS_SDL_VULKAN_PLATFORM OFF)
+ cmake_dependent_option(D3D12_AGILITY_SDK_ENABLED "Enable D3D12 Agility SDK" OFF WIN32 OFF)
+ option(PLUME_BUILD_EXAMPLES "Build example applications" OFF)
+ 
+diff --git a/plume_vulkan.cpp b/plume_vulkan.cpp
+index 9103ca8..02c3591 100644
+--- a/plume_vulkan.cpp
++++ b/plume_vulkan.cpp
+@@ -2112,6 +2112,12 @@ namespace plume {
+             fprintf(stderr, "vkCreateXlibSurfaceKHR failed with error code 0x%X.\n", res);
+             return;
+         }
++#   elif defined(__APPLE__) && defined(SDL_VULKAN_ENABLED)
++        VulkanInterface *renderInterface = commandQueue->device->renderInterface;
++        if (!SDL_Vulkan_CreateSurface(renderWindow, renderInterface->instance, &surface)) {
++            fprintf(stderr, "SDL_Vulkan_CreateSurface failed: %s.\n", SDL_GetError());
++            return;
++        }
+ #   elif defined(__APPLE__)
+         assert(renderWindow.window != 0);
+         assert(renderWindow.view != 0);
+@@ -2443,7 +2449,7 @@ namespace plume {
+         // The attributes width and height members do not include the border.
+         dstWidth = attributes.width;
+         dstHeight = attributes.height;
+-#   elif defined(__APPLE__)
++#   elif defined(__APPLE__) && !defined(SDL_VULKAN_ENABLED)
+         CocoaWindowAttributes attributes;
+         windowWrapper->getWindowAttributes(&attributes);
+         dstWidth = attributes.width;
+diff --git a/plume_vulkan.h b/plume_vulkan.h
+index 73022bb..9d89adf 100644
+--- a/plume_vulkan.h
++++ b/plume_vulkan.h
+@@ -22,8 +22,10 @@
+ #define VK_USE_PLATFORM_XLIB_KHR
+ #elif defined(__APPLE__)
+ #define VK_USE_PLATFORM_METAL_EXT
++#ifndef SDL_VULKAN_ENABLED
+ #include "plume_apple.h"
+ #endif
++#endif
+ 
+ // For VK_KHR_portability_subset
+ #define VK_ENABLE_BETA_EXTENSIONS
+@@ -226,7 +228,7 @@ namespace plume {
+         VulkanCommandQueue *commandQueue = nullptr;
+         VkSurfaceKHR surface = VK_NULL_HANDLE;
+         RenderWindow renderWindow = {};
+-#if defined(__APPLE__)
++#if defined(__APPLE__) && !defined(SDL_VULKAN_ENABLED)
+         std::unique_ptr<CocoaWindow> windowWrapper;
+ #endif
+         uint32_t textureCount = 0;
