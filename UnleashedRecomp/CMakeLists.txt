@@ -318,6 +318,20 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "iOS")
     )
     string(REGEX REPLACE "^v" "" IOS_BUNDLE_VERSION "${IOS_BUNDLE_VERSION}")
 
+    set(UNLEASHED_RECOMP_IOS_ICON_FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon20x20@2x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon20x20@3x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon29x29@2x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon29x29@3x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon40x40@2x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon40x40@3x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon60x60@2x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon60x60@3x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon76x76.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon76x76@2x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon83.5x83.5@2x.png"
+    )
+
     add_executable(UnleashedRecomp MACOSX_BUNDLE
         ${UNLEASHED_RECOMP_CXX_SOURCES}
     )
@@ -332,6 +346,13 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "iOS")
         XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
         XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
     )
+    foreach(UNLEASHED_RECOMP_IOS_ICON_FILE IN LISTS UNLEASHED_RECOMP_IOS_ICON_FILES)
+        add_custom_command(TARGET UnleashedRecomp POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${UNLEASHED_RECOMP_IOS_ICON_FILE}"
+                "$<TARGET_BUNDLE_DIR:UnleashedRecomp>"
+        )
+    endforeach()
 elseif (APPLE)
     # Create version number for app bundle.
     CreateVersionString(
