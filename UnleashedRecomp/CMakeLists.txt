@@ -1,10 +1,10 @@
 project("UnleashedRecomp")
 
-if (WIN32)
+if(WIN32)
     option(UNLEASHED_RECOMP_D3D12 "Add D3D12 support for rendering" ON)
 endif()
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     option(UNLEASHED_RECOMP_FLATPAK "Configure the build for Flatpak compatibility." OFF)
 endif()
 
@@ -27,15 +27,40 @@ function(BIN2C)
         set(BIN2C_ARGS_COMPRESSION_TYPE "none")
     endif()
 
-    add_custom_command(OUTPUT "${BIN2C_ARGS_DEST_FILE}.c"
-        COMMAND $<TARGET_FILE:file_to_c> "${BIN2C_ARGS_SOURCE_FILE}" "${BIN2C_ARGS_ARRAY_NAME}" "${BIN2C_ARGS_COMPRESSION_TYPE}" "${BIN2C_ARGS_DEST_FILE}.c" "${BIN2C_ARGS_DEST_FILE}.h"
-        DEPENDS "${BIN2C_ARGS_SOURCE_FILE}"
-        BYPRODUCTS "${BIN2C_ARGS_DEST_FILE}.h"
-        COMMENT "Generating binary header for ${BIN2C_ARGS_SOURCE_FILE}..."
-    )
+    if(NOT CMAKE_CROSSCOMPILING)
+        add_custom_command(OUTPUT "${BIN2C_ARGS_DEST_FILE}.c"
+            COMMAND $<TARGET_FILE:file_to_c> "${BIN2C_ARGS_SOURCE_FILE}" "${BIN2C_ARGS_ARRAY_NAME}" "${BIN2C_ARGS_COMPRESSION_TYPE}" "${BIN2C_ARGS_DEST_FILE}.c" "${BIN2C_ARGS_DEST_FILE}.h"
+            DEPENDS "${BIN2C_ARGS_SOURCE_FILE}"
+            BYPRODUCTS "${BIN2C_ARGS_DEST_FILE}.h"
+            COMMENT "Generating binary header for ${BIN2C_ARGS_SOURCE_FILE}..."
+        )
+    else()
+        # When cross-compiling, build a host-native file_to_c out-of-tree and invoke it
+        set(HOST_FILE_TO_C_BUILD_DIR "${CMAKE_BINARY_DIR}/host-tools/file_to_c")
+        set(HOST_FILE_TO_C_BIN "${HOST_FILE_TO_C_BUILD_DIR}/file_to_c")
+
+        add_custom_command(OUTPUT "${BIN2C_ARGS_DEST_FILE}.c"
+            COMMAND ${CMAKE_COMMAND} -S "${CMAKE_SOURCE_DIR}/tools/file_to_c" -B "${HOST_FILE_TO_C_BUILD_DIR}"
+            -G "${CMAKE_GENERATOR}"
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/host-tools/install
+            COMMAND ${CMAKE_COMMAND} --build "${HOST_FILE_TO_C_BUILD_DIR}" --config ${CMAKE_BUILD_TYPE}
+            COMMAND "${HOST_FILE_TO_C_BIN}" "${BIN2C_ARGS_SOURCE_FILE}" "${BIN2C_ARGS_ARRAY_NAME}" "${BIN2C_ARGS_COMPRESSION_TYPE}" "${BIN2C_ARGS_DEST_FILE}.c" "${BIN2C_ARGS_DEST_FILE}.h"
+            DEPENDS "${BIN2C_ARGS_SOURCE_FILE}"
+            BYPRODUCTS "${BIN2C_ARGS_DEST_FILE}.h"
+            COMMENT "Cross: building host file_to_c and generating binary header for ${BIN2C_ARGS_SOURCE_FILE}..."
+            USES_TERMINAL
+        )
+    endif()
+
+    set(_bin2c_target ${BIN2C_ARGS_TARGET_OBJ})
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET UnleashedRecompIOSLauncher)
+        set(_bin2c_target UnleashedRecompIOSLauncher)
+    endif()
 
     set_source_files_properties(${BIN2C_ARGS_DEST_FILE}.c PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
-    target_sources(${BIN2C_ARGS_TARGET_OBJ} PRIVATE ${BIN2C_ARGS_DEST_FILE}.c)
+    target_sources(${_bin2c_target} PRIVATE ${BIN2C_ARGS_DEST_FILE}.c)
 endfunction()
 
 add_compile_options(
@@ -52,7 +77,7 @@ add_compile_options(
     -Wno-tautological-undefined-compare
 )
 
-if (WIN32)
+if(WIN32)
     add_compile_options(/fp:strict)
 else()
     add_compile_options(-ffp-model=strict)
@@ -81,7 +106,7 @@ set(UNLEASHED_RECOMP_LOCALE_CXX_SOURCES
     "locale/locale.cpp"
 )
 
-if (WIN32)
+if(WIN32)
     set(UNLEASHED_RECOMP_OS_CXX_SOURCES
         "os/win32/logger_win32.cpp"
         "os/win32/media_win32.cpp"
@@ -89,7 +114,7 @@ if (WIN32)
         "os/win32/user_win32.cpp"
         "os/win32/version_win32.cpp"
     )
-elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
+elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(UNLEASHED_RECOMP_OS_CXX_SOURCES
         "os/linux/logger_linux.cpp"
         "os/linux/media_linux.cpp"
@@ -97,7 +122,7 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
         "os/linux/user_linux.cpp"
         "os/linux/version_linux.cpp"
     )
-elseif (APPLE)
+elseif(APPLE)
     set(UNLEASHED_RECOMP_OS_CXX_SOURCES
         "os/macos/logger_macos.cpp"
         "os/macos/media_macos.cpp"
@@ -229,7 +254,8 @@ set(UNLEASHED_RECOMP_CXX_SOURCES
     "sdl_listener.cpp"
     "stdafx.cpp"
     "version.cpp"
-    
+    "apple_utils.mm"
+
     ${UNLEASHED_RECOMP_KERNEL_CXX_SOURCES}
     ${UNLEASHED_RECOMP_LOCALE_CXX_SOURCES}
     ${UNLEASHED_RECOMP_OS_CXX_SOURCES}
@@ -251,7 +277,8 @@ set(VERSION_TXT "${PROJECT_SOURCE_DIR}/res/version.txt")
 
 # Only show Git info and build type if not Release.
 set(SHOW_GIT_INFO_AND_BUILD_TYPE 0)
-if (NOT ${CMAKE_BUILD_TYPE} MATCHES "Release")
+
+if(NOT ${CMAKE_BUILD_TYPE} MATCHES "Release")
     set(SHOW_GIT_INFO_AND_BUILD_TYPE 1)
 endif()
 
@@ -265,7 +292,7 @@ GenerateVersionSources(
     SHOW_BUILD_TYPE ${SHOW_GIT_INFO_AND_BUILD_TYPE}
 )
 
-if (WIN32)
+if(WIN32)
     # Create binary version number for Win32 integer attributes.
     CreateVersionString(
         VERSION_TXT ${VERSION_TXT}
@@ -289,15 +316,17 @@ if (WIN32)
     add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES} "${CMAKE_BINARY_DIR}/res.rc")
 
     # Hide console for release configurations.
-    if (${CMAKE_BUILD_TYPE} MATCHES "Release")
+    if(${CMAKE_BUILD_TYPE} MATCHES "Release")
         target_link_options(UnleashedRecomp PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
     endif()
-elseif (APPLE)
+elseif(APPLE)
     # Create version number for app bundle.
     CreateVersionString(
         VERSION_TXT ${VERSION_TXT}
         OUTPUT_VAR MACOS_BUNDLE_VERSION
     )
+
+    set(IOS_BUNDLE_VERSION ${MACOS_BUNDLE_VERSION})
 
     add_executable(UnleashedRecomp MACOSX_BUNDLE
         ${UNLEASHED_RECOMP_CXX_SOURCES}
@@ -313,7 +342,84 @@ elseif (APPLE)
         MACOSX_BUNDLE_BUNDLE_VERSION ${MACOS_BUNDLE_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${MACOS_BUNDLE_VERSION}
         MACOSX_BUNDLE_ICON_FILE "game_icon.icns"
+        MACOSX_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}"
     )
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+        set_target_properties(UnleashedRecomp PROPERTIES
+            EXCLUDE_FROM_ALL TRUE
+            EXCLUDE_FROM_DEFAULT_BUILD TRUE
+        )
+    endif()
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+        add_executable(UnleashedRecompIOSLauncher MACOSX_BUNDLE
+            ${UNLEASHED_RECOMP_CXX_SOURCES}
+            "ios/launcher_main.mm"
+        )
+        set_target_properties(UnleashedRecompIOSLauncher PROPERTIES
+            OUTPUT_NAME "Unleashed Recompiled iOS"
+            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/ios/iOSBundleInfo.plist.in
+            MACOSX_BUNDLE_GUI_IDENTIFIER hedge-dev.UnleashedRecomp.iOSLauncher
+            MACOSX_BUNDLE_BUNDLE_NAME "Unleashed Recompiled"
+            MACOSX_BUNDLE_BUNDLE_VERSION ${IOS_BUNDLE_VERSION}
+            MACOSX_BUNDLE_SHORT_VERSION_STRING ${IOS_BUNDLE_VERSION}
+            MACOSX_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}"
+        )
+
+        set_target_properties(UnleashedRecompIOSLauncher PROPERTIES
+            OUTPUT_NAME "Unleashed Recompiled iOS"
+            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/ios/iOSBundleInfo.plist.in
+            MACOSX_BUNDLE_GUI_IDENTIFIER hedge-dev.UnleashedRecomp.iOSLauncher
+            MACOSX_BUNDLE_BUNDLE_NAME "Unleashed Recompiled"
+            MACOSX_BUNDLE_BUNDLE_VERSION ${IOS_BUNDLE_VERSION}
+            MACOSX_BUNDLE_SHORT_VERSION_STRING ${IOS_BUNDLE_VERSION}
+            XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
+            XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}"
+        )
+
+        target_compile_definitions(UnleashedRecompIOSLauncher PRIVATE
+            UNLEASHED_RECOMP_IOS_LAUNCHER
+        )
+
+        set(MVK_FRAMEWORK_PATH "Frameworks/MoltenVK.framework")
+        set(MVK_ICD_PATH "vulkan/icd.d")
+
+        set(MVK_APP_DIR "$<TARGET_BUNDLE_DIR:UnleashedRecompIOSLauncher>")
+        set(MVK_FRAMEWORK_DST "${MVK_APP_DIR}/${MVK_FRAMEWORK_PATH}")
+        set(MVK_ICD_DST "${MVK_APP_DIR}/${MVK_ICD_PATH}")
+
+        set_target_properties(UnleashedRecompIOSLauncher PROPERTIES
+            BUILD_RPATH "@executable_path/Frameworks"
+            INSTALL_RPATH "@executable_path/Frameworks"
+        )
+
+        set(MVK_ICD_SRC "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json")
+
+        set(MVK_FRAMEWORK_SRC
+            "${CMAKE_BINARY_DIR}/thirdparty/MoltenVK/MoltenVK.framework"
+        )
+
+        add_custom_command(
+            TARGET UnleashedRecompIOSLauncher POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${MVK_FRAMEWORK_DST}"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${MVK_FRAMEWORK_SRC}"
+            "${MVK_FRAMEWORK_DST}"
+            COMMENT "Copying MoltenVK.framework into iOS app bundle"
+        )
+
+        add_custom_command(
+            TARGET UnleashedRecompIOSLauncher POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${MVK_APP_DIR}/vulkan/icd.d"
+            COMMAND ${CMAKE_COMMAND} -E copy
+            "${MVK_ICD_SRC}"
+            "${MVK_APP_DIR}/vulkan/icd.d/MoltenVK_icd.json"
+            COMMENT "Copying MoltenVK ICD"
+        )
+
+        add_dependencies(UnleashedRecompIOSLauncher MoltenVK)
+    endif()
 
     # Linking with MoltenVK directly would prevent using the system Vulkan loader to load with debug layers.
     # Instead, copy the MoltenVK dylib to the app bundle along with an ICD file for the loader to find it.
@@ -324,7 +430,7 @@ elseif (APPLE)
 
     set(MVK_ICD_SRC "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json")
     set(MVK_ICD_DST "${MVK_DST}/MoltenVK_icd.json")
-    set(MVK_DYLIB_SRC "${CMAKE_BINARY_DIR}/thirdparty/MoltenVK/libMoltenVK.dylib")
+    set(MVK_DYLIB_SRC "${CMAKE_BINARY_DIR}/thirdparty/MoltenVK/MoltenVK.framework/MoltenVK")
     set(MVK_DYLIB_DST "${MVK_DST}/libMoltenVK.dylib")
 
     add_custom_command(
@@ -345,16 +451,17 @@ else()
     add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES})
 endif()
 
-if (UNLEASHED_RECOMP_FLATPAK)
-    target_compile_definitions(UnleashedRecomp PRIVATE 
+if(UNLEASHED_RECOMP_FLATPAK)
+    target_compile_definitions(UnleashedRecomp PRIVATE
         "UNLEASHED_RECOMP_FLATPAK"
         "GAME_INSTALL_DIRECTORY=\"/var/data\""
     )
 endif()
 
 find_package(CURL REQUIRED)
+find_package(zstd CONFIG REQUIRED)
 
-if (UNLEASHED_RECOMP_D3D12)
+if(UNLEASHED_RECOMP_D3D12)
     find_package(directx-headers CONFIG REQUIRED)
     find_package(directx12-agility CONFIG REQUIRED)
     target_compile_definitions(UnleashedRecomp PRIVATE UNLEASHED_RECOMP_D3D12)
@@ -375,7 +482,7 @@ if (UNLEASHED_RECOMP_D3D12)
     )
 endif()
 
-if (WIN32)
+if(WIN32)
     target_link_libraries(UnleashedRecomp PRIVATE
         comctl32
         dwmapi
@@ -387,9 +494,9 @@ if (WIN32)
     )
 endif()
 
-target_link_libraries(UnleashedRecomp PRIVATE
+set(UNLEASHED_RECOMP_LINK_LIBS
     fmt::fmt
-    libzstd_static
+    zstd::libzstd
     msdf-atlas-gen::msdf-atlas-gen
     nfd::nfd
     o1heap
@@ -403,13 +510,19 @@ target_link_libraries(UnleashedRecomp PRIVATE
     plume
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    list(APPEND UNLEASHED_RECOMP_LINK_LIBS "-framework UniformTypeIdentifiers")
+endif()
+
+target_link_libraries(UnleashedRecomp PRIVATE ${UNLEASHED_RECOMP_LINK_LIBS})
+
 target_include_directories(UnleashedRecomp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     "${CMAKE_CURRENT_SOURCE_DIR}/api"
     ${UNLEASHED_RECOMP_THIRDPARTY_INCLUDES}
 )
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(X11 REQUIRED)
     target_include_directories(UnleashedRecomp PRIVATE ${X11_INCLUDE_DIR})
     target_link_libraries(UnleashedRecomp PRIVATE ${X11_LIBRARIES})
@@ -417,23 +530,65 @@ endif()
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${UNLEASHED_RECOMP_PRECOMPILED_HEADERS})
 
+if(TARGET UnleashedRecompIOSLauncher)
+    target_link_libraries(UnleashedRecompIOSLauncher PRIVATE ${UNLEASHED_RECOMP_LINK_LIBS})
+    target_include_directories(UnleashedRecompIOSLauncher PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        "${CMAKE_CURRENT_SOURCE_DIR}/api"
+        ${UNLEASHED_RECOMP_THIRDPARTY_INCLUDES}
+    )
+    target_precompile_headers(UnleashedRecompIOSLauncher PUBLIC ${UNLEASHED_RECOMP_PRECOMPILED_HEADERS})
+endif()
+
+# If DXC tool not provided, try to pick up vendored host DXC (used for shader compilation)
+if(NOT DEFINED DIRECTX_DXC_TOOL)
+    set(_dxc_vendor_dir "${CMAKE_SOURCE_DIR}/tools/XenosRecomp/thirdparty/dxc-bin")
+
+    if(EXISTS "${_dxc_vendor_dir}")
+        if(DEFINED CMAKE_HOST_SYSTEM_PROCESSOR)
+            set(_dxc_arch ${CMAKE_HOST_SYSTEM_PROCESSOR})
+        elseif(DEFINED CMAKE_SYSTEM_PROCESSOR)
+            set(_dxc_arch ${CMAKE_SYSTEM_PROCESSOR})
+        else()
+            set(_dxc_arch "x64")
+        endif()
+
+        string(TOLOWER "${_dxc_arch}" _dxc_arch)
+        set(_dxc_bin "${_dxc_vendor_dir}/bin/${_dxc_arch}/dxc-macos")
+        set(_dxc_libdir "${_dxc_vendor_dir}/lib/${_dxc_arch}")
+
+        if(EXISTS "${_dxc_bin}")
+            set(DIRECTX_DXC_TOOL "DYLD_LIBRARY_PATH=${_dxc_libdir}" "${_dxc_bin}" CACHE INTERNAL "Location of the dxc tool for shader compilation")
+            message(STATUS "Using vendored DXC: ${_dxc_bin}")
+        endif()
+    endif()
+endif()
+
 function(compile_shader FILE_PATH TARGET_NAME)
     set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/${FILE_PATH}.hlsl)
     cmake_path(GET FILE_PATH STEM VARIABLE_NAME)
-    if (UNLEASHED_RECOMP_D3D12)
+
+    set(_shader_target UnleashedRecomp)
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET UnleashedRecompIOSLauncher)
+        set(_shader_target UnleashedRecompIOSLauncher)
+    endif()
+
+    if(UNLEASHED_RECOMP_D3D12)
         add_custom_command(
             OUTPUT ${FILE_PATH}.dxil.h
             COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil
             DEPENDS ${FILE_PATH}
         )
-        target_sources(UnleashedRecomp PRIVATE ${FILE_PATH}.dxil.h)
+        target_sources(${_shader_target} PRIVATE ${FILE_PATH}.dxil.h)
     endif()
+
     add_custom_command(
         OUTPUT ${FILE_PATH}.spirv.h
         COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -Fh ${FILE_PATH}.spirv.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_spirv
         DEPENDS ${FILE_PATH}
     )
-    target_sources(UnleashedRecomp PRIVATE ${FILE_PATH}.spirv.h)
+    target_sources(${_shader_target} PRIVATE ${FILE_PATH}.spirv.h)
 endfunction()
 
 function(compile_vertex_shader FILE_PATH)
@@ -471,7 +626,7 @@ compile_pixel_shader(resolve_msaa_depth_8x)
 set(RESOURCES_SOURCE_PATH "${PROJECT_SOURCE_DIR}/../UnleashedRecompResources")
 set(RESOURCES_OUTPUT_PATH "${PROJECT_SOURCE_DIR}/res")
 
-## Miscellaneous ##
+# # Miscellaneous ##
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/bc_diff/button_bc_diff.bin" DEST_FILE "${RESOURCES_OUTPUT_PATH}/bc_diff/button_bc_diff.bin" ARRAY_NAME "g_button_bc_diff" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/font/im_font_atlas.bin" DEST_FILE "${RESOURCES_OUTPUT_PATH}/font/im_font_atlas.bin" ARRAY_NAME "g_im_font_atlas" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/font/im_font_atlas.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/font/im_font_atlas.dds" ARRAY_NAME "g_im_font_atlas_texture" COMPRESSION_TYPE "zstd")
@@ -483,7 +638,7 @@ BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/co
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/common/select.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/common/select.dds" ARRAY_NAME "g_select" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/common/light.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/common/light.dds" ARRAY_NAME "g_light" COMPRESSION_TYPE "zstd")
 
-## Installer ##
+# # Installer ##
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/arrow_circle.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/arrow_circle.dds" ARRAY_NAME "g_arrow_circle" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_001.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_001.dds" ARRAY_NAME "g_install_001" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/install_002.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/install_002.dds" ARRAY_NAME "g_install_002" COMPRESSION_TYPE "zstd")
@@ -496,7 +651,7 @@ BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/in
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/miles_electric_icon.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/miles_electric_icon.dds" ARRAY_NAME "g_miles_electric_icon" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/installer/pulse_install.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/installer/pulse_install.dds" ARRAY_NAME "g_pulse_install" COMPRESSION_TYPE "zstd")
 
-## Options Menu ##
+# # Options Menu ##
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/options_menu/thumbnails/achievement_notifications.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/options_menu/thumbnails/achievement_notifications.dds" ARRAY_NAME "g_achievement_notifications" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/options_menu/thumbnails/allow_background_input_ps.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/options_menu/thumbnails/allow_background_input_ps.dds" ARRAY_NAME "g_allow_background_input_ps" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/options_menu/thumbnails/allow_background_input_xb.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/options_menu/thumbnails/allow_background_input_xb.dds" ARRAY_NAME "g_allow_background_input_xb" COMPRESSION_TYPE "zstd")

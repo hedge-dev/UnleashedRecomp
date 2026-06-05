@@ -2769,6 +2769,13 @@ static void ProcDrawImGui(const RenderCommand& cmd)
 // 4. Loading thread presents and quits.
 // 5. After the loading thread quits, application also presents.
 static bool g_pendingWaitOnSwapChain = true;
+void Video::HandleApplicationBackgroundState(bool isBackgrounded)
+{
+    if (isBackgrounded)
+    {
+        g_pendingWaitOnSwapChain = false;
+    }
+}
 
 void Video::WaitOnSwapChain()
 {

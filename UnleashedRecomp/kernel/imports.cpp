@@ -1,3 +1,4 @@
+#include <atomic>
 #include <stdafx.h>
 #include <cpu/ppc_context.h>
 #include <cpu/guest_thread.h>
@@ -10,6 +11,7 @@
 #include <memory>
 #include "xam.h"
 #include "xdm.h"
+#include <thread>
 #include <user/config.h>
 #include <os/logger.h>
 
@@ -678,13 +680,16 @@ uint32_t KeSetAffinityThread(uint32_t Thread, uint32_t Affinity, be<uint32_t>* l
 
 void RtlLeaveCriticalSection(XRTL_CRITICAL_SECTION* cs)
 {
+    uint32_t thisThread = g_ppcContext->r13.u32;
+    assert(thisThread != NULL);
+    std::atomic_ref owningThread(cs->OwningThread);
+
     cs->RecursionCount--;
 
     if (cs->RecursionCount != 0)
         return;
 
-    std::atomic_ref owningThread(cs->OwningThread);
-    owningThread.store(0);
+    owningThread.store(0, std::memory_order_release);
     owningThread.notify_one();
 }
 
@@ -694,18 +699,27 @@ void RtlEnterCriticalSection(XRTL_CRITICAL_SECTION* cs)
     assert(thisThread != NULL);
 
     std::atomic_ref owningThread(cs->OwningThread);
-
-    while (true) 
+    uint32_t currentOwner = owningThread.load(std::memory_order_acquire);
+    while (true)
     {
-        uint32_t previousOwner = 0;
-
-        if (owningThread.compare_exchange_weak(previousOwner, thisThread) || previousOwner == thisThread)
+        if (currentOwner == thisThread)
         {
             cs->RecursionCount++;
             return;
         }
 
-        owningThread.wait(previousOwner);
+        if (currentOwner == 0)
+        {
+           if (owningThread.compare_exchange_weak(currentOwner, thisThread, std::memory_order_acquire, std::memory_order_relaxed))
+           {
+               cs->RecursionCount = 1;
+               return;
+           }
+           continue;
+        }
+
+        owningThread.wait(currentOwner, std::memory_order_relaxed);
+        currentOwner = owningThread.load(std::memory_order_acquire);
     }
 }
 
@@ -1594,7 +1608,7 @@ void XMACreateContext()
 // uint32_t XAudioRegisterRenderDriverClient(be<uint32_t>* callback, be<uint32_t>* driver)
 // {
 //     //printf("XAudioRegisterRenderDriverClient(): %x %x\n");
-// 
+//
 //     *driver = apu::RegisterClient(callback[0], callback[1]);
 //     return 0;
 // }
@@ -1608,7 +1622,7 @@ void XMACreateContext()
 // {
 //     // printf("!!! STUB !!! XAudioSubmitRenderDriverFrame\n");
 //     apu::SubmitFrames(samples);
-// 
+//
 //     return 0;
 // }
 

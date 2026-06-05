@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+
+<plist version="1.0">
+    <dict>
+        <key>CFBundleDevelopmentRegion</key>
+        <string>en</string>
+        <key>CFBundleExecutable</key>
+        <string>Unleashed Recompiled iOS</string>
+        <key>CFBundleIdentifier</key>
+        <string>hedge-dev.UnleashedRecomp</string>
+        <key>CFBundleName</key>
+        <string>Unleashed Recompiled</string>
+        <key>CFBundlePackageType</key>
+        <string>APPL</string>
+        <key>CFBundleShortVersionString</key>
+        <string>@IOS_BUNDLE_VERSION@</string>
+        <key>CFBundleVersion</key>
+        <string>@IOS_BUNDLE_VERSION@</string>
+        <key>MinimumOSVersion</key>
+        <string>@IOS_DEPLOYMENT_TARGET@</string>
+        <key>UIDeviceFamily</key>
+        <array>
+            <integer>1</integer>
+            <integer>2</integer>
+        </array>
+        <key>CFBundleDisplayName</key>
+        <string>Unleashed Recompiled</string>
+        <key>CFBundleIconName</key>
+        <string>AppIcon</string>
+        <key>UIFileSharingEnabled</key>
+        <true />
+        <key>LSSupportsOpeningDocumentsInPlace</key>
+        <true />
+        <key>NSDocumentsFolderUsageDescription</key>
+        <string>Allows access to game files and user-provided content.</string>
+        <key>UIApplicationSupportsIndirectInputEvents</key>
+        <true />
+        <key>LSSupportsGameMode</key>
+        <true />
+        <key>LSApplicationCategoryType</key>
+        <string>public.app-category.action-games</string>
+        <key>UISupportedInterfaceOrientations</key>
+        <array>
+            <string>UIInterfaceOrientationLandscapeLeft</string>
+            <string>UIInterfaceOrientationLandscapeRight</string>
+        </array>
+    </dict>
+</plist>

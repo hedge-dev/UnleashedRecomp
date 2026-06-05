@@ -32,6 +32,10 @@
 #include <timeapi.h>
 #endif
 
+#ifdef __APPLE__
+#include "apple_utils.h"
+#endif
+
 #if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
 static std::array<std::string_view, 3> g_D3D12RequiredModules =
 {
@@ -192,7 +196,11 @@ void init()
 }
 #endif
 
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+int UnleashedMain(int argc, char *argv[])
+#else
 int main(int argc, char *argv[])
+#endif
 {
 #ifdef _WIN32
     timeBeginPeriod(1);
@@ -204,6 +212,13 @@ int main(int argc, char *argv[])
         LOGN_WARNING("OS does not support registry.");
 
     os::logger::Init();
+
+#if TARGET_OS_IOS
+    if (!apple::SupportsBCTextures()) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("System_iOS_UnsupportedGPU_BCTextures").c_str(), GameWindow::s_pWindow);
+        std::_Exit(1);
+    }
+#endif
 
     PreloadContext preloadContext;
     preloadContext.PreloadExecutable();
@@ -234,9 +249,12 @@ int main(int argc, char *argv[])
 
     if (!useDefaultWorkingDirectory)
     {
+#if !defined(TARGET_OS_IPHONE)
         // Set the current working directory to the executable's path.
+        // iOS: CWD is not meaningful in app sandbox; paths must be absolute.
         std::error_code ec;
         std::filesystem::current_path(os::process::GetExecutableRoot(), ec);
+#endif
     }
 
     Config::Load();

@@ -2,13 +2,15 @@
 
 # Prepare MoltenVK Git revision
 find_package(Git)
+
 if(GIT_FOUND)
     execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-            OUTPUT_VARIABLE MVK_GIT_REV
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK
-            ERROR_QUIET
-            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        OUTPUT_VARIABLE MVK_GIT_REV
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
+
 set(MVK_GENERATED_INCLUDES ${CMAKE_CURRENT_BINARY_DIR}/Generated)
 file(WRITE ${MVK_GENERATED_INCLUDES}/mvkGitRevDerived.h "static const char* mvkRevString = \"${MVK_GIT_REV}\";")
 message(STATUS "MoltenVK revision: ${MVK_GIT_REV}")
@@ -25,9 +27,15 @@ set(MVK_VERSION "${MVK_VERSION_MAJOR}.${MVK_VERSION_MINOR}.${MVK_VERSION_PATCH}"
 message(STATUS "MoltenVK version: ${MVK_VERSION}")
 
 # Find required system libraries
-find_library(APPKIT_LIBRARY AppKit REQUIRED)
+if(IOS)
+    find_library(UIKIT_LIBRARY UIKit REQUIRED)
+    find_library(COREGRAPHICS_LIBRARY CoreGraphics REQUIRED)
+else()
+    find_library(APPKIT_LIBRARY AppKit REQUIRED)
+    find_library(IOKIT_LIBRARY IOKit REQUIRED)
+endif()
+
 find_library(FOUNDATION_LIBRARY Foundation REQUIRED)
-find_library(IOKIT_LIBRARY IOKit REQUIRED)
 find_library(IOSURFACE_LIBRARY IOSurface REQUIRED)
 find_library(METAL_LIBRARY Metal REQUIRED)
 find_library(QUARTZCORE_LIBRARY QuartzCore REQUIRED)
@@ -81,6 +89,53 @@ add_library(MoltenVK SHARED ${MVK_SOURCES})
 target_include_directories(MoltenVK PRIVATE ${MVK_INCLUDES})
 target_compile_options(MoltenVK PRIVATE -w)
 target_link_libraries(MoltenVK PRIVATE
-    ${APPKIT_LIBRARY} ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY} ${IOSURFACE_LIBRARY} ${METAL_LIBRARY} ${QUARTZCORE_LIBRARY}
+    ${FOUNDATION_LIBRARY} ${IOSURFACE_LIBRARY} ${METAL_LIBRARY} ${QUARTZCORE_LIBRARY}
     spirv-cross-msl MoltenVKCommon MoltenVKShaderConverter)
-target_compile_definitions(MoltenVK PRIVATE MVK_FRAMEWORK_VERSION=${MVK_VERSION} MVK_USE_CEREAL=0)
+
+if(IOS)
+    target_link_libraries(MoltenVK PRIVATE ${UIKIT_LIBRARY} ${COREGRAPHICS_LIBRARY})
+else()
+    target_link_libraries(MoltenVK PRIVATE ${APPKIT_LIBRARY} ${IOKIT_LIBRARY})
+endif()
+
+target_compile_definitions(MoltenVK PRIVATE
+    MVK_FRAMEWORK_VERSION=${MVK_VERSION}
+    MVK_USE_CEREAL=0
+    VK_USE_PLATFORM_METAL_EXT=1)
+
+set_source_files_properties(
+    ${MVK_SOURCES}
+    PROPERTIES
+    COMPILE_FLAGS "-fno-objc-arc"
+)
+
+set_target_properties(MoltenVK PROPERTIES
+    FRAMEWORK TRUE
+
+    FRAMEWORK_VERSION A
+
+    MACOSX_FRAMEWORK_IDENTIFIER org.moltenvk.MoltenVK
+    MACOSX_FRAMEWORK_BUNDLE_VERSION ${MVK_VERSION}
+    MACOSX_FRAMEWORK_SHORT_VERSION_STRING ${MVK_VERSION}
+
+    PUBLIC_HEADER "${MVK_PUBLIC_HEADERS}"
+
+    POSITION_INDEPENDENT_CODE ON
+
+    XCODE_ATTRIBUTE_DEFINES_MODULE YES
+    XCODE_ATTRIBUTE_DYLIB_INSTALL_NAME_BASE "@rpath"
+
+    BUILD_WITH_INSTALL_RPATH YES
+    INSTALL_RPATH "@executable_path/Frameworks;@loader_path/Frameworks"
+)
+
+if(IOS)
+    set_target_properties(MoltenVK PROPERTIES
+        XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH YES
+        XCODE_ATTRIBUTE_ENABLE_BITCODE NO
+        XCODE_ATTRIBUTE_SKIP_INSTALL NO
+
+        XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET
+        "${CMAKE_OSX_DEPLOYMENT_TARGET}"
+    )
+endif()
