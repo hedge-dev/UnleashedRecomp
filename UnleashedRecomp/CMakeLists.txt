@@ -72,10 +72,15 @@ else()
     add_compile_options(-ffp-model=strict)
 endif()
 
-add_compile_definitions(
-    SDL_MAIN_HANDLED
+set(UNLEASHED_RECOMP_COMPILE_DEFINITIONS
     _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR # Microsoft wtf?
     _CRT_SECURE_NO_WARNINGS)
+
+if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    list(APPEND UNLEASHED_RECOMP_COMPILE_DEFINITIONS SDL_MAIN_HANDLED)
+endif()
+
+add_compile_definitions(${UNLEASHED_RECOMP_COMPILE_DEFINITIONS})
 
 set(UNLEASHED_RECOMP_PRECOMPILED_HEADERS
     "stdafx.h"
@@ -422,6 +427,11 @@ if (WIN32)
     )
 endif()
 
+set(UNLEASHED_RECOMP_SDL_LIBS SDL2::SDL2-static)
+if (CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET SDL2::SDL2main)
+    list(PREPEND UNLEASHED_RECOMP_SDL_LIBS SDL2::SDL2main)
+endif()
+
 target_link_libraries(UnleashedRecomp PRIVATE
     fmt::fmt
     libzstd_static
@@ -429,7 +439,7 @@ target_link_libraries(UnleashedRecomp PRIVATE
     nfd::nfd
     o1heap
     XenonUtils
-    SDL2::SDL2-static
+    ${UNLEASHED_RECOMP_SDL_LIBS}
     SDL2_mixer
     tomlplusplus::tomlplusplus
     UnleashedRecompLib
