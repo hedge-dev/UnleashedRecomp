@@ -311,12 +311,14 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "iOS")
         VERSION_TXT ${VERSION_TXT}
         OUTPUT_VAR IOS_BUNDLE_VERSION
     )
+    string(REGEX REPLACE "^v" "" IOS_BUNDLE_VERSION "${IOS_BUNDLE_VERSION}")
 
     add_executable(UnleashedRecomp MACOSX_BUNDLE
         ${UNLEASHED_RECOMP_CXX_SOURCES}
     )
     set_target_properties(UnleashedRecomp PROPERTIES
         OUTPUT_NAME "Unleashed Recompiled"
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/ios/Info.plist.in
         MACOSX_BUNDLE_GUI_IDENTIFIER hedge-dev.UnleashedRecomp
         MACOSX_BUNDLE_BUNDLE_NAME "Unleashed Recompiled"
         MACOSX_BUNDLE_BUNDLE_VERSION ${IOS_BUNDLE_VERSION}
