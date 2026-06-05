@@ -78,6 +78,8 @@ set(UNLEASHED_RECOMP_COMPILE_DEFINITIONS
 
 if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
     list(APPEND UNLEASHED_RECOMP_COMPILE_DEFINITIONS SDL_MAIN_HANDLED)
+else()
+    list(APPEND UNLEASHED_RECOMP_COMPILE_DEFINITIONS UNLEASHED_RECOMP_IOS)
 endif()
 
 add_compile_definitions(${UNLEASHED_RECOMP_COMPILE_DEFINITIONS})
@@ -115,6 +117,14 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
         "os/linux/process_linux.cpp"
         "os/linux/user_linux.cpp"
         "os/linux/version_linux.cpp"
+    )
+elseif (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    set(UNLEASHED_RECOMP_OS_CXX_SOURCES
+        "os/ios/logger_ios.cpp"
+        "os/ios/media_ios.cpp"
+        "os/ios/process_ios.mm"
+        "os/ios/user_ios.mm"
+        "os/ios/version_ios.mm"
     )
 elseif (APPLE)
     set(UNLEASHED_RECOMP_OS_CXX_SOURCES
@@ -453,6 +463,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET SDL2::SDL2main)
     list(PREPEND UNLEASHED_RECOMP_SDL_LIBS SDL2::SDL2main)
 endif()
 
+set(UNLEASHED_RECOMP_PLATFORM_LIBS)
+if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    list(APPEND UNLEASHED_RECOMP_PLATFORM_LIBS MoltenVK)
+    target_link_options(UnleashedRecomp PRIVATE "LINKER:-u,_vkGetInstanceProcAddr")
+endif()
+
 target_link_libraries(UnleashedRecomp PRIVATE
     fmt::fmt
     libzstd_static
@@ -467,6 +483,7 @@ target_link_libraries(UnleashedRecomp PRIVATE
     xxHash::xxhash
     CURL::libcurl
     plume
+    ${UNLEASHED_RECOMP_PLATFORM_LIBS}
 )
 
 target_include_directories(UnleashedRecomp PRIVATE

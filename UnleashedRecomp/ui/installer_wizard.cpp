@@ -1109,7 +1109,7 @@ static bool ConvertPathSet(const nfdpathset_t *pathSet, std::list<std::filesyste
 
 static void PickerThreadProcess()
 {
-    const nfdpathset_t *pathSet;
+    const nfdpathset_t *pathSet = nullptr;
     nfdresult_t result = NFD_ERROR;
     if (g_currentPickerFolderMode)
     {
@@ -1146,7 +1146,7 @@ static void PickerStart(bool folderMode) {
     g_currentPickerVisible = true;
 
     // Optional single thread mode for testing on systems that do not interact well with the separate thread being used for NFD.
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(UNLEASHED_RECOMP_IOS)
     constexpr bool singleThreadMode = true;
 #else
     constexpr bool singleThreadMode = false;

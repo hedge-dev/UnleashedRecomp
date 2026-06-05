@@ -25,12 +25,33 @@ set(MVK_VERSION "${MVK_VERSION_MAJOR}.${MVK_VERSION_MINOR}.${MVK_VERSION_PATCH}"
 message(STATUS "MoltenVK version: ${MVK_VERSION}")
 
 # Find required system libraries
-find_library(APPKIT_LIBRARY AppKit REQUIRED)
 find_library(FOUNDATION_LIBRARY Foundation REQUIRED)
 find_library(IOKIT_LIBRARY IOKit REQUIRED)
 find_library(IOSURFACE_LIBRARY IOSurface REQUIRED)
 find_library(METAL_LIBRARY Metal REQUIRED)
 find_library(QUARTZCORE_LIBRARY QuartzCore REQUIRED)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    find_library(UIKIT_LIBRARY UIKit REQUIRED)
+    set(MVK_PLATFORM_LIBRARIES
+        ${FOUNDATION_LIBRARY}
+        ${IOKIT_LIBRARY}
+        ${IOSURFACE_LIBRARY}
+        ${METAL_LIBRARY}
+        ${QUARTZCORE_LIBRARY}
+        ${UIKIT_LIBRARY})
+    set(MVK_LIBRARY_TYPE STATIC)
+else()
+    find_library(APPKIT_LIBRARY AppKit REQUIRED)
+    set(MVK_PLATFORM_LIBRARIES
+        ${APPKIT_LIBRARY}
+        ${FOUNDATION_LIBRARY}
+        ${IOKIT_LIBRARY}
+        ${IOSURFACE_LIBRARY}
+        ${METAL_LIBRARY}
+        ${QUARTZCORE_LIBRARY})
+    set(MVK_LIBRARY_TYPE SHARED)
+endif()
 
 # SPIRV-Cross
 option(SPIRV_CROSS_CLI "" OFF)
@@ -77,10 +98,10 @@ set(MVK_INCLUDES
     ${MVK_SRC_INCLUDES} ${MVK_GENERATED_INCLUDES} ${MVK_DIR}/include
     ${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/plume/contrib/Vulkan-Headers/include)
 
-add_library(MoltenVK SHARED ${MVK_SOURCES})
+add_library(MoltenVK ${MVK_LIBRARY_TYPE} ${MVK_SOURCES})
 target_include_directories(MoltenVK PRIVATE ${MVK_INCLUDES})
 target_compile_options(MoltenVK PRIVATE -w)
 target_link_libraries(MoltenVK PRIVATE
-    ${APPKIT_LIBRARY} ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY} ${IOSURFACE_LIBRARY} ${METAL_LIBRARY} ${QUARTZCORE_LIBRARY}
+    ${MVK_PLATFORM_LIBRARIES}
     spirv-cross-msl MoltenVKCommon MoltenVKShaderConverter)
 target_compile_definitions(MoltenVK PRIVATE MVK_FRAMEWORK_VERSION=${MVK_VERSION} MVK_USE_CEREAL=0)
