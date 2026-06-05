@@ -13,8 +13,10 @@
 #include "xcontent_file_system.h"
 
 #include <bit>
+#include <fstream>
 #include <set>
 #include <stack>
+#include <xbox.h>
 
 enum class XContentPackageType
 {

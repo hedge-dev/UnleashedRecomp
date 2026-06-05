@@ -1,5 +1,19 @@
 project("UnleashedRecomp")
 
+set(UNLEASHED_RECOMP_HOST_TOOLS_DIR "" CACHE PATH "Directory containing host-built recompilation tools.")
+
+function(unleashed_recomp_resolve_tool OUT_VAR TARGET_NAME RELATIVE_PATH)
+    if (UNLEASHED_RECOMP_HOST_TOOLS_DIR)
+        set(${OUT_VAR} "${UNLEASHED_RECOMP_HOST_TOOLS_DIR}/${RELATIVE_PATH}" PARENT_SCOPE)
+    elseif (TARGET ${TARGET_NAME})
+        set(${OUT_VAR} "$<TARGET_FILE:${TARGET_NAME}>" PARENT_SCOPE)
+    else()
+        message(FATAL_ERROR "Tool ${TARGET_NAME} is not available. Set UNLEASHED_RECOMP_HOST_TOOLS_DIR.")
+    endif()
+endfunction()
+
+unleashed_recomp_resolve_tool(UNLEASHED_RECOMP_FILE_TO_C_TOOL file_to_c "tools/file_to_c/file_to_c")
+
 if (WIN32)
     option(UNLEASHED_RECOMP_D3D12 "Add D3D12 support for rendering" ON)
 endif()
@@ -28,7 +42,7 @@ function(BIN2C)
     endif()
 
     add_custom_command(OUTPUT "${BIN2C_ARGS_DEST_FILE}.c"
-        COMMAND $<TARGET_FILE:file_to_c> "${BIN2C_ARGS_SOURCE_FILE}" "${BIN2C_ARGS_ARRAY_NAME}" "${BIN2C_ARGS_COMPRESSION_TYPE}" "${BIN2C_ARGS_DEST_FILE}.c" "${BIN2C_ARGS_DEST_FILE}.h"
+        COMMAND "${UNLEASHED_RECOMP_FILE_TO_C_TOOL}" "${BIN2C_ARGS_SOURCE_FILE}" "${BIN2C_ARGS_ARRAY_NAME}" "${BIN2C_ARGS_COMPRESSION_TYPE}" "${BIN2C_ARGS_DEST_FILE}.c" "${BIN2C_ARGS_DEST_FILE}.h"
         DEPENDS "${BIN2C_ARGS_SOURCE_FILE}"
         BYPRODUCTS "${BIN2C_ARGS_DEST_FILE}.h"
         COMMENT "Generating binary header for ${BIN2C_ARGS_SOURCE_FILE}..."

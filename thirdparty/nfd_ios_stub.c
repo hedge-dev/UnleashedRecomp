@@ -6,6 +6,7 @@ static const char* g_nfd_ios_error = "Native file dialogs are not implemented fo
 nfdresult_t NFD_Init(void) { return NFD_OKAY; }
 void NFD_Quit(void) {}
 const char* NFD_GetError(void) { return g_nfd_ios_error; }
+void NFD_ClearError(void) {}
 
 void NFD_FreePathN(nfdnchar_t* filePath) { free(filePath); }
 void NFD_FreePathU8(nfdu8char_t* filePath) { free(filePath); }
@@ -37,6 +38,6 @@ void NFD_PathSet_FreePathN(const nfdnchar_t* filePath) { free((void*)filePath); 
 void NFD_PathSet_FreePathU8(const nfdu8char_t* filePath) { free((void*)filePath); }
 void NFD_PathSet_Free(const nfdpathset_t* pathSet) { (void)pathSet; }
 void NFD_PathSet_FreeEnum(nfdpathsetenum_t* enumerator) { (void)enumerator; }
-nfdresult_t NFD_PathSet_GetEnum(const nfdpathset_t* pathSet, nfdpathsetenum_t** outEnumerator) { (void)pathSet; (void)outEnumerator; return NFD_ERROR; }
+nfdresult_t NFD_PathSet_GetEnum(const nfdpathset_t* pathSet, nfdpathsetenum_t* outEnumerator) { (void)pathSet; (void)outEnumerator; return NFD_ERROR; }
 nfdresult_t NFD_PathSet_EnumNextN(nfdpathsetenum_t* enumerator, nfdnchar_t** outPath) { (void)enumerator; (void)outPath; return NFD_ERROR; }
 nfdresult_t NFD_PathSet_EnumNextU8(nfdpathsetenum_t* enumerator, nfdu8char_t** outPath) { (void)enumerator; (void)outPath; return NFD_ERROR; }

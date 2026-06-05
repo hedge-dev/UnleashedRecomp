@@ -177,6 +177,8 @@
                 "CMAKE_OSX_SYSROOT": "iphonesimulator",
                 "CMAKE_OSX_ARCHITECTURES": "arm64",
                 "CMAKE_BUILD_TYPE": "Debug",
+                "UNLEASHED_RECOMP_SKIP_TARGET_TOOL_EXECUTABLES": true,
+                "UNLEASHED_RECOMP_HOST_TOOLS_DIR": "${sourceDir}/out/build/macos-release",
                 "CMAKE_TOOLCHAIN_FILE": {
                     "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
                     "type": "FILEPATH"
@@ -207,6 +209,8 @@
                 "CMAKE_OSX_ARCHITECTURES": "arm64",
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_INTERPROCEDURAL_OPTIMIZATION": true,
+                "UNLEASHED_RECOMP_SKIP_TARGET_TOOL_EXECUTABLES": true,
+                "UNLEASHED_RECOMP_HOST_TOOLS_DIR": "${sourceDir}/out/build/macos-release",
                 "CMAKE_TOOLCHAIN_FILE": {
                     "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
                     "type": "FILEPATH"

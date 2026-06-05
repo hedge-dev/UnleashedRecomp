@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 6a7645a..bf336b9 100644
+index 6a7645a..6e6e887 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -8,10 +8,16 @@ if(APPLE)
@@ -20,6 +20,24 @@ index 6a7645a..bf336b9 100644
  cmake_dependent_option(D3D12_AGILITY_SDK_ENABLED "Enable D3D12 Agility SDK" OFF WIN32 OFF)
  option(PLUME_BUILD_EXAMPLES "Build example applications" OFF)
  
+@@ -50,7 +56,7 @@ set(PLUME_SOURCES
+ )
+ 
+ # Platform-specific files
+-if(APPLE)
++if(APPLE AND NOT IS_IOS)
+     list(APPEND PLUME_SOURCES
+         plume_metal.cpp
+         plume_metal.h
+@@ -94,7 +100,7 @@ if(D3D12_AGILITY_SDK_ENABLED)
+ endif()
+ 
+ # Platform-specific includes
+-if(APPLE)
++if(APPLE AND NOT IS_IOS)
+     target_include_directories(plume PRIVATE
+         ${CMAKE_CURRENT_SOURCE_DIR}/contrib/metal-cpp
+     )
 diff --git a/plume_vulkan.cpp b/plume_vulkan.cpp
 index 9103ca8..02c3591 100644
 --- a/plume_vulkan.cpp

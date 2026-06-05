@@ -3,13 +3,34 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$ROOT/out/build/ios-device-release"
+HOST_BUILD_DIR="$ROOT/out/build/macos-release"
 IPA_DIR="$ROOT/out/ipa"
 PAYLOAD_DIR="$IPA_DIR/Payload"
-APP_PATH="$BUILD_DIR/Unleashed Recompiled.app"
+APP_PATH="$BUILD_DIR/UnleashedRecomp/Unleashed Recompiled.app"
 IPA_PATH="$IPA_DIR/UnleashedRecompiled.ipa"
 DEFAULT_SIGNING_IDENTITY="Apple Development: aroblesalago@gmail.com (MK28YRUCCG)"
 
 "$ROOT/tools/apply_ios_submodule_patches.sh"
+
+if [[ -n "${ISO_PATH:-}" ]]; then
+    cmake --preset macos-release
+    cmake --build "$HOST_BUILD_DIR" --target iso_extract -j "${JOBS:-8}"
+    "$HOST_BUILD_DIR/tools/iso_extract/iso_extract" "$ISO_PATH" \
+        default.xex "$ROOT/UnleashedRecompLib/private/default.xex" \
+        shader.ar "$ROOT/UnleashedRecompLib/private/shader.ar"
+fi
+
+if [[ -n "${XEXP_PATH:-}" ]]; then
+    mkdir -p "$ROOT/UnleashedRecompLib/private"
+    cp "$XEXP_PATH" "$ROOT/UnleashedRecompLib/private/default.xexp"
+fi
+
+if [[ -n "${UPDATE_PATH:-}" ]]; then
+    cmake --preset macos-release
+    cmake --build "$HOST_BUILD_DIR" --target xcontent_extract -j "${JOBS:-8}"
+    "$HOST_BUILD_DIR/tools/xcontent_extract/xcontent_extract" "$UPDATE_PATH" \
+        default.xexp "$ROOT/UnleashedRecompLib/private/default.xexp"
+fi
 
 missing=0
 for file in \
@@ -26,6 +47,9 @@ if [[ "$missing" -ne 0 ]]; then
     printf '\nAdd these files from your own compatible Sonic Unleashed Xbox 360 dump before building an IPA.\n' >&2
     exit 1
 fi
+
+cmake --preset macos-release
+cmake --build "$HOST_BUILD_DIR" --target XenonRecomp XenosRecomp x_decompress file_to_c -j "${JOBS:-8}"
 
 cmake --preset ios-device-release
 cmake --build "$BUILD_DIR" --target UnleashedRecomp -j "${JOBS:-8}"
