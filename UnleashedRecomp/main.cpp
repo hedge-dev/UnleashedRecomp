@@ -49,6 +49,12 @@ Heap g_userHeap;
 XDBFWrapper g_xdbfWrapper;
 std::unordered_map<uint16_t, GuestTexture*> g_xdbfTextureCache;
 
+static std::string PathToUTF8(const std::filesystem::path& path)
+{
+    auto pathU8 = path.u8string();
+    return std::string(pathU8.begin(), pathU8.end());
+}
+
 void HostStartup()
 {
 #ifdef _WIN32
@@ -207,6 +213,10 @@ int main(int argc, char *argv[])
 
     os::logger::Init();
 
+#ifdef UNLEASHED_RECOMP_IOS
+    LOGN("iOS startup build: install-validation-v3");
+#endif
+
     PreloadContext preloadContext;
     preloadContext.PreloadExecutable();
 
@@ -248,10 +258,14 @@ int main(int argc, char *argv[])
         // Create the console to show progress to the user, otherwise it will seem as if the game didn't boot at all.
         os::process::ShowConsole();
 
+        const auto installCheckPath = GetGamePath();
+        fprintf(stdout, "Checking installation at %s\n", PathToUTF8(installCheckPath).c_str());
+        LOGFN("Checking installation at {}", PathToUTF8(installCheckPath));
+
         Journal journal;
         double lastProgressMiB = 0.0;
         double lastTotalMib = 0.0;
-        Installer::checkInstallIntegrity(GAME_INSTALL_DIRECTORY, journal, [&]()
+        Installer::checkInstallIntegrity(installCheckPath, journal, [&]()
         {
             constexpr double MiBDivisor = 1024.0 * 1024.0;
             constexpr double MiBProgressThreshold = 128.0;
@@ -326,8 +340,16 @@ int main(int argc, char *argv[])
 
     HostStartup();
 
+    const auto gamePath = GetGamePath();
     std::filesystem::path modulePath;
-    bool isGameInstalled = Installer::checkGameInstall(GetGamePath(), modulePath);
+    LOGFN("Game path: {}", PathToUTF8(gamePath));
+    bool isGameInstalled = Installer::checkGameInstall(gamePath, modulePath);
+    LOGFN("Install status before wizard: installed={}, forceInstaller={}, forceDLCInstaller={}, modulePath={}",
+        isGameInstalled,
+        forceInstaller,
+        forceDLCInstaller,
+        PathToUTF8(modulePath));
+
     bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
     if (runInstallerWizard)
     {
@@ -337,9 +359,20 @@ int main(int argc, char *argv[])
             std::_Exit(1);
         }
 
-        if (!InstallerWizard::Run(GetGamePath(), isGameInstalled && forceDLCInstaller))
+        if (!InstallerWizard::Run(gamePath, isGameInstalled && forceDLCInstaller))
         {
+            LOGN("Installer wizard cancelled.");
             std::_Exit(0);
+        }
+
+        isGameInstalled = Installer::checkGameInstall(gamePath, modulePath);
+        LOGFN("Install status after wizard: installed={}, modulePath={}", isGameInstalled, PathToUTF8(modulePath));
+        if (!isGameInstalled)
+        {
+            const std::string errorMessage = "The game data installation did not finish correctly. Please run the installer again and select the base game ISO plus update file.";
+            LOGN_ERROR(errorMessage);
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), errorMessage.c_str(), GameWindow::s_pWindow);
+            std::_Exit(4);
         }
     }
 
@@ -350,7 +383,16 @@ int main(int argc, char *argv[])
 
     KiSystemStartup();
 
+    LOGFN("Loading module from {}", PathToUTF8(modulePath));
     uint32_t entry = LdrLoadModule(modulePath);
+    if (entry == 0)
+    {
+        const std::string errorMessage = "Failed to load the patched game executable. Please run the installer again.";
+        LOGN_ERROR(errorMessage);
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), errorMessage.c_str(), GameWindow::s_pWindow);
+        std::_Exit(4);
+    }
+    LOGFN("Loaded module entry: 0x{:08X}", entry);
 
     if (!runInstallerWizard)
     {
@@ -361,8 +403,10 @@ int main(int argc, char *argv[])
         }
     }
 
+    LOGN("Starting pipeline precompilation.");
     Video::StartPipelinePrecompilation();
 
+    LOGFN("Starting guest thread at 0x{:08X}", entry);
     GuestThread::Start({ entry, 0, 0 });
 
     return 0;

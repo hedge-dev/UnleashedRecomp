@@ -357,6 +357,15 @@ bool Installer::checkGameInstall(const std::filesystem::path &baseDirectory, std
 #ifdef UNLEASHED_RECOMP_IOS
     if (!std::filesystem::exists(baseDirectory / InstallValidationFile))
         return false;
+
+    Journal journal;
+    if (!checkInstallCompleteness(baseDirectory, journal, []()
+    {
+        return true;
+    }))
+    {
+        return false;
+    }
 #endif
 
     return true;
@@ -394,6 +403,35 @@ bool Installer::checkAllDLC(const std::filesystem::path& baseDirectory)
     }
 
     return result;
+}
+
+bool Installer::checkInstallCompleteness(const std::filesystem::path &baseDirectory, Journal &journal, const std::function<bool()> &progressCallback)
+{
+    if (!checkFiles({ GameFiles, GameFilesSize }, GameHashes, baseDirectory / GameDirectory, journal, progressCallback, true))
+    {
+        return false;
+    }
+
+    if (!checkFiles({ UpdateFiles, UpdateFilesSize }, UpdateHashes, baseDirectory / UpdateDirectory, journal, progressCallback, true))
+    {
+        return false;
+    }
+
+    for (int i = 1; i < (int)DLC::Count; i++)
+    {
+        if (checkDLCInstall(baseDirectory, (DLC)i))
+        {
+            Installer::DLCSource dlcSource;
+            fillDLCSource((DLC)i, dlcSource);
+
+            if (!checkFiles(dlcSource.filePairs, dlcSource.fileHashes, baseDirectory / dlcSource.targetSubDirectory, journal, progressCallback, true))
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 bool Installer::checkInstallIntegrity(const std::filesystem::path &baseDirectory, Journal &journal, const std::function<bool()> &progressCallback)
