@@ -60,7 +60,7 @@
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
     <key>MinimumOSVersion</key>
-    <string>13.0</string>
+    <string>16.0</string>
     <key>UIFileSharingEnabled</key>
     <true/>
     <key>UIApplicationSupportsIndirectInputEvents</key>
