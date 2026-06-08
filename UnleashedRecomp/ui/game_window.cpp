@@ -165,6 +165,7 @@ void GameWindow::Init(const char* sdlVideoDriver)
 #endif
 
 #ifdef UNLEASHED_RECOMP_IOS
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeRight");
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "1");
     SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
 #endif

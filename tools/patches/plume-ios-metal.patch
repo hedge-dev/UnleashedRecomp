@@ -242,7 +242,7 @@ index 64e4dc9..1d14600 100644
      }
  }
 diff --git a/plume_metal.cpp b/plume_metal.cpp
-index ebbbaa3..e4315c4 100644
+index ebbbaa3..970cb85 100644
 --- a/plume_metal.cpp
 +++ b/plume_metal.cpp
 @@ -14,8 +14,12 @@
@@ -258,7 +258,7 @@ index ebbbaa3..e4315c4 100644
  
  #include "plume_metal.h"
  
-@@ -38,6 +42,190 @@ namespace plume {
+@@ -38,6 +42,232 @@ namespace plume {
          return (n + alignment - 1) & ~(alignment - 1);
      }
  
@@ -350,6 +350,49 @@ index ebbbaa3..e4315c4 100644
 +        std::string entryPointName;
 +    };
 +
++#if PLUME_IOS
++    void patchImplicitBaseBuiltinArgument(std::string& source, const std::string& entryPointName, const char* builtinName, const char* builtinAttribute) {
++        if (source.find(builtinName) == std::string::npos || source.find(builtinAttribute) != std::string::npos) {
++            return;
++        }
++
++        const std::string functionNeedle = entryPointName + "(";
++        const size_t functionNameOffset = source.find(functionNeedle);
++        if (functionNameOffset == std::string::npos) {
++            return;
++        }
++
++        const size_t openParenOffset = functionNameOffset + entryPointName.size();
++        size_t closeParenOffset = std::string::npos;
++        int depth = 0;
++
++        for (size_t i = openParenOffset; i < source.size(); i++) {
++            if (source[i] == '(') {
++                depth++;
++            }
++            else if (source[i] == ')') {
++                depth--;
++                if (depth == 0) {
++                    closeParenOffset = i;
++                    break;
++                }
++            }
++        }
++
++        if (closeParenOffset == std::string::npos) {
++            return;
++        }
++
++        const bool hasArguments = source.find_first_not_of(" \t\r\n", openParenOffset + 1) < closeParenOffset;
++        source.insert(closeParenOffset, std::string(hasArguments ? ", uint " : "uint ") + builtinName + " [[" + builtinAttribute + "]]");
++    }
++
++    void patchImplicitBaseBuiltinArguments(std::string& source, const std::string& entryPointName) {
++        patchImplicitBaseBuiltinArgument(source, entryPointName, "gl_BaseVertex", "base_vertex");
++        patchImplicitBaseBuiltinArgument(source, entryPointName, "gl_BaseInstance", "base_instance");
++    }
++#endif
++
 +    MetalShaderSource compileSpirvToMetalSource(const MetalDevice* device, const void* data, const uint64_t size, const char* entryPointName) {
 +        if ((size % sizeof(uint32_t)) != 0) {
 +            throw std::runtime_error("SPIR-V shader data is not 32-bit aligned.");
@@ -388,11 +431,7 @@ index ebbbaa3..e4315c4 100644
 +        options.set_msl_version(3, 0);
 +        options.argument_buffers = true;
 +        options.argument_buffers_tier = getArgumentBuffersTier(device->mtl);
-+#if PLUME_IOS
-+        options.enable_base_index_zero = false;
-+#else
 +        options.enable_base_index_zero = true;
-+#endif
 +        options.enable_decoration_binding = true;
 +        options.force_active_argument_buffer_resources = true;
 +        options.texture_buffer_native = true;
@@ -440,8 +479,11 @@ index ebbbaa3..e4315c4 100644
 +        }
 +
 +        MetalShaderSource translatedSource = {};
-+        translatedSource.source = compiler.compile();
 +        translatedSource.entryPointName = compiler.get_cleansed_entry_point_name(spirvEntryPointName, executionModel);
++        translatedSource.source = compiler.compile();
++#if PLUME_IOS
++        patchImplicitBaseBuiltinArguments(translatedSource.source, translatedSource.entryPointName);
++#endif
 +
 +        return translatedSource;
 +    }
@@ -449,7 +491,7 @@ index ebbbaa3..e4315c4 100644
      uint64_t createClearPipelineKey(MTL::RenderPipelineDescriptor *pipelineDesc, bool depthWriteEnabled, bool stencilWriteEnabled) {
          auto colorFormat = [&](uint32_t index) {
              if (auto colorAttachment = pipelineDesc->colorAttachments()->object(index)) {
-@@ -1133,7 +1321,7 @@ namespace plume {
+@@ -1133,7 +1363,7 @@ namespace plume {
      }
  
      uint64_t MetalBuffer::getDeviceAddress() const {
@@ -458,7 +500,7 @@ index ebbbaa3..e4315c4 100644
          return mtl->gpuAddress();
      }
  
-@@ -1278,24 +1466,46 @@ namespace plume {
+@@ -1278,24 +1508,46 @@ namespace plume {
          assert(device != nullptr);
          assert(data != nullptr);
          assert(size > 0);
@@ -511,7 +553,7 @@ index ebbbaa3..e4315c4 100644
          if (debugName) {
              debugName->release();
          }
-@@ -1306,10 +1516,16 @@ namespace plume {
+@@ -1306,10 +1558,16 @@ namespace plume {
              debugName->release();
          }
          debugName = NS::String::string(name.c_str(), NS::UTF8StringEncoding);
@@ -529,7 +571,7 @@ index ebbbaa3..e4315c4 100644
          MTL::FunctionConstantValues *values = MTL::FunctionConstantValues::alloc()->init();
          if (specConstants != nullptr) {
              for (uint32_t i = 0; i < specConstantsCount; i++) {
-@@ -1437,6 +1653,13 @@ namespace plume {
+@@ -1437,6 +1695,13 @@ namespace plume {
          const MetalShader *metalShader = static_cast<const MetalShader *>(desc.vertexShader);
  
          MTL::Function *vertexFunction = metalShader->createFunction(desc.specConstants, desc.specConstantsCount);
@@ -543,7 +585,7 @@ index ebbbaa3..e4315c4 100644
          descriptor->setVertexFunction(vertexFunction);
  
          MTL::VertexDescriptor *vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
-@@ -1479,6 +1702,15 @@ namespace plume {
+@@ -1479,6 +1744,15 @@ namespace plume {
          if (desc.pixelShader != nullptr) {
              const MetalShader *pixelShader = static_cast<const MetalShader *>(desc.pixelShader);
              MTL::Function *fragmentFunction = pixelShader->createFunction(desc.specConstants, desc.specConstantsCount);
@@ -559,7 +601,7 @@ index ebbbaa3..e4315c4 100644
              descriptor->setFragmentFunction(fragmentFunction);
              fragmentFunction->release();
          }
-@@ -1547,8 +1779,24 @@ namespace plume {
+@@ -1547,8 +1821,24 @@ namespace plume {
              state.depthBiasSlopeFactor = desc.slopeScaledDepthBias;
          }
  
@@ -586,7 +628,7 @@ index ebbbaa3..e4315c4 100644
              return;
          }
  
-@@ -1793,6 +2041,11 @@ namespace plume {
+@@ -1793,6 +2083,11 @@ namespace plume {
  
      MetalSwapChain::MetalSwapChain(MetalCommandQueue *commandQueue, const RenderWindow renderWindow, uint32_t textureCount, const RenderFormat format) {
          this->layer = static_cast<CA::MetalLayer*>(renderWindow.view);
@@ -598,7 +640,7 @@ index ebbbaa3..e4315c4 100644
          layer->setDevice(commandQueue->device->mtl);
          layer->setPixelFormat(mapPixelFormat(format));
  
-@@ -1819,7 +2072,10 @@ namespace plume {
+@@ -1819,7 +2114,10 @@ namespace plume {
      }
  
      bool MetalSwapChain::present(const uint32_t textureIndex, RenderCommandSemaphore **waitSemaphores, const uint32_t waitSemaphoreCount) {
@@ -610,7 +652,7 @@ index ebbbaa3..e4315c4 100644
          NS::AutoreleasePool *releasePool = NS::AutoreleasePool::alloc()->init();
  
          const MetalDrawable &drawable = drawables[textureIndex];
-@@ -1861,7 +2117,7 @@ namespace plume {
+@@ -1861,7 +2159,7 @@ namespace plume {
      bool MetalSwapChain::resize() {
          getWindowSize(width, height);
  
@@ -619,7 +661,7 @@ index ebbbaa3..e4315c4 100644
              return false;
          }
  
-@@ -1886,11 +2142,29 @@ namespace plume {
+@@ -1886,11 +2184,29 @@ namespace plume {
      }
  
      void MetalSwapChain::setVsyncEnabled(const bool vsyncEnabled) {
@@ -649,7 +691,7 @@ index ebbbaa3..e4315c4 100644
      }
  
      uint32_t MetalSwapChain::getWidth() const {
-@@ -1910,6 +2184,10 @@ namespace plume {
+@@ -1910,6 +2226,10 @@ namespace plume {
          assert(textureIndex != nullptr);
          assert(*textureIndex < MAX_DRAWABLES);
  
@@ -660,7 +702,7 @@ index ebbbaa3..e4315c4 100644
          NS::AutoreleasePool *releasePool = NS::AutoreleasePool::alloc()->init();
  
          // Create a command buffer just to encode the signal
-@@ -1923,6 +2201,7 @@ namespace plume {
+@@ -1923,6 +2243,7 @@ namespace plume {
          CA::MetalDrawable *nextDrawable = layer->nextDrawable();
          if (nextDrawable == nullptr) {
              fprintf(stderr, "No more drawables available for rendering.\n");
@@ -668,7 +710,7 @@ index ebbbaa3..e4315c4 100644
              return false;
          }
  
-@@ -1954,10 +2233,20 @@ namespace plume {
+@@ -1954,10 +2275,20 @@ namespace plume {
      }
  
      uint32_t MetalSwapChain::getRefreshRate() const {
@@ -689,7 +731,7 @@ index ebbbaa3..e4315c4 100644
          CocoaWindowAttributes attributes;
          windowWrapper->getWindowAttributes(&attributes);
          dstWidth = attributes.width;
-@@ -3308,6 +3597,9 @@ namespace plume {
+@@ -3308,6 +3639,9 @@ namespace plume {
          this->renderInterface = renderInterface;
  
          // Device Selection
@@ -699,7 +741,7 @@ index ebbbaa3..e4315c4 100644
          const NS::Array* devices = MTL::CopyAllDevices();
          MTL::Device *preferredDevice = nullptr;
          for (NS::UInteger i = 0; i < devices->count(); i++) {
-@@ -3320,12 +3612,31 @@ namespace plume {
+@@ -3320,12 +3654,31 @@ namespace plume {
          }
  
          mtl = preferredDevice ? preferredDevice : MTL::CreateSystemDefaultDevice();;
@@ -732,7 +774,7 @@ index ebbbaa3..e4315c4 100644
  
          // Setup blit, clear and resolve shaders / pipelines
          createClearShaderLibrary();
-@@ -3337,7 +3648,7 @@ namespace plume {
+@@ -3337,7 +3690,7 @@ namespace plume {
          // TODO: Support Raytracing.
          // capabilities.raytracing = mtl->supportsRaytracing();
          capabilities.maxTextureSize = mtl->supportsFamily(MTL::GPUFamilyApple3) ? 16384 : 8192;
@@ -741,7 +783,7 @@ index ebbbaa3..e4315c4 100644
          capabilities.resolveModes = false;
  #if PLUME_IOS
          capabilities.descriptorIndexing = mtl->supportsFamily(MTL::GPUFamilyApple3);
-@@ -3345,11 +3656,11 @@ namespace plume {
+@@ -3345,11 +3698,11 @@ namespace plume {
          capabilities.descriptorIndexing = true;
  #endif
          capabilities.scalarBlockLayout = true;
@@ -756,7 +798,7 @@ index ebbbaa3..e4315c4 100644
          capabilities.gpuUploadHeap = capabilities.uma;
          capabilities.queryPools = false;
  
-@@ -3357,17 +3668,19 @@ namespace plume {
+@@ -3357,17 +3710,19 @@ namespace plume {
      }
  
      MetalDevice::~MetalDevice() {
@@ -782,7 +824,7 @@ index ebbbaa3..e4315c4 100644
      }
  
      std::unique_ptr<RenderDescriptorSet> MetalDevice::createDescriptorSet(const RenderDescriptorSetDesc &desc) {
-@@ -3635,16 +3948,24 @@ namespace plume {
+@@ -3635,16 +3990,24 @@ namespace plume {
  
      MetalInterface::MetalInterface() {
          NS::AutoreleasePool *releasePool = NS::AutoreleasePool::alloc()->init();
