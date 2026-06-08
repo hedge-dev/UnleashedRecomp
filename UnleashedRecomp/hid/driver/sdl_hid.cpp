@@ -4,6 +4,7 @@
 #include <hid/hid.h>
 #include <os/logger.h>
 #include <ui/game_window.h>
+#include <ui/touch_controls.h>
 #include <kernel/xdm.h>
 #include <app.h>
 
@@ -339,6 +340,10 @@ void hid::Init()
     SDL_AddEventWatch(HID_OnSDLEvent, nullptr);
 
     SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+
+#ifdef UNLEASHED_RECOMP_IOS
+    TouchControls::Init();
+#endif
 }
 
 uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
@@ -351,6 +356,14 @@ uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
     memset(pState, 0, sizeof(*pState));
 
     pState->dwPacketNumber = packet++;
+
+#ifdef UNLEASHED_RECOMP_IOS
+    if (TouchControls::IsActive() && TouchControls::IsEnabled())
+    {
+        pState->Gamepad = TouchControls::GetState();
+        return ERROR_SUCCESS;
+    }
+#endif
 
     if (!g_activeController)
         return ERROR_DEVICE_NOT_CONNECTED;

@@ -185,10 +185,12 @@ set(UNLEASHED_RECOMP_UI_CXX_SOURCES
     "ui/fader.cpp"
     "ui/game_window.cpp"
     "ui/imgui_utils.cpp"
+    "ui/input_coords.cpp"
     "ui/installer_wizard.cpp"
     "ui/message_window.cpp"
     "ui/options_menu.cpp"
     "ui/options_menu_thumbnails.cpp"
+    "ui/touch_controls.cpp"
     "ui/tv_static.cpp"
 )
 
@@ -466,7 +468,10 @@ endif()
 set(UNLEASHED_RECOMP_PLATFORM_LIBS)
 if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
     list(APPEND UNLEASHED_RECOMP_PLATFORM_LIBS MoltenVK)
-    target_link_options(UnleashedRecomp PRIVATE "LINKER:-u,_vkGetInstanceProcAddr")
+    target_link_options(UnleashedRecomp PRIVATE
+        "LINKER:-u,_vkGetInstanceProcAddr"
+        "LINKER:-ObjC"
+    )
 endif()
 
 target_link_libraries(UnleashedRecomp PRIVATE

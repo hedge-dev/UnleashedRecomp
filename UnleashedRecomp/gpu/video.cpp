@@ -27,6 +27,8 @@
 #include <ui/options_menu.h>
 #include <ui/game_window.h>
 #include <ui/black_bar.h>
+#include <ui/touch_controls.h>
+#include <ui/input_coords.h>
 #include <patches/aspect_ratio_patches.h>
 #include <user/config.h>
 #include <sdl_listener.h>
@@ -1645,6 +1647,39 @@ static void ApplyLowEndDefault(ConfigDef<T> &configDef, T newDefault, bool &chan
     configDef.DefaultValue = newDefault;
 }
 
+#ifdef UNLEASHED_RECOMP_IOS
+template<typename T, bool isHidden>
+static void ApplyIOSDefault(ConfigDef<T, isHidden>& configDef, T desktopDefault, T iosDefault, bool& changed)
+{
+    const bool shouldApply = !configDef.IsLoadedFromConfig || configDef.Value == desktopDefault;
+
+    if (shouldApply && configDef.Value != iosDefault)
+    {
+        configDef = iosDefault;
+        changed = true;
+    }
+
+    configDef.DefaultValue = iosDefault;
+}
+
+static void ApplyIOSPerformanceDefaults()
+{
+    bool changed = false;
+
+    ApplyIOSDefault(Config::ResolutionScale, 1.0f, 0.65f, changed);
+    ApplyIOSDefault(Config::AntiAliasing, EAntiAliasing::MSAA4x, EAntiAliasing::None, changed);
+    ApplyIOSDefault(Config::TransparencyAntiAliasing, true, false, changed);
+    ApplyIOSDefault(Config::AnisotropicFiltering, 16u, 4u, changed);
+    ApplyIOSDefault(Config::ShadowResolution, EShadowResolution::x4096, EShadowResolution::Original, changed);
+    ApplyIOSDefault(Config::GITextureFiltering, EGITextureFiltering::Bicubic, EGITextureFiltering::Bilinear, changed);
+    ApplyIOSDefault(Config::DepthOfFieldQuality, EDepthOfFieldQuality::Auto, EDepthOfFieldQuality::Low, changed);
+    ApplyIOSDefault(Config::MaxFrameLatency, 2u, 1u, changed);
+
+    if (changed)
+        Config::Save();
+}
+#endif
+
 static void ApplyLowEndDefaults()
 {
     bool changed = false;
@@ -1819,6 +1854,10 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
         // Checking for UMA on D3D12 seems to be a reliable way to detect integrated GPUs.
         ApplyLowEndDefaults();
     }
+
+#ifdef UNLEASHED_RECOMP_IOS
+    ApplyIOSPerformanceDefaults();
+#endif
 
     const RenderSampleCounts colourSampleCount = g_device->getSampleCountsSupported(RenderFormat::R16G16B16A16_FLOAT);
     const RenderSampleCounts depthSampleCount  = g_device->getSampleCountsSupported(RenderFormat::D32_FLOAT);
@@ -2543,30 +2582,22 @@ static void DrawImGui()
     auto& io = ImGui::GetIO();
     io.DisplaySize = { float(Video::s_viewportWidth), float(Video::s_viewportHeight) };
 
+    Video::s_drawableWidth = g_swapChain->getWidth();
+    Video::s_drawableHeight = g_swapChain->getHeight();
+
     // ImGui doesn't know that we center the screen for specific aspect ratio
     // settings, which causes mouse events to not work correctly. To fix this, 
     // we can adjust the mouse events before ImGui processes them.
-    uint32_t width = g_swapChain->getWidth();
-    uint32_t height = g_swapChain->getHeight();
-    float mousePosScaleX = float(width) / float(GameWindow::s_width);
-    float mousePosScaleY = float(height) / float(GameWindow::s_height);
-    float mousePosOffsetX = (width - Video::s_viewportWidth) / 2.0f;
-    float mousePosOffsetY = (height - Video::s_viewportHeight) / 2.0f;
     for (int i = 0; i < io.Ctx->InputEventsQueue.Size; i++)
     {
         auto& e = io.Ctx->InputEventsQueue[i];
         if (e.Type == ImGuiInputEventType_MousePos)
         {
-            if (e.MousePos.PosX != -FLT_MAX)
+            if (e.MousePos.PosX != -FLT_MAX && e.MousePos.PosY != -FLT_MAX)
             {
-                e.MousePos.PosX *= mousePosScaleX;
-                e.MousePos.PosX -= mousePosOffsetX;
-            }
-
-            if (e.MousePos.PosY != -FLT_MAX)
-            {
-                e.MousePos.PosY *= mousePosScaleY;
-                e.MousePos.PosY -= mousePosOffsetY;
+                const ImVec2 transformed = TransformWindowPointToViewport(e.MousePos.PosX, e.MousePos.PosY);
+                e.MousePos.PosX = transformed.x;
+                e.MousePos.PosY = transformed.y;
             }
         }
     }
@@ -2597,6 +2628,7 @@ static void DrawImGui()
     InstallerWizard::Draw();
     MessageWindow::Draw();
     ButtonGuide::Draw();
+    TouchControls::Draw();
     Fader::Draw();
     BlackBar::Draw();
 

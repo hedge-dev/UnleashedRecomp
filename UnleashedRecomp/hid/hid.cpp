@@ -1,5 +1,7 @@
 #include "hid.h"
 #include <ui/game_window.h>
+#include <ui/installer_wizard.h>
+#include <ui/message_window.h>
 #include <user/config.h>
 
 hid::EInputDevice hid::g_inputDevice;
@@ -19,6 +21,9 @@ void hid::SetProhibitedInputs(uint16_t wButtons, bool leftStick, bool rightStick
 
 bool hid::IsInputAllowed()
 {
+    if (InstallerWizard::s_isVisible || MessageWindow::s_isVisible)
+        return true;
+
     return GameWindow::s_isFocused || Config::AllowBackgroundInput;
 }
 

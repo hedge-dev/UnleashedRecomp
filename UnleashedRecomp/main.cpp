@@ -200,6 +200,8 @@ int main(int argc, char *argv[])
 
     os::process::CheckConsole();
 
+    InitPaths();
+
     if (!os::registry::Init())
         LOGN_WARNING("OS does not support registry.");
 

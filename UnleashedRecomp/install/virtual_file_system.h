@@ -6,6 +6,7 @@
 struct VirtualFileSystem {
     virtual ~VirtualFileSystem() { };
     virtual bool load(const std::string &path, uint8_t *fileData, size_t fileDataMaxByteCount) const = 0;
+    virtual bool read(const std::string &path, size_t offset, uint8_t *fileData, size_t size) const = 0;
     virtual size_t getSize(const std::string &path) const = 0;
     virtual bool exists(const std::string &path) const = 0;
     virtual const std::string &getName() const = 0;

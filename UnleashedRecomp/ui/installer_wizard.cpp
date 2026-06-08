@@ -15,6 +15,7 @@
 #include <ui/game_window.h>
 #include <decompressor.h>
 #include <exports.h>
+#include <ui/input_coords.h>
 #include <sdl_listener.h>
 
 #include <res/images/common/hedge-dev.dds.h>
@@ -124,6 +125,14 @@ static std::atomic<bool> g_installerHalted = false;
 static std::atomic<bool> g_installerCancelled = false;
 static bool g_installerFailed = false;
 static std::string g_installerErrorMessage;
+static std::atomic<bool> g_parseSourcesActive = false;
+static std::atomic<bool> g_parseSourcesFinished = false;
+static std::atomic<bool> g_parseSourcesSuccess = false;
+static std::string g_parseSourcesErrorMessage;
+static std::unique_ptr<std::thread> g_parseSourcesThread;
+static bool g_parseSourcesDlcIncomplete = false;
+static bool g_parseSourcesDlcInstallerMode = false;
+static bool g_parseSourcesSkipButton = false;
 
 enum class WizardPage
 {
@@ -268,18 +277,27 @@ public:
             }
 
             case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP:
             case SDL_MOUSEMOTION:
+            case SDL_FINGERDOWN:
+            case SDL_FINGERUP:
+            case SDL_FINGERMOTION:
             {
+                const ImVec2 uiPos = GetViewportPointFromSDLEvent(event);
+
                 for (size_t i = 0; i < g_currentCursorRects.size(); i++)
                 {
                     auto &currentRect = g_currentCursorRects[i];
 
-                    if (ImGui::IsMouseHoveringRect(currentRect.first, currentRect.second, false))
+                    if (IsPointInRect(uiPos, currentRect.first, currentRect.second))
                     {
                         newCursorIndex = int(i);
 
-                        if (event->type == SDL_MOUSEBUTTONDOWN && event->button.button == SDL_BUTTON_LEFT)
+                        if ((event->type == SDL_MOUSEBUTTONDOWN && event->button.button == SDL_BUTTON_LEFT) ||
+                            event->type == SDL_FINGERDOWN)
+                        {
                             g_currentCursorAccepted = true;
+                        }
 
                         break;
                     }
@@ -1367,6 +1385,90 @@ static void InstallerStart()
     g_installerThread = std::make_unique<std::thread>(InstallerThread);
 }
 
+static bool InstallerParseSources(std::string &errorMessage);
+
+static void StartParseSources(bool dlcIncomplete, bool dlcInstallerMode, bool skipButton)
+{
+    g_parseSourcesDlcIncomplete = dlcIncomplete;
+    g_parseSourcesDlcInstallerMode = dlcInstallerMode;
+    g_parseSourcesSkipButton = skipButton;
+    g_parseSourcesActive = true;
+    g_parseSourcesFinished = false;
+    g_parseSourcesSuccess = false;
+    g_parseSourcesErrorMessage.clear();
+
+    g_parseSourcesThread = std::make_unique<std::thread>([]()
+    {
+        std::string errorMessage;
+        bool success = InstallerParseSources(errorMessage);
+        g_parseSourcesErrorMessage = std::move(errorMessage);
+        g_parseSourcesSuccess = success;
+        g_parseSourcesFinished = true;
+    });
+}
+
+static void ProcessParseSourcesResult()
+{
+    if (!g_parseSourcesActive || !g_parseSourcesFinished)
+    {
+        return;
+    }
+
+    g_parseSourcesThread->join();
+    g_parseSourcesThread.reset();
+    g_parseSourcesActive = false;
+    g_parseSourcesFinished = false;
+
+    if (!g_parseSourcesSuccess)
+    {
+        std::stringstream stringStream;
+        stringStream << Localise("Installer_Message_InvalidFiles");
+        if (!g_parseSourcesErrorMessage.empty())
+        {
+            stringStream << std::endl << std::endl << g_parseSourcesErrorMessage;
+        }
+
+        g_currentMessagePrompt = stringStream.str();
+        g_currentMessagePromptConfirmation = false;
+        g_currentPage = g_parseSourcesDlcInstallerMode ? WizardPage::SelectDLC : WizardPage::SelectGameAndUpdate;
+    }
+    else if (g_parseSourcesDlcIncomplete && !g_parseSourcesDlcInstallerMode)
+    {
+        g_currentMessagePrompt = Localise("Installer_Message_DLCWarning");
+        g_currentMessagePromptSource = MessagePromptSource::Next;
+        g_currentMessagePromptConfirmation = true;
+    }
+    else if (g_parseSourcesSkipButton && g_parseSourcesDlcInstallerMode)
+    {
+        g_isDisappearing = true;
+        g_disappearTime = ImGui::GetTime();
+    }
+    else
+    {
+        g_currentPage = WizardPage::CheckSpace;
+    }
+}
+
+static void DrawParseSourcesOverlay()
+{
+    if (!g_parseSourcesActive)
+    {
+        return;
+    }
+
+    auto drawList = ImGui::GetBackgroundDrawList();
+    drawList->AddRectFilled({ 0.0f, 0.0f }, ImGui::GetIO().DisplaySize, IM_COL32(0, 0, 0, 190));
+
+    const char *text = "...";
+    float fontSize = Scale(28.0f);
+    ImVec2 textSize = g_dfsogeistdFont->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text);
+    ImVec2 textPos = {
+        (ImGui::GetIO().DisplaySize.x - textSize.x) * 0.5f,
+        (ImGui::GetIO().DisplaySize.y - textSize.y) * 0.5f
+    };
+    drawList->AddText(g_dfsogeistdFont, fontSize, textPos, IM_COL32(255, 255, 255, 255), text);
+}
+
 static bool InstallerParseSources(std::string &errorMessage)
 {
     std::error_code spaceErrorCode;
@@ -1401,7 +1503,7 @@ static void DrawNavigationButton()
         return;
     }
 
-    bool nextButtonEnabled = !g_isDisappearing && (g_currentPage != WizardPage::Installing);
+    bool nextButtonEnabled = !g_isDisappearing && (g_currentPage != WizardPage::Installing) && !g_parseSourcesActive;
     if (nextButtonEnabled && g_currentPage == WizardPage::SelectGameAndUpdate)
     {
         nextButtonEnabled = !g_gameSourcePath.empty() && !g_updateSourcePath.empty();
@@ -1454,37 +1556,7 @@ static void DrawNavigationButton()
             }
 
             bool dlcInstallerMode = g_gameSourcePath.empty();
-            std::string sourcesErrorMessage;
-            if (!InstallerParseSources(sourcesErrorMessage))
-            {
-                // Some of the sources that were provided to the installer are not valid. Restart the file selection process.
-                std::stringstream stringStream;
-                stringStream << Localise("Installer_Message_InvalidFiles");
-                if (!sourcesErrorMessage.empty()) {
-                    stringStream << std::endl << std::endl << sourcesErrorMessage;
-                }
-
-                g_currentMessagePrompt = stringStream.str();
-                g_currentMessagePromptConfirmation = false;
-                g_currentPage = dlcInstallerMode ? WizardPage::SelectDLC : WizardPage::SelectGameAndUpdate;
-            }
-            else if (dlcIncomplete && !dlcInstallerMode)
-            {
-                // Not all the DLC was specified, we show a prompt and await a confirmation before starting the installer.
-                g_currentMessagePrompt = Localise("Installer_Message_DLCWarning");
-                g_currentMessagePromptSource = MessagePromptSource::Next;
-                g_currentMessagePromptConfirmation = true;
-            }
-            else if (skipButton && dlcInstallerMode)
-            {
-                // Nothing was selected and the installer was in DLC mode, just close it.
-                g_isDisappearing = true;
-                g_disappearTime = ImGui::GetTime();
-            }
-            else
-            {
-                g_currentPage = WizardPage::CheckSpace;
-            }
+            StartParseSources(dlcIncomplete, dlcInstallerMode, skipButton);
         }
         else if (g_currentPage == WizardPage::CheckSpace)
         {
@@ -1786,6 +1858,8 @@ void InstallerWizard::Draw()
     DrawSourcePickers();
     DrawSources();
     DrawInstallingProgress();
+    ProcessParseSourcesResult();
+    DrawParseSourcesOverlay();
     DrawNavigationButton();
     CheckCancelAction();
     DrawBorders();
@@ -1823,6 +1897,12 @@ void InstallerWizard::Shutdown()
     {
         g_currentPickerThread->join();
         g_currentPickerThread.reset();
+    }
+
+    if (g_parseSourcesThread != nullptr)
+    {
+        g_parseSourcesThread->join();
+        g_parseSourcesThread.reset();
     }
 
     // Erase the sources.

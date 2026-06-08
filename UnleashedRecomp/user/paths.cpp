@@ -1,8 +1,26 @@
 #include "paths.h"
 #include <os/process.h>
 
+#if defined(UNLEASHED_RECOMP_IOS)
+std::filesystem::path g_executableRoot;
+std::filesystem::path g_userPath;
+
+void InitPaths()
+{
+    if (!g_executableRoot.empty())
+        return;
+
+    g_executableRoot = os::process::GetExecutableRoot();
+    g_userPath = BuildUserPath();
+}
+#else
 std::filesystem::path g_executableRoot = os::process::GetExecutableRoot();
 std::filesystem::path g_userPath = BuildUserPath();
+
+void InitPaths()
+{
+}
+#endif
 
 bool CheckPortable()
 {

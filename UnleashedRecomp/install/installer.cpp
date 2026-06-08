@@ -134,7 +134,7 @@ static bool checkFile(const FilePair &pair, const uint64_t *fileHashes, const st
     return true;
 }
 
-static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, bool skipHashChecks, std::vector<uint8_t> &fileData, Journal &journal, const std::function<bool()> &progressCallback) {
+static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, const std::function<bool()> &progressCallback) {
     const std::string filename(pair.first);
     const uint32_t hashCount = pair.second;
     if (!sourceVfs.exists(filename))
@@ -144,28 +144,12 @@ static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFi
         return false;
     }
 
-    if (!sourceVfs.load(filename, fileData))
+    const size_t fileSize = sourceVfs.getSize(filename);
+    if (fileSize == 0)
     {
         journal.lastResult = Journal::Result::FileReadFailed;
         journal.lastErrorMessage = fmt::format("Failed to read file {} from {}.", filename, sourceVfs.getName());
         return false;
-    }
-
-    if (!skipHashChecks)
-    {
-        uint64_t fileHash = XXH3_64bits(fileData.data(), fileData.size());
-        bool fileHashFound = false;
-        for (uint32_t i = 0; i < hashCount && !fileHashFound; i++)
-        {
-            fileHashFound = fileHash == fileHashes[i];
-        }
-
-        if (!fileHashFound)
-        {
-            journal.lastResult = Journal::Result::FileHashFailed;
-            journal.lastErrorMessage = fmt::format("File {} from {} did not match any of the known hashes.", filename, sourceVfs.getName());
-            return false;
-        }
     }
 
     std::filesystem::path targetPath = targetDirectory / std::filesystem::path(std::u8string_view((const char8_t *)(pair.first)));
@@ -197,15 +181,59 @@ static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFi
 
     journal.createdFiles.push_back(targetPath);
 
-    outStream.write((const char *)(fileData.data()), fileData.size());
-    if (outStream.bad())
+    static constexpr size_t CopyChunkSize = 4 * 1024 * 1024;
+    std::vector<uint8_t> chunk(std::min(fileSize, CopyChunkSize));
+    XXH3_state_t hashState;
+    if (!skipHashChecks)
     {
-        journal.lastResult = Journal::Result::FileWriteFailed;
-        journal.lastErrorMessage = fmt::format("Failed to create file at {}.", fromPath(targetPath));
-        return false;
+        XXH3_64bits_reset(&hashState);
     }
 
-    journal.progressCounter += fileData.size();
+    size_t offset = 0;
+    while (offset < fileSize)
+    {
+        const size_t bytesToRead = std::min(CopyChunkSize, fileSize - offset);
+        if (!sourceVfs.read(filename, offset, chunk.data(), bytesToRead))
+        {
+            journal.lastResult = Journal::Result::FileReadFailed;
+            journal.lastErrorMessage = fmt::format("Failed to read file {} from {}.", filename, sourceVfs.getName());
+            return false;
+        }
+
+        if (!skipHashChecks)
+        {
+            XXH3_64bits_update(&hashState, chunk.data(), bytesToRead);
+        }
+
+        outStream.write(reinterpret_cast<const char *>(chunk.data()), bytesToRead);
+        if (outStream.bad())
+        {
+            journal.lastResult = Journal::Result::FileWriteFailed;
+            journal.lastErrorMessage = fmt::format("Failed to create file at {}.", fromPath(targetPath));
+            return false;
+        }
+
+        offset += bytesToRead;
+    }
+
+    if (!skipHashChecks)
+    {
+        const uint64_t fileHash = XXH3_64bits_digest(&hashState);
+        bool fileHashFound = false;
+        for (uint32_t i = 0; i < hashCount && !fileHashFound; i++)
+        {
+            fileHashFound = fileHash == fileHashes[i];
+        }
+
+        if (!fileHashFound)
+        {
+            journal.lastResult = Journal::Result::FileHashFailed;
+            journal.lastErrorMessage = fmt::format("File {} from {} did not match any of the known hashes.", filename, sourceVfs.getName());
+            return false;
+        }
+    }
+
+    journal.progressCounter += fileSize;
     
     if (!progressCallback())
     {
@@ -447,7 +475,6 @@ bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *f
     uint32_t validationHashIndex = 0;
     uint32_t hashIndex = 0;
     uint32_t hashCount = 0;
-    std::vector<uint8_t> fileData;
     for (FilePair pair : filePairs)
     {
         hashIndex = hashCount;
@@ -460,7 +487,7 @@ bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *f
             continue;
         }
 
-        if (!copyFile(pair, &fileHashes[hashIndex], sourceVfs, targetDirectory, skipHashChecks, fileData, journal, progressCallback))
+        if (!copyFile(pair, &fileHashes[hashIndex], sourceVfs, targetDirectory, skipHashChecks, journal, progressCallback))
         {
             return false;
         }
@@ -469,7 +496,7 @@ bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *f
     // Validation file is copied last after all other files have been copied.
     if (validationPair.first != nullptr)
     {
-        if (!copyFile(validationPair, &fileHashes[validationHashIndex], sourceVfs, targetDirectory, skipHashChecks, fileData, journal, progressCallback))
+        if (!copyFile(validationPair, &fileHashes[validationHashIndex], sourceVfs, targetDirectory, skipHashChecks, journal, progressCallback))
         {
             return false;
         }
@@ -565,7 +592,7 @@ bool Installer::parseSources(const Input &input, Journal &journal, Sources &sour
     return true;
 }
 
-bool Installer::install(const Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, std::chrono::seconds endWaitTime, const std::function<bool()> &progressCallback)
+bool Installer::install(Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, std::chrono::seconds endWaitTime, const std::function<bool()> &progressCallback)
 {
     // Install files in reverse order of importance. In case of a process crash or power outage, this will increase the likelihood of the installation
     // missing critical files required for the game to run. These files are used as the way to detect if the game is installed.
@@ -576,13 +603,17 @@ bool Installer::install(const Sources &sources, const std::filesystem::path &tar
         journal.createdDirectories.insert(targetDirectory / DLCDirectory);
     }
 
-    for (const DLCSource &dlcSource : sources.dlc)
+    for (DLCSource &dlcSource : sources.dlc)
     {
         if (!copyFiles(dlcSource.filePairs, dlcSource.fileHashes, *dlcSource.sourceVfs, targetDirectory / dlcSource.targetSubDirectory, DLCValidationFile, skipHashChecks, journal, progressCallback))
         {
             return false;
         }
+
+        dlcSource.sourceVfs.reset();
     }
+
+    sources.dlc.clear();
 
     // If no game or update was specified, we're finished. This means the user was only installing the DLC.
     if ((sources.game == nullptr) && (sources.update == nullptr))
@@ -596,11 +627,15 @@ bool Installer::install(const Sources &sources, const std::filesystem::path &tar
         return false;
     }
 
+    sources.update.reset();
+
     // Install the base game.
     if (!copyFiles({ GameFiles, GameFilesSize }, GameHashes, *sources.game, targetDirectory / GameDirectory, GameExecutableFile, skipHashChecks, journal, progressCallback))
     {
         return false;
     }
+
+    sources.game.reset();
 
     // Create the directory where the patched executable will be stored.
     std::error_code ec;

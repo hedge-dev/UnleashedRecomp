@@ -161,6 +161,11 @@ void GameWindow::Init(const char* sdlVideoDriver)
     SDL_SetHint("SDL_APP_ID", "io.github.hedge_dev.unleashedrecomp");
 #endif
 
+#ifdef UNLEASHED_RECOMP_IOS
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "1");
+    SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
+#endif
+
     if (SDL_VideoInit(sdlVideoDriver) != 0 && sdlVideoDriver)
     {
         LOGFN_ERROR("Failed to initialise the SDL video driver: \"{}\". Falling back to default.", sdlVideoDriver);
@@ -191,6 +196,10 @@ void GameWindow::Init(const char* sdlVideoDriver)
         GameWindow::ResetDimensions();
 
     s_pWindow = SDL_CreateWindow("Unleashed Recompiled", s_x, s_y, s_width, s_height, GetWindowFlags());
+
+#ifdef UNLEASHED_RECOMP_IOS
+    SDL_GetWindowSize(s_pWindow, &s_width, &s_height);
+#endif
 
     if (IsFullscreen())
         SDL_ShowCursor(SDL_DISABLE);
@@ -227,6 +236,10 @@ void GameWindow::Init(const char* sdlVideoDriver)
     SetTitleBarColour();
 
     SDL_ShowWindow(s_pWindow);
+
+#ifdef UNLEASHED_RECOMP_IOS
+    s_isFocused = true;
+#endif
 }
 
 void GameWindow::Update()
