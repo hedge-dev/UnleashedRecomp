@@ -467,9 +467,7 @@ endif()
 
 set(UNLEASHED_RECOMP_PLATFORM_LIBS)
 if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-    list(APPEND UNLEASHED_RECOMP_PLATFORM_LIBS MoltenVK)
     target_link_options(UnleashedRecomp PRIVATE
-        "LINKER:-u,_vkGetInstanceProcAddr"
         "LINKER:-ObjC"
     )
 endif()

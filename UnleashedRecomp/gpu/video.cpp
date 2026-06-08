@@ -100,17 +100,30 @@ extern "C"
 }
 #endif
 
+#if defined(UNLEASHED_RECOMP_IOS) && defined(__APPLE__) && !defined(SDL_VULKAN_ENABLED)
+#define UNLEASHED_RECOMP_USE_METAL 1
+#endif
+
 namespace plume
 {
 #ifdef UNLEASHED_RECOMP_D3D12
     extern std::unique_ptr<RenderInterface> CreateD3D12Interface();
 #endif
+#ifdef UNLEASHED_RECOMP_USE_METAL
+    extern std::unique_ptr<RenderInterface> CreateMetalInterface();
+#else
 #ifdef SDL_VULKAN_ENABLED
     extern std::unique_ptr<RenderInterface> CreateVulkanInterface(RenderWindow sdlWindow);
 #else
     extern std::unique_ptr<RenderInterface> CreateVulkanInterface();
 #endif
+#endif
 
+#ifdef UNLEASHED_RECOMP_USE_METAL
+    static std::unique_ptr<RenderInterface> CreateMetalInterfaceWrapper() {
+        return CreateMetalInterface();
+    }
+#else
     static std::unique_ptr<RenderInterface> CreateVulkanInterfaceWrapper() {
 #ifdef SDL_VULKAN_ENABLED
         return CreateVulkanInterface(GameWindow::s_renderWindow);
@@ -118,6 +131,7 @@ namespace plume
         return CreateVulkanInterface();
 #endif
     }
+#endif
 }
 
 #pragma pack(push, 1)
@@ -290,6 +304,15 @@ static bool g_vulkan = false;
 #else
 static constexpr bool g_vulkan = true;
 #endif
+
+static const char* GetGraphicsApiName()
+{
+#ifdef UNLEASHED_RECOMP_USE_METAL
+    return "Metal";
+#else
+    return g_vulkan ? "Vulkan" : "D3D12";
+#endif
+}
 
 static bool g_triangleStripWorkaround = false;
 
@@ -1755,6 +1778,8 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
 
     interfaceFunctions.push_back(g_vulkan ? CreateVulkanInterfaceWrapper : CreateD3D12Interface);
     interfaceFunctions.push_back(g_vulkan ? CreateD3D12Interface : CreateVulkanInterfaceWrapper);
+#elif defined(UNLEASHED_RECOMP_USE_METAL)
+    interfaceFunctions.push_back(CreateMetalInterfaceWrapper);
 #else
     interfaceFunctions.push_back(CreateVulkanInterfaceWrapper);
 #endif
@@ -2529,7 +2554,7 @@ static void DrawProfiler()
         ImGui::Text("Hardware Depth Resolve: %s", g_hardwareDepthResolve ? "Enabled" : "Disabled");
         ImGui::NewLine();
 
-        ImGui::Text("API: %s", g_vulkan ? "Vulkan" : "D3D12");
+        ImGui::Text("API: %s", GetGraphicsApiName());
         ImGui::Text("Device: %s", g_device->getDescription().name.c_str());
         ImGui::Text("Device Type: %s", DeviceTypeName(g_device->getDescription().type));
         ImGui::Text("VRAM: %.2f MiB", (double)(g_device->getDescription().dedicatedVideoMemory) / (1024.0 * 1024.0));

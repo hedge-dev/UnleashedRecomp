@@ -3,6 +3,9 @@
 #include <plume_render_interface_types.h>
 #include <user/config.h>
 #include <sdl_events.h>
+#ifdef __APPLE__
+#include <SDL_metal.h>
+#endif
 
 #define DEFAULT_WIDTH 1280
 #define DEFAULT_HEIGHT 720
@@ -14,6 +17,9 @@ class GameWindow
 public:
     static inline SDL_Window* s_pWindow = nullptr;
     static inline plume::RenderWindow s_renderWindow;
+#ifdef __APPLE__
+    static inline SDL_MetalView s_metalView = nullptr;
+#endif
 
     static inline int s_x;
     static inline int s_y;

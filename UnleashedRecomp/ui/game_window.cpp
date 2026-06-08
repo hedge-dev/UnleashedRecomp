@@ -6,6 +6,9 @@
 #include <app.h>
 #include <sdl_listener.h>
 #include <SDL_syswm.h>
+#ifdef __APPLE__
+#include <SDL_metal.h>
+#endif
 
 #if _WIN32
 #include <dwmapi.h>
@@ -227,8 +230,13 @@ void GameWindow::Init(const char* sdlVideoDriver)
 #elif defined(__linux__)
     s_renderWindow = { info.info.x11.display, info.info.x11.window };
 #elif defined(__APPLE__)
+    s_metalView = SDL_Metal_CreateView(s_pWindow);
+#ifdef UNLEASHED_RECOMP_IOS
+    s_renderWindow.window = s_metalView;
+#else
     s_renderWindow.window = info.info.cocoa.window;
-    s_renderWindow.view = SDL_Metal_GetLayer(SDL_Metal_CreateView(s_pWindow));
+#endif
+    s_renderWindow.view = s_metalView != nullptr ? SDL_Metal_GetLayer(s_metalView) : nullptr;
 #else
     static_assert(false, "Unknown platform.");
 #endif
@@ -449,6 +457,8 @@ uint32_t GameWindow::GetWindowFlags()
 
 #ifdef SDL_VULKAN_ENABLED
     flags |= SDL_WINDOW_VULKAN;
+#elif defined(__APPLE__)
+    flags |= SDL_WINDOW_METAL;
 #endif
 
     return flags;
