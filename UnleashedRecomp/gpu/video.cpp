@@ -1649,9 +1649,9 @@ static void ApplyLowEndDefault(ConfigDef<T> &configDef, T newDefault, bool &chan
 
 #ifdef UNLEASHED_RECOMP_IOS
 template<typename T, bool isHidden>
-static void ApplyIOSDefault(ConfigDef<T, isHidden>& configDef, T desktopDefault, T iosDefault, bool& changed)
+static void ApplyIOSDefault(ConfigDef<T, isHidden>& configDef, T desktopDefault, T previousIOSDefault, T iosDefault, bool& changed)
 {
-    const bool shouldApply = !configDef.IsLoadedFromConfig || configDef.Value == desktopDefault;
+    const bool shouldApply = !configDef.IsLoadedFromConfig || configDef.Value == desktopDefault || configDef.Value == previousIOSDefault;
 
     if (shouldApply && configDef.Value != iosDefault)
     {
@@ -1662,23 +1662,49 @@ static void ApplyIOSDefault(ConfigDef<T, isHidden>& configDef, T desktopDefault,
     configDef.DefaultValue = iosDefault;
 }
 
+template<typename T, bool isHidden>
+static void ApplyIOSDefault(ConfigDef<T, isHidden>& configDef, T desktopDefault, T iosDefault, bool& changed)
+{
+    ApplyIOSDefault(configDef, desktopDefault, iosDefault, iosDefault, changed);
+}
+
 static void ApplyIOSPerformanceDefaults()
 {
     bool changed = false;
 
-    ApplyIOSDefault(Config::ResolutionScale, 1.0f, 0.65f, changed);
+    ApplyIOSDefault(Config::ResolutionScale, 1.0f, 0.65f, 0.55f, changed);
     ApplyIOSDefault(Config::AntiAliasing, EAntiAliasing::MSAA4x, EAntiAliasing::None, changed);
     ApplyIOSDefault(Config::TransparencyAntiAliasing, true, false, changed);
-    ApplyIOSDefault(Config::AnisotropicFiltering, 16u, 4u, changed);
+    ApplyIOSDefault(Config::AnisotropicFiltering, 16u, 4u, 2u, changed);
     ApplyIOSDefault(Config::ShadowResolution, EShadowResolution::x4096, EShadowResolution::Original, changed);
     ApplyIOSDefault(Config::GITextureFiltering, EGITextureFiltering::Bicubic, EGITextureFiltering::Bilinear, changed);
     ApplyIOSDefault(Config::DepthOfFieldQuality, EDepthOfFieldQuality::Auto, EDepthOfFieldQuality::Low, changed);
-    ApplyIOSDefault(Config::MaxFrameLatency, 2u, 1u, changed);
+    ApplyIOSDefault(Config::MotionBlur, EMotionBlur::Original, EMotionBlur::Off, changed);
+    ApplyIOSDefault(Config::TripleBuffering, ETripleBuffering::Auto, ETripleBuffering::On, changed);
+    ApplyIOSDefault(Config::MaxFrameLatency, 2u, 1u, 2u, changed);
 
     if (changed)
         Config::Save();
 }
 #endif
+
+static float GetEffectiveResolutionScale()
+{
+    float resolutionScale = Config::ResolutionScale.Value;
+
+#ifdef UNLEASHED_RECOMP_IOS
+    if (Config::ResolutionScale.Value <= Config::ResolutionScale.DefaultValue + 0.001f && Video::s_viewportHeight != 0)
+    {
+        constexpr float maxDefaultRenderHeight = 720.0f;
+        const float cappedScale = maxDefaultRenderHeight / float(Video::s_viewportHeight);
+
+        if (resolutionScale > cappedScale)
+            resolutionScale = cappedScale;
+    }
+#endif
+
+    return resolutionScale;
+}
 
 static void ApplyLowEndDefaults()
 {
@@ -5237,7 +5263,7 @@ static void ProcSetPixelShader(const RenderCommand& cmd)
             {
                 if (g_aspectRatio >= WIDE_ASPECT_RATIO)
                 {
-                    size_t height = round(Video::s_viewportHeight * Config::ResolutionScale);
+                    size_t height = round(Video::s_viewportHeight * GetEffectiveResolutionScale());
 
                     if (height > 1440)
                         shaderIndex = GAUSSIAN_BLUR_9X9;
@@ -5251,7 +5277,7 @@ static void ProcSetPixelShader(const RenderCommand& cmd)
                 else
                 {
                     // Narrow aspect ratios should check for width to account for VERT+.
-                    size_t width = round(Video::s_viewportWidth * Config::ResolutionScale);
+                    size_t width = round(Video::s_viewportWidth * GetEffectiveResolutionScale());
 
                     if (width > 2560)
                         shaderIndex = GAUSSIAN_BLUR_9X9;
@@ -5929,8 +5955,9 @@ static void SetResolution(be<uint32_t>* device)
 {
     Video::ComputeViewportDimensions();
 
-    uint32_t width = uint32_t(round(Video::s_viewportWidth * Config::ResolutionScale));
-    uint32_t height = uint32_t(round(Video::s_viewportHeight * Config::ResolutionScale));
+    const float resolutionScale = GetEffectiveResolutionScale();
+    uint32_t width = uint32_t(round(Video::s_viewportWidth * resolutionScale));
+    uint32_t height = uint32_t(round(Video::s_viewportHeight * resolutionScale));
     device[46] = width == 0 ? 880 : width;
     device[47] = height == 0 ? 720 : height;
 }
