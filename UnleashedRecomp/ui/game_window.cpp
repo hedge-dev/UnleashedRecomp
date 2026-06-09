@@ -193,6 +193,13 @@ void GameWindow::Init(const char* sdlVideoDriver)
     s_width = Config::WindowWidth;
     s_height = Config::WindowHeight;
 
+#ifdef UNLEASHED_RECOMP_IOS
+    s_x = SDL_WINDOWPOS_UNDEFINED;
+    s_y = SDL_WINDOWPOS_UNDEFINED;
+    s_width = 1280;
+    s_height = 720;
+#endif
+
     if (s_x == -1 && s_y == -1)
         s_x = s_y = SDL_WINDOWPOS_CENTERED;
 

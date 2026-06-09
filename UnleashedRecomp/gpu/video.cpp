@@ -33,6 +33,7 @@
 #include <user/config.h>
 #include <sdl_listener.h>
 #include <xxHashMap.h>
+#include <os/logger.h>
 #include <os/process.h>
 
 #if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)
@@ -1969,6 +1970,19 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     g_swapChain->setVsyncEnabled(Config::VSync);
     g_swapChainValid = !g_swapChain->needsResize();
 
+#ifdef UNLEASHED_RECOMP_IOS
+    LOGFN("Created iOS swapchain: buffers={} maxFrameLatency={} valid={} size={}x{} viewport={}x{} window={}x{}",
+        bufferCount,
+        Config::MaxFrameLatency.Value,
+        g_swapChainValid,
+        g_swapChain->getWidth(),
+        g_swapChain->getHeight(),
+        Video::s_viewportWidth,
+        Video::s_viewportHeight,
+        GameWindow::s_width,
+        GameWindow::s_height);
+#endif
+
     for (auto& acquireSemaphore : g_acquireSemaphores)
         acquireSemaphore = g_device->createCommandSemaphore();
     
@@ -2184,6 +2198,10 @@ void Video::WaitForGPU()
 
 static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, be<uint32_t>* a6)
 {
+#ifdef UNLEASHED_RECOMP_IOS
+    LOGFN("Guest CreateDevice called: a1=0x{:08X} a2=0x{:08X} a3=0x{:08X} a4=0x{:08X} a5=0x{:08X}", a1, a2, a3, a4, a5);
+#endif
+
     g_xdbfTextureCache = std::unordered_map<uint16_t, GuestTexture *>();
 
     for (auto &achievement : g_xdbfWrapper.GetAchievements(XDBF_LANGUAGE_ENGLISH))
@@ -2232,6 +2250,10 @@ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
     device->viewport.maxZ = 1.0f;
 
     *a6 = g_memory.MapVirtual(device);
+
+#ifdef UNLEASHED_RECOMP_IOS
+    LOGFN("Guest CreateDevice finished: device=0x{:08X}", uint32_t(*a6));
+#endif
 
     return 0;
 }
@@ -2873,6 +2895,15 @@ static std::atomic<bool> g_executedCommandList;
 
 void Video::Present() 
 {
+#ifdef UNLEASHED_RECOMP_IOS
+    static uint32_t s_presentCount = 0;
+    if (s_presentCount < 5 || (s_presentCount % 300) == 0)
+    {
+        LOGFN("Video::Present count={} swapChainValid={}", s_presentCount, g_swapChainValid);
+    }
+    s_presentCount++;
+#endif
+
     g_readyForCommands = false;
 
     RenderCommand cmd;
