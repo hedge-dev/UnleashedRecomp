@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
     os::logger::Init();
 
 #ifdef UNLEASHED_RECOMP_IOS
-    LOGN("iOS startup build: install-validation-v3");
+    LOGN("iOS startup build: sync-wait-fix-v4");
 #endif
 
     PreloadContext preloadContext;
