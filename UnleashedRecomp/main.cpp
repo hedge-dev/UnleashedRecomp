@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
     os::logger::Init();
 
 #ifdef UNLEASHED_RECOMP_IOS
-    LOGN("iOS startup build: sync-wait-fix-v4");
+    LOGN("iOS startup build: threaded-guest-v5");
 #endif
 
     PreloadContext preloadContext;
@@ -406,8 +406,22 @@ int main(int argc, char *argv[])
     LOGN("Starting pipeline precompilation.");
     Video::StartPipelinePrecompilation();
 
+#ifdef UNLEASHED_RECOMP_IOS
+    LOGFN("Starting guest worker thread at 0x{:08X}", entry);
+    GuestThread::Start({ entry, 0, 0 }, nullptr);
+
+    LOGN("Entering iOS SDL event pump.");
+    while (true)
+    {
+        SDL_PumpEvents();
+        SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+        GameWindow::Update();
+        SDL_Delay(1);
+    }
+#else
     LOGFN("Starting guest thread at 0x{:08X}", entry);
     GuestThread::Start({ entry, 0, 0 });
+#endif
 
     return 0;
 }
