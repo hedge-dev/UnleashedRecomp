@@ -15,7 +15,7 @@ inline std::array<const char*, 17> g_credits =
     "LJSTAR",
     "saguinee",
     "Goalringmod27",
-    "M&M",
+    "RagdollClash",
     "DaGuAr",
     "brianuuuSonic",
     "Kitzuku"
