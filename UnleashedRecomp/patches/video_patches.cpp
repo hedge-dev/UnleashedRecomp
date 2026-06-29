@@ -141,3 +141,26 @@ PPC_FUNC(sub_82E38650)
 
     __imp__sub_82E38650(ctx, base);
 }
+
+// Part of the building right after exiting the tunnel after the drift turn after the first checkpoint
+// is placed on an transparent mesh slot. This somehow works. Except on high-performance Windows machines,
+// hinting at the fact that its related to some scheduler issue with the asset loading.
+// We can fix it by detecting the asset runtime, and combining the opaque and transparent mesh slots by
+// using the name offset field on the mesh group as an additional value in the array and shifting the
+// opaque mesh slot's offset back by one and then correcting the offset table for this change.
+
+// Hedgehog::Mirage::CTerrainModelData::Make
+PPC_FUNC_IMPL(__imp__sub_82E39618);
+PPC_FUNC(sub_82E39618)
+{
+    if (ctx.r5.u32 == 0xA470 && XXH3_64bits(base + ctx.r4.u32, ctx.r5.u32) == 0x8474C14C113626D2)
+    {
+        PPC_STORE_U32(ctx.r4.u32 + 0x28, 7);
+        PPC_STORE_U32(ctx.r4.u32 + 0x2C, 0x38);
+        PPC_STORE_U32(ctx.r4.u32 + 0x30, 0);
+        PPC_STORE_U32(ctx.r4.u32 + 0x50, 0x88C4);
+        PPC_STORE_U32(ctx.r4.u32 + 0xA438, 0x38);
+    }
+
+    __imp__sub_82E39618(ctx, base);
+}
