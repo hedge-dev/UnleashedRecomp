@@ -193,3 +193,29 @@ PPC_FUNC(sub_824EE620)
 
     ctx.r3.u32 = PersistentStorageManager::ShouldDisplayDLCMessage(true);
 }
+
+// This is a constructor for some struct that constructed inside CTownManContext::CTownManContext()
+// and within the calls contained in CTownManBase::ProcMsgSetTownManRetryTimeTable().
+// 
+// Within the constructor of the CTownManContext, the second member of this struct is initialized to -1
+// after this call happens inside CTownManContext::CTownManContext() at pretty much the very of that function call.
+//
+// This initialization of the member variable is however not executed when this constructor for the struct
+// is called from someplace else in the game's code, as such it remains with unitialized data for that field.
+//
+// Ensuring that this member variable is initialized to 0 anytime this constructor is called fixes an issue with
+// Tails not disappearing when giving you the camera after Rooftop Run Act 1 (Night). This setting of it to 0 won't
+// break the behaviour created by the call to it from CTownManContext::CTownManContext() as that itself sets it to -1 later on.
+// It only affects other instance of the call.
+//
+// NOTE: ctx.r3.u32 + 0 is also unitialized by this constructor, however both instances of this function being called
+// initialized the said variable later on before being used.
+// 
+// NOTE: ctx.r3.u32 + 20 is also unitialized, however I could not find any uses for this. Since this is already
+// quite a big change due to the amount of NPCs in the game, I would rather not touch this unless an issue is found.
+PPC_FUNC_IMPL(__imp__sub_8297C630);
+PPC_FUNC(sub_8297C630)
+{
+    PPC_STORE_U32(ctx.r3.u32 + 4, 0);
+    __imp__sub_8297C630(ctx, base);
+}
