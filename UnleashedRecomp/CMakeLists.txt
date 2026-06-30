@@ -410,9 +410,12 @@ target_include_directories(UnleashedRecomp PRIVATE
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    find_package(PkgConfig REQUIRED)
     find_package(X11 REQUIRED)
-    target_include_directories(UnleashedRecomp PRIVATE ${X11_INCLUDE_DIR})
-    target_link_libraries(UnleashedRecomp PRIVATE ${X11_LIBRARIES})
+    pkg_search_module(GLIB REQUIRED glib-2.0)
+    pkg_search_module(GIO REQUIRED gio-2.0)
+    target_include_directories(UnleashedRecomp PRIVATE ${X11_INCLUDE_DIR} ${GLIB_INCLUDE_DIRS} ${GIO_INCLUDE_DIRS})
+    target_link_libraries(UnleashedRecomp PRIVATE ${X11_LIBRARIES} ${GLIB_LIBRARIES} ${GIO_LIBRARIES})
 endif()
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${UNLEASHED_RECOMP_PRECOMPILED_HEADERS})
