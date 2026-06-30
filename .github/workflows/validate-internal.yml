@@ -4,9 +4,16 @@ on:
     branches:
       - main
   pull_request:
-    types: [opened, synchronize]
+    branches:
+      - main
+    types: [edited, opened, synchronize]
 jobs:
   build:
     if: github.event_name == 'push' || github.repository == github.event.pull_request.head.repo.full_name
     uses: ./.github/workflows/validate.yml
     secrets: inherit
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
