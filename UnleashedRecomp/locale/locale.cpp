@@ -123,7 +123,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "ウィンドウサイズ" },
             { ELanguage::German,   "Fenstergröße" },
             { ELanguage::French,   "Taille de la fenêtre" },
-            { ELanguage::Spanish,  "Tamaño de ventana" },
+            { ELanguage::Spanish,  "Tamaño de la ventana" },
             { ELanguage::Italian,  "Dimensioni della finestra" }
         }
     },
@@ -135,7 +135,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "ゲームの\u200Bウィンドウサイズを\u200B[設定:せってい]できます" },
             { ELanguage::German,   "Passe die Fenstergröße des Spiels im Fenstermodus an." },
             { ELanguage::French,   "Définir la résolution de jeu en mode fenêtré." },
-            { ELanguage::Spanish,  "Ajusta el tamaño de la ventana de juego en modo ventana." },
+            { ELanguage::Spanish,  "Ajusta el tamaño de la ventana del juego en modo ventana." },
             { ELanguage::Italian,  "Regola la dimensione della finestra del gioco in modalità finestra." }
         }
     },
@@ -213,7 +213,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "この\u200Bオプションは\u200B[現在:げんざい]の\u200BOSで\u200B[変更:へんこう]\u200Bできません" },
             { ELanguage::German,   "Diese Option wird von diesem Betriebssystem nicht unterstützt." },
             { ELanguage::French,   "Cette option n'est pas prise en charge par votre système d'exploitation." },
-            { ELanguage::Spanish,  "Esta opción no está soportada por tu sistema operativo." },
+            { ELanguage::Spanish,  "Esta opción no es compatible con tu sistema operativo." },
             { ELanguage::Italian,  "Questa opzione non è disponibile con il tuo sistema operativo." }
         }
     },
@@ -226,7 +226,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "ゲームが[再起動:さいきどう]されます" },
             { ELanguage::German,   "Das Spiel wird jetzt neu starten." },
             { ELanguage::French,   "Le jeu va maintenant redémarrer." },
-            { ELanguage::Spanish,  "El juego se va a reiniciar." },
+            { ELanguage::Spanish,  "El juego se reiniciará." },
             { ELanguage::Italian,  "Il gioco verrà riavviato." }
         }
     },
@@ -319,7 +319,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "ゲームのソースとタイトルアップデート\nを[追加:ついか]" },
             { ELanguage::German,   "Füge die Quellen für das Spiel und dessen Update hinzu." },
             { ELanguage::French,   "Ajouter les fichiers du jeu ainsi que ses mises à jour." },
-            { ELanguage::Spanish,  "Añade las fuentes para el juego y su actualización." },
+            { ELanguage::Spanish,  "Añade los archivos para el juego y su actualización." },
             { ELanguage::Italian,  "Aggiungi le fonti per il gioco e per il suo file d'aggiornamento." }
         }
     },
@@ -331,7 +331,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "DLCのソースを[追加:ついか]" },
             { ELanguage::German,   "Füge die Quellen für die Erweiterungen des Spiels hinzu." },
             { ELanguage::French,   "Ajouter les fichiers pour les DLCs." },
-            { ELanguage::Spanish,  "Añade las fuentes para el DLC." },
+            { ELanguage::Spanish,  "Añade los archivos para el DLC." },
             { ELanguage::Italian,  "Aggiungi le fonti per i DLC." }
         }
     },
@@ -343,7 +343,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "コンテンツはプログラムのフォルダに\nインストールされます\n" },
             { ELanguage::German,   "Der Inhalt wird in dem Ordner des Programms installiert.\n" },
             { ELanguage::French,   "Le contenu sera installé dans le même dossier que le programme.\n" },
-            { ELanguage::Spanish,  "El contenido será instalado a la carpeta del programa.\n\n" },
+            { ELanguage::Spanish,  "El contenido se instalará en la carpeta del programa.\n\n" },
             { ELanguage::Italian,  "Il contenuto verrà installato nella cartella di questo programma.\n\n" }
         }
     },
@@ -506,7 +506,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "[提供:ていきょう]されたファイルの[一部:いちぶ]が[有効:ゆうこう]ではありません\n[指定:してい]されたファイルがすべて[正:ただ]しいことを[確認:かくにん]して\nもう[一度:いちど]お[試:ため]しください" },
             { ELanguage::German,   "Einige Dateien, die bereitgestellt\nwurden sind ungültig.\n\nBitte stelle sicher, dass\ndie angegebenen Dateien korrekt\nsind und versuche es erneut." },
             { ELanguage::French,   "Certains fichiers fournis ne\nsont pas valides.\n\nVeuillez vous assurer que tous\nles fichiers spécifiés sont\ncorrects et réessayez." },
-            { ELanguage::Spanish,  "Algunos de los archivos\nseleccionados no son válidos.\n\nPor favor, asegúrate de que\ntodos los archivos son correctos\ne inténtalo de nuevo.\n" },
+            { ELanguage::Spanish,  "Algunos de los archivos\nseleccionados no son válidos.\n\nPor favor, asegúrate de que\ntodos los archivos sean correctos\ne inténtalo de nuevo.\n" },
             { ELanguage::Italian,  "Alcuni dei file che sono stati\nselezionati non sono validi.\n\nAssicurati che tutti\ni file sono quelli corretti\ne riprova." }
         }
     },
@@ -545,7 +545,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "[指定:してい]されたゲームとタイトルアップデートは[互換性:ごかんせい]がありません\n\nファイルのバージョンと[地域:ちいき]が\n[同:おな]じであることを[確認:かくにん]して\nもう[一度:いちど]お[試:ため]しください" },
             { ELanguage::German,   "Die ausgewählten Spiel- und\nUpdatedateien sind inkompatibel.\n\nBitte stelle sicher, dass\ndie Dateien für die selbe\nVersion und Region vorgesehen sind\nund versuche es erneut." },
             { ELanguage::French,   "Les fichiers du jeu et la mise à\njour sont incompatibles.\n\nVeuillez vous assurer que les\nfichiers sont pour la même\nversion/région puis réessayez." },
-            { ELanguage::Spanish,  "El juego seleccionado\ny su actualización son incompatibles.\n\nPor favor, asegúrate de que que los archivos\nson de la misma versión y\nregión e inténtalo de nuevo." },
+            { ELanguage::Spanish,  "El juego seleccionado\ny su actualización son incompatibles.\n\nPor favor, asegúrate de que los archivos\nsean de la misma versión y\nregión e inténtalo de nuevo." },
             { ELanguage::Italian,  "I file del gioco\ne dell'aggiornamento sono incompatibili.\n\nAssicurati che i file sono\ndella stessa versione\ne regione e riprova." }
         }
     },
@@ -558,7 +558,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "ベースゲーム[用:よう]の[高品質:こうひんしつ]の\n[照明:しょうめい]テクスチャが[含:ふく]まれているため\nすべてのDLCをインストールすることを\n[強:つよ]くお[勧:すす]めします\n\nこの[手順:てじゅん]をスキップしてもよろしいですか？" },
             { ELanguage::German,   "Es wird empgohlen alle Erweiterungen zu installieren, da sie Beleuchtungs-Texturen in einer höheren Qualität für das Basisspiel beinhalten.\n\nBist du dir sicher, dass du diesen Schritt überspringen möchtest?" },
             { ELanguage::French,   "Il est fortement recommandé\nd'installer l'ensemble du\nDLC car elle inclut des\ntextures de lumière de\nhaute qualité pour le jeu\nde base.\n\nÊtes-vous sûr de vouloir\nignorer cette étape ?" },
-            { ELanguage::Spanish,  "Se recomienda encarecidamente\ninstalar todo el DLC, ya que\ncontiene texturas de iluminación\nde alta calidad para el juego base.\n\n¿Seguro que quieres saltar este paso?" },
+            { ELanguage::Spanish,  "Se recomienda encarecidamente\ninstalar todo el DLC, ya que\nincluye texturas de iluminación\nde alta calidad para el juego base.\n\n¿Estás seguro de que quieres\nomitir este paso?" },
             { ELanguage::Italian,  "Si consiglia di installare\ntutti i DLC, poichè includono\ntexture di illuminazione di qualità migliore.\n\nSei sicuro di voler saltare?" }
         }
     },
@@ -584,7 +584,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "これによりゲームが[再起動:さいきどう]され\n[不足:ふそく]しているDLCを\nインストールできるようになります\n\n[現在:げんざい] [不足:ふそく]しているDLCはありません\n\nそれでも[続行:ぞっこう]しますか？" },
             { ELanguage::German,   "Das Spiel wird neu gestartet\num die Installation einer fehlenden\nErweiterung zu ermöglichen.\n\nEs kann keine weitere Erweiterung\ninstalliert werden.\n\nMöchtest du trotzdem fortfahren?" },
             { ELanguage::French,   "Cela redémarrera le jeu pour vous\npermettre d'installer les DLC\nmanquants.\n\nIl ne vous manque aucun DLC.\n\nVoulez-vous quand même continuer ?" },
-            { ELanguage::Spanish,  "Esto reiniciará el juego\npara permitirte instalar\nlos DLC que falten.\n\nActualmente, no falta ningún\nDLC por instalarse.\n\n¿Quieres continuar de todos\nmodos?" },
+            { ELanguage::Spanish,  "Esto reiniciará el juego\npara permitirte instalar\nlos DLC que falten.\n\nActualmente, no falta ningún\nDLC por instalar.\n\n¿Quieres continuar de todos\nmodos?" },
             { ELanguage::Italian,  "Questa opzione riavviera il gioco\nper farti installare qualsiasi DLC\nche non hai installato.\n\nHai già installato tutti i DLC.\n\nVuoi procedere comunque?" }
         }
     },
@@ -665,7 +665,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "[実績:じっせき]データを[読:よ]み[込:こ]めませんでした\n[実績:じっせき]は[保存:ほぞん]されません。" },
             { ELanguage::German,   "Die Erfolgsdaten konnten nicht geladen werden.\nDeine Erfolge werden nicht gespeichert." },
             { ELanguage::French,   "Les données des succès ne\npeuvent être chargées.\nVos succès ne seront pas\nsauvegardés." },
-            { ELanguage::Spanish,  "Los datos de logros no pueden cargarse.\nTus logros no serán guardados." },
+            { ELanguage::Spanish,  "Los datos de logros no pueden cargarse.\nTus logros no se guardarán." },
             { ELanguage::Italian,  "I file degli obiettivi non possono essere caricati.\nI tuoi obiettivi non verranno salvati." }
         }
     },
@@ -677,7 +677,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "アップデートが[利用:りよう][可能:かのう]です\n\nリリースページにアクセスして\nダウンロードしますか？" },
             { ELanguage::German,   "Ein Update ist verfügbar!\n\nMöchtest du die Release-Seite\nbesuchen um es herunterzuladen?" },
             { ELanguage::French,   "Une mise à jour est disponible !\n\nVoulez-vous visiter la page\ndes mises à jour pour la\ntélécharger ?" },
-            { ELanguage::Spanish,  "¡Hay una actualización disponible!\n\n¿Quieres ir a la página\npara descargarla?" },
+            { ELanguage::Spanish,  "¡Hay una actualización disponible!\n\n¿Quieres ir a la página de\nlanzamientos para descargarla?" },
             { ELanguage::Italian,  "È disponibile un aggiornamento!\n\nVuoi visitare la pagina releases\nper scaricarlo?" }
         }
     },
@@ -688,7 +688,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Japanese, "D3D12 (Windows)または\nVulkanバックエンドを作成できません\n\n次の点を確認してください：\n\n※システムが最小要件を満たしている\n※GPUドライバーが最新である\n※オペレーティングシステムが最新バージョンである" },
             { ELanguage::German,   "Es ist nicht möglich, ein D3D12 (Windows) oder Vulkan-Backend zu erstellen.\n\nBitte stelle sicher, dass:\n\n- Dein System die Mindestanforderungen erfüllt.\n- Deine GPU-Treiber auf dem neuesten Stand sind.\n- Dein Betriebssystem auf der neuesten verfügbaren Version ist." },
             { ELanguage::French,   "Impossible de créer un backend D3D12 (Windows) ou Vulkan.\n\nVeuillez vous assurer que :\n\n- Votre système répond aux critères minimums requis.\n- Les pilotes de votre processeur graphique sont à jour.\n- Votre système d'exploitation est à jour." },
-            { ELanguage::Spanish,  "No se puede crear un entorno de D3D12 (Windows) o de Vulkan.\n\nPor favor, asegúrate de que:\n\n- Tu equipo cumple con los requisitos mínimos.\n- Los drivers de tu tarjeta gráfica están actualizados.\n- Tu sistema operativo está actualizado a la última versión.\n" },
+            { ELanguage::Spanish,  "No se puede crear un backend D3D12 (Windows) ni un backend Vulkan.\n\nAsegúrate de que:\n\n- Tu equipo cumple con los requisitos mínimos.\n- Los controladores de tu tarjeta gráfica están actualizados.\n- Tu sistema operativo está actualizado a la última versión.\n" },
             { ELanguage::Italian,  "Impossibile creare un backend D3D12 (Windows) o Vulkan.\n\nAssicurati che:\n\n- Il tuo sistema soddisfi i requisiti minimi.\n- I driver della scheda grafica siano aggiornati.\n- Il tuo sistema operativo sia aggiornato." }
         }
     },
