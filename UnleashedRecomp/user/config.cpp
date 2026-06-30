@@ -322,6 +322,7 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EAspectRatio)
     { "16:9", EAspectRatio::Wide },
     { "4:3",  EAspectRatio::Narrow },
     { "Original 4:3",  EAspectRatio::OriginalNarrow },
+    { "Custom",  EAspectRatio::Custom },
 };
 
 CONFIG_DEFINE_ENUM_TEMPLATE(ETripleBuffering)
