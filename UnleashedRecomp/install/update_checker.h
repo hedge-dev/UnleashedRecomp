@@ -1,5 +1,8 @@
 #pragma once
 
+// 6 hour long timeout between checks.
+static constexpr double g_timeBetweenUpdateChecksInSeconds = 6 * 60 * 60;
+
 struct UpdateChecker
 {
     enum class Result
