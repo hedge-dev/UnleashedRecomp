@@ -1,0 +1,48 @@
+{
+  "id": "io.github.hedge_dev.unleashedrecomp",
+  "runtime": "org.freedesktop.Platform",
+  "runtime-version": "24.08",
+  "sdk": "org.freedesktop.Sdk",
+  "sdk-extensions" : [ "org.freedesktop.Sdk.Extension.llvm18" ],
+  "finish-args": [
+    "--share=network",
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--socket=pulseaudio",
+    "--device=all",
+    "--filesystem=host",
+    "--filesystem=/media",
+    "--filesystem=/run/media",
+    "--filesystem=/mnt"
+  ],
+  "modules": [
+    {
+      "name": "UnleashedRecomp",
+      "buildsystem": "simple",
+      "build-commands": [
+        "cmake --preset linux-debug -DUNLEASHED_RECOMP_FLATPAK=ON -DSDL2MIXER_VORBIS=VORBISFILE -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache",
+        "cmake --build out/build/linux-debug --target UnleashedRecomp",
+        "mkdir -p /app/bin",
+        "cp out/build/linux-debug/UnleashedRecomp/UnleashedRecomp /app/bin/UnleashedRecomp",
+        "install -Dm644 UnleashedRecompResources/images/game_icon.png /app/share/icons/hicolor/128x128/apps/${FLATPAK_ID}.png",
+        "install -Dm644 flatpak/io.github.hedge_dev.unleashedrecomp.metainfo.xml /app/share/metainfo/${FLATPAK_ID}.metainfo.xml",
+        "install -Dm644 flatpak/io.github.hedge_dev.unleashedrecomp.desktop /app/share/applications/${FLATPAK_ID}.desktop"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "../"
+        }
+      ],
+      "build-options": {
+        "no-debuginfo": true,
+        "strip": false,
+        "append-path": "/usr/lib/sdk/llvm18/bin",
+        "prepend-ld-library-path": "/usr/lib/sdk/llvm18/lib",
+        "build-args": [
+          "--share=network"
+        ]
+      }
+    }
+  ]
+}
