@@ -64,6 +64,30 @@ bool UseAlternateTitleMidAsmHook()
     return isSWA;
 }
 
+bool UseAlternateTitleStaffRollMidAsmHook(PPCRegister& r1)
+{
+    auto pGroupName = (Hedgehog::Base::CSharedString*)g_memory.Translate(r1.s64 + 0x60);
+
+    if (Config::UseAlternateTitle)
+    {
+        // Redirect English title to Japanese title.
+        if (strcmp(pGroupName->c_str(), "OFCI5") == 0 || strcmp(pGroupName->c_str(), "OTLR11") == 0)
+            return Config::Language == ELanguage::Japanese;
+
+        // Redirect Japanese title to English title.
+        if (strcmp(pGroupName->c_str(), "JFCI7") == 0 || strcmp(pGroupName->c_str(), "JTLR13") == 0)
+            return Config::Language != ELanguage::Japanese;
+    }
+
+    if (pGroupName->c_str()[0] == 'J')
+        return Config::Language == ELanguage::Japanese;
+
+    if (pGroupName->c_str()[0] == 'O')
+        return Config::Language != ELanguage::Japanese;
+
+    return true;
+}
+
 /* Hook function that gets the game region
    and force result to zero for Japanese
    to display the correct logos. */
