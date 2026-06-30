@@ -11,7 +11,7 @@
 #define LOG_WARNING(str)       LOG_IMPL(Warning, __func__, str)
 #define LOG_ERROR(str)         LOG_IMPL(Error, __func__, str)
 
-#if _DEBUG
+#if UNLEASHED_RECOMP_DEBUG
 #define LOG_UTILITY(str)       LOG_IMPL(Utility, __func__, str)
 #else
 #define LOG_UTILITY(str)
@@ -21,7 +21,7 @@
 #define LOGF_WARNING(str, ...) LOGF_IMPL(Warning, __func__, str, __VA_ARGS__)
 #define LOGF_ERROR(str, ...)   LOGF_IMPL(Error, __func__, str, __VA_ARGS__)
 
-#if _DEBUG
+#if UNLEASHED_RECOMP_DEBUG
 #define LOGF_UTILITY(str, ...) LOGF_IMPL(Utility, __func__, str, __VA_ARGS__)
 #else
 #define LOGF_UTILITY(str, ...)
@@ -33,7 +33,7 @@
 #define LOGN_WARNING(str)       LOG_IMPL(Warning, "*", str)
 #define LOGN_ERROR(str)         LOG_IMPL(Error, "*", str)
 
-#if _DEBUG
+#if UNLEASHED_RECOMP_DEBUG
 #define LOGN_UTILITY(str)       LOG_IMPL(Utility, "*", str)
 #else
 #define LOGN_UTILITY(str)
@@ -43,7 +43,7 @@
 #define LOGFN_WARNING(str, ...) LOGF_IMPL(Warning, "*", str, __VA_ARGS__)
 #define LOGFN_ERROR(str, ...)   LOGF_IMPL(Error, "*", str, __VA_ARGS__)
 
-#if _DEBUG
+#if UNLEASHED_RECOMP_DEBUG
 #define LOGFN_UTILITY(str, ...) LOGF_IMPL(Utility, "*", str, __VA_ARGS__)
 #else
 #define LOGFN_UTILITY(str, ...)

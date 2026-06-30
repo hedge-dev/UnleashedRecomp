@@ -817,7 +817,7 @@ void Config::Load()
         {
             def->ReadValue(toml);
 
-#if _DEBUG
+#if UNLEASHED_RECOMP_DEBUG
             LOGFN_UTILITY("{} (0x{:X})", def->GetDefinition().c_str(), (intptr_t)def->GetValue());
 #endif
         }
