@@ -17,11 +17,14 @@ Memory::Memory()
 #else
     base = (uint8_t*)mmap((void*)0x100000000ull, PPC_MEMORY_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 
-    if (base == (uint8_t*)MAP_FAILED)
+    if (base == MAP_FAILED)
         base = (uint8_t*)mmap(NULL, PPC_MEMORY_SIZE, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 
-    if (base == nullptr)
+    if (base == MAP_FAILED)
+    {
+        base = nullptr;
         return;
+    }
 
     mprotect(base, 4096, PROT_NONE);
 #endif

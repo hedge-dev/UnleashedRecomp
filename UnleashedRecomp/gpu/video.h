@@ -24,6 +24,9 @@ struct Video
     static void StartPipelinePrecompilation();
     static void WaitForGPU();
     static void ComputeViewportDimensions();
+
+    static inline uint32_t s_drawableWidth{};
+    static inline uint32_t s_drawableHeight{};
 };
 
 struct GuestSamplerState

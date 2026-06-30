@@ -3,6 +3,7 @@
 #include <gpu/video.h>
 #include <install/installer.h>
 #include <kernel/function.h>
+#include <os/logger.h>
 #include <os/process.h>
 #include <patches/audio_patches.h>
 #include <patches/inspire_patches.h>
@@ -36,6 +37,10 @@ PPC_FUNC(sub_824EB490)
     App::s_isMissingDLC = !Installer::checkAllDLC(GetGamePath());
     App::s_language = Config::Language;
 
+#ifdef UNLEASHED_RECOMP_IOS
+    LOGFN("SWA::CApplication constructed. missingDLC={}", App::s_isMissingDLC);
+#endif
+
     SWA::SGlobals::Init();
     Registry::Save();
 
@@ -48,6 +53,15 @@ static std::thread::id g_mainThreadId = std::this_thread::get_id();
 PPC_FUNC_IMPL(__imp__sub_822C1130);
 PPC_FUNC(sub_822C1130)
 {
+#ifdef UNLEASHED_RECOMP_IOS
+    static uint32_t s_updateCount = 0;
+    if (s_updateCount < 5 || (s_updateCount % 300) == 0)
+    {
+        LOGFN("SWA::CApplication::Update count={} delta={}", s_updateCount, ctx.f1.f64);
+    }
+    s_updateCount++;
+#endif
+
     Video::WaitOnSwapChain();
 
     // Correct small delta time errors.
@@ -94,4 +108,3 @@ PPC_FUNC(sub_822C1130)
 
     __imp__sub_822C1130(ctx, base);
 }
-

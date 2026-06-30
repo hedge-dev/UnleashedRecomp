@@ -165,6 +165,71 @@
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_INTERPROCEDURAL_OPTIMIZATION": true
             }
+        },
+        {
+            "name": "ios-simulator-debug",
+            "displayName": "iOS Simulator Debug",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "cacheVariables": {
+                "CMAKE_SYSTEM_NAME": "iOS",
+                "CMAKE_OSX_SYSROOT": "iphonesimulator",
+                "CMAKE_OSX_ARCHITECTURES": "arm64",
+                "CMAKE_OSX_DEPLOYMENT_TARGET": "16.0",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "UNLEASHED_RECOMP_SKIP_TARGET_TOOL_EXECUTABLES": true,
+                "UNLEASHED_RECOMP_HOST_TOOLS_DIR": "${sourceDir}/out/build/macos-release",
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                    "type": "FILEPATH"
+                },
+                "VCPKG_TARGET_TRIPLET": {
+                    "value": "arm64-ios-simulator",
+                    "type": "STRING"
+                }
+            },
+            "environment": {
+                "VCPKG_ROOT": "${sourceDir}/thirdparty/vcpkg"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            }
+        },
+        {
+            "name": "ios-device-release",
+            "displayName": "iOS Device Release",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "cacheVariables": {
+                "CMAKE_SYSTEM_NAME": "iOS",
+                "CMAKE_OSX_SYSROOT": "iphoneos",
+                "CMAKE_OSX_ARCHITECTURES": "arm64",
+                "CMAKE_OSX_DEPLOYMENT_TARGET": "16.0",
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": true,
+                "UNLEASHED_RECOMP_SKIP_TARGET_TOOL_EXECUTABLES": true,
+                "UNLEASHED_RECOMP_HOST_TOOLS_DIR": "${sourceDir}/out/build/macos-release",
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                    "type": "FILEPATH"
+                },
+                "VCPKG_TARGET_TRIPLET": {
+                    "value": "arm64-ios",
+                    "type": "STRING"
+                }
+            },
+            "environment": {
+                "VCPKG_ROOT": "${sourceDir}/thirdparty/vcpkg"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            }
         }
     ]
 }

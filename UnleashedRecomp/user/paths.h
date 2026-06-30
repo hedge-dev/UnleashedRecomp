@@ -10,6 +10,8 @@
 
 extern std::filesystem::path g_executableRoot;
 
+void InitPaths();
+
 bool CheckPortable();
 std::filesystem::path BuildUserPath();
 const std::filesystem::path& GetUserPath();

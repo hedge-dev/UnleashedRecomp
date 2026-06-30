@@ -6,6 +6,9 @@
 #include <app.h>
 #include <sdl_listener.h>
 #include <SDL_syswm.h>
+#ifdef __APPLE__
+#include <SDL_metal.h>
+#endif
 
 #if _WIN32
 #include <dwmapi.h>
@@ -161,6 +164,12 @@ void GameWindow::Init(const char* sdlVideoDriver)
     SDL_SetHint("SDL_APP_ID", "io.github.hedge_dev.unleashedrecomp");
 #endif
 
+#ifdef UNLEASHED_RECOMP_IOS
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeRight");
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "1");
+    SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
+#endif
+
     if (SDL_VideoInit(sdlVideoDriver) != 0 && sdlVideoDriver)
     {
         LOGFN_ERROR("Failed to initialise the SDL video driver: \"{}\". Falling back to default.", sdlVideoDriver);
@@ -184,6 +193,13 @@ void GameWindow::Init(const char* sdlVideoDriver)
     s_width = Config::WindowWidth;
     s_height = Config::WindowHeight;
 
+#ifdef UNLEASHED_RECOMP_IOS
+    s_x = SDL_WINDOWPOS_UNDEFINED;
+    s_y = SDL_WINDOWPOS_UNDEFINED;
+    s_width = 1280;
+    s_height = 720;
+#endif
+
     if (s_x == -1 && s_y == -1)
         s_x = s_y = SDL_WINDOWPOS_CENTERED;
 
@@ -191,6 +207,10 @@ void GameWindow::Init(const char* sdlVideoDriver)
         GameWindow::ResetDimensions();
 
     s_pWindow = SDL_CreateWindow("Unleashed Recompiled", s_x, s_y, s_width, s_height, GetWindowFlags());
+
+#ifdef UNLEASHED_RECOMP_IOS
+    SDL_GetWindowSize(s_pWindow, &s_width, &s_height);
+#endif
 
     if (IsFullscreen())
         SDL_ShowCursor(SDL_DISABLE);
@@ -218,8 +238,13 @@ void GameWindow::Init(const char* sdlVideoDriver)
 #elif defined(__linux__)
     s_renderWindow = { info.info.x11.display, info.info.x11.window };
 #elif defined(__APPLE__)
+    s_metalView = SDL_Metal_CreateView(s_pWindow);
+#ifdef UNLEASHED_RECOMP_IOS
+    s_renderWindow.window = s_metalView;
+#else
     s_renderWindow.window = info.info.cocoa.window;
-    s_renderWindow.view = SDL_Metal_GetLayer(SDL_Metal_CreateView(s_pWindow));
+#endif
+    s_renderWindow.view = s_metalView != nullptr ? SDL_Metal_GetLayer(s_metalView) : nullptr;
 #else
     static_assert(false, "Unknown platform.");
 #endif
@@ -227,6 +252,10 @@ void GameWindow::Init(const char* sdlVideoDriver)
     SetTitleBarColour();
 
     SDL_ShowWindow(s_pWindow);
+
+#ifdef UNLEASHED_RECOMP_IOS
+    s_isFocused = true;
+#endif
 }
 
 void GameWindow::Update()
@@ -436,6 +465,8 @@ uint32_t GameWindow::GetWindowFlags()
 
 #ifdef SDL_VULKAN_ENABLED
     flags |= SDL_WINDOW_VULKAN;
+#elif defined(__APPLE__)
+    flags |= SDL_WINDOW_METAL;
 #endif
 
     return flags;

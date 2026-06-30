@@ -23,22 +23,31 @@ ISOFileSystem::ISOFileSystem(const std::filesystem::path &isoPath)
 
     name = (const char *)(isoPath.filename().u8string().data());
 
+    auto readBytes = [this](size_t offset, void *dest, size_t size) -> bool
+    {
+        return mappedFile.readAt(offset, dest, size);
+    };
+
     // Find root sector.
-    const uint8_t *mappedFileData = mappedFile.data();
     uint32_t gameOffset = 0;
     const size_t XeSectorSize = 2048;
     static const size_t PossibleOffsets[] = { 0x00000000, 0x0000FB20, 0x00020600, 0x02080000, 0x0FD90000, };
     bool magicFound = false;
-    const char RefMagic[] = "MICROSOFT*XBOX*MEDIA";
+    static constexpr char RefMagic[] = "MICROSOFT*XBOX*MEDIA";
+    static constexpr size_t RefMagicSize = sizeof(RefMagic) - 1;
     for (size_t i = 0; i < std::size(PossibleOffsets); i++)
     {
         size_t fileOffset = PossibleOffsets[i] + (32 * XeSectorSize);
-        if ((fileOffset + strlen(RefMagic)) > mappedFile.size())
+        if ((fileOffset + RefMagicSize) > mappedFile.size())
         {
             continue;
         }
 
-        if (std::memcmp(&mappedFileData[fileOffset], RefMagic, strlen(RefMagic)) == 0)
+        char magic[RefMagicSize];
+        if (!readBytes(fileOffset, magic, sizeof(magic)))
+            continue;
+
+        if (std::memcmp(magic, RefMagic, RefMagicSize) == 0)
         {
             gameOffset = PossibleOffsets[i];
             magicFound = true;
@@ -53,8 +62,15 @@ ISOFileSystem::ISOFileSystem(const std::filesystem::path &isoPath)
     }
 
     // Parse root information.
-    uint32_t rootSector = *(uint32_t *)(&mappedFileData[rootInfoOffset + 0]);
-    uint32_t rootSize = *(uint32_t *)(&mappedFileData[rootInfoOffset + 4]);
+    uint32_t rootSector = 0;
+    uint32_t rootSize = 0;
+    if (!readBytes(rootInfoOffset + 0, &rootSector, sizeof(rootSector)) ||
+        !readBytes(rootInfoOffset + 4, &rootSize, sizeof(rootSize)))
+    {
+        mappedFile.close();
+        return;
+    }
+
     size_t rootOffset = gameOffset + (rootSector * XeSectorSize);
     const uint32_t MinRootSize = 13;
     const uint32_t MaxRootSize = 32 * 1024 * 1024;
@@ -95,12 +111,16 @@ ISOFileSystem::ISOFileSystem(const std::filesystem::path &isoPath)
             return;
         }
 
-        nodeL = *(uint16_t *)(&mappedFileData[infoOffset + 0]);
-        nodeR = *(uint16_t *)(&mappedFileData[infoOffset + 2]);
-        sector = *(uint32_t *)(&mappedFileData[infoOffset + 4]);
-        length = *(uint32_t *)(&mappedFileData[infoOffset + 8]);
-        attributes = *(uint8_t *)(&mappedFileData[infoOffset + 12]);
-        nameLength = *(uint8_t *)(&mappedFileData[infoOffset + 13]);
+        if (!readBytes(infoOffset + 0, &nodeL, sizeof(nodeL)) ||
+            !readBytes(infoOffset + 2, &nodeR, sizeof(nodeR)) ||
+            !readBytes(infoOffset + 4, &sector, sizeof(sector)) ||
+            !readBytes(infoOffset + 8, &length, sizeof(length)) ||
+            !readBytes(infoOffset + 12, &attributes, sizeof(attributes)) ||
+            !readBytes(infoOffset + 13, &nameLength, sizeof(nameLength)))
+        {
+            mappedFile.close();
+            return;
+        }
 
         size_t nameOffset = infoOffset + 14;
         if ((nameOffset + nameLength) > mappedFile.size())
@@ -109,7 +129,12 @@ ISOFileSystem::ISOFileSystem(const std::filesystem::path &isoPath)
             return;
         }
 
-        memcpy(fileName, &mappedFileData[nameOffset], nameLength);
+        if (!readBytes(nameOffset, fileName, nameLength))
+        {
+            mappedFile.close();
+            return;
+        }
+
         fileName[nameLength] = '\0';
 
         if (nodeL)
@@ -147,14 +172,30 @@ bool ISOFileSystem::load(const std::string &path, uint8_t *fileData, size_t file
             return false;
         }
 
-        const uint8_t *mappedFileData = mappedFile.data();
-        memcpy(fileData, &mappedFileData[std::get<0>(it->second)], std::get<1>(it->second));
-        return true;
+        return mappedFile.readAt(std::get<0>(it->second), fileData, std::get<1>(it->second));
     }
     else
     {
         return false;
     }
+}
+
+bool ISOFileSystem::read(const std::string &path, size_t offset, uint8_t *fileData, size_t size) const
+{
+    auto it = fileMap.find(path);
+    if (it == fileMap.end())
+    {
+        return false;
+    }
+
+    size_t fileOffset = std::get<0>(it->second);
+    size_t fileSize = std::get<1>(it->second);
+    if (offset + size > fileSize)
+    {
+        return false;
+    }
+
+    return mappedFile.readAt(fileOffset + offset, fileData, size);
 }
 
 size_t ISOFileSystem::getSize(const std::string &path) const

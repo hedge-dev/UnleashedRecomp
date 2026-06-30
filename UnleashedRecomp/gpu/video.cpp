@@ -27,10 +27,13 @@
 #include <ui/options_menu.h>
 #include <ui/game_window.h>
 #include <ui/black_bar.h>
+#include <ui/touch_controls.h>
+#include <ui/input_coords.h>
 #include <patches/aspect_ratio_patches.h>
 #include <user/config.h>
 #include <sdl_listener.h>
 #include <xxHashMap.h>
+#include <os/logger.h>
 #include <os/process.h>
 
 #if defined(ASYNC_PSO_DEBUG) || defined(PSO_CACHING)
@@ -98,17 +101,30 @@ extern "C"
 }
 #endif
 
+#if defined(UNLEASHED_RECOMP_IOS) && defined(__APPLE__) && !defined(SDL_VULKAN_ENABLED)
+#define UNLEASHED_RECOMP_USE_METAL 1
+#endif
+
 namespace plume
 {
 #ifdef UNLEASHED_RECOMP_D3D12
     extern std::unique_ptr<RenderInterface> CreateD3D12Interface();
 #endif
+#ifdef UNLEASHED_RECOMP_USE_METAL
+    extern std::unique_ptr<RenderInterface> CreateMetalInterface();
+#else
 #ifdef SDL_VULKAN_ENABLED
     extern std::unique_ptr<RenderInterface> CreateVulkanInterface(RenderWindow sdlWindow);
 #else
     extern std::unique_ptr<RenderInterface> CreateVulkanInterface();
 #endif
+#endif
 
+#ifdef UNLEASHED_RECOMP_USE_METAL
+    static std::unique_ptr<RenderInterface> CreateMetalInterfaceWrapper() {
+        return CreateMetalInterface();
+    }
+#else
     static std::unique_ptr<RenderInterface> CreateVulkanInterfaceWrapper() {
 #ifdef SDL_VULKAN_ENABLED
         return CreateVulkanInterface(GameWindow::s_renderWindow);
@@ -116,6 +132,7 @@ namespace plume
         return CreateVulkanInterface();
 #endif
     }
+#endif
 }
 
 #pragma pack(push, 1)
@@ -288,6 +305,15 @@ static bool g_vulkan = false;
 #else
 static constexpr bool g_vulkan = true;
 #endif
+
+static const char* GetGraphicsApiName()
+{
+#ifdef UNLEASHED_RECOMP_USE_METAL
+    return "Metal";
+#else
+    return g_vulkan ? "Vulkan" : "D3D12";
+#endif
+}
 
 static bool g_triangleStripWorkaround = false;
 
@@ -1645,6 +1671,65 @@ static void ApplyLowEndDefault(ConfigDef<T> &configDef, T newDefault, bool &chan
     configDef.DefaultValue = newDefault;
 }
 
+#ifdef UNLEASHED_RECOMP_IOS
+template<typename T, bool isHidden>
+static void ApplyIOSDefault(ConfigDef<T, isHidden>& configDef, T desktopDefault, T previousIOSDefault, T iosDefault, bool& changed)
+{
+    const bool shouldApply = !configDef.IsLoadedFromConfig || configDef.Value == desktopDefault || configDef.Value == previousIOSDefault;
+
+    if (shouldApply && configDef.Value != iosDefault)
+    {
+        configDef = iosDefault;
+        changed = true;
+    }
+
+    configDef.DefaultValue = iosDefault;
+}
+
+template<typename T, bool isHidden>
+static void ApplyIOSDefault(ConfigDef<T, isHidden>& configDef, T desktopDefault, T iosDefault, bool& changed)
+{
+    ApplyIOSDefault(configDef, desktopDefault, iosDefault, iosDefault, changed);
+}
+
+static void ApplyIOSPerformanceDefaults()
+{
+    bool changed = false;
+
+    ApplyIOSDefault(Config::ResolutionScale, 1.0f, 0.65f, 0.55f, changed);
+    ApplyIOSDefault(Config::AntiAliasing, EAntiAliasing::MSAA4x, EAntiAliasing::None, changed);
+    ApplyIOSDefault(Config::TransparencyAntiAliasing, true, false, changed);
+    ApplyIOSDefault(Config::AnisotropicFiltering, 16u, 4u, 2u, changed);
+    ApplyIOSDefault(Config::ShadowResolution, EShadowResolution::x4096, EShadowResolution::Original, changed);
+    ApplyIOSDefault(Config::GITextureFiltering, EGITextureFiltering::Bicubic, EGITextureFiltering::Bilinear, changed);
+    ApplyIOSDefault(Config::DepthOfFieldQuality, EDepthOfFieldQuality::Auto, EDepthOfFieldQuality::Low, changed);
+    ApplyIOSDefault(Config::MotionBlur, EMotionBlur::Original, EMotionBlur::Off, changed);
+    ApplyIOSDefault(Config::TripleBuffering, ETripleBuffering::Auto, ETripleBuffering::On, changed);
+    ApplyIOSDefault(Config::MaxFrameLatency, 2u, 1u, 2u, changed);
+
+    if (changed)
+        Config::Save();
+}
+#endif
+
+static float GetEffectiveResolutionScale()
+{
+    float resolutionScale = Config::ResolutionScale.Value;
+
+#ifdef UNLEASHED_RECOMP_IOS
+    if (Config::ResolutionScale.Value <= Config::ResolutionScale.DefaultValue + 0.001f && Video::s_viewportHeight != 0)
+    {
+        constexpr float maxDefaultRenderHeight = 720.0f;
+        const float cappedScale = maxDefaultRenderHeight / float(Video::s_viewportHeight);
+
+        if (resolutionScale > cappedScale)
+            resolutionScale = cappedScale;
+    }
+#endif
+
+    return resolutionScale;
+}
+
 static void ApplyLowEndDefaults()
 {
     bool changed = false;
@@ -1694,6 +1779,8 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
 
     interfaceFunctions.push_back(g_vulkan ? CreateVulkanInterfaceWrapper : CreateD3D12Interface);
     interfaceFunctions.push_back(g_vulkan ? CreateD3D12Interface : CreateVulkanInterfaceWrapper);
+#elif defined(UNLEASHED_RECOMP_USE_METAL)
+    interfaceFunctions.push_back(CreateMetalInterfaceWrapper);
 #else
     interfaceFunctions.push_back(CreateVulkanInterfaceWrapper);
 #endif
@@ -1820,6 +1907,10 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
         ApplyLowEndDefaults();
     }
 
+#ifdef UNLEASHED_RECOMP_IOS
+    ApplyIOSPerformanceDefaults();
+#endif
+
     const RenderSampleCounts colourSampleCount = g_device->getSampleCountsSupported(RenderFormat::R16G16B16A16_FLOAT);
     const RenderSampleCounts depthSampleCount  = g_device->getSampleCountsSupported(RenderFormat::D32_FLOAT);
     const RenderSampleCounts commonSampleCount = colourSampleCount & depthSampleCount;
@@ -1878,6 +1969,19 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     g_swapChain = g_queue->createSwapChain(GameWindow::s_renderWindow, bufferCount, BACKBUFFER_FORMAT, Config::MaxFrameLatency);
     g_swapChain->setVsyncEnabled(Config::VSync);
     g_swapChainValid = !g_swapChain->needsResize();
+
+#ifdef UNLEASHED_RECOMP_IOS
+    LOGFN("Created iOS swapchain: buffers={} maxFrameLatency={} valid={} size={}x{} viewport={}x{} window={}x{}",
+        bufferCount,
+        Config::MaxFrameLatency.Value,
+        g_swapChainValid,
+        g_swapChain->getWidth(),
+        g_swapChain->getHeight(),
+        Video::s_viewportWidth,
+        Video::s_viewportHeight,
+        GameWindow::s_width,
+        GameWindow::s_height);
+#endif
 
     for (auto& acquireSemaphore : g_acquireSemaphores)
         acquireSemaphore = g_device->createCommandSemaphore();
@@ -2094,6 +2198,10 @@ void Video::WaitForGPU()
 
 static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, be<uint32_t>* a6)
 {
+#ifdef UNLEASHED_RECOMP_IOS
+    LOGFN("Guest CreateDevice called: a1=0x{:08X} a2=0x{:08X} a3=0x{:08X} a4=0x{:08X} a5=0x{:08X}", a1, a2, a3, a4, a5);
+#endif
+
     g_xdbfTextureCache = std::unordered_map<uint16_t, GuestTexture *>();
 
     for (auto &achievement : g_xdbfWrapper.GetAchievements(XDBF_LANGUAGE_ENGLISH))
@@ -2142,6 +2250,10 @@ static uint32_t CreateDevice(uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
     device->viewport.maxZ = 1.0f;
 
     *a6 = g_memory.MapVirtual(device);
+
+#ifdef UNLEASHED_RECOMP_IOS
+    LOGFN("Guest CreateDevice finished: device=0x{:08X}", uint32_t(*a6));
+#endif
 
     return 0;
 }
@@ -2464,7 +2576,7 @@ static void DrawProfiler()
         ImGui::Text("Hardware Depth Resolve: %s", g_hardwareDepthResolve ? "Enabled" : "Disabled");
         ImGui::NewLine();
 
-        ImGui::Text("API: %s", g_vulkan ? "Vulkan" : "D3D12");
+        ImGui::Text("API: %s", GetGraphicsApiName());
         ImGui::Text("Device: %s", g_device->getDescription().name.c_str());
         ImGui::Text("Device Type: %s", DeviceTypeName(g_device->getDescription().type));
         ImGui::Text("VRAM: %.2f MiB", (double)(g_device->getDescription().dedicatedVideoMemory) / (1024.0 * 1024.0));
@@ -2543,30 +2655,22 @@ static void DrawImGui()
     auto& io = ImGui::GetIO();
     io.DisplaySize = { float(Video::s_viewportWidth), float(Video::s_viewportHeight) };
 
+    Video::s_drawableWidth = g_swapChain->getWidth();
+    Video::s_drawableHeight = g_swapChain->getHeight();
+
     // ImGui doesn't know that we center the screen for specific aspect ratio
     // settings, which causes mouse events to not work correctly. To fix this, 
     // we can adjust the mouse events before ImGui processes them.
-    uint32_t width = g_swapChain->getWidth();
-    uint32_t height = g_swapChain->getHeight();
-    float mousePosScaleX = float(width) / float(GameWindow::s_width);
-    float mousePosScaleY = float(height) / float(GameWindow::s_height);
-    float mousePosOffsetX = (width - Video::s_viewportWidth) / 2.0f;
-    float mousePosOffsetY = (height - Video::s_viewportHeight) / 2.0f;
     for (int i = 0; i < io.Ctx->InputEventsQueue.Size; i++)
     {
         auto& e = io.Ctx->InputEventsQueue[i];
         if (e.Type == ImGuiInputEventType_MousePos)
         {
-            if (e.MousePos.PosX != -FLT_MAX)
+            if (e.MousePos.PosX != -FLT_MAX && e.MousePos.PosY != -FLT_MAX)
             {
-                e.MousePos.PosX *= mousePosScaleX;
-                e.MousePos.PosX -= mousePosOffsetX;
-            }
-
-            if (e.MousePos.PosY != -FLT_MAX)
-            {
-                e.MousePos.PosY *= mousePosScaleY;
-                e.MousePos.PosY -= mousePosOffsetY;
+                const ImVec2 transformed = TransformWindowPointToViewport(e.MousePos.PosX, e.MousePos.PosY);
+                e.MousePos.PosX = transformed.x;
+                e.MousePos.PosY = transformed.y;
             }
         }
     }
@@ -2597,6 +2701,7 @@ static void DrawImGui()
     InstallerWizard::Draw();
     MessageWindow::Draw();
     ButtonGuide::Draw();
+    TouchControls::Draw();
     Fader::Draw();
     BlackBar::Draw();
 
@@ -2790,6 +2895,15 @@ static std::atomic<bool> g_executedCommandList;
 
 void Video::Present() 
 {
+#ifdef UNLEASHED_RECOMP_IOS
+    static uint32_t s_presentCount = 0;
+    if (s_presentCount < 5 || (s_presentCount % 300) == 0)
+    {
+        LOGFN("Video::Present count={} swapChainValid={}", s_presentCount, g_swapChainValid);
+    }
+    s_presentCount++;
+#endif
+
     g_readyForCommands = false;
 
     RenderCommand cmd;
@@ -5205,7 +5319,7 @@ static void ProcSetPixelShader(const RenderCommand& cmd)
             {
                 if (g_aspectRatio >= WIDE_ASPECT_RATIO)
                 {
-                    size_t height = round(Video::s_viewportHeight * Config::ResolutionScale);
+                    size_t height = round(Video::s_viewportHeight * GetEffectiveResolutionScale());
 
                     if (height > 1440)
                         shaderIndex = GAUSSIAN_BLUR_9X9;
@@ -5219,7 +5333,7 @@ static void ProcSetPixelShader(const RenderCommand& cmd)
                 else
                 {
                     // Narrow aspect ratios should check for width to account for VERT+.
-                    size_t width = round(Video::s_viewportWidth * Config::ResolutionScale);
+                    size_t width = round(Video::s_viewportWidth * GetEffectiveResolutionScale());
 
                     if (width > 2560)
                         shaderIndex = GAUSSIAN_BLUR_9X9;
@@ -5897,8 +6011,9 @@ static void SetResolution(be<uint32_t>* device)
 {
     Video::ComputeViewportDimensions();
 
-    uint32_t width = uint32_t(round(Video::s_viewportWidth * Config::ResolutionScale));
-    uint32_t height = uint32_t(round(Video::s_viewportHeight * Config::ResolutionScale));
+    const float resolutionScale = GetEffectiveResolutionScale();
+    uint32_t width = uint32_t(round(Video::s_viewportWidth * resolutionScale));
+    uint32_t height = uint32_t(round(Video::s_viewportHeight * resolutionScale));
     device[46] = width == 0 ? 880 : width;
     device[47] = height == 0 ? 720 : height;
 }

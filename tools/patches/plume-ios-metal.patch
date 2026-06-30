@@ -1,0 +1,979 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6a7645a..5417620 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -98,6 +98,34 @@ if(APPLE)
+     target_include_directories(plume PRIVATE
+         ${CMAKE_CURRENT_SOURCE_DIR}/contrib/metal-cpp
+     )
++
++    if(TARGET spirv-cross-msl)
++        target_link_libraries(plume PUBLIC spirv-cross-msl)
++    endif()
++
++    find_library(FOUNDATION_LIBRARY Foundation REQUIRED)
++    find_library(METAL_LIBRARY Metal REQUIRED)
++    find_library(QUARTZCORE_LIBRARY QuartzCore REQUIRED)
++
++    if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
++        find_library(UIKIT_LIBRARY UIKit REQUIRED)
++        target_link_libraries(plume PUBLIC
++            ${FOUNDATION_LIBRARY}
++            ${METAL_LIBRARY}
++            ${QUARTZCORE_LIBRARY}
++            ${UIKIT_LIBRARY}
++        )
++    else()
++        find_library(APPKIT_LIBRARY AppKit REQUIRED)
++        find_library(IOKIT_LIBRARY IOKit REQUIRED)
++        target_link_libraries(plume PUBLIC
++            ${APPKIT_LIBRARY}
++            ${FOUNDATION_LIBRARY}
++            ${IOKIT_LIBRARY}
++            ${METAL_LIBRARY}
++            ${QUARTZCORE_LIBRARY}
++        )
++    endif()
+ endif()
+ 
+ # Add examples if requested
+diff --git a/plume_apple.mm b/plume_apple.mm
+index 64e4dc9..1d14600 100644
+--- a/plume_apple.mm
++++ b/plume_apple.mm
+@@ -7,10 +7,20 @@
+ 
+ #include "plume_apple.h"
+ 
++#include <TargetConditionals.h>
++
++#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
++#import <UIKit/UIKit.h>
++#else
+ #import <AppKit/AppKit.h>
+-#import <Foundation/Foundation.h>
+ #import <IOKit/IOKitLib.h>
++#endif
++
++#import <Foundation/Foundation.h>
+ 
++#include <cmath>
++
++#if !(TARGET_OS_IOS && !TARGET_OS_MACCATALYST)
+ static uint32_t plumeGetEntryProperty(io_registry_entry_t entry, CFStringRef propertyName) {
+     uint32_t value = 0;
+     CFTypeRef cfProp = IORegistryEntrySearchCFProperty(entry, kIOServicePlane, propertyName, kCFAllocatorDefault, kIORegistryIterateRecursively | kIORegistryIterateParents);
+@@ -27,9 +37,62 @@ static uint32_t plumeGetEntryProperty(io_registry_entry_t entry, CFStringRef pro
+ 
+     return value;
+ }
++#endif
++
++static plume::CocoaWindowAttributes plumeGetWindowAttributes(void* windowHandle) {
++#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
++    UIView *view = (__bridge UIView *)windowHandle;
++    CGRect bounds = [view bounds];
++    CGFloat scaleFactor = [view contentScaleFactor];
++    if (scaleFactor <= 0.0) {
++        scaleFactor = [[UIScreen mainScreen] scale];
++    }
++
++    return {
++        0,
++        0,
++        (int)round(bounds.size.width * scaleFactor),
++        (int)round(bounds.size.height * scaleFactor)
++    };
++#else
++    NSWindow *nsWindow = (__bridge NSWindow *)windowHandle;
++    NSRect contentFrame = [[nsWindow contentView] frame];
++    CGFloat scaleFactor = [nsWindow backingScaleFactor];
++
++    return {
++        (int)round(contentFrame.origin.x),
++        (int)round(contentFrame.origin.y),
++        (int)round(contentFrame.size.width * scaleFactor),
++        (int)round(contentFrame.size.height * scaleFactor)
++    };
++#endif
++}
++
++static int plumeGetRefreshRate(void* windowHandle, int fallbackRate) {
++#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
++    UIView *view = (__bridge UIView *)windowHandle;
++    UIScreen *screen = [[view window] screen] ?: [UIScreen mainScreen];
++    if (@available(iOS 10.3, *)) {
++        return (int)[screen maximumFramesPerSecond];
++    }
++
++    return fallbackRate > 0 ? fallbackRate : 60;
++#else
++    NSWindow *nsWindow = (__bridge NSWindow *)windowHandle;
++    NSScreen *screen = [nsWindow screen];
++    if (@available(macOS 12.0, *)) {
++        return (int)[screen maximumFramesPerSecond];
++    }
++
++    return fallbackRate;
++#endif
++}
+ 
+ namespace plume {
+     RenderDeviceVendor getRenderDeviceVendor(uint64_t registryID) {
++#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
++        return RenderDeviceVendor::APPLE;
++#else
+         io_service_t entry = IOServiceGetMatchingService(MACH_PORT_NULL, IORegistryEntryIDMatching(registryID));
+ 
+         if (entry) {
+@@ -44,6 +107,7 @@ RenderDeviceVendor getRenderDeviceVendor(uint64_t registryID) {
+         }
+         
+         return RenderDeviceVendor::UNKNOWN;
++#endif
+     }
+ 
+     // MARK: - CocoaWindow
+@@ -53,19 +117,8 @@ RenderDeviceVendor getRenderDeviceVendor(uint64_t registryID) {
+         cachedAttributes = {0, 0, 0, 0};
+ 
+         if ([NSThread isMainThread]) {
+-            NSWindow *nsWindow = (__bridge NSWindow *)windowHandle;
+-            NSRect contentFrame = [[nsWindow contentView] frame];
+-            CGFloat scaleFactor = [nsWindow backingScaleFactor];
+-
+-            cachedAttributes.x = (int)round(contentFrame.origin.x);
+-            cachedAttributes.y = (int)round(contentFrame.origin.y);
+-            cachedAttributes.width = (int)round(contentFrame.size.width * scaleFactor);
+-            cachedAttributes.height = (int)round(contentFrame.size.height * scaleFactor);
+-
+-            NSScreen *screen = [nsWindow screen];
+-            if (@available(macOS 12.0, *)) {
+-                cachedRefreshRate.store((int)[screen maximumFramesPerSecond]);
+-            }
++            cachedAttributes = plumeGetWindowAttributes(windowHandle);
++            cachedRefreshRate.store(plumeGetRefreshRate(windowHandle, cachedRefreshRate.load()));
+         } else {
+             updateWindowAttributesInternal(true);
+             updateRefreshRateInternal(true);
+@@ -76,15 +129,8 @@ RenderDeviceVendor getRenderDeviceVendor(uint64_t registryID) {
+ 
+     void CocoaWindow::updateWindowAttributesInternal(bool forceSync) {
+         auto updateBlock = ^{
+-            NSWindow *nsWindow = (__bridge NSWindow *)windowHandle;
+-            NSRect contentFrame = [[nsWindow contentView] frame];
+-            CGFloat scaleFactor = [nsWindow backingScaleFactor];
+-
+             std::lock_guard<std::mutex> lock(attributesMutex);
+-            cachedAttributes.x = (int)round(contentFrame.origin.x);
+-            cachedAttributes.y = (int)round(contentFrame.origin.y);
+-            cachedAttributes.width = (int)round(contentFrame.size.width * scaleFactor);
+-            cachedAttributes.height = (int)round(contentFrame.size.height * scaleFactor);
++            cachedAttributes = plumeGetWindowAttributes(windowHandle);
+         };
+ 
+         if (forceSync) {
+@@ -96,11 +142,7 @@ RenderDeviceVendor getRenderDeviceVendor(uint64_t registryID) {
+ 
+     void CocoaWindow::updateRefreshRateInternal(bool forceSync) {
+         auto updateBlock = ^{
+-            NSWindow *nsWindow = (__bridge NSWindow *)windowHandle;
+-            NSScreen *screen = [nsWindow screen];
+-            if (@available(macOS 12.0, *)) {
+-                cachedRefreshRate.store((int)[screen maximumFramesPerSecond]);
+-            }
++            cachedRefreshRate.store(plumeGetRefreshRate(windowHandle, cachedRefreshRate.load()));
+         };
+ 
+         if (forceSync) {
+@@ -112,16 +154,9 @@ RenderDeviceVendor getRenderDeviceVendor(uint64_t registryID) {
+ 
+     void CocoaWindow::getWindowAttributes(CocoaWindowAttributes* attributes) const {
+         if ([NSThread isMainThread]) {
+-            NSWindow *nsWindow = (__bridge NSWindow *)windowHandle;
+-            NSRect contentFrame = [[nsWindow contentView] frame];
+-            CGFloat scaleFactor = [nsWindow backingScaleFactor];
+-
+             {
+                 std::lock_guard<std::mutex> lock(attributesMutex);
+-                const_cast<CocoaWindow*>(this)->cachedAttributes.x = (int)round(contentFrame.origin.x);
+-                const_cast<CocoaWindow*>(this)->cachedAttributes.y = (int)round(contentFrame.origin.y);
+-                const_cast<CocoaWindow*>(this)->cachedAttributes.width = (int)round(contentFrame.size.width * scaleFactor);
+-                const_cast<CocoaWindow*>(this)->cachedAttributes.height = (int)round(contentFrame.size.height * scaleFactor);
++                const_cast<CocoaWindow*>(this)->cachedAttributes = plumeGetWindowAttributes(windowHandle);
+ 
+                 *attributes = cachedAttributes;
+             }
+@@ -137,16 +172,9 @@ RenderDeviceVendor getRenderDeviceVendor(uint64_t registryID) {
+ 
+     int CocoaWindow::getRefreshRate() const {
+         if ([NSThread isMainThread]) {
+-            NSWindow *nsWindow = (__bridge NSWindow *)windowHandle;
+-            NSScreen *screen = [nsWindow screen];
+-
+-            if (@available(macOS 12.0, *)) {
+-                int freshRate = (int)[screen maximumFramesPerSecond];
+-                const_cast<CocoaWindow*>(this)->cachedRefreshRate.store(freshRate);
+-                return freshRate;
+-            }
+-
+-            return cachedRefreshRate.load();
++            int freshRate = plumeGetRefreshRate(windowHandle, cachedRefreshRate.load());
++            const_cast<CocoaWindow*>(this)->cachedRefreshRate.store(freshRate);
++            return freshRate;
+         } else {
+             int rate = cachedRefreshRate.load();
+ 
+@@ -157,6 +185,9 @@ RenderDeviceVendor getRenderDeviceVendor(uint64_t registryID) {
+     }
+ 
+     void CocoaWindow::toggleFullscreen() {
++#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
++        return;
++#else
+         if ([NSThread isMainThread]) {
+             NSWindow *nsWindow = (__bridge NSWindow *)windowHandle;
+             [nsWindow toggleFullScreen:NULL];
+@@ -166,5 +197,6 @@ RenderDeviceVendor getRenderDeviceVendor(uint64_t registryID) {
+                 [nsWindow toggleFullScreen:NULL];
+             });
+         }
++#endif
+     }
+ }
+diff --git a/plume_metal.cpp b/plume_metal.cpp
+index ebbbaa3..6c91662 100644
+--- a/plume_metal.cpp
++++ b/plume_metal.cpp
+@@ -14,8 +14,12 @@
+ #include <QuartzCore/QuartzCore.hpp>
+ #include <CoreFoundation/CoreFoundation.h>
+ 
++#include <spirv_msl.hpp>
++
+ #include <algorithm>
+ #include <mutex>
++#include <stdexcept>
++#include <string>
+ 
+ #include "plume_metal.h"
+ 
+@@ -38,6 +42,307 @@ namespace plume {
+         return (n + alignment - 1) & ~(alignment - 1);
+     }
+ 
++    bool supportsMetalFamily(MTL::Device* device, MTL::GPUFamily family) {
++        return device != nullptr && device->supportsFamily(family);
++    }
++
++    bool supportsBufferDeviceAddress(MTL::Device* device) {
++        return supportsMetalFamily(device, MTL::GPUFamilyMetal3);
++    }
++
++    uint64_t getRecommendedWorkingSetSize(MTL::Device* device) {
++#if PLUME_IOS
++        // recommendedMaxWorkingSetSize is iOS 16+. The app requires Metal 3 for
++        // gpuAddress, but keep startup safe on older runtimes and SDK shims.
++        (void)device;
++        return 2ULL * 1024ULL * 1024ULL * 1024ULL;
++#else
++        return device->recommendedMaxWorkingSetSize();
++#endif
++    }
++
++    bool hasUnifiedMemory(MTL::Device* device) {
++#if PLUME_IOS
++        (void)device;
++        return true;
++#else
++        return device->hasUnifiedMemory();
++#endif
++    }
++
++    bool supportsProgrammableSamplePositions(MTL::Device* device) {
++#if PLUME_IOS
++        return supportsMetalFamily(device, MTL::GPUFamilyApple3);
++#else
++        return device->programmableSamplePositionsSupported();
++#endif
++    }
++
++    spirv_cross::CompilerMSL::Options::ArgumentBuffersTier getArgumentBuffersTier(MTL::Device* device) {
++#if PLUME_IOS
++        return supportsMetalFamily(device, MTL::GPUFamilyApple3)
++            ? spirv_cross::CompilerMSL::Options::ArgumentBuffersTier::Tier2
++            : spirv_cross::CompilerMSL::Options::ArgumentBuffersTier::Tier1;
++#else
++        return device->argumentBuffersSupport() == MTL::ArgumentBuffersTier2
++            ? spirv_cross::CompilerMSL::Options::ArgumentBuffersTier::Tier2
++            : spirv_cross::CompilerMSL::Options::ArgumentBuffersTier::Tier1;
++#endif
++    }
++
++    uint32_t getSpirvResourceArrayCount(const spirv_cross::SPIRType& type) {
++        uint32_t count = 1;
++        for (const uint32_t dimension : type.array) {
++            if (dimension == 0) {
++                return count;
++            }
++            count *= dimension;
++        }
++
++        return count;
++    }
++
++    void addSpirvResourceBinding(spirv_cross::CompilerMSL& compiler, const spirv_cross::Resource& resource) {
++        if (!compiler.has_decoration(resource.id, spv::DecorationDescriptorSet) ||
++            !compiler.has_decoration(resource.id, spv::DecorationBinding)) {
++            return;
++        }
++
++        const uint32_t descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
++        const uint32_t bindingIndex = compiler.get_decoration(resource.id, spv::DecorationBinding);
++        const spirv_cross::SPIRType& type = compiler.get_type(resource.type_id);
++
++        spirv_cross::MSLResourceBinding binding = {};
++        binding.stage = compiler.get_execution_model();
++        binding.basetype = type.basetype;
++        binding.desc_set = descriptorSet;
++        binding.binding = bindingIndex;
++        binding.count = getSpirvResourceArrayCount(type);
++        binding.msl_buffer = bindingIndex;
++        binding.msl_texture = bindingIndex;
++        binding.msl_sampler = bindingIndex;
++
++        compiler.add_msl_resource_binding(binding);
++    }
++
++    struct MetalShaderSource {
++        std::string source;
++        std::string entryPointName;
++    };
++
++#if PLUME_IOS
++    bool isMetalIdentifierChar(const char c) {
++        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
++    }
++
++    std::string findMetalEntryPointName(const std::string& source, const std::string& fallbackName) {
++        for (const char* stagePrefix : { "vertex ", "fragment ", "kernel " }) {
++            size_t searchOffset = 0;
++            while (true) {
++                const size_t stageOffset = source.find(stagePrefix, searchOffset);
++                if (stageOffset == std::string::npos) {
++                    break;
++                }
++
++                const size_t openParenOffset = source.find('(', stageOffset);
++                if (openParenOffset == std::string::npos) {
++                    break;
++                }
++
++                size_t nameEnd = openParenOffset;
++                while (nameEnd > stageOffset && (source[nameEnd - 1] == ' ' || source[nameEnd - 1] == '\t' || source[nameEnd - 1] == '\r' || source[nameEnd - 1] == '\n')) {
++                    nameEnd--;
++                }
++
++                size_t nameStart = nameEnd;
++                while (nameStart > stageOffset && isMetalIdentifierChar(source[nameStart - 1])) {
++                    nameStart--;
++                }
++
++                if (nameStart < nameEnd) {
++                    return source.substr(nameStart, nameEnd - nameStart);
++                }
++
++                searchOffset = openParenOffset + 1;
++            }
++        }
++
++        return fallbackName;
++    }
++
++    size_t findMetalEntryPointOpenParen(const std::string& source, const std::string& entryPointName, const char* builtinName) {
++        if (!entryPointName.empty()) {
++            const std::string functionNeedle = entryPointName + "(";
++            const size_t functionNameOffset = source.find(functionNeedle);
++            if (functionNameOffset != std::string::npos) {
++                return functionNameOffset + entryPointName.size();
++            }
++        }
++
++        for (const char* stagePrefix : { "vertex ", "fragment ", "kernel " }) {
++            size_t searchOffset = 0;
++            while (true) {
++                const size_t stageOffset = source.find(stagePrefix, searchOffset);
++                if (stageOffset == std::string::npos) {
++                    break;
++                }
++
++                const size_t openParenOffset = source.find('(', stageOffset);
++                const size_t openBraceOffset = source.find('{', openParenOffset);
++                if (openParenOffset == std::string::npos || openBraceOffset == std::string::npos) {
++                    break;
++                }
++
++                if (source.find(builtinName, openBraceOffset) != std::string::npos) {
++                    return openParenOffset;
++                }
++
++                searchOffset = openBraceOffset + 1;
++            }
++        }
++
++        return std::string::npos;
++    }
++
++    void patchImplicitBaseBuiltinArgument(std::string& source, const std::string& entryPointName, const char* builtinName, const char* builtinAttribute) {
++        if (source.find(builtinName) == std::string::npos || source.find(builtinAttribute) != std::string::npos) {
++            return;
++        }
++
++        const size_t openParenOffset = findMetalEntryPointOpenParen(source, entryPointName, builtinName);
++        if (openParenOffset == std::string::npos) {
++            return;
++        }
++
++        size_t closeParenOffset = std::string::npos;
++        int depth = 0;
++
++        for (size_t i = openParenOffset; i < source.size(); i++) {
++            if (source[i] == '(') {
++                depth++;
++            }
++            else if (source[i] == ')') {
++                depth--;
++                if (depth == 0) {
++                    closeParenOffset = i;
++                    break;
++                }
++            }
++        }
++
++        if (closeParenOffset == std::string::npos) {
++            return;
++        }
++
++        const bool hasArguments = source.find_first_not_of(" \t\r\n", openParenOffset + 1) < closeParenOffset;
++        source.insert(closeParenOffset, std::string(hasArguments ? ", uint " : "uint ") + builtinName + " [[" + builtinAttribute + "]]");
++    }
++
++    void patchImplicitBaseBuiltinArguments(std::string& source, const std::string& entryPointName) {
++        patchImplicitBaseBuiltinArgument(source, entryPointName, "gl_BaseVertex", "base_vertex");
++        patchImplicitBaseBuiltinArgument(source, entryPointName, "gl_BaseInstance", "base_instance");
++    }
++#endif
++
++    MetalShaderSource compileSpirvToMetalSource(const MetalDevice* device, const void* data, const uint64_t size, const char* entryPointName) {
++        if ((size % sizeof(uint32_t)) != 0) {
++            throw std::runtime_error("SPIR-V shader data is not 32-bit aligned.");
++        }
++
++        spirv_cross::CompilerMSL compiler(static_cast<const uint32_t*>(data), size / sizeof(uint32_t));
++        std::string spirvEntryPointName = entryPointName != nullptr ? entryPointName : "";
++        spv::ExecutionModel executionModel = compiler.get_execution_model();
++
++        if (!spirvEntryPointName.empty()) {
++            for (const auto& entryPoint : compiler.get_entry_points_and_stages()) {
++                if (entryPoint.name == spirvEntryPointName) {
++                    compiler.set_entry_point(entryPoint.name, entryPoint.execution_model);
++                    executionModel = entryPoint.execution_model;
++                    break;
++                }
++            }
++        }
++
++        if (spirvEntryPointName.empty()) {
++            const auto entryPoints = compiler.get_entry_points_and_stages();
++            if (!entryPoints.empty()) {
++                spirvEntryPointName = entryPoints.front().name;
++                executionModel = entryPoints.front().execution_model;
++            }
++        }
++
++        spirv_cross::CompilerMSL::Options options = compiler.get_msl_options();
++#if PLUME_IOS
++        options.platform = spirv_cross::CompilerMSL::Options::iOS;
++        options.ios_support_base_vertex_instance = true;
++        options.emulate_cube_array = true;
++        spirv_cross::CompilerGLSL::Options commonOptions = compiler.get_common_options();
++        commonOptions.vertex.flip_vert_y = true;
++        compiler.set_common_options(commonOptions);
++#else
++        options.platform = spirv_cross::CompilerMSL::Options::macOS;
++#endif
++        options.set_msl_version(3, 0);
++        options.argument_buffers = true;
++        options.argument_buffers_tier = getArgumentBuffersTier(device->mtl);
++        options.enable_base_index_zero = true;
++        options.enable_decoration_binding = true;
++        options.force_active_argument_buffer_resources = true;
++        options.texture_buffer_native = true;
++
++        compiler.set_msl_options(options);
++
++        for (uint32_t descriptorSet = 0; descriptorSet < MAX_DESCRIPTOR_SET_BINDINGS; descriptorSet++) {
++            spirv_cross::MSLResourceBinding argumentBufferBinding = {};
++            argumentBufferBinding.stage = executionModel;
++            argumentBufferBinding.desc_set = descriptorSet;
++            argumentBufferBinding.binding = spirv_cross::kArgumentBufferBinding;
++            argumentBufferBinding.msl_buffer = DESCRIPTOR_SETS_BINDING_INDEX + descriptorSet;
++            compiler.add_msl_resource_binding(argumentBufferBinding);
++        }
++
++        const spirv_cross::ShaderResources resources = compiler.get_shader_resources();
++        const auto addResourceList = [&](const auto& list) {
++            for (const spirv_cross::Resource& resource : list) {
++                addSpirvResourceBinding(compiler, resource);
++            }
++        };
++
++        addResourceList(resources.uniform_buffers);
++        addResourceList(resources.storage_buffers);
++        addResourceList(resources.stage_inputs);
++        addResourceList(resources.stage_outputs);
++        addResourceList(resources.subpass_inputs);
++        addResourceList(resources.storage_images);
++        addResourceList(resources.sampled_images);
++        addResourceList(resources.separate_images);
++        addResourceList(resources.separate_samplers);
++        addResourceList(resources.atomic_counters);
++        addResourceList(resources.acceleration_structures);
++
++        if (!resources.push_constant_buffers.empty()) {
++            const spirv_cross::SPIRType& pushConstantType = compiler.get_type(resources.push_constant_buffers.front().type_id);
++            spirv_cross::MSLResourceBinding pushConstantsBinding = {};
++            pushConstantsBinding.stage = executionModel;
++            pushConstantsBinding.basetype = pushConstantType.basetype;
++            pushConstantsBinding.desc_set = spirv_cross::kPushConstDescSet;
++            pushConstantsBinding.binding = spirv_cross::kPushConstBinding;
++            pushConstantsBinding.count = 1;
++            pushConstantsBinding.msl_buffer = PUSH_CONSTANTS_BINDING_INDEX;
++            compiler.add_msl_resource_binding(pushConstantsBinding);
++        }
++
++        MetalShaderSource translatedSource = {};
++        translatedSource.entryPointName = compiler.get_cleansed_entry_point_name(spirvEntryPointName, executionModel);
++        translatedSource.source = compiler.compile();
++#if PLUME_IOS
++        translatedSource.entryPointName = findMetalEntryPointName(translatedSource.source, translatedSource.entryPointName);
++        patchImplicitBaseBuiltinArguments(translatedSource.source, translatedSource.entryPointName);
++#endif
++
++        return translatedSource;
++    }
++
+     uint64_t createClearPipelineKey(MTL::RenderPipelineDescriptor *pipelineDesc, bool depthWriteEnabled, bool stencilWriteEnabled) {
+         auto colorFormat = [&](uint32_t index) {
+             if (auto colorAttachment = pipelineDesc->colorAttachments()->object(index)) {
+@@ -1133,7 +1438,7 @@ namespace plume {
+     }
+ 
+     uint64_t MetalBuffer::getDeviceAddress() const {
+-        assert(device->mtl->supportsFamily(MTL::GPUFamilyMetal3) && "Device address is only supported on Metal3 devices.");
++        assert(supportsBufferDeviceAddress(device->mtl) && "Device address is only supported on Metal3 devices.");
+         return mtl->gpuAddress();
+     }
+ 
+@@ -1278,24 +1583,46 @@ namespace plume {
+         assert(device != nullptr);
+         assert(data != nullptr);
+         assert(size > 0);
+-        assert(format == RenderShaderFormat::METAL);
+ 
+         this->format = format;
+         this->functionName = (entryPointName != nullptr) ? NS::String::string(entryPointName, NS::UTF8StringEncoding) : MTLSTR("");
+ 
+         NS::Error *error = nullptr;
+-        const dispatch_data_t dispatchData = dispatch_data_create(data, size, dispatch_get_main_queue(), ^{});
+-        library = device->mtl->newLibrary(dispatchData, &error);
++        if (format == RenderShaderFormat::METAL) {
++            const dispatch_data_t dispatchData = dispatch_data_create(data, size, dispatch_get_main_queue(), ^{});
++            library = device->mtl->newLibrary(dispatchData, &error);
++        } else if (format == RenderShaderFormat::SPIRV) {
++            try {
++                const MetalShaderSource metalSource = compileSpirvToMetalSource(device, data, size, entryPointName);
++                functionName->release();
++                functionName = NS::String::string(metalSource.entryPointName.c_str(), NS::UTF8StringEncoding);
++                MTL::CompileOptions *compileOptions = MTL::CompileOptions::alloc()->init();
++                compileOptions->setFastMathEnabled(true);
++                compileOptions->setLanguageVersion(MTL::LanguageVersion3_0);
++                library = device->mtl->newLibrary(NS::String::string(metalSource.source.c_str(), NS::UTF8StringEncoding), compileOptions, &error);
++                compileOptions->release();
++            } catch (const std::exception& e) {
++                fprintf(stderr, "SPIR-V to MSL translation failed: %s.\n", e.what());
++                return;
++            }
++        } else {
++            assert(false && "Unsupported Metal shader format.");
++            return;
++        }
+ 
+         if (error != nullptr) {
+-            fprintf(stderr, "MTLDevice newLibraryWithSource: failed with error %s.\n", error->localizedDescription()->utf8String());
++            fprintf(stderr, "MTLDevice newLibrary: failed with error %s.\n", error->localizedDescription()->utf8String());
+             return;
+         }
+     }
+ 
+     MetalShader::~MetalShader() {
+-        functionName->release();
+-        library->release();
++        if (functionName) {
++            functionName->release();
++        }
++        if (library) {
++            library->release();
++        }
+         if (debugName) {
+             debugName->release();
+         }
+@@ -1306,10 +1633,16 @@ namespace plume {
+             debugName->release();
+         }
+         debugName = NS::String::string(name.c_str(), NS::UTF8StringEncoding);
+-        library->setLabel(debugName);
++        if (library) {
++            library->setLabel(debugName);
++        }
+     }
+ 
+     MTL::Function* MetalShader::createFunction(const RenderSpecConstant *specConstants, const uint32_t specConstantsCount) const {
++        if (library == nullptr) {
++            return nullptr;
++        }
++
+         MTL::FunctionConstantValues *values = MTL::FunctionConstantValues::alloc()->init();
+         if (specConstants != nullptr) {
+             for (uint32_t i = 0; i < specConstantsCount; i++) {
+@@ -1325,6 +1658,10 @@ namespace plume {
+             fprintf(stderr, "MTLLibrary newFunction: failed with error: %s.\n", error->localizedDescription()->utf8String());
+             return nullptr;
+         }
++        if (function == nullptr) {
++            fprintf(stderr, "MTLLibrary newFunction: failed without an error object.\n");
++            return nullptr;
++        }
+ 
+         if (debugName) {
+             function->setLabel(debugName);
+@@ -1384,6 +1721,11 @@ namespace plume {
+ 
+         MTL::ComputePipelineDescriptor *descriptor = MTL::ComputePipelineDescriptor::alloc()->init();
+         MTL::Function *function = computeShader->createFunction(desc.specConstants, desc.specConstantsCount);
++        if (function == nullptr) {
++            fprintf(stderr, "Metal compute pipeline creation failed: shader function is null.\n");
++            descriptor->release();
++            return;
++        }
+         descriptor->setComputeFunction(function);
+         descriptor->setLabel(computeShader->functionName);
+ 
+@@ -1437,6 +1779,13 @@ namespace plume {
+         const MetalShader *metalShader = static_cast<const MetalShader *>(desc.vertexShader);
+ 
+         MTL::Function *vertexFunction = metalShader->createFunction(desc.specConstants, desc.specConstantsCount);
++        if (vertexFunction == nullptr) {
++            fprintf(stderr, "Metal graphics pipeline creation failed: vertex shader function is null.\n");
++            descriptor->release();
++            releasePool->release();
++            return;
++        }
++
+         descriptor->setVertexFunction(vertexFunction);
+ 
+         MTL::VertexDescriptor *vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
+@@ -1479,6 +1828,15 @@ namespace plume {
+         if (desc.pixelShader != nullptr) {
+             const MetalShader *pixelShader = static_cast<const MetalShader *>(desc.pixelShader);
+             MTL::Function *fragmentFunction = pixelShader->createFunction(desc.specConstants, desc.specConstantsCount);
++            if (fragmentFunction == nullptr) {
++                fprintf(stderr, "Metal graphics pipeline creation failed: fragment shader function is null.\n");
++                vertexDescriptor->release();
++                vertexFunction->release();
++                descriptor->release();
++                releasePool->release();
++                return;
++            }
++
+             descriptor->setFragmentFunction(fragmentFunction);
+             fragmentFunction->release();
+         }
+@@ -1547,8 +1905,24 @@ namespace plume {
+             state.depthBiasSlopeFactor = desc.slopeScaledDepthBias;
+         }
+ 
+-        if (error != nullptr) {
+-            fprintf(stderr, "MTLDevice newRenderPipelineState: failed with error %s.\n", error->localizedDescription()->utf8String());
++        if (error != nullptr || state.renderPipelineState == nullptr) {
++            if (error != nullptr) {
++                fprintf(stderr, "MTLDevice newRenderPipelineState: failed with error %s.\n", error->localizedDescription()->utf8String());
++            } else {
++                fprintf(stderr, "MTLDevice newRenderPipelineState: failed without an error object.\n");
++            }
++
++            vertexDescriptor->release();
++            vertexFunction->release();
++            descriptor->release();
++            depthStencilDescriptor->release();
++            if (frontFaceStencilDescriptor) {
++                frontFaceStencilDescriptor->release();
++            }
++            if (backFaceStencilDescriptor) {
++                backFaceStencilDescriptor->release();
++            }
++            releasePool->release();
+             return;
+         }
+ 
+@@ -1793,6 +2167,11 @@ namespace plume {
+ 
+     MetalSwapChain::MetalSwapChain(MetalCommandQueue *commandQueue, const RenderWindow renderWindow, uint32_t textureCount, const RenderFormat format) {
+         this->layer = static_cast<CA::MetalLayer*>(renderWindow.view);
++        if (layer == nullptr) {
++            fprintf(stderr, "Metal swapchain creation failed: SDL did not provide a CAMetalLayer.\n");
++            return;
++        }
++
+         layer->setDevice(commandQueue->device->mtl);
+         layer->setPixelFormat(mapPixelFormat(format));
+ 
+@@ -1819,7 +2198,10 @@ namespace plume {
+     }
+ 
+     bool MetalSwapChain::present(const uint32_t textureIndex, RenderCommandSemaphore **waitSemaphores, const uint32_t waitSemaphoreCount) {
+-        assert(layer != nullptr && "Cannot present without a valid layer.");
++        if (layer == nullptr) {
++            return false;
++        }
++
+         NS::AutoreleasePool *releasePool = NS::AutoreleasePool::alloc()->init();
+ 
+         const MetalDrawable &drawable = drawables[textureIndex];
+@@ -1861,7 +2243,7 @@ namespace plume {
+     bool MetalSwapChain::resize() {
+         getWindowSize(width, height);
+ 
+-        if (width == 0 || height == 0) {
++        if (layer == nullptr || width == 0 || height == 0) {
+             return false;
+         }
+ 
+@@ -1886,11 +2268,29 @@ namespace plume {
+     }
+ 
+     void MetalSwapChain::setVsyncEnabled(const bool vsyncEnabled) {
++        if (layer == nullptr) {
++            return;
++        }
++
++#if PLUME_IOS
++        // CAMetalLayer.displaySyncEnabled is unavailable on iOS. iOS drawables
++        // are display-synchronized by default, so keep this as a no-op.
++        (void)vsyncEnabled;
++#else
+         layer->setDisplaySyncEnabled(vsyncEnabled);
++#endif
+     }
+ 
+     bool MetalSwapChain::isVsyncEnabled() const {
++        if (layer == nullptr) {
++            return false;
++        }
++
++#if PLUME_IOS
++        return true;
++#else
+         return layer->displaySyncEnabled();
++#endif
+     }
+ 
+     uint32_t MetalSwapChain::getWidth() const {
+@@ -1910,6 +2310,10 @@ namespace plume {
+         assert(textureIndex != nullptr);
+         assert(*textureIndex < MAX_DRAWABLES);
+ 
++        if (layer == nullptr) {
++            return false;
++        }
++
+         NS::AutoreleasePool *releasePool = NS::AutoreleasePool::alloc()->init();
+ 
+         // Create a command buffer just to encode the signal
+@@ -1923,6 +2327,7 @@ namespace plume {
+         CA::MetalDrawable *nextDrawable = layer->nextDrawable();
+         if (nextDrawable == nullptr) {
+             fprintf(stderr, "No more drawables available for rendering.\n");
++            releasePool->release();
+             return false;
+         }
+ 
+@@ -1954,10 +2359,20 @@ namespace plume {
+     }
+ 
+     uint32_t MetalSwapChain::getRefreshRate() const {
++        if (windowWrapper == nullptr) {
++            return 60;
++        }
++
+         return windowWrapper->getRefreshRate();
+     }
+ 
+     void MetalSwapChain::getWindowSize(uint32_t &dstWidth, uint32_t &dstHeight) const {
++        if (windowWrapper == nullptr) {
++            dstWidth = 0;
++            dstHeight = 0;
++            return;
++        }
++
+         CocoaWindowAttributes attributes;
+         windowWrapper->getWindowAttributes(&attributes);
+         dstWidth = attributes.width;
+@@ -3308,6 +3723,9 @@ namespace plume {
+         this->renderInterface = renderInterface;
+ 
+         // Device Selection
++#if PLUME_IOS
++        mtl = MTL::CreateSystemDefaultDevice();
++#else
+         const NS::Array* devices = MTL::CopyAllDevices();
+         MTL::Device *preferredDevice = nullptr;
+         for (NS::UInteger i = 0; i < devices->count(); i++) {
+@@ -3320,12 +3738,31 @@ namespace plume {
+         }
+ 
+         mtl = preferredDevice ? preferredDevice : MTL::CreateSystemDefaultDevice();;
++#endif
++        if (mtl == nullptr) {
++            return;
++        }
++
++#if PLUME_IOS
++        if (!supportsBufferDeviceAddress(mtl)) {
++            fprintf(stderr, "Metal device '%s' does not support Metal 3 buffer GPU addresses required by Unleashed Recompiled.\n", mtl->name()->utf8String());
++            mtl->release();
++            mtl = nullptr;
++            return;
++        }
++#endif
++
++        const uint64_t workingSetSize = getRecommendedWorkingSetSize(mtl);
+         const std::string deviceName(mtl->name()->utf8String());
+         description.name = deviceName;
++#if PLUME_IOS
++        description.type = RenderDeviceType::INTEGRATED;
++#else
+         description.type = mapDeviceType(mtl->location());
++#endif
+         description.driverVersion = 1; // Unavailable
+         description.vendor = mtl->supportsFamily(MTL::GPUFamilyApple1) ? RenderDeviceVendor::APPLE : getRenderDeviceVendor(mtl->registryID());
+-        description.dedicatedVideoMemory = mtl->recommendedMaxWorkingSetSize();
++        description.dedicatedVideoMemory = workingSetSize;
+ 
+         // Setup blit, clear and resolve shaders / pipelines
+         createClearShaderLibrary();
+@@ -3337,7 +3774,7 @@ namespace plume {
+         // TODO: Support Raytracing.
+         // capabilities.raytracing = mtl->supportsRaytracing();
+         capabilities.maxTextureSize = mtl->supportsFamily(MTL::GPUFamilyApple3) ? 16384 : 8192;
+-        capabilities.sampleLocations = mtl->programmableSamplePositionsSupported();
++        capabilities.sampleLocations = supportsProgrammableSamplePositions(mtl);
+         capabilities.resolveModes = false;
+ #if PLUME_IOS
+         capabilities.descriptorIndexing = mtl->supportsFamily(MTL::GPUFamilyApple3);
+@@ -3345,11 +3782,11 @@ namespace plume {
+         capabilities.descriptorIndexing = true;
+ #endif
+         capabilities.scalarBlockLayout = true;
+-        capabilities.bufferDeviceAddress = mtl->supportsFamily(MTL::GPUFamilyApple3);
++        capabilities.bufferDeviceAddress = supportsBufferDeviceAddress(mtl);
+         capabilities.presentWait = false;
+-        capabilities.preferHDR = mtl->recommendedMaxWorkingSetSize() > (512 * 1024 * 1024);
++        capabilities.preferHDR = workingSetSize > (512 * 1024 * 1024);
+         capabilities.dynamicDepthBias = true;
+-        capabilities.uma = mtl->hasUnifiedMemory();
++        capabilities.uma = hasUnifiedMemory(mtl);
+         capabilities.gpuUploadHeap = capabilities.uma;
+         capabilities.queryPools = false;
+ 
+@@ -3357,17 +3794,19 @@ namespace plume {
+     }
+ 
+     MetalDevice::~MetalDevice() {
+-        mtl->release();
++        if (mtl) {
++            mtl->release();
++        }
+ 
+         for (const auto& [key, state] : clearRenderPipelineStates) {
+             state->release();
+         }
+ 
+-        resolveTexturePipelineState->release();
+-        clearVertexFunction->release();
+-        clearColorFunction->release();
+-        clearDepthFunction->release();
+-        sharedBlitDescriptor->release();
++        if (resolveTexturePipelineState) resolveTexturePipelineState->release();
++        if (clearVertexFunction) clearVertexFunction->release();
++        if (clearColorFunction) clearColorFunction->release();
++        if (clearDepthFunction) clearDepthFunction->release();
++        if (sharedBlitDescriptor) sharedBlitDescriptor->release();
+     }
+ 
+     std::unique_ptr<RenderDescriptorSet> MetalDevice::createDescriptorSet(const RenderDescriptorSetDesc &desc) {
+@@ -3635,16 +4074,24 @@ namespace plume {
+ 
+     MetalInterface::MetalInterface() {
+         NS::AutoreleasePool *releasePool = NS::AutoreleasePool::alloc()->init();
+-        capabilities.shaderFormat = RenderShaderFormat::METAL;
++        capabilities.shaderFormat = RenderShaderFormat::SPIRV;
+ 
+         releasePool->release();
+ 
+         // Fill device names.
++#if PLUME_IOS
++        MTL::Device* device = MTL::CreateSystemDefaultDevice();
++        if (device != nullptr) {
++            deviceNames.push_back(std::string(device->name()->utf8String()));
++            device->release();
++        }
++#else
+         const NS::Array* devices = MTL::CopyAllDevices();
+         for (NS::UInteger i = 0; i < devices->count(); i++) {
+             NS::String* deviceName = ((MTL::Device *)devices->object(i))->name();
+             deviceNames.push_back(std::string(deviceName->utf8String()));
+         }
++#endif
+     }
+ 
+     MetalInterface::~MetalInterface() {}
+diff --git a/plume_metal.h b/plume_metal.h
+index fd367ed..557686b 100644
+--- a/plume_metal.h
++++ b/plume_metal.h
+@@ -608,16 +608,16 @@ namespace plume {
+         RenderDeviceDescription description;
+ 
+         // Resolve functionality
+-        MTL::ComputePipelineState *resolveTexturePipelineState;
++        MTL::ComputePipelineState *resolveTexturePipelineState = nullptr;
+ 
+         // Clear functionality
+-        MTL::Function* clearVertexFunction;
+-        MTL::Function* clearColorFunction;
+-        MTL::Function* clearDepthFunction;
+-        MTL::Function* clearStencilFunction;
+-        MTL::DepthStencilState *clearDepthState;
+-        MTL::DepthStencilState *clearStencilState;
+-        MTL::DepthStencilState *clearDepthStencilState;
++        MTL::Function* clearVertexFunction = nullptr;
++        MTL::Function* clearColorFunction = nullptr;
++        MTL::Function* clearDepthFunction = nullptr;
++        MTL::Function* clearStencilFunction = nullptr;
++        MTL::DepthStencilState *clearDepthState = nullptr;
++        MTL::DepthStencilState *clearStencilState = nullptr;
++        MTL::DepthStencilState *clearDepthStencilState = nullptr;
+ 
+         std::mutex clearPipelineStateMutex;
+         std::unordered_map<uint64_t, MTL::RenderPipelineState *> clearRenderPipelineStates;

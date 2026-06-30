@@ -166,9 +166,11 @@ void UpdateChecker::visitWebsite()
 #elif defined(__linux__)
     std::string command = "xdg-open " + std::string(VISIT_URL) + " &";
     std::system(command.c_str());
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && !defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__)
     std::string command = "open " + std::string(VISIT_URL) + " &";
     std::system(command.c_str());
+#elif defined(__APPLE__)
+    // iOS apps cannot spawn external commands; leave website navigation to platform UI.
 #else
     static_assert(false, "Visit website not implemented for this platform.");
 #endif

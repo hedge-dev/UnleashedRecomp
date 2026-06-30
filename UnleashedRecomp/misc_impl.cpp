@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include <kernel/function.h>
 #include <kernel/xdm.h>
+#include <os/logger.h>
 
 uint32_t QueryPerformanceCounterImpl(LARGE_INTEGER* lpPerformanceCount)
 {
@@ -46,7 +47,13 @@ GUEST_FUNCTION_HOOK(sub_831CCAA0, memset);
 #ifdef _WIN32
 GUEST_FUNCTION_HOOK(sub_82BD4CA8, OutputDebugStringA);
 #else
-GUEST_FUNCTION_STUB(sub_82BD4CA8);
+static void OutputDebugStringAImpl(const char* message)
+{
+    if (message != nullptr && message[0] != '\0')
+        LOGFN("Guest debug: {}", message);
+}
+
+GUEST_FUNCTION_HOOK(sub_82BD4CA8, OutputDebugStringAImpl);
 #endif
 
 GUEST_FUNCTION_HOOK(sub_82BD4AC8, QueryPerformanceCounterImpl);

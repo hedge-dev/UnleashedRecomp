@@ -1,0 +1,185 @@
+diff --git a/XenonUtils/memory_mapped_file.cpp b/XenonUtils/memory_mapped_file.cpp
+index ba3c5d8..530321d 100644
+--- a/XenonUtils/memory_mapped_file.cpp
++++ b/XenonUtils/memory_mapped_file.cpp
+@@ -1,5 +1,7 @@
+ #include "memory_mapped_file.h"
+ 
++#include <algorithm>
++
+ #if !defined(_WIN32)
+ #   include <cstring>
+ #   include <cstdio>
+@@ -34,14 +36,19 @@ MemoryMappedFile::MemoryMappedFile(MemoryMappedFile &&other)
+     other.fileMappingHandle = nullptr;
+     other.fileView = nullptr;
+     other.fileSize.QuadPart = 0;
++    other.streamingMode = false;
+ #else
+     fileHandle = other.fileHandle;
+     fileView = other.fileView;
+     fileSize = other.fileSize;
++    mappedLength = other.mappedLength;
++    streamingMode = other.streamingMode;
+ 
+     other.fileHandle = -1;
+     other.fileView = MAP_FAILED;
+     other.fileSize = 0;
++    other.mappedLength = 0;
++    other.streamingMode = false;
+ #endif
+ }
+ 
+@@ -103,14 +110,23 @@ bool MemoryMappedFile::open(const std::filesystem::path &path)
+     }
+ 
+     fileView = mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fileHandle, 0);
+-    if (fileView == MAP_FAILED)
++    if (fileView != MAP_FAILED)
+     {
+-        fprintf(stderr, "mmap failed with error %s.\n", strerror(errno));
+-        ::close(fileHandle);
+-        fileHandle = -1;
+-        return false;
++        mappedLength = fileSize;
++        return true;
+     }
+ 
++    static constexpr size_t PartialMapSize = 128 * 1024 * 1024;
++    const size_t partialMapSize = std::min(static_cast<size_t>(fileSize), PartialMapSize);
++    fileView = mmap(nullptr, partialMapSize, PROT_READ, MAP_PRIVATE, fileHandle, 0);
++    if (fileView != MAP_FAILED)
++    {
++        mappedLength = static_cast<off_t>(partialMapSize);
++        return true;
++    }
++
++    fprintf(stderr, "mmap failed with error %s, falling back to streaming I/O.\n", strerror(errno));
++    streamingMode = true;
+     return true;
+ #endif
+ }
+@@ -135,7 +151,7 @@ void MemoryMappedFile::close()
+ #else
+     if (fileView != MAP_FAILED)
+     {
+-        munmap(fileView, fileSize);
++        munmap(fileView, mappedLength);
+     }
+ 
+     if (fileHandle != -1)
+@@ -148,14 +164,86 @@ void MemoryMappedFile::close()
+ bool MemoryMappedFile::isOpen() const
+ {
+ #if defined(_WIN32)
+-    return (fileView != nullptr);
++    return (fileView != nullptr) || (streamingMode && fileHandle != nullptr);
++#else
++    return (fileView != MAP_FAILED) || (streamingMode && fileHandle != -1);
++#endif
++}
++
++bool MemoryMappedFile::readAt(size_t offset, void *buffer, size_t size) const
++{
++    if (!isOpen() || buffer == nullptr)
++        return false;
++
++    if (static_cast<off_t>(offset) < 0 || static_cast<off_t>(offset + size) > fileSize)
++        return false;
++
++#if defined(_WIN32)
++    if (fileView != nullptr)
++    {
++        memcpy(buffer, reinterpret_cast<const uint8_t *>(fileView) + offset, size);
++        return true;
++    }
++
++    if (!streamingMode || fileHandle == nullptr)
++        return false;
++
++    OVERLAPPED overlapped = {};
++    overlapped.Offset = static_cast<DWORD>(offset & 0xFFFFFFFF);
++    overlapped.OffsetHigh = static_cast<DWORD>(offset >> 32);
++    DWORD bytesRead = 0;
++    if (!ReadFile(fileHandle, buffer, static_cast<DWORD>(size), &bytesRead, &overlapped) || bytesRead != size)
++        return false;
++
++    return true;
+ #else
+-    return (fileView != MAP_FAILED);
++    if (fileView != MAP_FAILED)
++    {
++        const size_t mappedEnd = static_cast<size_t>(mappedLength);
++        if (offset + size <= mappedEnd)
++        {
++            memcpy(buffer, reinterpret_cast<const uint8_t *>(fileView) + offset, size);
++            return true;
++        }
++
++        if (offset >= mappedEnd)
++        {
++            return pread(fileHandle, buffer, size, static_cast<off_t>(offset)) == static_cast<ssize_t>(size);
++        }
++
++        const size_t mappedBytes = mappedEnd - offset;
++        memcpy(buffer, reinterpret_cast<const uint8_t *>(fileView) + offset, mappedBytes);
++        const size_t remainingBytes = size - mappedBytes;
++        return pread(fileHandle, static_cast<uint8_t *>(buffer) + mappedBytes, remainingBytes, static_cast<off_t>(mappedEnd)) == static_cast<ssize_t>(remainingBytes);
++    }
++
++    if (!streamingMode || fileHandle == -1)
++        return false;
++
++    size_t bytesRead = 0;
++    while (bytesRead < size)
++    {
++        const ssize_t result = pread(fileHandle, static_cast<uint8_t *>(buffer) + bytesRead, size - bytesRead, static_cast<off_t>(offset + bytesRead));
++        if (result <= 0)
++            return false;
++
++        bytesRead += static_cast<size_t>(result);
++    }
++
++    return true;
+ #endif
+ }
+ 
+ uint8_t *MemoryMappedFile::data() const
+ {
++#if defined(_WIN32)
++    if (fileView == nullptr)
++        return nullptr;
++#else
++    if (fileView == MAP_FAILED)
++        return nullptr;
++#endif
++
+     return reinterpret_cast<uint8_t *>(fileView);
+ }
+ 
+diff --git a/XenonUtils/memory_mapped_file.h b/XenonUtils/memory_mapped_file.h
+index a3de88b..640cc42 100644
+--- a/XenonUtils/memory_mapped_file.h
++++ b/XenonUtils/memory_mapped_file.h
+@@ -14,10 +14,13 @@ struct MemoryMappedFile {
+     HANDLE fileMappingHandle = nullptr;
+     LPVOID fileView = nullptr;
+     LARGE_INTEGER fileSize = {};
++    bool streamingMode = false;
+ #else
+     int fileHandle = -1;
+     void *fileView = MAP_FAILED;
+     off_t fileSize = 0;
++    off_t mappedLength = 0;
++    bool streamingMode = false;
+ #endif
+ 
+     MemoryMappedFile();
+@@ -27,6 +30,7 @@ struct MemoryMappedFile {
+     bool open(const std::filesystem::path &path);
+     void close();
+     bool isOpen() const;
++    bool readAt(size_t offset, void *buffer, size_t size) const;
+     uint8_t *data() const;
+     size_t size() const;
+ };

@@ -14,6 +14,7 @@ CONFIG_DEFINE_ENUM_LOCALISED("Input", ECameraRotationMode, HorizontalCamera, ECa
 CONFIG_DEFINE_ENUM_LOCALISED("Input", ECameraRotationMode, VerticalCamera, ECameraRotationMode::Normal);
 CONFIG_DEFINE_LOCALISED("Input", bool, Vibration, true);
 CONFIG_DEFINE_LOCALISED("Input", bool, AllowBackgroundInput, false);
+CONFIG_DEFINE_HIDDEN("Input", bool, TouchControls, true);
 CONFIG_DEFINE_ENUM_LOCALISED("Input", EControllerIcons, ControllerIcons, EControllerIcons::Auto);
 
 CONFIG_DEFINE_ENUM("Bindings", SDL_Scancode, Key_A, SDL_SCANCODE_S);

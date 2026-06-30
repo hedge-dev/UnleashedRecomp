@@ -1,5 +1,19 @@
 project("UnleashedRecomp")
 
+set(UNLEASHED_RECOMP_HOST_TOOLS_DIR "" CACHE PATH "Directory containing host-built recompilation tools.")
+
+function(unleashed_recomp_resolve_tool OUT_VAR TARGET_NAME RELATIVE_PATH)
+    if (UNLEASHED_RECOMP_HOST_TOOLS_DIR)
+        set(${OUT_VAR} "${UNLEASHED_RECOMP_HOST_TOOLS_DIR}/${RELATIVE_PATH}" PARENT_SCOPE)
+    elseif (TARGET ${TARGET_NAME})
+        set(${OUT_VAR} "$<TARGET_FILE:${TARGET_NAME}>" PARENT_SCOPE)
+    else()
+        message(FATAL_ERROR "Tool ${TARGET_NAME} is not available. Set UNLEASHED_RECOMP_HOST_TOOLS_DIR.")
+    endif()
+endfunction()
+
+unleashed_recomp_resolve_tool(UNLEASHED_RECOMP_FILE_TO_C_TOOL file_to_c "tools/file_to_c/file_to_c")
+
 if (WIN32)
     option(UNLEASHED_RECOMP_D3D12 "Add D3D12 support for rendering" ON)
 endif()
@@ -28,7 +42,7 @@ function(BIN2C)
     endif()
 
     add_custom_command(OUTPUT "${BIN2C_ARGS_DEST_FILE}.c"
-        COMMAND $<TARGET_FILE:file_to_c> "${BIN2C_ARGS_SOURCE_FILE}" "${BIN2C_ARGS_ARRAY_NAME}" "${BIN2C_ARGS_COMPRESSION_TYPE}" "${BIN2C_ARGS_DEST_FILE}.c" "${BIN2C_ARGS_DEST_FILE}.h"
+        COMMAND "${UNLEASHED_RECOMP_FILE_TO_C_TOOL}" "${BIN2C_ARGS_SOURCE_FILE}" "${BIN2C_ARGS_ARRAY_NAME}" "${BIN2C_ARGS_COMPRESSION_TYPE}" "${BIN2C_ARGS_DEST_FILE}.c" "${BIN2C_ARGS_DEST_FILE}.h"
         DEPENDS "${BIN2C_ARGS_SOURCE_FILE}"
         BYPRODUCTS "${BIN2C_ARGS_DEST_FILE}.h"
         COMMENT "Generating binary header for ${BIN2C_ARGS_SOURCE_FILE}..."
@@ -58,10 +72,17 @@ else()
     add_compile_options(-ffp-model=strict)
 endif()
 
-add_compile_definitions(
-    SDL_MAIN_HANDLED
+set(UNLEASHED_RECOMP_COMPILE_DEFINITIONS
     _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR # Microsoft wtf?
     _CRT_SECURE_NO_WARNINGS)
+
+if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    list(APPEND UNLEASHED_RECOMP_COMPILE_DEFINITIONS SDL_MAIN_HANDLED)
+else()
+    list(APPEND UNLEASHED_RECOMP_COMPILE_DEFINITIONS UNLEASHED_RECOMP_IOS)
+endif()
+
+add_compile_definitions(${UNLEASHED_RECOMP_COMPILE_DEFINITIONS})
 
 set(UNLEASHED_RECOMP_PRECOMPILED_HEADERS
     "stdafx.h"
@@ -96,6 +117,14 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
         "os/linux/process_linux.cpp"
         "os/linux/user_linux.cpp"
         "os/linux/version_linux.cpp"
+    )
+elseif (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    set(UNLEASHED_RECOMP_OS_CXX_SOURCES
+        "os/ios/logger_ios.cpp"
+        "os/ios/media_ios.cpp"
+        "os/ios/process_ios.mm"
+        "os/ios/user_ios.mm"
+        "os/ios/version_ios.mm"
     )
 elseif (APPLE)
     set(UNLEASHED_RECOMP_OS_CXX_SOURCES
@@ -156,10 +185,12 @@ set(UNLEASHED_RECOMP_UI_CXX_SOURCES
     "ui/fader.cpp"
     "ui/game_window.cpp"
     "ui/imgui_utils.cpp"
+    "ui/input_coords.cpp"
     "ui/installer_wizard.cpp"
     "ui/message_window.cpp"
     "ui/options_menu.cpp"
     "ui/options_menu_thumbnails.cpp"
+    "ui/touch_controls.cpp"
     "ui/tv_static.cpp"
 )
 
@@ -292,6 +323,48 @@ if (WIN32)
     if (${CMAKE_BUILD_TYPE} MATCHES "Release")
         target_link_options(UnleashedRecomp PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
     endif()
+elseif (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    CreateVersionString(
+        VERSION_TXT ${VERSION_TXT}
+        OUTPUT_VAR IOS_BUNDLE_VERSION
+    )
+    string(REGEX REPLACE "^v" "" IOS_BUNDLE_VERSION "${IOS_BUNDLE_VERSION}")
+
+    set(UNLEASHED_RECOMP_IOS_ICON_FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon20x20@2x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon20x20@3x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon29x29@2x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon29x29@3x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon40x40@2x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon40x40@3x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon60x60@2x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon60x60@3x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon76x76.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon76x76@2x.png"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/icons/AppIcon83.5x83.5@2x.png"
+    )
+
+    add_executable(UnleashedRecomp MACOSX_BUNDLE
+        ${UNLEASHED_RECOMP_CXX_SOURCES}
+    )
+    set_target_properties(UnleashedRecomp PROPERTIES
+        OUTPUT_NAME "Unleashed Recompiled"
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/ios/Info.plist.in
+        MACOSX_BUNDLE_GUI_IDENTIFIER hedge-dev.UnleashedRecomp
+        MACOSX_BUNDLE_BUNDLE_NAME "Unleashed Recompiled"
+        MACOSX_BUNDLE_BUNDLE_VERSION ${IOS_BUNDLE_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${IOS_BUNDLE_VERSION}
+        XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "hedge-dev.UnleashedRecomp"
+        XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
+        XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
+    )
+    foreach(UNLEASHED_RECOMP_IOS_ICON_FILE IN LISTS UNLEASHED_RECOMP_IOS_ICON_FILES)
+        add_custom_command(TARGET UnleashedRecomp POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${UNLEASHED_RECOMP_IOS_ICON_FILE}"
+                "$<TARGET_BUNDLE_DIR:UnleashedRecomp>"
+        )
+    endforeach()
 elseif (APPLE)
     # Create version number for app bundle.
     CreateVersionString(
@@ -387,6 +460,18 @@ if (WIN32)
     )
 endif()
 
+set(UNLEASHED_RECOMP_SDL_LIBS SDL2::SDL2-static)
+if (CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET SDL2::SDL2main)
+    list(PREPEND UNLEASHED_RECOMP_SDL_LIBS SDL2::SDL2main)
+endif()
+
+set(UNLEASHED_RECOMP_PLATFORM_LIBS)
+if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    target_link_options(UnleashedRecomp PRIVATE
+        "LINKER:-ObjC"
+    )
+endif()
+
 target_link_libraries(UnleashedRecomp PRIVATE
     fmt::fmt
     libzstd_static
@@ -394,13 +479,14 @@ target_link_libraries(UnleashedRecomp PRIVATE
     nfd::nfd
     o1heap
     XenonUtils
-    SDL2::SDL2-static
+    ${UNLEASHED_RECOMP_SDL_LIBS}
     SDL2_mixer
     tomlplusplus::tomlplusplus
     UnleashedRecompLib
     xxHash::xxhash
     CURL::libcurl
     plume
+    ${UNLEASHED_RECOMP_PLATFORM_LIBS}
 )
 
 target_include_directories(UnleashedRecomp PRIVATE

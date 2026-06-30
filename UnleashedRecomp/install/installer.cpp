@@ -31,6 +31,9 @@ static const std::string UpdateExecutablePatchFile = "default.xexp";
 static const std::string ISOExtension = ".iso";
 static const std::string OldExtension = ".old";
 static const std::string TempExtension = ".tmp";
+#ifdef UNLEASHED_RECOMP_IOS
+static const std::string InstallValidationFile = "install.validated";
+#endif
 
 static std::string fromU8(const std::u8string &str)
 {
@@ -134,7 +137,7 @@ static bool checkFile(const FilePair &pair, const uint64_t *fileHashes, const st
     return true;
 }
 
-static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, bool skipHashChecks, std::vector<uint8_t> &fileData, Journal &journal, const std::function<bool()> &progressCallback) {
+static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFileSystem &sourceVfs, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, const std::function<bool()> &progressCallback) {
     const std::string filename(pair.first);
     const uint32_t hashCount = pair.second;
     if (!sourceVfs.exists(filename))
@@ -144,28 +147,12 @@ static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFi
         return false;
     }
 
-    if (!sourceVfs.load(filename, fileData))
+    const size_t fileSize = sourceVfs.getSize(filename);
+    if (fileSize == 0)
     {
         journal.lastResult = Journal::Result::FileReadFailed;
         journal.lastErrorMessage = fmt::format("Failed to read file {} from {}.", filename, sourceVfs.getName());
         return false;
-    }
-
-    if (!skipHashChecks)
-    {
-        uint64_t fileHash = XXH3_64bits(fileData.data(), fileData.size());
-        bool fileHashFound = false;
-        for (uint32_t i = 0; i < hashCount && !fileHashFound; i++)
-        {
-            fileHashFound = fileHash == fileHashes[i];
-        }
-
-        if (!fileHashFound)
-        {
-            journal.lastResult = Journal::Result::FileHashFailed;
-            journal.lastErrorMessage = fmt::format("File {} from {} did not match any of the known hashes.", filename, sourceVfs.getName());
-            return false;
-        }
     }
 
     std::filesystem::path targetPath = targetDirectory / std::filesystem::path(std::u8string_view((const char8_t *)(pair.first)));
@@ -197,15 +184,59 @@ static bool copyFile(const FilePair &pair, const uint64_t *fileHashes, VirtualFi
 
     journal.createdFiles.push_back(targetPath);
 
-    outStream.write((const char *)(fileData.data()), fileData.size());
-    if (outStream.bad())
+    static constexpr size_t CopyChunkSize = 4 * 1024 * 1024;
+    std::vector<uint8_t> chunk(std::min(fileSize, CopyChunkSize));
+    XXH3_state_t hashState;
+    if (!skipHashChecks)
     {
-        journal.lastResult = Journal::Result::FileWriteFailed;
-        journal.lastErrorMessage = fmt::format("Failed to create file at {}.", fromPath(targetPath));
-        return false;
+        XXH3_64bits_reset(&hashState);
     }
 
-    journal.progressCounter += fileData.size();
+    size_t offset = 0;
+    while (offset < fileSize)
+    {
+        const size_t bytesToRead = std::min(CopyChunkSize, fileSize - offset);
+        if (!sourceVfs.read(filename, offset, chunk.data(), bytesToRead))
+        {
+            journal.lastResult = Journal::Result::FileReadFailed;
+            journal.lastErrorMessage = fmt::format("Failed to read file {} from {}.", filename, sourceVfs.getName());
+            return false;
+        }
+
+        if (!skipHashChecks)
+        {
+            XXH3_64bits_update(&hashState, chunk.data(), bytesToRead);
+        }
+
+        outStream.write(reinterpret_cast<const char *>(chunk.data()), bytesToRead);
+        if (outStream.bad())
+        {
+            journal.lastResult = Journal::Result::FileWriteFailed;
+            journal.lastErrorMessage = fmt::format("Failed to create file at {}.", fromPath(targetPath));
+            return false;
+        }
+
+        offset += bytesToRead;
+    }
+
+    if (!skipHashChecks)
+    {
+        const uint64_t fileHash = XXH3_64bits_digest(&hashState);
+        bool fileHashFound = false;
+        for (uint32_t i = 0; i < hashCount && !fileHashFound; i++)
+        {
+            fileHashFound = fileHash == fileHashes[i];
+        }
+
+        if (!fileHashFound)
+        {
+            journal.lastResult = Journal::Result::FileHashFailed;
+            journal.lastErrorMessage = fmt::format("File {} from {} did not match any of the known hashes.", filename, sourceVfs.getName());
+            return false;
+        }
+    }
+
+    journal.progressCounter += fileSize;
     
     if (!progressCallback())
     {
@@ -323,6 +354,20 @@ bool Installer::checkGameInstall(const std::filesystem::path &baseDirectory, std
     if (!std::filesystem::exists(baseDirectory / GameDirectory / GameExecutableFile))
         return false;
 
+#ifdef UNLEASHED_RECOMP_IOS
+    if (!std::filesystem::exists(baseDirectory / InstallValidationFile))
+        return false;
+
+    Journal journal;
+    if (!checkInstallCompleteness(baseDirectory, journal, []()
+    {
+        return true;
+    }))
+    {
+        return false;
+    }
+#endif
+
     return true;
 }
 
@@ -358,6 +403,35 @@ bool Installer::checkAllDLC(const std::filesystem::path& baseDirectory)
     }
 
     return result;
+}
+
+bool Installer::checkInstallCompleteness(const std::filesystem::path &baseDirectory, Journal &journal, const std::function<bool()> &progressCallback)
+{
+    if (!checkFiles({ GameFiles, GameFilesSize }, GameHashes, baseDirectory / GameDirectory, journal, progressCallback, true))
+    {
+        return false;
+    }
+
+    if (!checkFiles({ UpdateFiles, UpdateFilesSize }, UpdateHashes, baseDirectory / UpdateDirectory, journal, progressCallback, true))
+    {
+        return false;
+    }
+
+    for (int i = 1; i < (int)DLC::Count; i++)
+    {
+        if (checkDLCInstall(baseDirectory, (DLC)i))
+        {
+            Installer::DLCSource dlcSource;
+            fillDLCSource((DLC)i, dlcSource);
+
+            if (!checkFiles(dlcSource.filePairs, dlcSource.fileHashes, baseDirectory / dlcSource.targetSubDirectory, journal, progressCallback, true))
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 bool Installer::checkInstallIntegrity(const std::filesystem::path &baseDirectory, Journal &journal, const std::function<bool()> &progressCallback)
@@ -447,7 +521,6 @@ bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *f
     uint32_t validationHashIndex = 0;
     uint32_t hashIndex = 0;
     uint32_t hashCount = 0;
-    std::vector<uint8_t> fileData;
     for (FilePair pair : filePairs)
     {
         hashIndex = hashCount;
@@ -460,7 +533,7 @@ bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *f
             continue;
         }
 
-        if (!copyFile(pair, &fileHashes[hashIndex], sourceVfs, targetDirectory, skipHashChecks, fileData, journal, progressCallback))
+        if (!copyFile(pair, &fileHashes[hashIndex], sourceVfs, targetDirectory, skipHashChecks, journal, progressCallback))
         {
             return false;
         }
@@ -469,7 +542,7 @@ bool Installer::copyFiles(std::span<const FilePair> filePairs, const uint64_t *f
     // Validation file is copied last after all other files have been copied.
     if (validationPair.first != nullptr)
     {
-        if (!copyFile(validationPair, &fileHashes[validationHashIndex], sourceVfs, targetDirectory, skipHashChecks, fileData, journal, progressCallback))
+        if (!copyFile(validationPair, &fileHashes[validationHashIndex], sourceVfs, targetDirectory, skipHashChecks, journal, progressCallback))
         {
             return false;
         }
@@ -565,10 +638,25 @@ bool Installer::parseSources(const Input &input, Journal &journal, Sources &sour
     return true;
 }
 
-bool Installer::install(const Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, std::chrono::seconds endWaitTime, const std::function<bool()> &progressCallback)
+bool Installer::install(Sources &sources, const std::filesystem::path &targetDirectory, bool skipHashChecks, Journal &journal, std::chrono::seconds endWaitTime, const std::function<bool()> &progressCallback)
 {
     // Install files in reverse order of importance. In case of a process crash or power outage, this will increase the likelihood of the installation
     // missing critical files required for the game to run. These files are used as the way to detect if the game is installed.
+
+#ifdef UNLEASHED_RECOMP_IOS
+    const bool isInstallingGameData = sources.game != nullptr || sources.update != nullptr;
+    if (isInstallingGameData)
+    {
+        std::error_code ec;
+        std::filesystem::remove(targetDirectory / InstallValidationFile, ec);
+        if (ec)
+        {
+            journal.lastResult = Journal::Result::FileWriteFailed;
+            journal.lastErrorMessage = fmt::format("Failed to remove validation file at {}.", fromPath(targetDirectory / InstallValidationFile));
+            return false;
+        }
+    }
+#endif
 
     // Install the DLC.
     if (!sources.dlc.empty())
@@ -576,13 +664,17 @@ bool Installer::install(const Sources &sources, const std::filesystem::path &tar
         journal.createdDirectories.insert(targetDirectory / DLCDirectory);
     }
 
-    for (const DLCSource &dlcSource : sources.dlc)
+    for (DLCSource &dlcSource : sources.dlc)
     {
         if (!copyFiles(dlcSource.filePairs, dlcSource.fileHashes, *dlcSource.sourceVfs, targetDirectory / dlcSource.targetSubDirectory, DLCValidationFile, skipHashChecks, journal, progressCallback))
         {
             return false;
         }
+
+        dlcSource.sourceVfs.reset();
     }
+
+    sources.dlc.clear();
 
     // If no game or update was specified, we're finished. This means the user was only installing the DLC.
     if ((sources.game == nullptr) && (sources.update == nullptr))
@@ -596,11 +688,15 @@ bool Installer::install(const Sources &sources, const std::filesystem::path &tar
         return false;
     }
 
+    sources.update.reset();
+
     // Install the base game.
     if (!copyFiles({ GameFiles, GameFilesSize }, GameHashes, *sources.game, targetDirectory / GameDirectory, GameExecutableFile, skipHashChecks, journal, progressCallback))
     {
         return false;
     }
+
+    sources.game.reset();
 
     // Create the directory where the patched executable will be stored.
     std::error_code ec;
@@ -633,6 +729,37 @@ bool Installer::install(const Sources &sources, const std::filesystem::path &tar
 
     // Update the progress with the artificial amount attributed to the patching.
     journal.progressCounter += PatcherContribution;
+
+#ifdef UNLEASHED_RECOMP_IOS
+    Journal validationJournal;
+    if (!checkInstallIntegrity(targetDirectory, validationJournal, progressCallback))
+    {
+        journal.lastResult = validationJournal.lastResult;
+        journal.lastPatcherResult = validationJournal.lastPatcherResult;
+        journal.lastErrorMessage = validationJournal.lastErrorMessage;
+        return false;
+    }
+
+    std::filesystem::path validationPath = targetDirectory / InstallValidationFile;
+    std::ofstream validationStream(validationPath, std::ios::binary);
+    if (!validationStream.is_open())
+    {
+        journal.lastResult = Journal::Result::FileCreationFailed;
+        journal.lastErrorMessage = fmt::format("Failed to create file at {}.", fromPath(validationPath));
+        return false;
+    }
+
+    validationStream << "ok\n";
+    validationStream.flush();
+    if (!validationStream.good())
+    {
+        journal.lastResult = Journal::Result::FileWriteFailed;
+        journal.lastErrorMessage = fmt::format("Failed to write file at {}.", fromPath(validationPath));
+        return false;
+    }
+
+    journal.createdFiles.push_back(validationPath);
+#endif
     
     for (uint32_t i = 0; i < 2; i++)
     {
