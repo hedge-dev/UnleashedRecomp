@@ -1,26 +1,27 @@
 {
   "id": "io.github.hedge_dev.unleashedrecomp",
   "runtime": "org.freedesktop.Platform",
-  "runtime-version": "24.08",
+  "runtime-version": "25.08",
   "sdk": "org.freedesktop.Sdk",
-  "sdk-extensions" : [ "org.freedesktop.Sdk.Extension.llvm18" ],
+  "sdk-extensions" : [ "org.freedesktop.Sdk.Extension.llvm20" ],
   "finish-args": [
-    "--share=network",
+    "--share=ipc",
     "--socket=wayland",
     "--socket=fallback-x11",
     "--socket=pulseaudio",
-    "--device=all",
-    "--filesystem=host",
-    "--filesystem=/media",
-    "--filesystem=/run/media",
-    "--filesystem=/mnt"
+    "--device=dri",
+    "--device=input",
+    "--filesystem=host:ro",
+    "--filesystem=/media:ro",
+    "--filesystem=/run/media:ro",
+    "--filesystem=/mnt:ro"
   ],
   "modules": [
     {
       "name": "UnleashedRecomp",
       "buildsystem": "simple",
       "build-commands": [
-        "cmake --preset linux-release -DUNLEASHED_RECOMP_FLATPAK=ON -DSDL2MIXER_VORBIS=VORBISFILE -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache",
+        "cmake --preset linux-release -DUNLEASHED_RECOMP_FLATPAK=ON -DSDL2MIXER_VORBIS=VORBISFILE",
         "cmake --build out/build/linux-release --target UnleashedRecomp",
         "mkdir -p /app/bin",
         "cp out/build/linux-release/UnleashedRecomp/UnleashedRecomp /app/bin/UnleashedRecomp",
@@ -35,8 +36,8 @@
         }
       ],
       "build-options": {
-        "append-path": "/usr/lib/sdk/llvm18/bin",
-        "prepend-ld-library-path": "/usr/lib/sdk/llvm18/lib",
+        "append-path": "/usr/lib/sdk/llvm20/bin",
+        "prepend-ld-library-path": "/usr/lib/sdk/llvm20/lib",
         "build-args": [
           "--share=network"
         ]
