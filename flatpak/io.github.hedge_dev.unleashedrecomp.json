@@ -12,6 +12,7 @@
     "--socket=pulseaudio",
     "--device=dri",
     "--device=input",
+    "--filesystem=xdg-config/UnleashedRecomp:create",
     "--filesystem=host:ro",
     "--filesystem=/media:ro",
     "--filesystem=/run/media:ro",
