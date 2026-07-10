@@ -5,6 +5,7 @@
   "sdk": "org.freedesktop.Sdk",
   "sdk-extensions" : [ "org.freedesktop.Sdk.Extension.llvm18" ],
   "finish-args": [
+    "--share=network",
     "--share=ipc",
     "--socket=wayland",
     "--socket=fallback-x11",
