@@ -6,14 +6,17 @@
   "sdk-extensions" : [ "org.freedesktop.Sdk.Extension.llvm18" ],
   "finish-args": [
     "--share=network",
+    "--share=ipc",
     "--socket=wayland",
     "--socket=fallback-x11",
     "--socket=pulseaudio",
-    "--device=all",
-    "--filesystem=host",
-    "--filesystem=/media",
-    "--filesystem=/run/media",
-    "--filesystem=/mnt"
+    "--device=dri",
+    "--device=input",
+    "--filesystem=xdg-config/UnleashedRecomp:create",
+    "--filesystem=host:ro",
+    "--filesystem=/media:ro",
+    "--filesystem=/run/media:ro",
+    "--filesystem=/mnt:ro"
   ],
   "modules": [
     {
