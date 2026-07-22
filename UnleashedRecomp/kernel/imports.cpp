@@ -1,4 +1,7 @@
 #include <atomic>
+#include <array>
+#include <condition_variable>
+#include <unordered_map>
 #include <stdafx.h>
 #include <cpu/ppc_context.h>
 #include <cpu/guest_thread.h>
@@ -23,6 +26,10 @@ struct Event final : KernelObject, HostObject<XKEVENT>
 {
     bool manualReset;
     std::atomic<bool> signaled;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    std::mutex waitMutex;
+    std::condition_variable waitCondition;
+#endif
 
     Event(XKEVENT* header)
         : manualReset(!header->Type), signaled(!!header->SignalState)
@@ -52,6 +59,25 @@ struct Event final : KernelObject, HostObject<XKEVENT>
         }
         else if (timeout == INFINITE)
         {
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+            std::unique_lock lock(waitMutex);
+            if (manualReset)
+            {
+                waitCondition.wait(lock, [&]
+                {
+                    return signaled.load(std::memory_order_acquire);
+                });
+            }
+            else
+            {
+                waitCondition.wait(lock, [&]
+                {
+                    bool expected = true;
+                    return signaled.compare_exchange_strong(
+                        expected, false, std::memory_order_acquire, std::memory_order_relaxed);
+                });
+            }
+#else
             if (manualReset)
             {
                 signaled.wait(false);
@@ -67,6 +93,7 @@ struct Event final : KernelObject, HostObject<XKEVENT>
                     signaled.wait(expected);
                 }
             }
+#endif
         }
         else
         {
@@ -78,29 +105,79 @@ struct Event final : KernelObject, HostObject<XKEVENT>
 
     bool Set()
     {
-        signaled = true;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+        bool previousState;
+        {
+            std::lock_guard lock(waitMutex);
+            previousState = signaled.exchange(true, std::memory_order_release);
+        }
+
+        if (manualReset)
+            waitCondition.notify_all();
+        else
+            waitCondition.notify_one();
+#else
+        const bool previousState = signaled.exchange(true, std::memory_order_release);
 
         if (manualReset)
             signaled.notify_all();
         else
             signaled.notify_one();
+#endif
 
-        return TRUE;
+        return previousState;
     }
 
     bool Reset()
     {
-        signaled = false;
-        return TRUE;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+        std::lock_guard lock(waitMutex);
+#endif
+        return signaled.exchange(false, std::memory_order_acq_rel);
     }
 };
 
 static std::atomic<uint32_t> g_keSetEventGeneration;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+static std::mutex g_multipleEventWaitMutex;
+static std::condition_variable g_multipleEventWaitCondition;
+#endif
+
+static void NotifyMultipleEventWaiters()
+{
+    g_keSetEventGeneration.fetch_add(1, std::memory_order_release);
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    {
+        // Synchronize with the predicate check performed by condition_variable::wait.
+        std::lock_guard lock(g_multipleEventWaitMutex);
+    }
+    g_multipleEventWaitCondition.notify_all();
+#else
+    g_keSetEventGeneration.notify_all();
+#endif
+}
+
+static void WaitForMultipleEventGenerationChange(uint32_t generation)
+{
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    std::unique_lock lock(g_multipleEventWaitMutex);
+    g_multipleEventWaitCondition.wait(lock, [&]
+    {
+        return g_keSetEventGeneration.load(std::memory_order_acquire) != generation;
+    });
+#else
+    g_keSetEventGeneration.wait(generation, std::memory_order_relaxed);
+#endif
+}
 
 struct Semaphore final : KernelObject, HostObject<XKSEMAPHORE>
 {
     std::atomic<uint32_t> count;
     uint32_t maximumCount;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    std::mutex waitMutex;
+    std::condition_variable waitCondition;
+#endif
 
     Semaphore(XKSEMAPHORE* semaphore)
         : count(semaphore->Header.SignalState), maximumCount(semaphore->Limit)
@@ -117,7 +194,7 @@ struct Semaphore final : KernelObject, HostObject<XKSEMAPHORE>
         if (timeout == 0)
         {
             uint32_t currentCount = count.load();
-            if (currentCount != 0)
+            while (currentCount != 0)
             {
                 if (count.compare_exchange_weak(currentCount, currentCount - 1))
                     return STATUS_SUCCESS;
@@ -127,6 +204,9 @@ struct Semaphore final : KernelObject, HostObject<XKSEMAPHORE>
         }
         else if (timeout == INFINITE)
         {
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+            std::unique_lock lock(waitMutex);
+#endif
             uint32_t currentCount;
             while (true)
             {
@@ -138,7 +218,14 @@ struct Semaphore final : KernelObject, HostObject<XKSEMAPHORE>
                 }
                 else
                 {
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+                    waitCondition.wait(lock, [&]
+                    {
+                        return count.load(std::memory_order_relaxed) != 0;
+                    });
+#else
                     count.wait(0);
+#endif
                 }
             }
 
@@ -153,13 +240,30 @@ struct Semaphore final : KernelObject, HostObject<XKSEMAPHORE>
 
     void Release(uint32_t releaseCount, uint32_t* previousCount)
     {
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+        std::lock_guard lock(waitMutex);
+#endif
+        uint32_t currentCount = count.load(std::memory_order_relaxed);
+        while (true)
+        {
+            assert(currentCount <= maximumCount && releaseCount <= maximumCount - currentCount);
+            if (releaseCount > maximumCount - currentCount)
+                return;
+
+            if (count.compare_exchange_weak(
+                currentCount, currentCount + releaseCount,
+                std::memory_order_release, std::memory_order_relaxed))
+                break;
+        }
+
         if (previousCount != nullptr)
-            *previousCount = count;
+            *previousCount = currentCount;
 
-        assert(count + releaseCount <= maximumCount);
-
-        count += releaseCount;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+        waitCondition.notify_all();
+#else
         count.notify_all();
+#endif
     }
 };
 
@@ -664,8 +768,8 @@ uint32_t NtSuspendThread(GuestThreadHandle* hThread, uint32_t* suspendCount)
 {
     assert(hThread != GetKernelObject(CURRENT_THREAD_HANDLE) && hThread->GetThreadId() == GuestThread::GetCurrentThreadId());
 
-    hThread->suspended = true;
-    hThread->suspended.wait(true);
+    hThread->SetSuspended(true);
+    hThread->WaitWhileSuspended();
 
     return S_OK;
 }
@@ -678,28 +782,201 @@ uint32_t KeSetAffinityThread(uint32_t Thread, uint32_t Affinity, be<uint32_t>* l
     return 0;
 }
 
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+// libc++ implements atomic::wait with ulock on iOS. Keep ownership atomic, but
+// use a hashed condition-variable wait table so the iOS build can distinguish
+// a broken ownership protocol from an atomic-wait/ulock problem.
+struct CriticalSectionWaitBucket
+{
+    std::mutex mutex;
+    std::condition_variable condition;
+    uint64_t generation{};
+};
+
+struct CriticalSectionOwnerDiagnostic
+{
+    uint32_t owner{};
+    std::chrono::steady_clock::time_point acquiredAt{};
+};
+
+static std::mutex g_criticalSectionOwnerDiagnosticMutex;
+static std::unordered_map<XRTL_CRITICAL_SECTION*, CriticalSectionOwnerDiagnostic>
+    g_criticalSectionOwnerDiagnostics;
+
+static void RecordCriticalSectionOwner(XRTL_CRITICAL_SECTION* cs, uint32_t owner)
+{
+    std::lock_guard lock(g_criticalSectionOwnerDiagnosticMutex);
+    g_criticalSectionOwnerDiagnostics[cs] =
+    {
+        owner,
+        std::chrono::steady_clock::now()
+    };
+}
+
+static CriticalSectionOwnerDiagnostic QueryCriticalSectionOwner(XRTL_CRITICAL_SECTION* cs)
+{
+    std::lock_guard lock(g_criticalSectionOwnerDiagnosticMutex);
+    const auto it = g_criticalSectionOwnerDiagnostics.find(cs);
+    return it != g_criticalSectionOwnerDiagnostics.end()
+        ? it->second
+        : CriticalSectionOwnerDiagnostic{};
+}
+
+static CriticalSectionOwnerDiagnostic RemoveCriticalSectionOwner(XRTL_CRITICAL_SECTION* cs)
+{
+    std::lock_guard lock(g_criticalSectionOwnerDiagnosticMutex);
+    const auto it = g_criticalSectionOwnerDiagnostics.find(cs);
+    if (it == g_criticalSectionOwnerDiagnostics.end())
+        return {};
+
+    const CriticalSectionOwnerDiagnostic result = it->second;
+    g_criticalSectionOwnerDiagnostics.erase(it);
+    return result;
+}
+
+static CriticalSectionWaitBucket& GetCriticalSectionWaitBucket(const XRTL_CRITICAL_SECTION* cs)
+{
+    static std::array<CriticalSectionWaitBucket, 256> buckets;
+    const size_t index = (reinterpret_cast<uintptr_t>(cs) >> 2) % buckets.size();
+    return buckets[index];
+}
+
+static bool WaitForCriticalSectionOwnerChange(
+    XRTL_CRITICAL_SECTION* cs,
+    std::atomic_ref<uint32_t>& owningThread,
+    uint32_t observedOwner,
+    uint32_t waitingThread)
+{
+    using namespace std::chrono_literals;
+
+    auto& bucket = GetCriticalSectionWaitBucket(cs);
+    std::unique_lock lock(bucket.mutex);
+    const uint64_t generation = bucket.generation;
+
+    if (owningThread.load(std::memory_order_relaxed) != observedOwner)
+        return true;
+
+    const bool changed = bucket.condition.wait_for(lock, 2s, [&]
+    {
+        return bucket.generation != generation ||
+            owningThread.load(std::memory_order_relaxed) != observedOwner;
+    });
+
+    if (!changed)
+    {
+        const uint32_t actualOwner = owningThread.load(std::memory_order_relaxed);
+        const uint32_t ownerHostThread = GuestThread::FindHostThreadId(actualOwner);
+        const CriticalSectionOwnerDiagnostic ownerDiagnostic = QueryCriticalSectionOwner(cs);
+        lock.unlock();
+        LOGFN_WARNING(
+            "SYNC-CS-WAIT timeout cs=0x{:08X} waiter=0x{:08X} observedOwner=0x{:08X} actualOwner=0x{:08X} trackedOwner=0x{:08X} waiterHost=0x{:08X} ownerHost=0x{:08X} ownerActive={}",
+            g_memory.MapVirtual(cs), waitingThread, observedOwner, actualOwner,
+            ownerDiagnostic.owner,
+            GuestThread::GetCurrentThreadId(), ownerHostThread, ownerHostThread != 0);
+    }
+
+    return changed;
+}
+
+static void WakeCriticalSectionWaiters(XRTL_CRITICAL_SECTION* cs)
+{
+    auto& bucket = GetCriticalSectionWaitBucket(cs);
+    {
+        std::lock_guard lock(bucket.mutex);
+        ++bucket.generation;
+    }
+    bucket.condition.notify_all();
+}
+#endif
+
+static bool IsCriticalSectionAtomicStorageValid(const XRTL_CRITICAL_SECTION* cs)
+{
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    static std::once_flag backendLogFlag;
+    std::call_once(backendLogFlag, []
+    {
+        LOGN("SYNC-CS-BACKEND condition-variable-ios (libc++ atomic wait bypassed)");
+    });
+#endif
+
+    const bool aligned = (reinterpret_cast<uintptr_t>(&cs->OwningThread) %
+        std::atomic_ref<uint32_t>::required_alignment) == 0;
+    if (!aligned)
+    {
+        LOGFN_ERROR(
+            "SYNC-CS-MISALIGNED csHost={} ownerHost={} requiredAlignment={}",
+            static_cast<const void*>(cs), static_cast<const void*>(&cs->OwningThread),
+            std::atomic_ref<uint32_t>::required_alignment);
+        assert(false && "Critical section owner storage is not suitably aligned for atomic_ref.");
+    }
+    return aligned;
+}
+
 void RtlLeaveCriticalSection(XRTL_CRITICAL_SECTION* cs)
 {
+    if (!IsCriticalSectionAtomicStorageValid(cs))
+        return;
+
     uint32_t thisThread = g_ppcContext->r13.u32;
     assert(thisThread != NULL);
     std::atomic_ref owningThread(cs->OwningThread);
+
+    const uint32_t owner = owningThread.load(std::memory_order_relaxed);
+    if (owner != thisThread)
+    {
+        LOGFN_ERROR(
+            "SYNC-CS-INVALID-LEAVE cs=0x{:08X} leavingThread=0x{:08X} owner=0x{:08X} recursion={}",
+            g_memory.MapVirtual(cs), thisThread, owner, cs->RecursionCount);
+        assert(false && "Critical section left by a thread that does not own it.");
+        return;
+    }
+
+    if (cs->RecursionCount <= 0)
+    {
+        LOGFN_ERROR(
+            "SYNC-CS-INVALID-RECURSION cs=0x{:08X} owner=0x{:08X} recursion={}",
+            g_memory.MapVirtual(cs), thisThread, cs->RecursionCount);
+        assert(false && "Critical section recursion count underflow.");
+        return;
+    }
 
     cs->RecursionCount--;
 
     if (cs->RecursionCount != 0)
         return;
 
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    const CriticalSectionOwnerDiagnostic ownerDiagnostic = RemoveCriticalSectionOwner(cs);
+#endif
     owningThread.store(0, std::memory_order_release);
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    WakeCriticalSectionWaiters(cs);
+
+    const auto heldFor = std::chrono::steady_clock::now() - ownerDiagnostic.acquiredAt;
+    if (ownerDiagnostic.owner != 0 && heldFor >= std::chrono::seconds(5))
+    {
+        LOGFN_WARNING(
+            "SYNC-CS-LONG-HOLD cs=0x{:08X} owner=0x{:08X} heldMs={}",
+            g_memory.MapVirtual(cs), thisThread,
+            std::chrono::duration_cast<std::chrono::milliseconds>(heldFor).count());
+    }
+#else
     owningThread.notify_one();
+#endif
 }
 
 void RtlEnterCriticalSection(XRTL_CRITICAL_SECTION* cs)
 {
+    if (!IsCriticalSectionAtomicStorageValid(cs))
+        return;
+
     uint32_t thisThread = g_ppcContext->r13.u32;
     assert(thisThread != NULL);
 
     std::atomic_ref owningThread(cs->OwningThread);
     uint32_t currentOwner = owningThread.load(std::memory_order_acquire);
+    const auto contentionStart = std::chrono::steady_clock::now();
+    bool contended = false;
     while (true)
     {
         if (currentOwner == thisThread)
@@ -713,12 +990,32 @@ void RtlEnterCriticalSection(XRTL_CRITICAL_SECTION* cs)
            if (owningThread.compare_exchange_weak(currentOwner, thisThread, std::memory_order_acquire, std::memory_order_relaxed))
            {
                cs->RecursionCount = 1;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+               RecordCriticalSectionOwner(cs, thisThread);
+#endif
+
+               if (contended)
+               {
+                   const auto duration = std::chrono::steady_clock::now() - contentionStart;
+                   if (duration >= std::chrono::seconds(2))
+                   {
+                       LOGFN_WARNING(
+                           "SYNC-CS-ACQUIRED-AFTER-WAIT cs=0x{:08X} thread=0x{:08X} waitedMs={}",
+                           g_memory.MapVirtual(cs), thisThread,
+                           std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+                   }
+               }
                return;
            }
            continue;
         }
 
+        contended = true;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+        WaitForCriticalSectionOwnerChange(cs, owningThread, currentOwner, thisThread);
+#else
         owningThread.wait(currentOwner, std::memory_order_relaxed);
+#endif
         currentOwner = owningThread.load(std::memory_order_acquire);
     }
 }
@@ -755,10 +1052,16 @@ void RtlCompareMemoryUlong()
 
 uint32_t RtlInitializeCriticalSection(XRTL_CRITICAL_SECTION* cs)
 {
+    if (!IsCriticalSectionAtomicStorageValid(cs))
+        return 0xC000000D;
+
     cs->Header.Absolute = 0;
     cs->LockCount = -1;
     cs->RecursionCount = 0;
     cs->OwningThread = 0;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    RemoveCriticalSectionOwner(cs);
+#endif
 
     return 0;
 }
@@ -1013,8 +1316,7 @@ bool KeSetEvent(XKEVENT* pEvent, uint32_t Increment, bool Wait)
 {
     bool result = QueryKernelObject<Event>(*pEvent)->Set();
 
-    ++g_keSetEventGeneration;
-    g_keSetEventGeneration.notify_all();
+    NotifyMultipleEventWaiters();
 
     return result;
 }
@@ -1214,16 +1516,29 @@ void XexGetModuleHandle()
 
 bool RtlTryEnterCriticalSection(XRTL_CRITICAL_SECTION* cs)
 {
+    if (!IsCriticalSectionAtomicStorageValid(cs))
+        return false;
+
     uint32_t thisThread = g_ppcContext->r13.u32;
     assert(thisThread != NULL);
 
     std::atomic_ref owningThread(cs->OwningThread);
 
-    uint32_t previousOwner = 0;
-
-    if (owningThread.compare_exchange_weak(previousOwner, thisThread) || previousOwner == thisThread)
+    uint32_t previousOwner = owningThread.load(std::memory_order_relaxed);
+    if (previousOwner == thisThread)
     {
         cs->RecursionCount++;
+        return true;
+    }
+
+    previousOwner = 0;
+    if (owningThread.compare_exchange_strong(
+        previousOwner, thisThread, std::memory_order_acquire, std::memory_order_relaxed))
+    {
+        cs->RecursionCount = 1;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+        RecordCriticalSectionOwner(cs, thisThread);
+#endif
         return true;
     }
 
@@ -1232,10 +1547,16 @@ bool RtlTryEnterCriticalSection(XRTL_CRITICAL_SECTION* cs)
 
 void RtlInitializeCriticalSectionAndSpinCount(XRTL_CRITICAL_SECTION* cs, uint32_t spinCount)
 {
+    if (!IsCriticalSectionAtomicStorageValid(cs))
+        return;
+
     cs->Header.Absolute = (spinCount + 255) >> 8;
     cs->LockCount = -1;
     cs->RecursionCount = 0;
     cs->OwningThread = 0;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    RemoveCriticalSectionOwner(cs);
+#endif
 }
 
 void _vswprintf_x()
@@ -1331,15 +1652,18 @@ uint32_t NtResumeThread(GuestThreadHandle* hThread, uint32_t* suspendCount)
 {
     assert(hThread != GetKernelObject(CURRENT_THREAD_HANDLE));
 
-    hThread->suspended = false;
-    hThread->suspended.notify_all();
+    hThread->SetSuspended(false);
 
     return S_OK;
 }
 
 uint32_t NtSetEvent(Event* handle, uint32_t* previousState)
 {
-    handle->Set();
+    const bool wasSignaled = handle->Set();
+    if (previousState != nullptr)
+        *previousState = ByteSwap(static_cast<uint32_t>(wasSignaled));
+
+    NotifyMultipleEventWaiters();
     return 0;
 }
 
@@ -1522,8 +1846,44 @@ uint32_t KeWaitForMultipleObjects(uint32_t Count, xpointer<XDISPATCHER_HEADER>* 
 
     if (WaitType == 0) // Wait all
     {
+        thread_local std::vector<Event*> s_events;
+        thread_local std::vector<Event*> s_consumedAutoResetEvents;
+        s_events.resize(Count);
+        s_consumedAutoResetEvents.reserve(Count);
+
         for (size_t i = 0; i < Count; i++)
-            QueryKernelObject<Event>(*Objects[i])->Wait(timeout);
+            s_events[i] = QueryKernelObject<Event>(*Objects[i]);
+
+        while (true)
+        {
+            const uint32_t generation = g_keSetEventGeneration.load(std::memory_order_acquire);
+            s_consumedAutoResetEvents.clear();
+            bool allSignaled = true;
+
+            for (Event* event : s_events)
+            {
+                if (event->Wait(0) != STATUS_SUCCESS)
+                {
+                    allSignaled = false;
+                    break;
+                }
+
+                if (!event->manualReset)
+                    s_consumedAutoResetEvents.push_back(event);
+            }
+
+            if (allSignaled)
+                return STATUS_SUCCESS;
+
+            if (!s_consumedAutoResetEvents.empty())
+            {
+                for (Event* event : s_consumedAutoResetEvents)
+                    event->Set();
+                NotifyMultipleEventWaiters();
+            }
+
+            WaitForMultipleEventGenerationChange(generation);
+        }
     }
     else
     {
@@ -1535,7 +1895,7 @@ uint32_t KeWaitForMultipleObjects(uint32_t Count, xpointer<XDISPATCHER_HEADER>* 
 
         while (true)
         {
-            uint32_t generation = g_keSetEventGeneration.load();
+            uint32_t generation = g_keSetEventGeneration.load(std::memory_order_acquire);
 
             for (size_t i = 0; i < Count; i++)
             {
@@ -1545,7 +1905,7 @@ uint32_t KeWaitForMultipleObjects(uint32_t Count, xpointer<XDISPATCHER_HEADER>* 
                 }
             }
 
-            g_keSetEventGeneration.wait(generation);
+            WaitForMultipleEventGenerationChange(generation);
         }
     }
 
@@ -1581,8 +1941,7 @@ uint32_t KeResumeThread(GuestThreadHandle* object)
 {
     assert(object != GetKernelObject(CURRENT_THREAD_HANDLE));
 
-    object->suspended = false;
-    object->suspended.notify_all();
+    object->SetSuspended(false);
     return 0;
 }
 

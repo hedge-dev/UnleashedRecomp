@@ -4,11 +4,11 @@ if(WIN32)
     option(UNLEASHED_RECOMP_D3D12 "Add D3D12 support for rendering" ON)
 endif()
 
-if (APPLE)
+if(APPLE)
     option(UNLEASHED_RECOMP_METAL "Add Metal support for rendering" ON)
 endif()
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     option(UNLEASHED_RECOMP_FLATPAK "Configure the build for Flatpak compatibility." OFF)
 endif()
 
@@ -286,7 +286,7 @@ if(NOT ${CMAKE_BUILD_TYPE} MATCHES "Release")
     set(SHOW_GIT_INFO_AND_BUILD_TYPE 1)
 endif()
 
-if (UNLEASHED_RECOMP_METAL)
+if(UNLEASHED_RECOMP_METAL)
     set(XCRUN_TOOL "/usr/bin/xcrun")
 endif()
 
@@ -490,11 +490,15 @@ if(UNLEASHED_RECOMP_D3D12)
     )
 endif()
 
-if (UNLEASHED_RECOMP_METAL)
+if(UNLEASHED_RECOMP_METAL)
     target_compile_definitions(UnleashedRecomp PRIVATE UNLEASHED_RECOMP_METAL)
+
+    if(TARGET UnleashedRecompIOSLauncher)
+        target_compile_definitions(UnleashedRecompIOSLauncher PRIVATE UNLEASHED_RECOMP_METAL)
+    endif()
 endif()
 
-if (WIN32)
+if(WIN32)
     target_link_libraries(UnleashedRecomp PRIVATE
         comctl32
         dwmapi
@@ -577,24 +581,40 @@ if(NOT DEFINED DIRECTX_DXC_TOOL)
 endif()
 
 function(compile_shader FILE_PATH TARGET_NAME)
+    set(_shader_target UnleashedRecomp)
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET UnleashedRecompIOSLauncher)
+        set(_shader_target UnleashedRecompIOSLauncher)
+    endif()
+
     set(HLSL_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/hlsl/${FILE_PATH}.hlsl)
     set(MSL_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/msl/${FILE_PATH}.metal)
     cmake_path(GET HLSL_FILE_PATH STEM HLSL_NAME)
     cmake_path(GET MSL_FILE_PATH STEM MSL_NAME)
-    if (UNLEASHED_RECOMP_METAL)
+
+    if(UNLEASHED_RECOMP_METAL)
+        # Metal shader libraries are platform-specific. CMAKE_OSX_SYSROOT is
+        # "iphoneos" for device builds, and defaults to the macOS SDK otherwise.
+        if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+            set(_metal_sdk iphoneos)
+        else()
+            set(_metal_sdk macosx)
+        endif()
+
         add_custom_command(
-                OUTPUT ${MSL_FILE_PATH}.ir
-                COMMAND ${XCRUN_TOOL} -sdk macosx metal -o ${MSL_FILE_PATH}.ir -c ${MSL_FILE_PATH} -D__air__ -frecord-sources -gline-tables-only
-                DEPENDS ${MSL_FILE_PATH}
+            OUTPUT ${MSL_FILE_PATH}.ir
+            COMMAND ${XCRUN_TOOL} -sdk ${_metal_sdk} metal -o ${MSL_FILE_PATH}.ir -c ${MSL_FILE_PATH} -D__air__ -frecord-sources -gline-tables-only
+            DEPENDS ${MSL_FILE_PATH}
         )
         add_custom_command(
-                OUTPUT ${MSL_FILE_PATH}.metallib
-                COMMAND ${XCRUN_TOOL} -sdk macosx metallib -o ${MSL_FILE_PATH}.metallib ${MSL_FILE_PATH}.ir
-                DEPENDS ${MSL_FILE_PATH}.ir
+            OUTPUT ${MSL_FILE_PATH}.metallib
+            COMMAND ${XCRUN_TOOL} -sdk ${_metal_sdk} metallib -o ${MSL_FILE_PATH}.metallib ${MSL_FILE_PATH}.ir
+            DEPENDS ${MSL_FILE_PATH}.ir
         )
-        BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${MSL_FILE_PATH}.metallib" DEST_FILE "${MSL_FILE_PATH}.metallib" ARRAY_NAME "g_${MSL_NAME}_air")
+        BIN2C(TARGET_OBJ ${_shader_target} SOURCE_FILE "${MSL_FILE_PATH}.metallib" DEST_FILE "${MSL_FILE_PATH}.metallib" ARRAY_NAME "g_${MSL_NAME}_air")
     endif()
-    if (UNLEASHED_RECOMP_D3D12)
+
+    if(UNLEASHED_RECOMP_D3D12)
         add_custom_command(
             OUTPUT ${HLSL_FILE_PATH}.dxil.h
             COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -E shaderMain -Fh ${HLSL_FILE_PATH}.dxil.h ${HLSL_FILE_PATH} -Vn g_${HLSL_NAME}_dxil
@@ -728,11 +748,11 @@ BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/op
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/options_menu/options_static.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/options_menu/options_static.dds" ARRAY_NAME "g_options_static" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/options_menu/options_static_flash.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/options_menu/options_static_flash.dds" ARRAY_NAME "g_options_static_flash" COMPRESSION_TYPE "zstd")
 
-## Game Icon ##
+# # Game Icon ##
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/game_icon.bmp" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/game_icon.bmp" ARRAY_NAME "g_game_icon")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/game_icon_night.bmp" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/game_icon_night.bmp" ARRAY_NAME "g_game_icon_night")
 
-## Audio ##
+# # Audio ##
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/music/installer.ogg" DEST_FILE "${RESOURCES_OUTPUT_PATH}/music/installer.ogg" ARRAY_NAME "g_installer_music")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/sounds/sys_worldmap_cursor.ogg" DEST_FILE "${RESOURCES_OUTPUT_PATH}/sounds/sys_worldmap_cursor.ogg" ARRAY_NAME "g_sys_worldmap_cursor")
 BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${RESOURCES_SOURCE_PATH}/sounds/sys_worldmap_finaldecide.ogg" DEST_FILE "${RESOURCES_OUTPUT_PATH}/sounds/sys_worldmap_finaldecide.ogg" ARRAY_NAME "g_sys_worldmap_finaldecide")

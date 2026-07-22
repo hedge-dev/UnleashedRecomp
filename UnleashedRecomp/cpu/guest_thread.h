@@ -1,5 +1,6 @@
 #pragma once
 
+#include <condition_variable>
 #include <kernel/xdm.h>
 
 // Use pthreads directly on macOS to be able to increase default stack size.
@@ -33,6 +34,10 @@ struct GuestThreadHandle : KernelObject
 {
     GuestThreadParams params;
     std::atomic<bool> suspended;
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    std::mutex suspendMutex;
+    std::condition_variable suspendCondition;
+#endif
 #ifdef USE_PTHREAD
     pthread_t thread;
 #else
@@ -43,6 +48,8 @@ struct GuestThreadHandle : KernelObject
     ~GuestThreadHandle() override;
 
     uint32_t GetThreadId() const;
+    void SetSuspended(bool value);
+    void WaitWhileSuspended();
 
     uint32_t Wait(uint32_t timeout) override;
 };
@@ -53,6 +60,7 @@ struct GuestThread
     static GuestThreadHandle* Start(const GuestThreadParams& params, uint32_t* threadId);
 
     static uint32_t GetCurrentThreadId();
+    static uint32_t FindHostThreadId(uint32_t guestThreadId);
     static void SetLastError(uint32_t error);
 
 #ifdef _WIN32

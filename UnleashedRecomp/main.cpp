@@ -34,6 +34,7 @@
 
 #ifdef __APPLE__
 #include "apple_utils.h"
+#include <CoreFoundation/CoreFoundation.h>
 #endif
 
 #if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
@@ -247,11 +248,21 @@ int main(int argc, char *argv[])
         }
     }
 
+#if TARGET_OS_IOS
+    // iOS: Check if there's a pending DLC installation flag set from a previous attempt
+    CFStringRef pendingKey = CFSTR("UnleashedRecomp_PendingDLCInstall");
+    bool pendingDLC = CFPreferencesGetAppBooleanValue(pendingKey, kCFPreferencesCurrentApplication, nullptr);
+    if (pendingDLC)
+    {
+        CFPreferencesSetAppValue(pendingKey, kCFBooleanFalse, kCFPreferencesCurrentApplication);
+        forceDLCInstaller = true;
+    }
+#endif
+
     if (!useDefaultWorkingDirectory)
     {
-#if !defined(TARGET_OS_IPHONE)
+#if !TARGET_OS_IPHONE
         // Set the current working directory to the executable's path.
-        // iOS: CWD is not meaningful in app sandbox; paths must be absolute.
         std::error_code ec;
         std::filesystem::current_path(os::process::GetExecutableRoot(), ec);
 #endif

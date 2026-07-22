@@ -97,6 +97,7 @@ else()
         -G "${CMAKE_GENERATOR}"
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/host-tools/install
+        -DUNLEASHED_RECOMP=ON
         COMMAND
         ${CMAKE_COMMAND} --build "${HOST_XENONRECOMP_BUILD_DIR}" --config ${CMAKE_BUILD_TYPE}
 
@@ -149,6 +150,7 @@ else()
         -G "${CMAKE_GENERATOR}"
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/host-tools/install
+        -DUNLEASHED_RECOMP=ON
 
         COMMAND
         ${CMAKE_COMMAND} --build "${HOST_XENOSRECOMP_BUILD_DIR}" --config ${CMAKE_BUILD_TYPE}
@@ -159,6 +161,7 @@ else()
         "${CMAKE_CURRENT_SOURCE_DIR}/private/shader_decompressed.ar"
         ${XENOS_RECOMP_SOURCES}
         ${XENOS_RECOMP_INCLUDE}
+        "${XENOS_RECOMP_ROOT}/CMakeLists.txt"
         COMMENT "Building host XenosRecomp and generating shader cache"
         USES_TERMINAL
     )

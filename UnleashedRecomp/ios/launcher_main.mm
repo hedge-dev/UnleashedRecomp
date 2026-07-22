@@ -1,51 +1,81 @@
+#import <Foundation/Foundation.h>
+#import <os/log.h>
+#import <unistd.h>
+
 #include <SDL.h>
 #include <SDL_main.h>
 
 int UnleashedMain(int argc, char *argv[]);
 
-int HandleAppEvents(void *userdata, SDL_Event *event)
-{
-    switch (event->type)
-    {
-    case SDL_APP_TERMINATING:
-        /* Terminate the app.
-           Shut everything down before returning from this function.
-        */
-        return 0;
-    case SDL_APP_LOWMEMORY:
-        /* You will get this when your app is paused and iOS wants more memory.
-           Release as much memory as possible.
-        */
-        return 0;
-    case SDL_APP_WILLENTERBACKGROUND:
-        /* Prepare your app to go into the background.  Stop loops, etc.
-           This gets called when the user hits the home button, or gets a call.
-        */
-        return 0;
-    case SDL_APP_DIDENTERBACKGROUND:
-        /* This will get called if the user accepted whatever sent your app to the background.
-           If the user got a phone call and canceled it, you'll instead get an SDL_APP_DIDENTERFOREGROUND event and restart your loops.
-           When you get this, you have 5 seconds to save all your state or the app will be terminated.
-           Your app is NOT active at this point.
-        */
-        return 0;
-    case SDL_APP_WILLENTERFOREGROUND:
-        /* This call happens when your app is coming back to the foreground.
-           Restore all your state here.
-        */
-        return 0;
-    case SDL_APP_DIDENTERFOREGROUND:
-        /* Restart your loops here.
-           Your app is interactive and getting CPU again.
-        */
-        return 0;
-    default:
-        /* No special processing, add it to the event queue */
-        return 1;
-    }
+#if _DEBUG
+@interface StdRedirector : NSObject
+- (void)start;
+@end
+@interface StdRedirector ()
+@property (nonatomic, strong) NSFileHandle *pipeReadHandle;
+@property (nonatomic) dispatch_source_t source;
+@property (nonatomic) os_log_t log;
+@end
+
+@implementation StdRedirector
+
+- (void)start {
+    self.log = os_log_create("com.yourapp.stdout", "console");
+
+    int pipefd[2];
+    pipe(pipefd);
+
+    int readFD = pipefd[0];
+    int writeFD = pipefd[1];
+
+    // Redirect stdout + stderr to pipe
+    dup2(writeFD, STDOUT_FILENO);
+    dup2(writeFD, STDERR_FILENO);
+
+    close(writeFD);
+
+    self.pipeReadHandle = [[NSFileHandle alloc] initWithFileDescriptor:readFD closeOnDealloc:YES];
+
+    dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_UTILITY, 0);
+
+    self.source = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ,
+                                         readFD,
+                                         0,
+                                         queue);
+
+    __weak typeof(self) weakSelf = self;
+
+    dispatch_source_set_event_handler(self.source, ^{
+        __strong typeof(weakSelf) self = weakSelf;
+        if (!self) return;
+
+        NSData *data = [self.pipeReadHandle availableData];
+        if (data.length == 0) return;
+
+        NSString *output = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        if (!output) return;
+
+        NSArray<NSString *> *lines = [output componentsSeparatedByString:@"\n"];
+
+        for (NSString *line in lines) {
+            if (line.length == 0) continue;
+
+            os_log_info(self.log, "%{public}@", line);
+        }
+    });
+
+    dispatch_resume(self.source);
 }
 
+@end
+#endif
+
 int main(int argc, char *argv[]) {
-    SDL_SetEventFilter(HandleAppEvents, NULL);
-    return SDL_UIKitRunApp(argc, argv, UnleashedMain);
+    @autoreleasepool {
+    #if _DEBUG
+        StdRedirector *redirector = [[StdRedirector alloc] init];
+        [redirector start];
+    #endif
+        return SDL_UIKitRunApp(argc, argv, UnleashedMain);
+    }
 }
