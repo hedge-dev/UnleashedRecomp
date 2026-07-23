@@ -1,5 +1,8 @@
 #include "paths.h"
 #include <os/process.h>
+#ifdef TARGET_OS_IPHONE
+#include "../apple_utils.h"
+#endif
 
 std::filesystem::path g_executableRoot = os::process::GetExecutableRoot();
 std::filesystem::path g_userPath = BuildUserPath();
@@ -22,6 +25,8 @@ std::filesystem::path BuildUserPath()
         userPath = std::filesystem::path{ knownPath } / USER_DIRECTORY;
 
     CoTaskMemFree(knownPath);
+#elif TARGET_OS_IPHONE
+    userPath = apple::GetUserDataDirectory();
 #elif defined(__linux__) || defined(__APPLE__)
     const char* homeDir = getenv("HOME");
 #if defined(__linux__)

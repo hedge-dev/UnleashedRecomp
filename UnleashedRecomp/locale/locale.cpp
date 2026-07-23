@@ -715,6 +715,18 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         }
     },
     {
+        "System_iOS_UnsupportedGPU_BCTextures",
+        {
+            // TODO: Localize the GPU requirements for iOS devices.
+            { ELanguage::English,  "Your device's GPU is not supported.\n\nUnleashed Recompiled requires an iOS device with hardware support for BC texture compression.\n\nMinimum requirement:\n- Apple A17 Pro chip or newer\n- Apple A18 / A18 Pro chip or newer\n- Apple M-series chips (M1, M2, M3, M4 or newer)\n\nSupported devices include:\n- iPhone 15 Pro / 15 Pro Max and newer\n- iPhone 16 / 16 Plus / 16 Pro / 16 Pro Max and newer\n- iPhone 16e and newer\n- iPad mini (A17 Pro) and newer\n- iPad Pro models with M-series chips (M1 / 11-inch 3rd gen / 12.9-inch 5th gen or newer)\n- iPad Air models with M-series chips (M1 / 5th gen or newer)\n\nUnsupported devices include:\n- All iPhones with A16 Bionic chip or earlier (iPhone 15, iPhone 14 Pro, and older)\n- iPads with A-series chips (iPad 10th gen, iPad Air 4th gen, older iPad Pros)\n\nWe aim to support more devices in the future." },
+            // { ELanguage::Japanese, ""},
+            { ELanguage::German,   "Deine Geräte-GPU wird nicht unterstützt.\n\nUnleashed Recompiled benötigt ein iOS-Gerät mit Hardware-Unterstützung für BC-Texturen.\n\nMindestanforderungen:\n- Apple A17 Pro-Chip oder neuer\n- Apple A18 / A18 Pro-Chip oder neuer\n- Apple M-Series-Chips (M1, M2, M3, M4 oder neuer)\n\nUnterstützte Geräte:\n- iPhone 15 Pro / 15 Pro Max und neuer\n- iPhone 16 / 16 Plus / 16 Pro / 16 Pro Max und neuer\n- iPhone 16e und neuer\n- iPad mini (A17 Pro) und neuer\n- iPad Pro-Modelle mit M-Series-Chips (M1 / 11\" 3. Gen / 12,9\" 5. Gen oder neuer)\n- iPad Air-Modelle mit M-Series-Chips (M1 / 5. Gen oder neuer)\n\nNicht unterstützte Geräte:\n- Alle iPhones mit A16 Bionic-Chip oder früher (iPhone 15, iPhone 14 Pro und älter)\n- iPads mit A-Series-Chips (iPad 10. Gen, iPad Air 4. Gen, ältere iPad Pros)\n\nWir bemühen uns, in Zukunft mehr Geräte zu unterstützen." },
+            // { ELanguage::French,   "" },
+            { ELanguage::Spanish,  "La GPU en tu dispositivo no es compatible.\n\nUnleashed Recompiled requiere un dispositivo iOS con soporte hardware para texturas BC.\n\nRequisitos mínimos:\n- Chip Apple A17 Pro o superior\n- Chip Apple A18 / A18 Pro o superior\n- Chips Apple M-series (M1, M2, M3, M4 o más recientes)\n\nDispositivos compatibles incluyen:\n- iPhone 15 Pro / 15 Pro Max y más recientes\n- iPhone 16 / 16 Plus / 16 Pro / 16 Pro Max y más recientes\n- iPhone 16e y más recientes\n- iPad mini (A17 Pro) y más recientes\n- Modelos de iPad Pro con chips M-series (M1 / 11 pulgadas 3.ª gen / 12.9 pulgadas 5.ª gen o más recientes)\n- Modelos de iPad Air con chips M-series (M1 / 5.ª gen o más recientes)\n\nDispositivos no compatibles incluyen:\n- Todos los iPhones con chip A16 Bionic o anterior (iPhone 15, iPhone 14 Pro y anteriores)\n- iPads con chips de la serie A (iPad 10.ª gen, iPad Air 4.ª gen, iPad Pro más antiguos)\n\nEsperamos admitir más dispositivos en el futuro." },
+            // { ELanguage::Italian,  "" }
+        }
+    },
+    {
         "IntegrityCheck_Success",
         {
             { ELanguage::English,  "Installation check has finished.\n\nAll files seem to be correct.\n\nThe game will now close. Remove the launch argument to play the game." },
@@ -856,7 +868,7 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Spanish,  "Cambiar" },
             { ELanguage::Italian,  "Cambia" }
         }
-    }
+    },
 };
 
 std::string& Localise(const std::string_view& key)

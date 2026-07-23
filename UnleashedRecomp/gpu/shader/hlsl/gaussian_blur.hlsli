@@ -1,4 +1,4 @@
-#include "../../../tools/XenosRecomp/XenosRecomp/shader_common.h"
+#include "../../../../tools/XenosRecomp/XenosRecomp/shader_common.h"
 
 #ifdef __spirv__
 
@@ -40,7 +40,7 @@ float ComputeWeight(float x)
     return exp(-(x * x) / (2.0 * std * std)) / (std * sqrt(2.0 * PI));
 }
 
-float4 main(in float4 iPosition : SV_Position, in float4 iTexCoord0 : TEXCOORD0) : SV_Target
+float4 shaderMain(in float4 iPosition : SV_Position, in float4 iTexCoord0 : TEXCOORD0) : SV_Target
 {
     Texture2D<float4> texture = g_Texture2DDescriptorHeap[s0_Texture2DDescriptorIndex];
     SamplerState samplerState = g_SamplerDescriptorHeap[s0_SamplerDescriptorIndex];

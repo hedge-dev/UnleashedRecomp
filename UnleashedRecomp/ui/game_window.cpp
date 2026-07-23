@@ -33,6 +33,17 @@ int Window_OnSDLEvent(void*, SDL_Event* event)
 
     switch (event->type)
     {
+        case SDL_APP_WILLENTERBACKGROUND:
+        {
+            Video::HandleApplicationBackgroundState(true);
+            break;
+        }
+
+        case SDL_APP_DIDENTERFOREGROUND: {
+            Video::HandleApplicationBackgroundState(false);
+            break;
+        }
+
         case SDL_QUIT:
         {
             if (App::s_isSaving)
@@ -218,7 +229,11 @@ void GameWindow::Init(const char* sdlVideoDriver)
 #elif defined(__linux__)
     s_renderWindow = { info.info.x11.display, info.info.x11.window };
 #elif defined(__APPLE__)
+#if defined(SDL_VIDEO_DRIVER_UIKIT)
+    s_renderWindow.window = info.info.uikit.window;
+#else
     s_renderWindow.window = info.info.cocoa.window;
+#endif
     s_renderWindow.view = SDL_Metal_GetLayer(SDL_Metal_CreateView(s_pWindow));
 #else
     static_assert(false, "Unknown platform.");
@@ -346,7 +361,7 @@ bool GameWindow::SetFullscreen(bool isEnabled)
 
     return isEnabled;
 }
-    
+
 void GameWindow::SetFullscreenCursorVisibility(bool isVisible)
 {
     s_isFullscreenCursorVisible = isVisible;

@@ -3,6 +3,8 @@
 #include <kernel/memory.h>
 #include <kernel/heap.h>
 #include <kernel/function.h>
+#include <os/logger.h>
+#include <unordered_map>
 #include "ppc_context.h"
 
 constexpr size_t PCR_SIZE = 0xAB0;
@@ -12,6 +14,29 @@ constexpr size_t STACK_SIZE = 0x40000;
 constexpr size_t TOTAL_SIZE = PCR_SIZE + TLS_SIZE + TEB_SIZE + STACK_SIZE;
 
 constexpr size_t TEB_OFFSET = PCR_SIZE + TLS_SIZE;
+
+static std::mutex g_guestThreadRegistryMutex;
+static std::unordered_map<uint32_t, uint32_t> g_guestThreadRegistry;
+
+static void RegisterGuestThread(uint32_t guestThreadId)
+{
+    std::lock_guard lock(g_guestThreadRegistryMutex);
+    const auto [it, inserted] = g_guestThreadRegistry.emplace(
+        guestThreadId, GuestThread::GetCurrentThreadId());
+    if (!inserted)
+    {
+        LOGFN_ERROR(
+            "SYNC-THREAD-DUPLICATE guestThread=0x{:08X} oldHostThread=0x{:08X} newHostThread=0x{:08X}",
+            guestThreadId, it->second, GuestThread::GetCurrentThreadId());
+        it->second = GuestThread::GetCurrentThreadId();
+    }
+}
+
+static void UnregisterGuestThread(uint32_t guestThreadId)
+{
+    std::lock_guard lock(g_guestThreadRegistryMutex);
+    g_guestThreadRegistry.erase(guestThreadId);
+}
 
 GuestThreadContext::GuestThreadContext(uint32_t cpuNumber)
 {
@@ -33,10 +58,13 @@ GuestThreadContext::GuestThreadContext(uint32_t cpuNumber)
 
     assert(GetPPCContext() == nullptr);
     SetPPCContext(ppcContext);
+    RegisterGuestThread(ppcContext.r13.u32);
 }
 
 GuestThreadContext::~GuestThreadContext()
 {
+    UnregisterGuestThread(ppcContext.r13.u32);
+    ClearPPCContext();
     g_userHeap.Free(thread);
 }
 
@@ -71,7 +99,7 @@ static void* GuestThreadFunc(void* arg)
 static void GuestThreadFunc(GuestThreadHandle* hThread)
 {
 #endif
-    hThread->suspended.wait(true);
+    hThread->WaitWhileSuspended();
     GuestThread::Start(hThread->params);
 #ifdef USE_PTHREAD
     return nullptr;
@@ -125,6 +153,35 @@ uint32_t GuestThreadHandle::GetThreadId() const
 #endif
 }
 
+void GuestThreadHandle::SetSuspended(bool value)
+{
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    {
+        std::lock_guard lock(suspendMutex);
+        suspended.store(value, std::memory_order_release);
+    }
+    if (!value)
+        suspendCondition.notify_all();
+#else
+    suspended.store(value, std::memory_order_release);
+    if (!value)
+        suspended.notify_all();
+#endif
+}
+
+void GuestThreadHandle::WaitWhileSuspended()
+{
+#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
+    std::unique_lock lock(suspendMutex);
+    suspendCondition.wait(lock, [&]
+    {
+        return !suspended.load(std::memory_order_acquire);
+    });
+#else
+    suspended.wait(true, std::memory_order_acquire);
+#endif
+}
+
 uint32_t GuestThreadHandle::Wait(uint32_t timeout)
 {
     assert(timeout == INFINITE);
@@ -171,6 +228,13 @@ uint32_t GuestThread::GetCurrentThreadId()
 #else
     return CalcThreadId(std::this_thread::get_id());
 #endif
+}
+
+uint32_t GuestThread::FindHostThreadId(uint32_t guestThreadId)
+{
+    std::lock_guard lock(g_guestThreadRegistryMutex);
+    const auto it = g_guestThreadRegistry.find(guestThreadId);
+    return it != g_guestThreadRegistry.end() ? it->second : 0;
 }
 
 void GuestThread::SetLastError(uint32_t error)

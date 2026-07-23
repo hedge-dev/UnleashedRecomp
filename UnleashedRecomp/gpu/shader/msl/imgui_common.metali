@@ -1,6 +1,9 @@
 #pragma once
+#include <metal_stdlib>
 
-#include "../imgui/imgui_common.h"
+using namespace metal;
+
+#include "../../imgui/imgui_common.h"
 
 struct PushConstants
 {
@@ -20,13 +23,19 @@ struct PushConstants
     float Outline;
 };
 
-Texture2D<float4> g_Texture2DDescriptorHeap[] : register(t0, space0);
-SamplerState g_SamplerDescriptorHeap[] : register(s0, space1);
-[[vk::push_constant]] ConstantBuffer<PushConstants> g_PushConstants : register(b0, space2);
-
 struct Interpolators
 {
-    float4 Position : SV_Position;
-    float2 UV : TEXCOORD;
-    float4 Color : COLOR;
+    float4 Position [[position]];
+    float2 UV;
+    float4 Color;
+};
+
+struct Texture2DDescriptorHeap
+{
+    texture2d<float> tex;
+};
+
+struct SamplerDescriptorHeap
+{
+    sampler samp;
 };

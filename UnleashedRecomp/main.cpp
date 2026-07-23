@@ -1,4 +1,7 @@
 #include <stdafx.h>
+#if defined(__IPHONEOS__)
+#include <SDL_main.h>
+#endif
 #ifdef __x86_64__
 #include <cpuid.h>
 #endif
@@ -30,6 +33,11 @@
 
 #ifdef _WIN32
 #include <timeapi.h>
+#endif
+
+#ifdef __APPLE__
+#include "apple_utils.h"
+#include <CoreFoundation/CoreFoundation.h>
 #endif
 
 #if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
@@ -205,6 +213,13 @@ int main(int argc, char *argv[])
 
     os::logger::Init();
 
+#if TARGET_OS_IOS
+    if (!apple::SupportsBCTextures()) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("System_iOS_UnsupportedGPU_BCTextures").c_str(), GameWindow::s_pWindow);
+        std::_Exit(1);
+    }
+#endif
+
     PreloadContext preloadContext;
     preloadContext.PreloadExecutable();
 
@@ -232,11 +247,24 @@ int main(int argc, char *argv[])
         }
     }
 
+#if TARGET_OS_IOS
+    // iOS: Check if there's a pending DLC installation flag set from a previous attempt
+    CFStringRef pendingKey = CFSTR("UnleashedRecomp_PendingDLCInstall");
+    bool pendingDLC = CFPreferencesGetAppBooleanValue(pendingKey, kCFPreferencesCurrentApplication, nullptr);
+    if (pendingDLC)
+    {
+        CFPreferencesSetAppValue(pendingKey, kCFBooleanFalse, kCFPreferencesCurrentApplication);
+        forceDLCInstaller = true;
+    }
+#endif
+
     if (!useDefaultWorkingDirectory)
     {
+#if !TARGET_OS_IPHONE
         // Set the current working directory to the executable's path.
         std::error_code ec;
         std::filesystem::current_path(os::process::GetExecutableRoot(), ec);
+#endif
     }
 
     Config::Load();

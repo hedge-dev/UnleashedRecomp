@@ -20,10 +20,17 @@ struct Video
 
     static bool CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry);
     static void WaitOnSwapChain();
+    static void HandleApplicationBackgroundState(bool isBackgrounded);
     static void Present();
     static void StartPipelinePrecompilation();
     static void WaitForGPU();
     static void ComputeViewportDimensions();
+};
+
+enum class Backend {
+    VULKAN,
+    D3D12,
+    METAL
 };
 
 struct GuestSamplerState

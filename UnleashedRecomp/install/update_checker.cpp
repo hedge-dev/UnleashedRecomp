@@ -9,6 +9,10 @@
 #include <shellapi.h>
 #endif
 
+#if defined(__APPLE__)
+#include "../apple_utils.h"
+#endif
+
 #include <os/logger.h>
 
 // UpdateChecker
@@ -167,8 +171,7 @@ void UpdateChecker::visitWebsite()
     std::string command = "xdg-open " + std::string(VISIT_URL) + " &";
     std::system(command.c_str());
 #elif defined(__APPLE__)
-    std::string command = "open " + std::string(VISIT_URL) + " &";
-    std::system(command.c_str());
+    apple::OpenBrowser(VISIT_URL);
 #else
     static_assert(false, "Visit website not implemented for this platform.");
 #endif
