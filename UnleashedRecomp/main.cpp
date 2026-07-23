@@ -1,4 +1,7 @@
 #include <stdafx.h>
+#if defined(__IPHONEOS__)
+#include <SDL_main.h>
+#endif
 #ifdef __x86_64__
 #include <cpuid.h>
 #endif
@@ -197,11 +200,7 @@ void init()
 }
 #endif
 
-#if defined(UNLEASHED_RECOMP_IOS_LAUNCHER)
-int UnleashedMain(int argc, char *argv[])
-#else
 int main(int argc, char *argv[])
-#endif
 {
 #ifdef _WIN32
     timeBeginPeriod(1);

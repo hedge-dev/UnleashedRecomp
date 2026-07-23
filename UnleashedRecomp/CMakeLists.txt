@@ -57,14 +57,8 @@ function(BIN2C)
         )
     endif()
 
-    set(_bin2c_target ${BIN2C_ARGS_TARGET_OBJ})
-
-    if(CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET UnleashedRecompIOSLauncher)
-        set(_bin2c_target UnleashedRecompIOSLauncher)
-    endif()
-
     set_source_files_properties(${BIN2C_ARGS_DEST_FILE}.c PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
-    target_sources(${_bin2c_target} PRIVATE ${BIN2C_ARGS_DEST_FILE}.c)
+    target_sources(${BIN2C_ARGS_TARGET_OBJ} PRIVATE ${BIN2C_ARGS_DEST_FILE}.c)
 endfunction()
 
 add_compile_options(
@@ -88,9 +82,13 @@ else()
 endif()
 
 add_compile_definitions(
-    SDL_MAIN_HANDLED
     _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR # Microsoft wtf?
     _CRT_SECURE_NO_WARNINGS)
+
+# SDL owns the iOS process entry point and invokes the application's SDL_main.
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    add_compile_definitions(SDL_MAIN_HANDLED)
+endif()
 
 set(UNLEASHED_RECOMP_PRECOMPILED_HEADERS
     "stdafx.h"
@@ -336,71 +334,27 @@ elseif(APPLE)
 
     set(IOS_BUNDLE_VERSION ${MACOS_BUNDLE_VERSION})
 
-    add_executable(UnleashedRecomp MACOSX_BUNDLE
-        ${UNLEASHED_RECOMP_CXX_SOURCES}
-        res/macos/game_icon.icns
-    )
-    set_source_files_properties(res/macos/game_icon.icns PROPERTIES
-        MACOSX_PACKAGE_LOCATION Resources)
-    set_target_properties(UnleashedRecomp PROPERTIES
-        OUTPUT_NAME "Unleashed Recompiled"
-        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/macos/MacOSXBundleInfo.plist.in
-        MACOSX_BUNDLE_GUI_IDENTIFIER hedge-dev.UnleashedRecomp
-        MACOSX_BUNDLE_BUNDLE_NAME "Unleashed Recompiled"
-        MACOSX_BUNDLE_BUNDLE_VERSION ${MACOS_BUNDLE_VERSION}
-        MACOSX_BUNDLE_SHORT_VERSION_STRING ${MACOS_BUNDLE_VERSION}
-        MACOSX_BUNDLE_ICON_FILE "game_icon.icns"
-        MACOSX_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}"
-    )
-
     if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+        add_executable(UnleashedRecomp MACOSX_BUNDLE ${UNLEASHED_RECOMP_CXX_SOURCES})
         set_target_properties(UnleashedRecomp PROPERTIES
-            EXCLUDE_FROM_ALL TRUE
-            EXCLUDE_FROM_DEFAULT_BUILD TRUE
-        )
-    endif()
-
-    if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
-        add_executable(UnleashedRecompIOSLauncher MACOSX_BUNDLE
-            ${UNLEASHED_RECOMP_CXX_SOURCES}
-            "ios/launcher_main.mm"
-        )
-        set_target_properties(UnleashedRecompIOSLauncher PROPERTIES
             OUTPUT_NAME "Unleashed Recompiled iOS"
             MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/ios/iOSBundleInfo.plist.in
-            MACOSX_BUNDLE_GUI_IDENTIFIER hedge-dev.UnleashedRecomp.iOSLauncher
-            MACOSX_BUNDLE_BUNDLE_NAME "Unleashed Recompiled"
-            MACOSX_BUNDLE_BUNDLE_VERSION ${IOS_BUNDLE_VERSION}
-            MACOSX_BUNDLE_SHORT_VERSION_STRING ${IOS_BUNDLE_VERSION}
-            MACOSX_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}"
-        )
-
-        set_target_properties(UnleashedRecompIOSLauncher PROPERTIES
-            OUTPUT_NAME "Unleashed Recompiled iOS"
-            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/ios/iOSBundleInfo.plist.in
-            MACOSX_BUNDLE_GUI_IDENTIFIER hedge-dev.UnleashedRecomp.iOSLauncher
+            MACOSX_BUNDLE_GUI_IDENTIFIER hedge-dev.UnleashedRecomp.iOS
             MACOSX_BUNDLE_BUNDLE_NAME "Unleashed Recompiled"
             MACOSX_BUNDLE_BUNDLE_VERSION ${IOS_BUNDLE_VERSION}
             MACOSX_BUNDLE_SHORT_VERSION_STRING ${IOS_BUNDLE_VERSION}
             XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
             XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}"
-        )
-
-        target_compile_definitions(UnleashedRecompIOSLauncher PRIVATE
-            UNLEASHED_RECOMP_IOS_LAUNCHER
+            BUILD_RPATH "@executable_path/Frameworks"
+            INSTALL_RPATH "@executable_path/Frameworks"
         )
 
         set(MVK_FRAMEWORK_PATH "Frameworks/MoltenVK.framework")
         set(MVK_ICD_PATH "vulkan/icd.d")
 
-        set(MVK_APP_DIR "$<TARGET_BUNDLE_DIR:UnleashedRecompIOSLauncher>")
+        set(MVK_APP_DIR "$<TARGET_BUNDLE_DIR:UnleashedRecomp>")
         set(MVK_FRAMEWORK_DST "${MVK_APP_DIR}/${MVK_FRAMEWORK_PATH}")
         set(MVK_ICD_DST "${MVK_APP_DIR}/${MVK_ICD_PATH}")
-
-        set_target_properties(UnleashedRecompIOSLauncher PROPERTIES
-            BUILD_RPATH "@executable_path/Frameworks"
-            INSTALL_RPATH "@executable_path/Frameworks"
-        )
 
         set(MVK_ICD_SRC "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json")
 
@@ -409,7 +363,7 @@ elseif(APPLE)
         )
 
         add_custom_command(
-            TARGET UnleashedRecompIOSLauncher POST_BUILD
+            TARGET UnleashedRecomp POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory "${MVK_FRAMEWORK_DST}"
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${MVK_FRAMEWORK_SRC}"
@@ -418,7 +372,7 @@ elseif(APPLE)
         )
 
         add_custom_command(
-            TARGET UnleashedRecompIOSLauncher POST_BUILD
+            TARGET UnleashedRecomp POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory "${MVK_APP_DIR}/vulkan/icd.d"
             COMMAND ${CMAKE_COMMAND} -E copy
             "${MVK_ICD_SRC}"
@@ -426,35 +380,43 @@ elseif(APPLE)
             COMMENT "Copying MoltenVK ICD"
         )
 
-        add_dependencies(UnleashedRecompIOSLauncher MoltenVK)
+        add_dependencies(UnleashedRecomp MoltenVK)
+    else()
+        add_executable(UnleashedRecomp MACOSX_BUNDLE
+            ${UNLEASHED_RECOMP_CXX_SOURCES}
+            res/macos/game_icon.icns
+        )
+        set_source_files_properties(res/macos/game_icon.icns PROPERTIES
+            MACOSX_PACKAGE_LOCATION Resources)
+        set_target_properties(UnleashedRecomp PROPERTIES
+            OUTPUT_NAME "Unleashed Recompiled"
+            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/macos/MacOSXBundleInfo.plist.in
+            MACOSX_BUNDLE_GUI_IDENTIFIER hedge-dev.UnleashedRecomp
+            MACOSX_BUNDLE_BUNDLE_NAME "Unleashed Recompiled"
+            MACOSX_BUNDLE_BUNDLE_VERSION ${MACOS_BUNDLE_VERSION}
+            MACOSX_BUNDLE_SHORT_VERSION_STRING ${MACOS_BUNDLE_VERSION}
+            MACOSX_BUNDLE_ICON_FILE "game_icon.icns"
+            MACOSX_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}"
+        )
+        # Linking with MoltenVK directly would prevent using the system Vulkan loader to load with debug layers.
+        # Instead, copy the MoltenVK dylib to the app bundle along with an ICD file for the loader to find it.
+        # In the event the loader is not installed, the MoltenVK dylib can still be picked up directly in the app bundle.
+        set(MVK_BUNDLED_PATH "Resources/vulkan/icd.d")
+        set(MVK_DST "${CMAKE_CURRENT_BINARY_DIR}/Unleashed Recompiled.app/Contents/${MVK_BUNDLED_PATH}")
+        set_property(TARGET UnleashedRecomp APPEND PROPERTY BUILD_RPATH "@executable_path/../${MVK_BUNDLED_PATH}")
+
+        set(MVK_ICD_SRC "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json")
+        set(MVK_ICD_DST "${MVK_DST}/MoltenVK_icd.json")
+        set(MVK_DYLIB_SRC "${CMAKE_BINARY_DIR}/thirdparty/MoltenVK/MoltenVK.framework/MoltenVK")
+        set(MVK_DYLIB_DST "${MVK_DST}/libMoltenVK.dylib")
+
+        add_custom_command(OUTPUT ${MVK_DST} COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_DST})
+        add_custom_command(OUTPUT ${MVK_ICD_DST} DEPENDS ${MVK_ICD_SRC} ${MVK_DST} COMMAND ${CMAKE_COMMAND} -E copy ${MVK_ICD_SRC} ${MVK_ICD_DST})
+        add_custom_command(OUTPUT ${MVK_DYLIB_DST} DEPENDS ${MVK_DYLIB_SRC} ${MVK_DST} COMMAND ${CMAKE_COMMAND} -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
+        add_custom_target(CopyMoltenVK DEPENDS ${MVK_ICD_DST} ${MVK_DYLIB_DST})
+        add_dependencies(CopyMoltenVK MoltenVK)
+        add_dependencies(UnleashedRecomp CopyMoltenVK)
     endif()
-
-    # Linking with MoltenVK directly would prevent using the system Vulkan loader to load with debug layers.
-    # Instead, copy the MoltenVK dylib to the app bundle along with an ICD file for the loader to find it.
-    # In the event the loader is not installed, the MoltenVK dylib can still be picked up directly in the app bundle.
-    set(MVK_BUNDLED_PATH "Resources/vulkan/icd.d")
-    set(MVK_DST "${CMAKE_CURRENT_BINARY_DIR}/Unleashed Recompiled.app/Contents/${MVK_BUNDLED_PATH}")
-    set_property(TARGET UnleashedRecomp APPEND PROPERTY BUILD_RPATH "@executable_path/../${MVK_BUNDLED_PATH}")
-
-    set(MVK_ICD_SRC "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json")
-    set(MVK_ICD_DST "${MVK_DST}/MoltenVK_icd.json")
-    set(MVK_DYLIB_SRC "${CMAKE_BINARY_DIR}/thirdparty/MoltenVK/MoltenVK.framework/MoltenVK")
-    set(MVK_DYLIB_DST "${MVK_DST}/libMoltenVK.dylib")
-
-    add_custom_command(
-        OUTPUT ${MVK_DST}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_DST})
-    add_custom_command(
-        OUTPUT ${MVK_ICD_DST}
-        DEPENDS ${MVK_ICD_SRC} ${MVK_DST}
-        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_ICD_SRC} ${MVK_ICD_DST})
-    add_custom_command(
-        OUTPUT ${MVK_DYLIB_DST}
-        DEPENDS ${MVK_DYLIB_SRC} ${MVK_DST}
-        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
-    add_custom_target(CopyMoltenVK DEPENDS ${MVK_ICD_DST} ${MVK_DYLIB_DST})
-    add_dependencies(CopyMoltenVK MoltenVK)
-    add_dependencies(UnleashedRecomp CopyMoltenVK)
 else()
     add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES})
 endif()
@@ -492,10 +454,6 @@ endif()
 
 if(UNLEASHED_RECOMP_METAL)
     target_compile_definitions(UnleashedRecomp PRIVATE UNLEASHED_RECOMP_METAL)
-
-    if(TARGET UnleashedRecompIOSLauncher)
-        target_compile_definitions(UnleashedRecompIOSLauncher PRIVATE UNLEASHED_RECOMP_METAL)
-    endif()
 endif()
 
 if(WIN32)
@@ -527,6 +485,7 @@ set(UNLEASHED_RECOMP_LINK_LIBS
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    list(PREPEND UNLEASHED_RECOMP_LINK_LIBS SDL2::SDL2main)
     list(APPEND UNLEASHED_RECOMP_LINK_LIBS "-framework UniformTypeIdentifiers")
 endif()
 
@@ -545,16 +504,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 endif()
 
 target_precompile_headers(UnleashedRecomp PUBLIC ${UNLEASHED_RECOMP_PRECOMPILED_HEADERS})
-
-if(TARGET UnleashedRecompIOSLauncher)
-    target_link_libraries(UnleashedRecompIOSLauncher PRIVATE ${UNLEASHED_RECOMP_LINK_LIBS})
-    target_include_directories(UnleashedRecompIOSLauncher PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        "${CMAKE_CURRENT_SOURCE_DIR}/api"
-        ${UNLEASHED_RECOMP_THIRDPARTY_INCLUDES}
-    )
-    target_precompile_headers(UnleashedRecompIOSLauncher PUBLIC ${UNLEASHED_RECOMP_PRECOMPILED_HEADERS})
-endif()
 
 # If DXC tool not provided, try to pick up vendored host DXC (used for shader compilation)
 if(NOT DEFINED DIRECTX_DXC_TOOL)
@@ -582,10 +531,6 @@ endif()
 
 function(compile_shader FILE_PATH TARGET_NAME)
     set(_shader_target UnleashedRecomp)
-
-    if(CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET UnleashedRecompIOSLauncher)
-        set(_shader_target UnleashedRecompIOSLauncher)
-    endif()
 
     set(HLSL_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/hlsl/${FILE_PATH}.hlsl)
     set(MSL_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/msl/${FILE_PATH}.metal)
