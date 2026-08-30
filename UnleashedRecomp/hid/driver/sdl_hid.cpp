@@ -5,6 +5,7 @@
 #include <os/logger.h>
 #include <ui/game_window.h>
 #include <kernel/xdm.h>
+#include <api/SWA.h>
 #include <app.h>
 
 #define TRANSLATE_INPUT(S, X) SDL_GameControllerGetButton(controller, S) << FirstBitLow(X)
@@ -12,6 +13,94 @@
 
 class Controller
 {
+private:
+    bool IsBoostOnRightTriggerActive()
+    {
+        const bool userConfigIsBoost = Config::RightTriggerAction == ERightTriggerAction::Boost;
+
+        if (!userConfigIsBoost || App::s_isWerehog)
+            return false;
+
+        // During a QTE prompt, keep the remap (and the boost aura) alive only while the
+        // right trigger is held continuously from before the prompt. If it isn't held,
+        // or gets released while the prompt is up, suspend the remap so the fabricated
+        // X can't answer the QTE and the real face button can.
+        bool qteOnScreen = IsQTEPromptOnScreen();
+        bool rtHeld = uint8_t(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) >> 7) >= 30;
+        
+        if (!qteOnScreen)
+            qteRemapReleased = false;
+        else if (!rtHeld)
+            qteRemapReleased = true;
+
+        if (qteOnScreen && qteRemapReleased) 
+            return false;
+
+        return true;
+    }
+
+    bool DetermineChipPlayerStatus() {
+        auto pGameDocument = SWA::CGameDocument::GetInstance();
+        
+        if (pGameDocument == NULL) 
+            return false;
+
+        const char* stageName = pGameDocument->m_pMember->m_StageName.c_str();
+        const bool hasStage = stageName && strlen(stageName);
+
+        if (hasStage == false) 
+            return false;
+        
+        // There's no "BossDarkGaia1_2Air" so regex is NOT needeed.
+        const bool playingAsChip = !strcmp(stageName, "BossDarkGaia1_1Air");
+        
+        return playingAsChip;
+    }
+
+    uint32_t GetBoostCancelDurationMs()
+    {
+        int32_t fps = Config::FPS > 0 ? Config::FPS : 60;
+        return static_cast<uint32_t>(2000 / fps);
+    }
+
+    bool IsQTEPromptOnScreen()
+    {
+        // QTEPromptActiveMidAsmHook stamps this every frame a trick-QTE prompt is on
+        // screen; treat a recent stamp as "a QTE is waiting".
+        uint32_t last = App::s_lastQTEPromptMs;
+        if (last == 0)
+            return false;
+
+        uint32_t now = uint32_t(std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count());
+
+        return now - last < 250;
+    }
+
+    void ApplyChipControls()
+    {
+        auto& pad = state;
+
+        bool lbHeld = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER) != 0;
+        bool rbHeld = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER) != 0;
+        bool ltPulled = uint8_t(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT) >> 7) >= 30;
+        bool rtPulled = uint8_t(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) >> 7) >= 30;
+
+        // Attack: the bumpers drive the guest triggers (vanilla LT & RT punches).
+        pad.bLeftTrigger = lbHeld ? 255 : 0;
+        pad.bRightTrigger = rbHeld ? 255 : 0;
+
+        // Guard: LT drives the guest left bumper (vanilla LB guard).
+        if (ltPulled)
+            pad.wButtons |= XAMINPUT_GAMEPAD_LEFT_SHOULDER;
+        else
+            pad.wButtons &= ~XAMINPUT_GAMEPAD_LEFT_SHOULDER;
+
+        // The physical right bumper is attack now; hide it from the guest.
+        pad.wButtons &= ~XAMINPUT_GAMEPAD_RIGHT_SHOULDER;
+    }
+
+
 public:
     SDL_GameController* controller{};
     SDL_Joystick* joystick{};
@@ -19,6 +108,15 @@ public:
     XAMINPUT_GAMEPAD state{};
     XAMINPUT_VIBRATION vibration{ 0, 0 };
     int index{};
+
+    // For when user sets Config::RightTriggerAction to ERightTriggerAction this
+    // increases stability to allow square/X to be recognised by the game while
+    // right trigger is being pressed down especially when the user is moving
+    // the thumbsticks.
+    bool xWasHeldLastPoll{};
+    uint32_t xCancelUntilTick{};
+    bool qteRemapReleased{}; // Handles the remap suspension. Resets when no prompt is on screen.
+    // bool chipIsActive{};
 
     Controller() = default;
 
@@ -99,6 +197,36 @@ public:
 
         pad.bLeftTrigger = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT) >> 7;
         pad.bRightTrigger = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) >> 7;
+
+
+        
+        if (IsBoostOnRightTriggerActive())
+        {
+            bool xHeldPhysically = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_X) != 0;
+            bool xRisingEdge = xHeldPhysically && !xWasHeldLastPoll;
+            bool rtPulled = pad.bRightTrigger >= 30; // TODO: change this to a pressure preference
+
+            // these checks are in place to improve responsiveness of square/X while right trigger is held down
+            if (xRisingEdge && rtPulled)
+                xCancelUntilTick = SDL_GetTicks() + GetBoostCancelDurationMs();
+
+            bool inCancelWindow = SDL_TICKS_PASSED(xCancelUntilTick, SDL_GetTicks());
+
+            if (inCancelWindow)
+                pad.wButtons &= ~XAMINPUT_GAMEPAD_X;
+            else if (xHeldPhysically || rtPulled)
+                pad.wButtons |= XAMINPUT_GAMEPAD_X;
+            else
+                pad.wButtons &= ~XAMINPUT_GAMEPAD_X;
+
+            if (rtPulled)
+                pad.bRightTrigger = 0;
+
+            xWasHeldLastPoll = xHeldPhysically;
+
+            if (DetermineChipPlayerStatus())
+                ApplyChipControls();
+        }
     }
 
     void Poll()
@@ -129,6 +257,37 @@ public:
         pad.wButtons |= TRANSLATE_INPUT(SDL_CONTROLLER_BUTTON_B, XAMINPUT_GAMEPAD_B);
         pad.wButtons |= TRANSLATE_INPUT(SDL_CONTROLLER_BUTTON_X, XAMINPUT_GAMEPAD_X);
         pad.wButtons |= TRANSLATE_INPUT(SDL_CONTROLLER_BUTTON_Y, XAMINPUT_GAMEPAD_Y);
+
+        // when playing day stages keep the right trigger mirrored onto square/X
+        // so so the game knows the user is boosting. This will remove the actual
+        // right trigger from the game so sonic wouldn't drift
+        if (IsBoostOnRightTriggerActive())
+        {
+            bool xHeldPhysically = (pad.wButtons & XAMINPUT_GAMEPAD_X) != 0;
+            bool xRisingEdge = xHeldPhysically && !xWasHeldLastPoll;
+            uint8_t rtRaw = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) >> 7;
+            bool rtPulled = rtRaw >= 30; // TODO: change this to a pressure preference
+
+            // like in Poll() these checks are in place to improve responsiveness 
+            // of square/X while right trigger is held down
+            if (xRisingEdge && rtPulled)
+                xCancelUntilTick = SDL_GetTicks() + GetBoostCancelDurationMs();
+
+            bool inCancelWindow = SDL_TICKS_PASSED(xCancelUntilTick, SDL_GetTicks());
+
+            if (inCancelWindow)
+                pad.wButtons &= ~XAMINPUT_GAMEPAD_X;
+            else if (rtPulled)
+                pad.wButtons |= XAMINPUT_GAMEPAD_X;
+
+            if (rtPulled)
+                pad.bRightTrigger = 0;
+
+            xWasHeldLastPoll = xHeldPhysically;
+
+            if (DetermineChipPlayerStatus())
+                ApplyChipControls();
+        }
     }
 
     void SetVibration(const XAMINPUT_VIBRATION& vibration)

@@ -30,6 +30,12 @@ CONFIG_DEFINE_ENUM_TEMPLATE(ECameraRotationMode)
     { "Reverse", ECameraRotationMode::Reverse },
 };
 
+CONFIG_DEFINE_ENUM_TEMPLATE(ERightTriggerAction)
+{
+    { "Drift", ERightTriggerAction::Drift },
+    { "Boost", ERightTriggerAction::Boost }
+};
+
 CONFIG_DEFINE_ENUM_TEMPLATE(EControllerIcons)
 {
     { "Auto",        EControllerIcons::Auto },

@@ -52,6 +52,12 @@ enum class ECameraRotationMode : uint32_t
     Reverse
 };
 
+enum class ERightTriggerAction : uint32_t
+{
+    Drift,
+    Boost
+};
+
 enum class EControllerIcons : uint32_t
 {
     Auto,

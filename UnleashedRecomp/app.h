@@ -17,6 +17,10 @@ public:
     static inline double s_deltaTime;
     static inline double s_time = 0.0; // How much time elapsed since the game started.
 
+    // Steady-clock milliseconds of the most recent QTE prompt window update, stamped
+    // by QTEPromptActiveMidAsmHook.
+    static inline std::atomic<uint32_t> s_lastQTEPromptMs;
+
     static void Restart(std::vector<std::string> restartArgs = {});
     static void Exit();
 };

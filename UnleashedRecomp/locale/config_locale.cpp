@@ -216,6 +216,66 @@ CONFIG_DEFINE_ENUM_LOCALE(ETimeOfDayTransition)
     }
 };
 
+// Translation required
+// Japanese Notes: This localization should include furigana in its description.
+CONFIG_DEFINE_LOCALE(RightTriggerAction)
+{
+    { ELanguage::English,  { "Right Trigger Action", "Choose what the right trigger does in day stages." } },
+    { ELanguage::Japanese, { "Right Trigger Action", "Choose what the right trigger does in day stages." } }, // Translation required
+    { ELanguage::German,   { "Right Trigger Action", "Choose what the right trigger does in day stages." } }, // Translation required
+    { ELanguage::French,   { "Right Trigger Action", "Choose what the right trigger does in day stages." } }, // Translation required
+    { ELanguage::Spanish,  { "Right Trigger Action", "Choose what the right trigger does in day stages." } }, // Translation required
+    { ELanguage::Italian,  { "Right Trigger Action", "Choose what the right trigger does in day stages." } }  // Translation required
+};
+
+// Translation required
+// Japanese Notes: This localization should include furigana in its description.
+CONFIG_DEFINE_ENUM_LOCALE(ERightTriggerAction)
+{
+    {
+        ELanguage::English,
+        {
+            { ERightTriggerAction::Drift, { "DRIFT", "Default: the right trigger acts as drift, matching the original Xbox 360/PS3 controls." } },
+            { ERightTriggerAction::Boost, { "BOOST/H.A", "EXPERIMENTAL: The right trigger acts as boost or homing attack. Drift is still available on the left trigger and X/Square still triggers boost too." } }
+        }
+    },
+    {
+        ELanguage::Japanese,
+        {
+            { ERightTriggerAction::Drift, { "DRIFT", "" } },
+            { ERightTriggerAction::Boost, { "BOOST", "" } }
+        }
+    },
+    {
+        ELanguage::German,
+        {
+            { ERightTriggerAction::Drift, { "DRIFT", "" } },
+            { ERightTriggerAction::Boost, { "BOOST", "" } }
+        }
+    },
+    {
+        ELanguage::French,
+        {
+            { ERightTriggerAction::Drift, { "DRIFT", "" } },
+            { ERightTriggerAction::Boost, { "BOOST", "" } }
+        }
+    },
+    {
+        ELanguage::Spanish,
+        {
+            { ERightTriggerAction::Drift, { "DRIFT", "" } },
+            { ERightTriggerAction::Boost, { "BOOST", "" } }
+        }
+    },
+    {
+        ELanguage::Italian,
+        {
+            { ERightTriggerAction::Drift, { "DRIFT", "" } },
+            { ERightTriggerAction::Boost, { "BOOST", "" } }
+        }
+    }
+};
+
 // Japanese Notes: This localization should include furigana.
 CONFIG_DEFINE_LOCALE(ControllerIcons)
 {
