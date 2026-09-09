@@ -10,6 +10,7 @@
 
 #include <api/SWA.h>
 #include <app.h>
+#include <locale/locale.h>
 #include <os/logger.h>
 #include <user/config.h>
 
@@ -53,7 +54,7 @@ using socket_t = int;
 #endif
 #endif
 
-// ---------------------------------------------------------------- transport
+// Discord IPC transport: a named pipe on Windows, a unix socket elsewhere.
 
 #ifdef _WIN32
 socket_t IpcConnect() {
@@ -209,12 +210,15 @@ bool SendActivity(socket_t s, const Activity &a) {
   return SendFrame(s, OP_FRAME, frame.dump());
 }
 
-// ------------------------------------------------------------- game -> text
+// Player-facing strings go through Localise(); the "RichPresence_*" keys live
+// in locale/locale.cpp. Only stage-id -> key resolution happens here.
 
-// "Act_EggmanLand" -> "Eggman Land", "Act_Apotos_2" -> "Apotos 2".
+// Fallback for unrecognised stage ids (e.g. custom stages from mods):
+// "ActD_SomeMod" -> "Some Mod".
 std::string PrettifyStageId(const char *id) {
   std::string s = id ? id : "";
-  for (const char *prefix : {"Act_", "Town_", "Boss_", "Mykonos_"}) {
+  for (const char *prefix :
+       {"ActD_", "ActN_", "Act_", "CmnTown_", "Town_", "Boss"}) {
     if (s.rfind(prefix, 0) == 0) {
       s = s.substr(std::string_view(prefix).size());
       break;
@@ -234,82 +238,111 @@ std::string PrettifyStageId(const char *id) {
     }
     out += c;
   }
-  return out.empty() ? "In game" : out;
+  return out.empty() ? Localise("RichPresence_Status_InGame") : out;
 }
 
-// Unleashed uses codenamed stage ids
-const char *StageRegion(std::string_view id) {
+// Unleashed uses codenamed stage ids: Apotos = "Mykonos", Chun-nan = "China",
+// Spagonia = "EU"/"EuropeanCity", Mazuri = "Africa", Holoska = "Snow", Empire
+// City = "NY", Adabat = "Beach"/"SouthEastAsia", Shamar = "Petra". Day acts are
+// "ActD_*", Werehog night acts "ActN_*Evil".
+
+// Region codename token -> locale key. Longer tokens first (NYCity before NY).
+const char *StageRegionKey(std::string_view id) {
   static const std::pair<std::string_view, const char *> kRegions[] = {
-      {"Mykonos", "Apotos"},        {"China", "Chun-nan"},
-      {"EULabo", "Spagonia"},       {"EuropeanCity", "Spagonia"},
-      {"EU", "Spagonia"},           {"Africa", "Mazuri"},
-      {"Snow", "Holoska"},          {"NYCity", "Empire City"},
-      {"NY", "Empire City"},        {"SouthEastAsia", "Adabat"},
-      {"Beach", "Adabat"},          {"PetraCapital", "Shamar"},
-      {"PetraLabo", "Shamar"},      {"Petra", "Shamar"},
-      {"EggmanLand", "Eggmanland"},
+      {"Mykonos", "RichPresence_Region_Apotos"},
+      {"China", "RichPresence_Region_Chunnan"},
+      {"EULabo", "RichPresence_Region_Spagonia"},
+      {"EuropeanCity", "RichPresence_Region_Spagonia"},
+      {"EU", "RichPresence_Region_Spagonia"},
+      {"Africa", "RichPresence_Region_Mazuri"},
+      {"Snow", "RichPresence_Region_Holoska"},
+      {"NYCity", "RichPresence_Region_EmpireCity"},
+      {"NY", "RichPresence_Region_EmpireCity"},
+      {"SouthEastAsia", "RichPresence_Region_Adabat"},
+      {"Beach", "RichPresence_Region_Adabat"},
+      {"PetraCapital", "RichPresence_Region_Shamar"},
+      {"PetraLabo", "RichPresence_Region_Shamar"},
+      {"Petra", "RichPresence_Region_Shamar"},
+      {"EggmanLand", "RichPresence_Region_Eggmanland"},
   };
-  for (auto &[token, region] : kRegions)
+  for (auto &[token, key] : kRegions)
     if (id.find(token) != std::string_view::npos)
-      return region;
+      return key;
   return nullptr;
 }
 
-// Internal stage id -> display name
+struct StoryStage {
+  const char *key; // locale key for the day-time stage name
+  bool night;      // append " (Night)" for the Werehog version
+};
+
+// Internal stage id -> localised display name.
 std::string StageDisplayName(const char *id) {
   if (!id || !*id)
-    return "In game";
+    return Localise("RichPresence_Status_InGame");
 
   std::string_view s = id;
 
-  static const std::unordered_map<std::string_view, std::string_view> kStages =
-      {
-          {"ActD_MykonosAct1", "Apotos - Windmill Isle Act 1"},
-          {"ActD_MykonosAct2", "Apotos - Windmill Isle Act 2"},
-          {"ActD_China", "Chun-nan - Dragon Road"},
-          {"ActD_EU", "Spagonia - Rooftop Run"},
-          {"ActD_Africa", "Mazuri - Savannah Citadel"},
-          {"ActD_Snow", "Holoska - Cool Edge"},
-          {"ActD_NY", "Empire City - Skyscraper Scamper"},
-          {"ActD_Beach", "Adabat - Jungle Joyride"},
-          {"ActD_Petra", "Shamar - Arid Sands"},
-          {"ActN_MykonosEvil", "Apotos - Windmill Isle (Night)"},
-          {"ActN_ChinaEvil", "Chun-nan - Dragon Road (Night)"},
-          {"ActN_EUEvil", "Spagonia - Rooftop Run (Night)"},
-          {"ActN_AfricaEvil", "Mazuri - Savannah Citadel (Night)"},
-          {"ActN_SnowEvil", "Holoska - Cool Edge (Night)"},
-          {"ActN_NYEvil", "Empire City - Skyscraper Scamper (Night)"},
-          {"ActN_BeachEvil", "Adabat - Jungle Joyride (Night)"},
-          {"ActN_PetraEvil", "Shamar - Arid Sands (Night)"},
-          {"Act_EggmanLand", "Eggmanland"},
-          {"BossEggBeetle", "Boss: Egg Beetle"},
-          {"BossEggLancer", "Boss: Egg Lancer"},
-          {"BossEggRayBird", "Boss: Egg Devil Ray"},
-          {"Title", "Main Menu"},
-          {"StaffRoll", "Credits"},
-      };
-  if (auto it = kStages.find(s); it != kStages.end())
-    return std::string(it->second);
-
-  if (s.rfind("Event_", 0) == 0 || s == "Inspire")
-    return "Watching a cutscene";
-
-  if (const char *region = StageRegion(s)) {
-    bool night = s.rfind("ActN_", 0) == 0 ||
-                 s.find("Evil") != std::string_view::npos ||
-                 s.find("_Night") != std::string_view::npos;
-    std::string out = region;
-    if (s.rfind("Town_", 0) == 0 || s.rfind("CmnTown_", 0) == 0)
-      out += night ? " - Hub (Night)" : " - Hub";
-    else if (s.find("Sub") != std::string_view::npos)
-      out += night ? " - Night mission" : " - Extra mission";
-    else if (night)
-      out += " (Night)";
-    else if (s.rfind("ActD_", 0) == 0)
-      out += " (Day)";
+  static const std::unordered_map<std::string_view, StoryStage> kStages = {
+      {"ActD_MykonosAct1", {"RichPresence_Stage_Apotos_Act1", false}},
+      {"ActD_MykonosAct2", {"RichPresence_Stage_Apotos_Act2", false}},
+      {"ActD_China", {"RichPresence_Stage_Chunnan", false}},
+      {"ActD_EU", {"RichPresence_Stage_Spagonia", false}},
+      {"ActD_Africa", {"RichPresence_Stage_Mazuri", false}},
+      {"ActD_Snow", {"RichPresence_Stage_Holoska", false}},
+      {"ActD_NY", {"RichPresence_Stage_EmpireCity", false}},
+      {"ActD_Beach", {"RichPresence_Stage_Adabat", false}},
+      {"ActD_Petra", {"RichPresence_Stage_Shamar", false}},
+      {"ActN_MykonosEvil", {"RichPresence_Stage_Apotos", true}},
+      {"ActN_ChinaEvil", {"RichPresence_Stage_Chunnan", true}},
+      {"ActN_EUEvil", {"RichPresence_Stage_Spagonia", true}},
+      {"ActN_AfricaEvil", {"RichPresence_Stage_Mazuri", true}},
+      {"ActN_SnowEvil", {"RichPresence_Stage_Holoska", true}},
+      {"ActN_NYEvil", {"RichPresence_Stage_EmpireCity", true}},
+      {"ActN_BeachEvil", {"RichPresence_Stage_Adabat", true}},
+      {"ActN_PetraEvil", {"RichPresence_Stage_Shamar", true}},
+  };
+  if (auto it = kStages.find(s); it != kStages.end()) {
+    std::string out = Localise(it->second.key);
+    if (it->second.night)
+      out += " " + Localise("RichPresence_Suffix_Night");
     return out;
   }
 
+  static const std::unordered_map<std::string_view, const char *> kNamed = {
+      {"Act_EggmanLand", "RichPresence_Stage_Eggmanland"},
+      {"BossEggBeetle", "RichPresence_Boss_EggBeetle"},
+      {"BossEggLancer", "RichPresence_Boss_EggLancer"},
+      {"BossEggRayBird", "RichPresence_Boss_EggDevilRay"},
+      {"Title", "RichPresence_Status_Menus"},
+      {"StaffRoll", "RichPresence_Credits"},
+  };
+  if (auto it = kNamed.find(s); it != kNamed.end())
+    return Localise(it->second);
+
+  if (s.rfind("Event_", 0) == 0 || s == "Inspire")
+    return Localise("RichPresence_Status_Cutscene");
+
+  // Derived name for hubs, extra missions and DLC/ETF variants.
+  if (const char *regionKey = StageRegionKey(s)) {
+    bool night = s.rfind("ActN_", 0) == 0 ||
+                 s.find("Evil") != std::string_view::npos ||
+                 s.find("_Night") != std::string_view::npos;
+    std::string out = Localise(regionKey);
+    if (s.rfind("Town_", 0) == 0 || s.rfind("CmnTown_", 0) == 0)
+      out += " - " + Localise(night ? "RichPresence_Suffix_HubNight"
+                                    : "RichPresence_Suffix_Hub");
+    else if (s.find("Sub") != std::string_view::npos)
+      out += " - " + Localise(night ? "RichPresence_Suffix_NightMission"
+                                    : "RichPresence_Suffix_ExtraMission");
+    else if (night)
+      out += " " + Localise("RichPresence_Suffix_Night");
+    else if (s.rfind("ActD_", 0) == 0)
+      out += " " + Localise("RichPresence_Suffix_Day");
+    return out;
+  }
+
+  LOGFN_WARNING("Discord: unmapped stage id \"{}\"", id);
   return PrettifyStageId(id);
 }
 
@@ -317,12 +350,7 @@ Activity BuildActivity() {
   Activity a;
 
   if (!App::s_isInit) {
-    a.details = "Starting up";
-    return a;
-  }
-
-  if (App::s_isLoading) {
-    a.details = "Loading\xE2\x80\xA6"; // "Loading…"
+    a.details = Localise("RichPresence_Status_Startup");
     return a;
   }
 
@@ -335,16 +363,17 @@ Activity BuildActivity() {
 
   if (stage) {
     a.details = StageDisplayName(stage);
-    a.state = App::s_isWerehog ? "Playing as the Werehog" : "Playing as Sonic";
+    a.state = Localise(App::s_isWerehog ? "RichPresence_State_Werehog"
+                                        : "RichPresence_State_Sonic");
   } else {
-    a.details = "In the menus";
+    a.details = Localise("RichPresence_Status_WorldMap");
   }
 
   return a;
 }
 
-// -------------------------------------------------------------- worker loop
-
+// Owns the socket: connects, reconnects with backoff, and pushes the latest
+// activity to Discord (rate-limited).
 void WorkerMain() {
   socket_t sock = INVALID_SOCK;
   Activity sent;

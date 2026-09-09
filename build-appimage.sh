@@ -2,9 +2,9 @@
 #
 # Package the local build into an AppImage (linuxdeploy + gtk plugin + appimagetool).
 #
-# Usage: ./make-appimage.sh [preset]        (preset passed to build.sh)
+# Usage: ./build-appimage.sh [preset]       (preset passed to build.sh)
 #
-# Env: REBUILD=1  OUTDIR=<dir>  UPDATE_INFORMATION=<zsync string>
+# Env: OUTDIR=<dir>  UPDATE_INFORMATION=<zsync string>
 #
 # The AppImage reads game data (game/ update/ dlc/) from, in order:
 #   $UR_DATA_DIR  |  $PWD if it has game//portable.txt  |  ~/.local/share/UnleashedRecomp
@@ -30,10 +30,10 @@ for cmd in curl git sed install; do
     command -v "$cmd" >/dev/null || { echo "missing required tool: $cmd" >&2; exit 1; }
 done
 
-if [[ ! -x "$BIN" || "${REBUILD:-0}" == "1" ]]; then
-    log "Building UnleashedRecomp ($PRESET)"
-    ./build.sh "$PRESET"
-fi
+# Always build so the AppImage tracks the current source (build.sh is a fast
+# no-op when nothing changed).
+log "Building UnleashedRecomp ($PRESET)"
+./build.sh "$PRESET"
 
 # Fetch tooling (cached in $TOOLS).
 mkdir -p "$TOOLS"
@@ -98,6 +98,9 @@ EOF
 chmod +x "$APPRUN"
 
 VERSION="$(git describe --tags --always 2>/dev/null || echo dev)"
+# Flag uncommitted changes to tracked source so stale packages are obvious
+# (ignores the always-dirty SDL submodule).
+[[ -n "$(git status --porcelain -- UnleashedRecomp flatpak 2>/dev/null)" ]] && VERSION="${VERSION}-wip"
 export LINUXDEPLOY_OUTPUT_VERSION="$VERSION"
 export DEPLOY_GTK_VERSION=3
 [[ -n "${UPDATE_INFORMATION:-}" ]] && export LDAI_UPDATE_INFORMATION="$UPDATE_INFORMATION"
