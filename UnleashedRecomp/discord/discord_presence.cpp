@@ -32,6 +32,8 @@ enum : uint32_t { OP_HANDSHAKE = 0, OP_FRAME = 1, OP_CLOSE = 2 };
 struct Activity {
   std::string details;
   std::string state;
+  std::string largeImage, largeText; // art-asset key (or https URL) + tooltip
+  std::string smallImage, smallText;
   bool operator==(const Activity &) const = default;
 };
 
@@ -197,6 +199,20 @@ bool SendActivity(socket_t s, const Activity &a) {
     activity["state"] = a.state;
   activity["timestamps"] = {{"start", g_startTime}};
 
+  json assets = json::object();
+  if (!a.largeImage.empty()) {
+    assets["large_image"] = a.largeImage;
+    if (!a.largeText.empty())
+      assets["large_text"] = a.largeText;
+  }
+  if (!a.smallImage.empty()) {
+    assets["small_image"] = a.smallImage;
+    if (!a.smallText.empty())
+      assets["small_text"] = a.smallText;
+  }
+  if (!assets.empty())
+    activity["assets"] = std::move(assets);
+
 #ifdef _WIN32
   int pid = static_cast<int>(GetCurrentProcessId());
 #else
@@ -246,29 +262,49 @@ std::string PrettifyStageId(const char *id) {
 // City = "NY", Adabat = "Beach"/"SouthEastAsia", Shamar = "Petra". Day acts are
 // "ActD_*", Werehog night acts "ActN_*Evil".
 
-// Region codename token -> locale key. Longer tokens first (NYCity before NY).
-const char *StageRegionKey(std::string_view id) {
-  static const std::pair<std::string_view, const char *> kRegions[] = {
-      {"Mykonos", "RichPresence_Region_Apotos"},
-      {"China", "RichPresence_Region_Chunnan"},
-      {"EULabo", "RichPresence_Region_Spagonia"},
-      {"EuropeanCity", "RichPresence_Region_Spagonia"},
-      {"EU", "RichPresence_Region_Spagonia"},
-      {"Africa", "RichPresence_Region_Mazuri"},
-      {"Snow", "RichPresence_Region_Holoska"},
-      {"NYCity", "RichPresence_Region_EmpireCity"},
-      {"NY", "RichPresence_Region_EmpireCity"},
-      {"SouthEastAsia", "RichPresence_Region_Adabat"},
-      {"Beach", "RichPresence_Region_Adabat"},
-      {"PetraCapital", "RichPresence_Region_Shamar"},
-      {"PetraLabo", "RichPresence_Region_Shamar"},
-      {"Petra", "RichPresence_Region_Shamar"},
-      {"EggmanLand", "RichPresence_Region_Eggmanland"},
+struct Region {
+  std::string_view token; // codename substring found in the stage id
+  const char *nameKey;    // locale key for the region name
+  const char *image;      // Discord art-asset key (upload in the Dev Portal)
+};
+
+// Match a stage id to its region.
+const Region *FindRegion(std::string_view id) {
+  static const Region kRegions[] = {
+      {"Mykonos", "RichPresence_Region_Apotos", "apotos"},
+      {"China", "RichPresence_Region_Chunnan", "chunnan"},
+      {"EULabo", "RichPresence_Region_Spagonia", "spagonia"},
+      {"EuropeanCity", "RichPresence_Region_Spagonia", "spagonia"},
+      {"EU", "RichPresence_Region_Spagonia", "spagonia"},
+      {"Africa", "RichPresence_Region_Mazuri", "mazuri"},
+      {"Snow", "RichPresence_Region_Holoska", "holoska"},
+      {"NYCity", "RichPresence_Region_EmpireCity", "empirecity"},
+      {"NY", "RichPresence_Region_EmpireCity", "empirecity"},
+      {"SouthEastAsia", "RichPresence_Region_Adabat", "adabat"},
+      {"Beach", "RichPresence_Region_Adabat", "adabat"},
+      {"PetraCapital", "RichPresence_Region_Shamar", "shamar"},
+      {"PetraLabo", "RichPresence_Region_Shamar", "shamar"},
+      {"Petra", "RichPresence_Region_Shamar", "shamar"},
+      {"EggmanLand", "RichPresence_Region_Eggmanland", "eggmanland"},
   };
-  for (auto &[token, key] : kRegions)
-    if (id.find(token) != std::string_view::npos)
-      return key;
+  for (const auto &r : kRegions)
+    if (id.find(r.token) != std::string_view::npos)
+      return &r;
   return nullptr;
+}
+
+// Stage id -> Discord art-asset key
+std::string StageImageKey(const char *id) {
+  if (!id || !*id)
+    return "";
+  std::string_view s = id;
+  const Region *r = FindRegion(s);
+  if (!r)
+    return "";
+  bool night = s.rfind("ActN_", 0) == 0 ||
+               s.find("Evil") != std::string_view::npos ||
+               s.find("_Night") != std::string_view::npos;
+  return night ? std::string(r->image) + "_night" : r->image;
 }
 
 struct StoryStage {
@@ -324,11 +360,11 @@ std::string StageDisplayName(const char *id) {
     return Localise("RichPresence_Status_Cutscene");
 
   // Derived name for hubs, extra missions and DLC/ETF variants.
-  if (const char *regionKey = StageRegionKey(s)) {
+  if (const Region *region = FindRegion(s)) {
     bool night = s.rfind("ActN_", 0) == 0 ||
                  s.find("Evil") != std::string_view::npos ||
                  s.find("_Night") != std::string_view::npos;
-    std::string out = Localise(regionKey);
+    std::string out = Localise(region->nameKey);
     if (s.rfind("Town_", 0) == 0 || s.rfind("CmnTown_", 0) == 0)
       out += " - " + Localise(night ? "RichPresence_Suffix_HubNight"
                                     : "RichPresence_Suffix_Hub");
@@ -365,8 +401,16 @@ Activity BuildActivity() {
     a.details = StageDisplayName(stage);
     a.state = Localise(App::s_isWerehog ? "RichPresence_State_Werehog"
                                         : "RichPresence_State_Sonic");
+    a.largeImage = StageImageKey(stage);
+    a.largeText = a.details;
+    a.smallImage = App::s_isWerehog ? "werehog" : "sonic";
+    a.smallText = a.state;
   } else {
     a.details = Localise("RichPresence_Status_WorldMap");
+    // Set to an uploaded key (e.g. "worldmap") if you want art here; empty
+    // falls back to the application icon.
+    a.largeImage = "";
+    a.largeText = a.details;
   }
 
   return a;
