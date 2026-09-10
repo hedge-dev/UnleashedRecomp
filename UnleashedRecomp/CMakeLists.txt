@@ -229,6 +229,7 @@ set(UNLEASHED_RECOMP_CXX_SOURCES
     "sdl_listener.cpp"
     "stdafx.cpp"
     "version.cpp"
+    "discord/discord_presence.cpp"
     
     ${UNLEASHED_RECOMP_KERNEL_CXX_SOURCES}
     ${UNLEASHED_RECOMP_LOCALE_CXX_SOURCES}
