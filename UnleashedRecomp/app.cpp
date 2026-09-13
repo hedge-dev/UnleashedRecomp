@@ -6,6 +6,7 @@
 #include <os/process.h>
 #include <patches/audio_patches.h>
 #include <patches/inspire_patches.h>
+#include <patches/player_patches.h>
 #include <ui/game_window.h>
 #include <user/config.h>
 #include <user/paths.h>
@@ -61,6 +62,9 @@ PPC_FUNC(sub_822C1130)
 
     App::s_deltaTime = ctx.f1.f64;
     App::s_time += App::s_deltaTime;
+
+    // Player-state change notifications.
+    PlayerPatches::Update();
 
     // This function can also be called by the loading thread,
     // which SDL does not like. To prevent the OS from thinking

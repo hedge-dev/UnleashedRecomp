@@ -1239,6 +1239,7 @@ static void DrawConfigOptions()
         case 1: // INPUT
             DrawConfigOption(rowCount++, yOffset, &Config::HorizontalCamera, true);
             DrawConfigOption(rowCount++, yOffset, &Config::VerticalCamera, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::RightTriggerAction, true);
             DrawConfigOption(rowCount++, yOffset, &Config::Vibration, true);
             DrawConfigOption(rowCount++, yOffset, &Config::AllowBackgroundInput, true);
             DrawConfigOption(rowCount++, yOffset, &Config::ControllerIcons, true);

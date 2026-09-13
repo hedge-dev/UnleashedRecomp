@@ -197,17 +197,41 @@ address = 0x823A4FF0
 registers = ["r4", "r5"]
 return_on_false = true
 
-# Set default value for XButtonHoming.
+# Update Chip Control Tutorial Overlay For Right Trigger Boost
+[[midasm_hook]]
+name = "ChipOverlayCsdPatchMidAsmHook"
+address = 0x830C17A8
+registers = ["r8"]
+
+# Trick QTE prompt bar Per-frame Update
+[[midasm_hook]]
+name = "QTEPromptActiveMidAsmHook"
+address = 0x823329F8
+registers = ["r3"]
+
+# Set default value for XButtonHoming
 [[midasm_hook]]
 name = "SetXButtonHomingMidAsmHook"
 address = 0x8237AC90
 registers = ["r1"]
 
-# Disable XML reading for XButtonHoming.
+# Disable XML reading for XButtonHoming
 [[midasm_hook]]
 name = "IsHomingAttackOnJump"
 address = 0x8237ACE4
 jump_address_on_true = 0x8237ACE8
+
+# Change boost prompt cast for right trigger option
+[[midasm_hook]]
+name = "BoostPromptCastMidAsmHook"
+address = 0x8239F514
+registers = ["r5"]
+
+# Change boost prompt pattern for right trigger option
+[[midasm_hook]]
+name = "BoostPromptPatternMidAsmHook"
+address = 0x8239F5BC
+registers = ["r4"]
 
 # Down force HFR fix
 [[midasm_hook]]
