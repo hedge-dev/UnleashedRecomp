@@ -1720,6 +1720,13 @@ static void ApplyLowEndDefaults()
     }
 }
 
+#ifdef __APPLE__
+static void ApplyMetalHUDConfig()
+{
+    setenv("MTL_HUD_ENABLED", Config::ShowMetalHUD ? "1" : "0", 1);
+}
+#endif
+
 bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
 {
     for (uint32_t i = 0; i < 16; i++)
@@ -1735,6 +1742,10 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     g_backend = (DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan) ? Backend::VULKAN : Backend::D3D12;
 #elif defined(UNLEASHED_RECOMP_METAL)
     g_backend = Config::GraphicsAPI == EGraphicsAPI::Vulkan ? Backend::VULKAN : Backend::METAL;
+#endif
+
+#ifdef __APPLE__
+    ApplyMetalHUDConfig();
 #endif
 
     // Attempt to create the possible backends using a vector of function pointers. Whichever succeeds first will be the chosen API.

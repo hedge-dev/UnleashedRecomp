@@ -1012,3 +1012,14 @@ CONFIG_DEFINE_ENUM_LOCALE(EUIAlignmentMode)
         }
     }
 };
+
+// TODO: Add localization for the following languages: Japanese, French
+CONFIG_DEFINE_LOCALE(ShowMetalHUD)
+{
+    { ELanguage::English,  { "Show Metal HUD", "Toggle the Metal Performance HUD." } },
+    // { ELanguage::Japanese, { "", "" } },
+    { ELanguage::German,   { "Zeige Metal HUD", "Schalte das Metal Performance HUD an oder aus." } },
+    // { ELanguage::French,   { "", "" } },
+    { ELanguage::Spanish,  { "Mostrar Metal HUD", "Activa/desactiva el Metal Performance HUD." } },
+    { ELanguage::Italian,  { "Mostra Metal HUD", "Attiva/disattiva il Metal Performance HUD." } }
+};

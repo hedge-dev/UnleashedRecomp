@@ -76,6 +76,9 @@ CONFIG_DEFINE_ENUM_LOCALISED("Video", EMotionBlur, MotionBlur, EMotionBlur::Orig
 CONFIG_DEFINE_LOCALISED("Video", bool, XboxColorCorrection, false);
 CONFIG_DEFINE_ENUM_LOCALISED("Video", ECutsceneAspectRatio, CutsceneAspectRatio, ECutsceneAspectRatio::Original);
 CONFIG_DEFINE_ENUM_LOCALISED("Video", EUIAlignmentMode, UIAlignmentMode, EUIAlignmentMode::Edge);
+#if defined(__APPLE__)
+CONFIG_DEFINE_LOCALISED("Video", bool, ShowMetalHUD, false);
+#endif
 
 CONFIG_DEFINE_HIDDEN("Codes", bool, AllowCancellingUnleash, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, DisableAutoSaveWarning, false);
