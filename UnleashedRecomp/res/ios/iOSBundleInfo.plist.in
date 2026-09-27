@@ -26,10 +26,24 @@
         </array>
         <key>CFBundleDisplayName</key>
         <string>Unleashed Recompiled</string>
-        <key>CFBundleIconName</key>
-        <string>AppIcon</string>
+        <key>CFBundleIcons</key>
+        <dict>
+            <key>CFBundlePrimaryIcon</key>
+            <dict>
+                <key>CFBundleIconName</key>
+                <string>AppIcon</string>
+            </dict>
+        </dict>
+        <key>CFBundleIcons~ipad</key>
+        <dict>
+            <key>CFBundlePrimaryIcon</key>
+            <dict>
+                <key>CFBundleIconName</key>
+                <string>AppIcon</string>
+            </dict>
+        </dict>
         <key>CADisableMinimumFrameDurationOnPhone</key>
-        <true/>
+        <true />
         <key>UIFileSharingEnabled</key>
         <true />
         <key>LSSupportsOpeningDocumentsInPlace</key>

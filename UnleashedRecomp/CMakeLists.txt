@@ -373,6 +373,9 @@ elseif(APPLE)
             "${CMAKE_BINARY_DIR}/thirdparty/MoltenVK/MoltenVK.framework"
         )
 
+        set(ASSETS_CAR_SRC "${CMAKE_CURRENT_SOURCE_DIR}/res/ios/Assets.car")
+        set(ASSETS_CAR_SRC_DST "${MVK_APP_DIR}/Assets.car")
+
         add_custom_command(
             TARGET UnleashedRecomp POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory "${MVK_FRAMEWORK_DST}"
@@ -389,6 +392,14 @@ elseif(APPLE)
             "${MVK_ICD_SRC}"
             "${MVK_APP_DIR}/vulkan/icd.d/MoltenVK_icd.json"
             COMMENT "Copying MoltenVK ICD"
+        )
+
+        add_custom_command(
+            TARGET UnleashedRecomp POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            "${ASSETS_CAR_SRC}"
+            "${ASSETS_CAR_SRC_DST}"
+            COMMENT "Copying Assets.car into iOS app bundle"
         )
 
         add_dependencies(UnleashedRecomp MoltenVK)
