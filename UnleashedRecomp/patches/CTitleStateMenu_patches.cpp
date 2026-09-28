@@ -15,6 +15,16 @@ static bool g_installMessageOpen = false;
 static bool g_installMessageFaderBegun = false;
 static int g_installMessageResult = -1;
 
+#if TARGET_OS_IOS
+#include <CoreFoundation/CoreFoundation.h>
+
+static void iOS_SetPendingInstallFlag()
+{
+    CFStringRef pendingKey = CFSTR("UnleashedRecomp_PendingDLCInstall");
+    CFPreferencesSetAppValue(pendingKey, kCFBooleanTrue, kCFPreferencesCurrentApplication);
+}
+#endif
+
 static bool ProcessInstallMessage()
 {
     if (!g_installMessageOpen)
@@ -34,7 +44,14 @@ static bool ProcessInstallMessage()
         switch (g_installMessageResult)
         {
             case 0:
+#if TARGET_OS_IOS
+                // iOS: Just set a flag to install DLC on next launch
+                iOS_SetPendingInstallFlag();
+                Fader::FadeOut(1, []() { App::Exit(); });
+#else
+                // Desktop: Restart with installer flag
                 Fader::FadeOut(1, []() { App::Restart({ "--install-dlc" }); });
+#endif
                 g_installMessageFaderBegun = true;
                 break;
 

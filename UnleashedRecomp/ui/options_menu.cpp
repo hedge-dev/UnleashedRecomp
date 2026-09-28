@@ -100,6 +100,9 @@ static bool g_canReset = false;
 static bool g_isLanguageOptionChanged = false;
 static bool g_titleAnimBegin = true;
 static EChannelConfiguration g_currentChannelConfig;
+#ifdef __APPLE__
+static bool g_currentShowMetalHUD;
+#endif
 
 static double g_appearTime = 0.0;
 
@@ -199,7 +202,7 @@ static void DrawTitle()
             rectX += rectSize + (rectSize * 0.25f);
             isRectFinalAdjustment = true;
         }
-    
+
         isRectVisible = !isRectVisible;
         rectBlinkMotionOffset += squareBlinkDuration;
     }
@@ -331,18 +334,18 @@ static void DrawScanlineBars()
 
         drawList->AddRectFilledMultiColor(
             { 0.0f, y - Scale(2.0f) },
-            { res.x, y }, 
+            { res.x, y },
             top ? TOP_COLOR0 : BOTTOM_COLOR1,
-            top ? TOP_COLOR0 : BOTTOM_COLOR1, 
+            top ? TOP_COLOR0 : BOTTOM_COLOR1,
             top ? TOP_COLOR1 : BOTTOM_COLOR0,
             top ? TOP_COLOR1 : BOTTOM_COLOR0);
 
         drawList->AddRectFilledMultiColor(
-            { 0.0f, y + Scale(1.0f) }, 
-            { res.x, y + Scale(3.0f) }, 
-            top ? BOTTOM_COLOR0 : TOP_COLOR1, 
+            { 0.0f, y + Scale(1.0f) },
+            { res.x, y + Scale(3.0f) },
             top ? BOTTOM_COLOR0 : TOP_COLOR1,
-            top ? BOTTOM_COLOR1 : TOP_COLOR0, 
+            top ? BOTTOM_COLOR0 : TOP_COLOR1,
+            top ? BOTTOM_COLOR1 : TOP_COLOR0,
             top ? BOTTOM_COLOR1 : TOP_COLOR0);
 
         constexpr uint32_t CENTER_COLOR = IM_COL32(115, 178, 104, 255);
@@ -528,7 +531,7 @@ static bool DrawCategories()
                 float animWidth = g_categoryAnimMax.x - g_categoryAnimMin.x;
                 float width = max.x - min.x;
                 float height = max.y - min.y;
-                
+
                 animWidth = Lerp(animWidth, width, 1.0f - exp(-64.0f * ImGui::GetIO().DeltaTime));
 
                 auto center = Lerp(min, max, 0.5f);
@@ -549,14 +552,14 @@ static bool DrawCategories()
                 g_categoryAnimMin,
                 g_categoryAnimMax,
                 IM_COL32(0, 130, 0, 223 * motion),
-                IM_COL32(0, 130, 0, 178 * motion), 
+                IM_COL32(0, 130, 0, 178 * motion),
                 IM_COL32(0, 130, 0, 223 * motion),
                 IM_COL32(0, 130, 0, 178 * motion)
             );
 
             drawList->AddRectFilledMultiColor
             (
-                g_categoryAnimMin, 
+                g_categoryAnimMin,
                 g_categoryAnimMax,
                 IM_COL32(0, 0, 0, 13 * motion),
                 IM_COL32(0, 0, 0, 0),
@@ -566,11 +569,11 @@ static bool DrawCategories()
 
             drawList->AddRectFilledMultiColor
             (
-                g_categoryAnimMin, 
+                g_categoryAnimMin,
                 g_categoryAnimMax,
                 IM_COL32(0, 130, 0, 13 * motion),
                 IM_COL32(0, 130, 0, 111 * motion),
-                IM_COL32(0, 130, 0, 0), 
+                IM_COL32(0, 130, 0, 0),
                 IM_COL32(0, 130, 0, 55 * motion)
             );
 
@@ -588,7 +591,7 @@ static bool DrawCategories()
     {
         auto& pos = textPositions[i];
         uint8_t alpha = (i == g_categoryIndex ? 235 : 128) * motion;
-        
+
         SetOrigin({ pos.x, pos.y });
         SetGradient
         (
@@ -1102,7 +1105,7 @@ static void DrawConfigOption(int32_t rowIndex, float yOffset, ConfigDef<T>* conf
 
             bool isConfigValueInBounds = config->Value >= valueMin && config->Value <= valueMax;
 
-            if ((increment || decrement) && isConfigValueInBounds && isPlayIncrementSound) 
+            if ((increment || decrement) && isConfigValueInBounds && isPlayIncrementSound)
             {
                 g_lastIncrementSoundTime = time;
                 Game_PlaySound("sys_actstg_twn_speechbutton");
@@ -1282,6 +1285,7 @@ static void DrawConfigOptions()
             DrawConfigOption(rowCount++, yOffset, &Config::XboxColorCorrection, true);
             DrawConfigOption(rowCount++, yOffset, &Config::CutsceneAspectRatio, true);
             DrawConfigOption(rowCount++, yOffset, &Config::UIAlignmentMode, true);
+            DrawConfigOption(rowCount++, yOffset, &Config::ShowMetalHUD, true);
 
             break;
         }
@@ -1533,7 +1537,7 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
             clipRectMax.x += annotationFontSize;
 
             textY += annotationFontSize;
-            
+
             // Dirty hack to disallow clipping on Japanese text
             // whilst allowing annotations to go over the border
             lineWidth -= annotationFontSize;
@@ -1554,7 +1558,7 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
         if (scrollMax > 0.0f)
         {
             auto vert = -g_rightStickY;
-        
+
             if (fabs(vert) > 0.25f)
             {
                 isManualScrolling = true;
@@ -1567,21 +1571,21 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
                 scrollTimer = 0.0f;
                 scrollDirection = vert > 0.0f ? 1.0f : -1.0f;
             }
-        
+
             if (!isManualScrolling)
             {
                 if (!isScrolling)
                 {
                     scrollTimer += App::s_deltaTime;
-            
+
                     if (scrollTimer >= INFO_TEXT_MARQUEE_DELAY)
                         isScrolling = true;
                 }
-            
+
                 if (isScrolling)
                 {
                     scrollOffset += scrollSpeed * scrollDirection * App::s_deltaTime;
-            
+
                     if (scrollOffset >= scrollMax)
                     {
                         isScrolling = false;
@@ -1598,7 +1602,7 @@ static void DrawInfoPanel(ImVec2 infoMin, ImVec2 infoMax)
                     }
                 }
             }
-        
+
             scrollOffset = std::clamp(scrollOffset, 0.0f, scrollMax);
         }
         else
@@ -1670,7 +1674,7 @@ static bool DrawMilesElectric()
     {
         if (g_isClosing)
             SetOptionsMenuVisible(false);
-    
+
         return true;
     }
 
@@ -1789,7 +1793,12 @@ void OptionsMenu::Draw()
             DrawFadeTransition();
     }
 
-    s_isRestartRequired = Config::Language != App::s_language || Config::ChannelConfiguration != g_currentChannelConfig;
+    s_isRestartRequired = Config::Language != App::s_language
+        || Config::ChannelConfiguration != g_currentChannelConfig
+    #ifdef __APPLE__
+        || Config::ShowMetalHUD != g_currentShowMetalHUD
+    #endif
+        ;
 }
 
 void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
@@ -1798,7 +1807,7 @@ void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
     s_isPause = isPause;
     s_pauseMenuType = pauseMenuType;
     g_isStage = isPause && pauseMenuType != SWA::eMenuType_WorldMap;
-    
+
     g_appearTime = ImGui::GetTime();
     g_categoryIndex = 0;
     g_categoryAnimMin = { 0.0f, 0.0f };
@@ -1806,6 +1815,9 @@ void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
     g_selectedItem = nullptr;
     g_titleAnimBegin = true;
     g_currentChannelConfig = Config::ChannelConfiguration;
+#if defined(__APPLE__)
+    g_currentShowMetalHUD = Config::ShowMetalHUD;
+#endif
 
     /* Store button state so we can track it later
        and prevent the first item being selected. */
@@ -1822,7 +1834,7 @@ void OptionsMenu::Open(bool isPause, SWA::EMenuType pauseMenuType)
         Button("Common_Select", 115.0f, EButtonIcon::A, &g_isControlsVisible),
         Button("Common_Back", 65.0f, EButtonIcon::B, &g_isControlsVisible)
     };
-    
+
     ButtonGuide::Open(buttons);
     ButtonGuide::SetSideMargins(250);
 

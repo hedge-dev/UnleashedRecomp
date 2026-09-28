@@ -41,6 +41,7 @@ std::filesystem::path os::process::GetExecutableRoot()
 
 std::filesystem::path os::process::GetWorkingDirectory()
 {
+#if !TARGET_OS_IPHONE
     char cwd[PATH_MAX] = {};
     char *res = getcwd(cwd, sizeof(cwd));
     if (res != nullptr)
@@ -51,15 +52,26 @@ std::filesystem::path os::process::GetWorkingDirectory()
     {
         return std::filesystem::path();
     }
+#else
+    // iOS: Working directory is not meaningful in app sandbox
+    // Return app bundle path as fallback
+    return GetExecutableRoot();
+#endif
 }
 
 bool os::process::SetWorkingDirectory(const std::filesystem::path& path)
 {
+#if !TARGET_OS_IPHONE
     return chdir(path.c_str()) == 0;
+#else
+    // iOS: Cannot change working directory in sandbox; return false
+    return false;
+#endif
 }
 
 bool os::process::StartProcess(const std::filesystem::path& path, const std::vector<std::string>& args, std::filesystem::path work)
 {
+#if !TARGET_OS_IPHONE
     pid_t pid = fork();
     if (pid < 0)
         return false;
@@ -83,6 +95,10 @@ bool os::process::StartProcess(const std::filesystem::path& path, const std::vec
     }
 
     return true;
+#else
+    // iOS: Cannot start other processes in app sandbox
+    return false;
+#endif
 }
 
 void os::process::CheckConsole()

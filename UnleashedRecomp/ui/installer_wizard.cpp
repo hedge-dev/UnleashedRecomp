@@ -1,6 +1,8 @@
 #include "installer_wizard.h"
 
+#ifndef UNLEASHED_RECOMP_IOS
 #include <nfd.h>
+#endif
 
 #include <apu/embedded_player.h>
 #include <install/installer.h>
@@ -9,6 +11,7 @@
 #include <hid/hid.h>
 #include <locale/locale.h>
 #include <patches/aspect_ratio_patches.h>
+#include <os/logger.h>
 #include <ui/imgui_utils.h>
 #include <ui/button_guide.h>
 #include <ui/message_window.h>
@@ -16,6 +19,14 @@
 #include <decompressor.h>
 #include <exports.h>
 #include <sdl_listener.h>
+
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+#include <ui/file_picker_ios.h>
+#endif
 
 #include <res/images/common/hedge-dev.dds.h>
 #include <res/images/installer/install_001.dds.h>
@@ -29,6 +40,16 @@
 #include <res/images/installer/miles_electric_icon.dds.h>
 #include <res/images/installer/arrow_circle.dds.h>
 #include <res/images/installer/pulse_install.dds.h>
+#if defined(UNLEASHED_RECOMP_IOS_INSTALLER_PNGS)
+#include <res/images/installer/raw/install_001.png.h>
+#include <res/images/installer/raw/install_002.png.h>
+#include <res/images/installer/raw/install_003.png.h>
+#include <res/images/installer/raw/install_004.png.h>
+#include <res/images/installer/raw/install_005.png.h>
+#include <res/images/installer/raw/install_006.png.h>
+#include <res/images/installer/raw/install_007.png.h>
+#include <res/images/installer/raw/install_008.png.h>
+#endif
 #include <res/credits.h>
 
 // One Shot Animations Constants
@@ -167,6 +188,21 @@ static bool g_currentCursorBack = false;
 static std::vector<std::pair<ImVec2, ImVec2>> g_currentCursorRects;
 static std::string g_creditsStr;
 
+static int FindCursorRectIndexAtPoint(const ImVec2 &point)
+{
+    for (size_t i = 0; i < g_currentCursorRects.size(); i++)
+    {
+        const auto &currentRect = g_currentCursorRects[i];
+        if (point.x >= currentRect.first.x && point.x <= currentRect.second.x
+            && point.y >= currentRect.first.y && point.y <= currentRect.second.y)
+        {
+            return int(i);
+        }
+    }
+
+    return -1;
+}
+
 class SDLEventListenerForInstaller : public SDLEventListener
 {
 public:
@@ -287,6 +323,27 @@ public:
 
                 if (newCursorIndex < 0)
                     g_currentCursorIndex = -1;
+
+                break;
+            }
+
+            case SDL_FINGERDOWN:
+            case SDL_FINGERMOTION:
+            {
+                ImVec2 touchPos = {
+                    event->tfinger.x * ImGui::GetIO().DisplaySize.x,
+                    event->tfinger.y * ImGui::GetIO().DisplaySize.y,
+                };
+
+                newCursorIndex = FindCursorRectIndexAtPoint(touchPos);
+                if (newCursorIndex < 0)
+                {
+                    g_currentCursorIndex = -1;
+                }
+                else if (event->type == SDL_FINGERDOWN)
+                {
+                    g_currentCursorAccepted = true;
+                }
 
                 break;
             }
@@ -418,12 +475,12 @@ static double ComputeMotionInstaller(double timeAppear, double timeDisappear, do
     return ComputeMotion(timeAppear, offset, total) * (1.0 - ComputeMotion(timeDisappear, ALL_ANIMATIONS_FULL_DURATION - offset - total, total));
 }
 
-static double ComputeMotionInstallerLoop(double timeAppear, double speed, double offset) 
+static double ComputeMotionInstallerLoop(double timeAppear, double speed, double offset)
 {
     return std::clamp(fmodf((ImGui::GetTime() - timeAppear) * speed, 1.0f + offset) - offset, 0.0, 1.0) / 1.0;
 }
 
-static double ComputeHermiteMotionInstallerLoop(double timeAppear, double speed, double offset) 
+static double ComputeHermiteMotionInstallerLoop(double timeAppear, double speed, double offset)
 {
     return (cosf(M_PI * ComputeMotionInstallerLoop(timeAppear, speed, offset) + M_PI) + 1) / 2;
 }
@@ -482,6 +539,23 @@ static void DrawLeftImage()
     double imageAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, IMAGE_ANIMATION_TIME, IMAGE_ANIMATION_DURATION);
     int a = std::lround(255.0 * imageAlpha);
     GuestTexture *guestTexture = g_installTextures[installTextureIndex % g_installTextures.size()].get();
+    if (guestTexture == nullptr)
+    {
+        for (const auto &texture : g_installTextures)
+        {
+            if (texture)
+            {
+                guestTexture = texture.get();
+                break;
+            }
+        }
+    }
+
+    if (guestTexture == nullptr)
+    {
+        return;
+    }
+
     auto &res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetBackgroundDrawList();
     ImVec2 min = { g_aspectRatioOffsetX + Scale(IMAGE_X), g_aspectRatioOffsetY + Scale(IMAGE_Y) };
@@ -505,7 +579,7 @@ static void DrawHeaderIconsForInstallPhase(double iconsPosX, double iconsPosY, d
     // Calculate rotated corners
     float cosCurrentAngle = cosf(rotation);
     float sinCurrentAngle = sinf(rotation);
-    ImVec2 corners[4] = 
+    ImVec2 corners[4] =
     {
         ImRotate(ImVec2(arrowCircleMin.x - center.x, arrowCircleMin.y - center.y), cosCurrentAngle, sinCurrentAngle),
         ImRotate(ImVec2(arrowCircleMax.x - center.x, arrowCircleMin.y - center.y), cosCurrentAngle, sinCurrentAngle),
@@ -533,7 +607,7 @@ static void DrawHeaderIconsForInstallPhase(double iconsPosX, double iconsPosY, d
         // Calculate linear fade-out from high point time - ({PULSE_ANIMATION_LOOP_FADE_HIGH_POINT}, 1) - to loop end - (1, 0) -.
         float m = -1 / (1 - PULSE_ANIMATION_LOOP_FADE_HIGH_POINT);
         float b = m * (-PULSE_ANIMATION_LOOP_FADE_HIGH_POINT) + 1;
-        
+
         pulseFade = m * pulseMotion + b;
     }
 
@@ -678,11 +752,11 @@ static void DrawScanlineBars()
 }
 
 static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
-{   
+{
     auto &res = ImGui::GetIO().DisplaySize;
     auto drawList = ImGui::GetBackgroundDrawList();
 
-    double gridAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime, 
+    double gridAlpha = ComputeMotionInstaller(g_appearTime, g_disappearTime,
         isTextArea ? CONTAINER_INNER_TIME : CONTAINER_OUTER_TIME,
         isTextArea ? CONTAINER_INNER_DURATION : CONTAINER_OUTER_DURATION
     );
@@ -699,7 +773,7 @@ static void DrawContainer(ImVec2 min, ImVec2 max, bool isTextArea)
     SetAdditive(false);
     SetShaderModifier(IMGUI_SHADER_MODIFIER_NONE);
 
-    if (isTextArea) 
+    if (isTextArea)
     {
         drawList->AddRectFilled(min, max, gridOverlayColor);
     }
@@ -835,7 +909,7 @@ static void DrawDescriptionContainer()
         ImVec2 imageRegionMin = { containerLeft, textY + descTextSize.y };
         ImVec2 imageRegionMax = { containerRight, containerBottom - (marqueeTextMax.y - marqueeTextMin.y) };
 
-        ImVec2 imageMin = 
+        ImVec2 imageMin =
         {
             /* X */ imageRegionMin.x + ((imageRegionMax.x - imageRegionMin.x) / 2) - (imageScale / 2) - (hedgeDevTextSize.x / 2) - hedgeDevTextMarginX,
             /* Y */ imageRegionMin.y + ((imageRegionMax.y - imageRegionMin.y) / 2) - (imageScale / 2) - imageMarginY
@@ -1083,6 +1157,7 @@ static void DrawProgressBar(float progressRatio)
     drawList->AddRectFilledMultiColor(sliderMin, sliderMax, sliderColor0, sliderColor0, sliderColor1, sliderColor1);
 }
 
+#ifndef UNLEASHED_RECOMP_IOS
 static bool ConvertPathSet(const nfdpathset_t *pathSet, std::list<std::filesystem::path> &filePaths)
 {
     nfdpathsetsize_t pathSetCount = 0;
@@ -1106,9 +1181,19 @@ static bool ConvertPathSet(const nfdpathset_t *pathSet, std::list<std::filesyste
 
     return true;
 }
+#endif
 
 static void PickerThreadProcess()
 {
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+    if (!ios::PickPaths(g_currentPickerFolderMode, g_currentPickerResults, g_currentPickerErrorMessage))
+    {
+        if (g_currentPickerErrorMessage.empty())
+            g_currentPickerErrorMessage = Localise("Installer_Message_FilePickerTutorial");
+    }
+
+    g_currentPickerResultsReady = true;
+#elif defined(UNLEASHED_RECOMP_HAS_NFD)
     const nfdpathset_t *pathSet;
     nfdresult_t result = NFD_ERROR;
     if (g_currentPickerFolderMode)
@@ -1119,7 +1204,7 @@ static void PickerThreadProcess()
     {
         result = NFD_OpenDialogMultipleN(&pathSet, nullptr, 0, nullptr);
     }
-    
+
     if (result == NFD_OKAY)
     {
         bool pathsConverted = ConvertPathSet(pathSet, g_currentPickerResults);
@@ -1131,6 +1216,10 @@ static void PickerThreadProcess()
     }
 
     g_currentPickerResultsReady = true;
+#else
+    g_currentPickerErrorMessage = Localise("Installer_Message_FilePickerTutorial");
+    g_currentPickerResultsReady = true;
+#endif
 }
 
 static void PickerStart(bool folderMode) {
@@ -1181,6 +1270,30 @@ static bool ParseSourcePaths(std::list<std::filesystem::path> &paths)
     std::list<std::filesystem::path> failedPaths;
     if (g_currentPage == WizardPage::SelectGameAndUpdate)
     {
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+        auto toLowerString = [](std::string value)
+        {
+            std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return char(std::tolower(c)); });
+            return value;
+        };
+
+        for (const std::filesystem::path &path : paths)
+        {
+            std::error_code ec;
+            bool isDirectory = std::filesystem::is_directory(path, ec);
+            std::string extension = toLowerString(path.extension().string());
+            bool looksLikeGameSource = (extension == ".iso") || isDirectory;
+
+            if (looksLikeGameSource || g_gameSourcePath.empty())
+            {
+                g_gameSourcePath = path;
+            }
+            else
+            {
+                g_updateSourcePath = path;
+            }
+        }
+#else
         for (const std::filesystem::path &path : paths)
         {
             if (Installer::parseGame(path))
@@ -1200,6 +1313,7 @@ static bool ParseSourcePaths(std::list<std::filesystem::path> &paths)
                 isFailedPathsOverLimit = true;
             }
         }
+#endif
     }
     else if(g_currentPage == WizardPage::SelectDLC)
     {
@@ -1438,9 +1552,17 @@ static void DrawNavigationButton()
         XexPatcher::Result patcherResult;
         if (g_currentPage == WizardPage::SelectGameAndUpdate && (patcherResult = Installer::checkGameUpdateCompatibility(g_gameSourcePath, g_updateSourcePath), patcherResult != XexPatcher::Result::Success))
         {
+            std::u8string gameNameU8 = g_gameSourcePath.filename().u8string();
+            std::u8string updateNameU8 = g_updateSourcePath.filename().u8string();
+            os::logger::Log(fmt::format(
+                "Installer compatibility check failed (result={}) game='{}' update='{}'",
+                int(patcherResult),
+                std::string(gameNameU8.begin(), gameNameU8.end()),
+                std::string(updateNameU8.begin(), updateNameU8.end())));
             g_currentMessagePrompt = Localise("Installer_Message_IncompatibleGameData");
             g_currentMessagePromptConfirmation = false;
         }
+
         else if (g_currentPage == WizardPage::SelectDLC)
         {
             // Check if any of the DLC was not specified.
@@ -1512,7 +1634,7 @@ static void CheckCancelAction()
     {
         return;
     }
-    
+
     g_currentCursorBack = false;
 
     if (g_currentPage == WizardPage::InstallSucceeded)
@@ -1750,6 +1872,23 @@ void InstallerWizard::Init()
     g_seuratFont = ImFontAtlasSnapshot::GetFont("FOT-SeuratPro-M.otf");
     g_dfsogeistdFont = ImFontAtlasSnapshot::GetFont("DFSoGeiStd-W7.otf");
     g_newRodinFont = ImFontAtlasSnapshot::GetFont("FOT-NewRodinPro-DB.otf");
+#if defined(UNLEASHED_RECOMP_IOS_INSTALLER_PNGS)
+#if defined(UNLEASHED_RECOMP_IOS_LOW_MEM_INSTALLER)
+    g_installTextures[0] = LOAD_ZSTD_TEXTURE(g_install_001_png);
+#else
+    g_installTextures[0] = LOAD_ZSTD_TEXTURE(g_install_001_png);
+    g_installTextures[1] = LOAD_ZSTD_TEXTURE(g_install_002_png);
+    g_installTextures[2] = LOAD_ZSTD_TEXTURE(g_install_003_png);
+    g_installTextures[3] = LOAD_ZSTD_TEXTURE(g_install_004_png);
+    g_installTextures[4] = LOAD_ZSTD_TEXTURE(g_install_005_png);
+    g_installTextures[5] = LOAD_ZSTD_TEXTURE(g_install_006_png);
+    g_installTextures[6] = LOAD_ZSTD_TEXTURE(g_install_007_png);
+    g_installTextures[7] = LOAD_ZSTD_TEXTURE(g_install_008_png);
+#endif
+#else
+#if defined(UNLEASHED_RECOMP_IOS_LOW_MEM_INSTALLER)
+    g_installTextures[0] = LOAD_ZSTD_TEXTURE(g_install_001);
+#else
     g_installTextures[0] = LOAD_ZSTD_TEXTURE(g_install_001);
     g_installTextures[1] = LOAD_ZSTD_TEXTURE(g_install_002);
     g_installTextures[2] = LOAD_ZSTD_TEXTURE(g_install_003);
@@ -1758,6 +1897,8 @@ void InstallerWizard::Init()
     g_installTextures[5] = LOAD_ZSTD_TEXTURE(g_install_006);
     g_installTextures[6] = LOAD_ZSTD_TEXTURE(g_install_007);
     g_installTextures[7] = LOAD_ZSTD_TEXTURE(g_install_008);
+#endif
+#endif
     g_milesElectricIcon = LOAD_ZSTD_TEXTURE(g_miles_electric_icon);
     g_arrowCircle = LOAD_ZSTD_TEXTURE(g_arrow_circle);
     g_pulseInstall = LOAD_ZSTD_TEXTURE(g_pulse_install);
@@ -1825,11 +1966,15 @@ void InstallerWizard::Shutdown()
         g_currentPickerThread.reset();
     }
 
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+    ios::ReleaseAllAccess();
+#endif
+
     // Erase the sources.
     g_installerSources.game.reset();
     g_installerSources.update.reset();
     g_installerSources.dlc.clear();
-    
+
     // Make sure the GPU is not currently active before deleting these textures.
     Video::WaitForGPU();
 
@@ -1846,10 +1991,15 @@ void InstallerWizard::Shutdown()
 
 bool InstallerWizard::Run(std::filesystem::path installPath, bool skipGame)
 {
+    os::logger::Log(fmt::format("InstallerWizard::Run start - installPath: {}, skipGame: {}", (const char*)installPath.u8string().c_str(), skipGame));
     g_installPath = installPath;
 
     EmbeddedPlayer::Init();
+    os::logger::Log("InstallerWizard::Run - EmbeddedPlayer::Init completed");
+#ifndef UNLEASHED_RECOMP_IOS
     NFD_Init();
+    os::logger::Log("InstallerWizard::Run - NFD_Init completed");
+#endif
 
     // Guarantee one controller is initialized. We'll rely on SDL's event loop to get the controller events.
     XAMINPUT_STATE inputState;
@@ -1868,19 +2018,35 @@ bool InstallerWizard::Run(std::filesystem::path installPath, bool skipGame)
 
     GameWindow::SetFullscreenCursorVisibility(true);
     s_isVisible = true;
+    os::logger::Log("InstallerWizard::Run - entering wizard loop");
+
+    bool firstFrame = true;
 
     while (s_isVisible)
     {
+        if (firstFrame)
+            os::logger::Log("InstallerWizard::Run - first frame: WaitOnSwapChain begin");
         Video::WaitOnSwapChain();
+        if (firstFrame)
+            os::logger::Log("InstallerWizard::Run - first frame: WaitOnSwapChain end");
         ProcessMusic();
+        if (firstFrame)
+            os::logger::Log("InstallerWizard::Run - first frame: ProcessMusic end");
         SDL_PumpEvents();
         SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
         GameWindow::Update();
         Video::Present();
+        if (firstFrame)
+        {
+            os::logger::Log("InstallerWizard::Run - first frame: Present end");
+            firstFrame = false;
+        }
     }
 
     GameWindow::SetFullscreenCursorVisibility(false);
+#ifndef UNLEASHED_RECOMP_IOS
     NFD_Quit();
+#endif
 
     InstallerWizard::Shutdown();
     EmbeddedPlayer::Shutdown();

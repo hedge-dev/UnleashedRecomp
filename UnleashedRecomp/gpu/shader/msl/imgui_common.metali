@@ -1,0 +1,41 @@
+#pragma once
+#include <metal_stdlib>
+
+using namespace metal;
+
+#include "../../imgui/imgui_common.h"
+
+struct PushConstants
+{
+    float2 BoundsMin;
+    float2 BoundsMax;
+    uint GradientTopLeft;
+    uint GradientTopRight;
+    uint GradientBottomRight;
+    uint GradientBottomLeft;
+    uint ShaderModifier;
+    uint Texture2DDescriptorIndex;
+    float2 DisplaySize;
+    float2 InverseDisplaySize;
+    float2 Origin;
+    float2 Scale;
+    float2 ProceduralOrigin;
+    float Outline;
+};
+
+struct Interpolators
+{
+    float4 Position [[position]];
+    float2 UV;
+    float4 Color;
+};
+
+struct Texture2DDescriptorHeap
+{
+    texture2d<float> tex;
+};
+
+struct SamplerDescriptorHeap
+{
+    sampler samp;
+};

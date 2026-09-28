@@ -6,7 +6,7 @@
 	url = https://github.com/redorav/ddspp.git
 [submodule "tools/XenosRecomp"]
 	path = tools/XenosRecomp
-	url = https://github.com/hedge-dev/XenosRecomp.git
+	url = https://github.com/squidbus/XenosRecomp.git
 [submodule "UnleashedRecompResources"]
 	path = UnleashedRecompResources
 	url = https://github.com/hedge-dev/UnleashedRecompResources.git
@@ -58,3 +58,6 @@
 [submodule "thirdparty/plume"]
 	path = thirdparty/plume
 	url = https://github.com/renderbag/plume.git
+[submodule "thirdparty/ios-cmake"]
+	path = thirdparty/ios-cmake
+	url = https://github.com/leetal/ios-cmake.git

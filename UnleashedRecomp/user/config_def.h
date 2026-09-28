@@ -15,6 +15,8 @@ CONFIG_DEFINE_ENUM_LOCALISED("Input", ECameraRotationMode, VerticalCamera, ECame
 CONFIG_DEFINE_LOCALISED("Input", bool, Vibration, true);
 CONFIG_DEFINE_LOCALISED("Input", bool, AllowBackgroundInput, false);
 CONFIG_DEFINE_ENUM_LOCALISED("Input", EControllerIcons, ControllerIcons, EControllerIcons::Auto);
+CONFIG_DEFINE("Input", bool, TouchControls, true);
+CONFIG_DEFINE("Input", float, TouchControlsOpacity, 1.0f);
 
 CONFIG_DEFINE_ENUM("Bindings", SDL_Scancode, Key_A, SDL_SCANCODE_S);
 CONFIG_DEFINE_ENUM("Bindings", SDL_Scancode, Key_B, SDL_SCANCODE_D);
@@ -74,6 +76,9 @@ CONFIG_DEFINE_ENUM_LOCALISED("Video", EMotionBlur, MotionBlur, EMotionBlur::Orig
 CONFIG_DEFINE_LOCALISED("Video", bool, XboxColorCorrection, false);
 CONFIG_DEFINE_ENUM_LOCALISED("Video", ECutsceneAspectRatio, CutsceneAspectRatio, ECutsceneAspectRatio::Original);
 CONFIG_DEFINE_ENUM_LOCALISED("Video", EUIAlignmentMode, UIAlignmentMode, EUIAlignmentMode::Edge);
+#if defined(__APPLE__)
+CONFIG_DEFINE_LOCALISED("Video", bool, ShowMetalHUD, false);
+#endif
 
 CONFIG_DEFINE_HIDDEN("Codes", bool, AllowCancellingUnleash, false);
 CONFIG_DEFINE_HIDDEN("Codes", bool, DisableAutoSaveWarning, false);
