@@ -13,6 +13,7 @@
 #include <ui/button_guide.h>
 #include <ui/message_window.h>
 #include <ui/game_window.h>
+#include <user/paths.h>
 #include <decompressor.h>
 #include <exports.h>
 #include <sdl_listener.h>
@@ -102,6 +103,7 @@ static bool g_isDisappearing = false;
 static bool g_isQuitting = false;
 
 static std::filesystem::path g_installPath;
+static bool g_installPathCustom = false;
 static std::filesystem::path g_gameSourcePath;
 static std::filesystem::path g_updateSourcePath;
 static std::array<std::filesystem::path, int(DLC::Count)> g_dlcSourcePaths;
@@ -158,6 +160,7 @@ static bool g_pickerTutorialTriggered = false;
 static bool g_pickerTutorialFolderMode = false;
 static bool g_currentPickerVisible = false;
 static bool g_currentPickerFolderMode = false;
+static bool g_currentPickerInstallLocation = false;
 static int g_currentMessageResult = -1;
 static ImVec2 g_joypadAxis = {};
 static int g_currentCursorIndex = -1;
@@ -411,6 +414,33 @@ static int DLCIndex(DLC dlc)
 {
     assert(dlc != DLC::Unknown);
     return (int)(dlc) - 1;
+}
+
+static void SetInstallPath(const std::filesystem::path &path)
+{
+    const std::filesystem::path defaultPath = GetDefaultGamePath();
+    std::error_code ec;
+    g_installPath = path;
+    g_installPathCustom = path != defaultPath && !std::filesystem::equivalent(path, defaultPath, ec);
+}
+
+static std::string GetInstallPathText()
+{
+    std::u8string pathU8 = g_installPath.u8string();
+    std::string text(pathU8.begin(), pathU8.end());
+
+    constexpr size_t MaxLength = 32;
+    if (text.length() > MaxLength)
+    {
+        // Keep the end of the path and avoid cutting a UTF-8 character in half.
+        size_t start = text.length() - (MaxLength - 3);
+        while (start < text.length() && (text[start] & 0xC0) == 0x80)
+            start++;
+
+        text = "..." + text.substr(start);
+    }
+
+    return text;
 }
 
 static double ComputeMotionInstaller(double timeAppear, double timeDisappear, double offset, double total)
@@ -732,7 +762,16 @@ static void DrawDescriptionContainer()
         double availableGiB = double(g_installerAvailableSize) / DivisorGiB;
         snprintf(requiredSpaceText, sizeof(requiredSpaceText), Localise("Installer_Step_RequiredSpace").c_str(), requiredGiB);
         snprintf(availableSpaceText, sizeof(availableSpaceText), (g_installerAvailableSize > 0) ? Localise("Installer_Step_AvailableSpace").c_str() : "", availableGiB);
-        snprintf(descriptionText, sizeof(descriptionText), "%s%s\n%s", GetWizardText(g_currentPage).c_str(), requiredSpaceText, availableSpaceText);
+
+        std::string pageText = GetWizardText(g_currentPage);
+        if (g_installPathCustom)
+        {
+            char customPageText[256];
+            snprintf(customPageText, sizeof(customPageText), Localise("Installer_Page_CheckSpaceCustom").c_str(), GetInstallPathText().c_str());
+            pageText = customPageText;
+        }
+
+        snprintf(descriptionText, sizeof(descriptionText), "%s%s\n%s", pageText.c_str(), requiredSpaceText, availableSpaceText);
     }
     else if (g_currentPage == WizardPage::InstallFailed)
     {
@@ -1109,6 +1148,24 @@ static bool ConvertPathSet(const nfdpathset_t *pathSet, std::list<std::filesyste
 
 static void PickerThreadProcess()
 {
+    if (g_currentPickerInstallLocation)
+    {
+        nfdnchar_t *path = nullptr;
+        nfdresult_t result = NFD_PickFolderN(&path, nullptr);
+        if (result == NFD_OKAY)
+        {
+            g_currentPickerResults.emplace_back(std::filesystem::path(path));
+            NFD_FreePathN(path);
+        }
+        else if (result == NFD_ERROR)
+        {
+            g_currentPickerErrorMessage = NFD_GetError();
+        }
+
+        g_currentPickerResultsReady = true;
+        return;
+    }
+
     const nfdpathset_t *pathSet;
     nfdresult_t result = NFD_ERROR;
     if (g_currentPickerFolderMode)
@@ -1133,7 +1190,7 @@ static void PickerThreadProcess()
     g_currentPickerResultsReady = true;
 }
 
-static void PickerStart(bool folderMode) {
+static void PickerStart(bool folderMode, bool installLocation = false) {
     if (g_currentPickerThread != nullptr)
     {
         g_currentPickerThread->join();
@@ -1142,6 +1199,7 @@ static void PickerStart(bool folderMode) {
 
     g_currentPickerResults.clear();
     g_currentPickerFolderMode = folderMode;
+    g_currentPickerInstallLocation = installLocation;
     g_currentPickerResultsReady = false;
     g_currentPickerVisible = true;
 
@@ -1169,6 +1227,58 @@ static void PickerShow(bool folderMode)
         g_currentMessagePromptConfirmation = false;
         g_pickerTutorialTriggered = true;
         g_pickerTutorialFolderMode = folderMode;
+    }
+}
+
+static void UpdateAvailableSpace()
+{
+    std::error_code ec;
+    std::filesystem::space_info spaceInfo = std::filesystem::space(g_installPath, ec);
+    g_installerAvailableSize = ec ? 0 : spaceInfo.available;
+}
+
+static bool IsDirectoryWritable(const std::filesystem::path &directory)
+{
+    const std::filesystem::path testFile = directory / ".unleashedrecomp_write_test";
+
+    {
+        std::ofstream stream(testFile, std::ios::binary);
+        if (!stream.is_open())
+            return false;
+    }
+
+    std::error_code ec;
+    std::filesystem::remove(testFile, ec);
+    return true;
+}
+
+static void ChangeInstallLocation(const std::filesystem::path &path)
+{
+    std::error_code ec;
+    if (!std::filesystem::is_directory(path, ec) || !IsDirectoryWritable(path))
+    {
+        g_currentMessagePrompt = Localise("Installer_Message_InvalidInstallLocation");
+        g_currentMessagePromptConfirmation = false;
+        return;
+    }
+
+    SetInstallPath(path);
+    UpdateAvailableSpace();
+}
+
+static void SaveInstallPath()
+{
+    std::string installPath;
+    if (g_installPathCustom)
+    {
+        std::u8string pathU8 = g_installPath.generic_u8string();
+        installPath.assign(pathU8.begin(), pathU8.end());
+    }
+
+    if (std::string(Config::GameInstallPath) != installPath)
+    {
+        Config::GameInstallPath = installPath;
+        Config::Save();
     }
 }
 
@@ -1294,6 +1404,21 @@ static void DrawSourcePickers()
             PickerShow(true);
         }
     }
+    else if (g_currentPage == WizardPage::CheckSpace && !g_gameSourcePath.empty())
+    {
+        // The location can't be changed when only adding DLC to an existing installation.
+        constexpr float CHANGE_BUTTON_MAX_TEXT_WIDTH = 168.0f;
+        const std::string &changeLocationText = Localise("Installer_Button_ChangeLocation");
+        float squashRatio;
+        ImVec2 textSize = ComputeTextSize(g_dfsogeistdFont, changeLocationText.c_str(), 20.0f, squashRatio, CHANGE_BUTTON_MAX_TEXT_WIDTH);
+        ImVec2 min = { g_aspectRatioOffsetX + Scale(CONTAINER_X + BOTTOM_X_GAP), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP) };
+        ImVec2 max = { g_aspectRatioOffsetX + Scale(CONTAINER_X + BOTTOM_X_GAP + textSize.x * squashRatio + BUTTON_TEXT_GAP), g_aspectRatioOffsetY + Scale(CONTAINER_Y + CONTAINER_HEIGHT + BOTTOM_Y_GAP + BUTTON_HEIGHT) };
+        DrawButton(min, max, changeLocationText.c_str(), false, true, buttonPressed, CHANGE_BUTTON_MAX_TEXT_WIDTH);
+        if (buttonPressed)
+        {
+            PickerStart(true, true);
+        }
+    }
 }
 
 static void DrawSources()
@@ -1328,6 +1453,9 @@ static void DrawInstallingProgress()
             g_installerThread.reset();
             g_installerEndTime = ImGui::GetTime();
             g_currentPage = g_installerFailed ? WizardPage::InstallFailed : WizardPage::InstallSucceeded;
+
+            if (!g_installerFailed)
+                SaveInstallPath();
         }
     }
 }
@@ -1369,12 +1497,7 @@ static void InstallerStart()
 
 static bool InstallerParseSources(std::string &errorMessage)
 {
-    std::error_code spaceErrorCode;
-    std::filesystem::space_info spaceInfo = std::filesystem::space(g_installPath, spaceErrorCode);
-    if (!spaceErrorCode)
-    {
-        g_installerAvailableSize = spaceInfo.available;
-    }
+    UpdateAvailableSpace();
 
     Installer::Input installerInput;
     installerInput.gameSource = g_gameSourcePath;
@@ -1716,9 +1839,16 @@ static void PickerCheckResults()
         g_currentPickerErrorMessage.clear();
     }
 
-    if (!g_currentPickerResults.empty() && ParseSourcePaths(g_currentPickerResults))
+    if (!g_currentPickerResults.empty())
     {
-        g_pickerTutorialCleared[g_pickerTutorialFolderMode] = true;
+        if (g_currentPickerInstallLocation)
+        {
+            ChangeInstallLocation(g_currentPickerResults.front());
+        }
+        else if (ParseSourcePaths(g_currentPickerResults))
+        {
+            g_pickerTutorialCleared[g_pickerTutorialFolderMode] = true;
+        }
     }
 
     g_currentPickerResultsReady = false;
@@ -1846,7 +1976,11 @@ void InstallerWizard::Shutdown()
 
 bool InstallerWizard::Run(std::filesystem::path installPath, bool skipGame)
 {
-    g_installPath = installPath;
+    // Use the default location if the saved one is not available.
+    if (!std::filesystem::exists(installPath))
+        installPath = GetDefaultGamePath();
+
+    SetInstallPath(installPath);
 
     EmbeddedPlayer::Init();
     NFD_Init();

@@ -348,6 +348,13 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         }
     },
     {
+        // Notes: %s is the install location chosen by the user.
+        "Installer_Page_CheckSpaceCustom",
+        {
+            { ELanguage::English,  "The content will be installed to:\n%s\n\n" }
+        }
+    },
+    {
         // Japanese Notes: This localization should include furigana.
         "Installer_Page_Installing",
         {
@@ -485,6 +492,12 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
         }
     },
     {
+        "Installer_Button_ChangeLocation",
+        {
+            { ELanguage::English,  "CHANGE LOCATION" }
+        }
+    },
+    {
         // Notes: message appears when using the "Add Files" option and choosing any file that is not an Xbox 360 game dump.
         // Japanese Notes: This localization should include furigana.
         "Installer_Message_InvalidFilesList",
@@ -495,6 +508,12 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::French,   "Les fichiers suivants ne sont pas valides :" },
             { ELanguage::Spanish,  "Los siguientes archivos no son válidos:" },
             { ELanguage::Italian,  "I seguenti file non sono validi:" }
+        }
+    },
+    {
+        "Installer_Message_InvalidInstallLocation",
+        {
+            { ELanguage::English,  "The selected location cannot\nbe used for the installation.\n\nPlease make sure that you have\npermission to write to it." }
         }
     },
     {
@@ -712,6 +731,13 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::French,   "Échec d'allocation de la mémoire du jeu.\n\nVeuillez vous assurer que :\n\n- Vous disposez de la configuration minimale requise (8 Go).\n- Votre fichier d’échange est configuré avec au moins 4 à 8 Go de mémoire virtuelle." },
             { ELanguage::Spanish,  "Fallo al asignar memoria del juego.\n\nPor favor, asegúrate de que:\n\n- Cumples los requisitos mínimos del sistema (8 GB).\n- Tu archivo de páginación está configurado con al menos 4 u 8 GB de memoria virtual." },
             { ELanguage::Italian,  "Impossibile allocare la memoria per il gioco.\n\nAssicurati che:\n\n- Soddisfi i requisiti minimi di sistema (8 GB).\n- Il tuo file di paging sia configurato con almeno 4 o 8 GB di memoria virtuale." }
+        }
+    },
+    {
+        // Notes: %s is the install location saved in the configuration file.
+        "System_GameInstallPathMissing",
+        {
+            { ELanguage::English,  "The game's install location was not found:\n\n%s\n\nPlease make sure the drive is connected, or run the game with the --install argument to choose a new location." }
         }
     },
     {

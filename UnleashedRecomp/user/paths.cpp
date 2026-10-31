@@ -1,5 +1,6 @@
 #include "paths.h"
 #include <os/process.h>
+#include <user/config.h>
 
 std::filesystem::path g_executableRoot = os::process::GetExecutableRoot();
 std::filesystem::path g_userPath = BuildUserPath();
@@ -55,4 +56,14 @@ std::filesystem::path BuildUserPath()
 const std::filesystem::path& GetUserPath()
 {
     return g_userPath;
+}
+
+std::filesystem::path GetGamePath()
+{
+    const std::string installPath = Config::GameInstallPath;
+
+    if (!installPath.empty())
+        return std::u8string_view((const char8_t*)installPath.c_str());
+
+    return GetDefaultGamePath();
 }
