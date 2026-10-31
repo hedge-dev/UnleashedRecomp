@@ -100,7 +100,7 @@ void ModLoader::Init()
     {
         configIni = {};
 
-        if (!configIni.read(GetGamePath() / "cpkredir.ini"))
+        if (!configIni.read(GetDefaultGamePath() / "cpkredir.ini"))
             return;
     }
 

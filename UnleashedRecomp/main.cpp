@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
         Journal journal;
         double lastProgressMiB = 0.0;
         double lastTotalMib = 0.0;
-        Installer::checkInstallIntegrity(GAME_INSTALL_DIRECTORY, journal, [&]()
+        Installer::checkInstallIntegrity(GetGamePath(), journal, [&]()
         {
             constexpr double MiBDivisor = 1024.0 * 1024.0;
             constexpr double MiBProgressThreshold = 128.0;
@@ -324,6 +324,15 @@ int main(int argc, char *argv[])
 
     HostStartup();
 
+    if (!forceInstaller && !std::string(Config::GameInstallPath).empty() && !std::filesystem::exists(GetGamePath()))
+    {
+        char text[1024];
+        std::u8string installPathU8 = GetGamePath().u8string();
+        snprintf(text, sizeof(text), Localise("System_GameInstallPathMissing").c_str(), (const char*)installPathU8.c_str());
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), text, GameWindow::s_pWindow);
+        std::_Exit(1);
+    }
+
     std::filesystem::path modulePath;
     bool isGameInstalled = Installer::checkGameInstall(GetGamePath(), modulePath);
     bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
@@ -339,6 +348,9 @@ int main(int argc, char *argv[])
         {
             std::_Exit(0);
         }
+
+        // The install location may have been changed by the installer.
+        Installer::checkGameInstall(GetGamePath(), modulePath);
     }
 
     ModLoader::Init();

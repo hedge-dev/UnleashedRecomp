@@ -14,7 +14,7 @@ bool CheckPortable();
 std::filesystem::path BuildUserPath();
 const std::filesystem::path& GetUserPath();
 
-inline std::filesystem::path GetGamePath()
+inline std::filesystem::path GetDefaultGamePath()
 {
 #ifdef __APPLE__
     // On macOS, there is the expectation that the app may be installed to
@@ -25,6 +25,9 @@ inline std::filesystem::path GetGamePath()
     return GAME_INSTALL_DIRECTORY;
 #endif
 }
+
+// Returns the install location chosen in the installer, or the default one.
+std::filesystem::path GetGamePath();
 
 inline std::filesystem::path GetSavePath(bool checkForMods)
 {
