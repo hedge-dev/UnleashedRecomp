@@ -30,6 +30,7 @@
 
 #ifdef _WIN32
 #include <timeapi.h>
+#include <shellapi.h>
 #endif
 
 #if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
@@ -192,6 +193,134 @@ void init()
 }
 #endif
 
+// Headless install, used by launchers: --prepare --game <path> --update <path> [--dlc <path>]...
+// Each option also accepts the --option=<path> form. Paths are resolved before the working directory changes.
+static void ParsePrepareInput(int argc, char *argv[], Installer::Input &input)
+{
+    std::vector<std::u8string> args;
+
+#ifdef _WIN32
+    int wideArgc = 0;
+    LPWSTR *wideArgv = CommandLineToArgvW(GetCommandLineW(), &wideArgc);
+
+    if (wideArgv != nullptr)
+    {
+        for (int i = 0; i < wideArgc; i++)
+        {
+            int size = WideCharToMultiByte(CP_UTF8, 0, wideArgv[i], -1, nullptr, 0, nullptr, nullptr);
+            std::string utf8(size > 0 ? size - 1 : 0, '\0');
+
+            if (size > 1)
+                WideCharToMultiByte(CP_UTF8, 0, wideArgv[i], -1, utf8.data(), size, nullptr, nullptr);
+
+            args.emplace_back(utf8.begin(), utf8.end());
+        }
+
+        LocalFree(wideArgv);
+    }
+#endif
+
+    if (args.empty())
+    {
+        for (int i = 0; i < argc; i++)
+            args.emplace_back(argv[i], argv[i] + strlen(argv[i]));
+    }
+
+    auto matchOption = [&](size_t &i, std::u8string_view name, std::filesystem::path &path)
+    {
+        std::u8string_view arg = args[i];
+
+        if (arg.substr(0, name.size()) != name)
+            return false;
+
+        std::u8string_view value;
+
+        if (arg.size() > name.size() && arg[name.size()] == u8'=')
+            value = arg.substr(name.size() + 1);
+        else if (arg.size() == name.size() && (i + 1) < args.size())
+            value = args[++i];
+        else
+            return false;
+
+        std::error_code ec;
+        path = std::filesystem::absolute(std::filesystem::path(value), ec);
+
+        if (ec)
+            path = std::filesystem::path(value);
+
+        return !path.empty();
+    };
+
+    for (size_t i = 1; i < args.size(); i++)
+    {
+        std::filesystem::path path;
+
+        if (matchOption(i, u8"--game", path))
+            input.gameSource = path;
+        else if (matchOption(i, u8"--update", path))
+            input.updateSource = path;
+        else if (matchOption(i, u8"--dlc", path))
+            input.dlcSources.push_back(path);
+    }
+}
+
+static int RunPrepare(const Installer::Input &input)
+{
+    // Progress lines are read by the launcher: "progress <0 to 1> <text>".
+    auto printProgress = [](double ratio, const char *text)
+    {
+        fprintf(stdout, "progress %0.3f %s\n", std::clamp(ratio, 0.0, 1.0), text);
+        fflush(stdout);
+    };
+
+    if (input.gameSource.empty() || input.updateSource.empty())
+    {
+        fprintf(stderr, "--prepare needs both --game and --update.\n");
+        return 100;
+    }
+
+    printProgress(0.0, "Reading your copy of the game");
+
+    auto patcherResult = Installer::checkGameUpdateCompatibility(input.gameSource, input.updateSource);
+    if (patcherResult != XexPatcher::Result::Success)
+    {
+        fprintf(stderr, "The title update doesn't match the game.\n");
+        return 101;
+    }
+
+    Journal journal;
+    Installer::Sources sources;
+    if (!Installer::parseSources(input, journal, sources))
+    {
+        fprintf(stderr, "%s\n", journal.lastErrorMessage.c_str());
+        return int(journal.lastResult);
+    }
+
+    double lastRatio = -1.0;
+    bool success = Installer::install(sources, GetGamePath(), false, journal, std::chrono::seconds(0), [&]()
+    {
+        double ratio = journal.progressTotal > 0 ? double(journal.progressCounter) / double(journal.progressTotal) : 0.0;
+
+        if ((ratio - lastRatio) >= 0.005)
+        {
+            lastRatio = ratio;
+            printProgress(ratio, "Installing the game files");
+        }
+
+        return true;
+    });
+
+    if (!success)
+    {
+        Installer::rollback(journal);
+        fprintf(stderr, "%s\n", journal.lastErrorMessage.c_str());
+        return journal.lastResult != Journal::Result::Success ? int(journal.lastResult) : 1;
+    }
+
+    printProgress(1.0, "Done");
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef _WIN32
@@ -213,10 +342,12 @@ int main(int argc, char *argv[])
     bool useDefaultWorkingDirectory = false;
     bool forceInstallationCheck = false;
     bool graphicsApiRetry = false;
+    bool prepare = false;
     const char *sdlVideoDriver = nullptr;
 
     for (uint32_t i = 1; i < argc; i++)
     {
+        prepare = prepare || (strcmp(argv[i], "--prepare") == 0);
         forceInstaller = forceInstaller || (strcmp(argv[i], "--install") == 0);
         forceDLCInstaller = forceDLCInstaller || (strcmp(argv[i], "--install-dlc") == 0);
         useDefaultWorkingDirectory = useDefaultWorkingDirectory || (strcmp(argv[i], "--use-cwd") == 0);
@@ -232,6 +363,11 @@ int main(int argc, char *argv[])
         }
     }
 
+    Installer::Input prepareInput;
+
+    if (prepare)
+        ParsePrepareInput(argc, argv, prepareInput);
+
     if (!useDefaultWorkingDirectory)
     {
         // Set the current working directory to the executable's path.
@@ -240,6 +376,12 @@ int main(int argc, char *argv[])
     }
 
     Config::Load();
+
+    if (prepare)
+    {
+        // No window and no installer wizard: install from the given files and exit.
+        std::_Exit(RunPrepare(prepareInput));
+    }
 
     if (forceInstallationCheck)
     {

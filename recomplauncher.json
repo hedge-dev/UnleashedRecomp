@@ -1,0 +1,772 @@
+{
+  "$schema": "https://recomplauncher.com/schema/recomplauncher.json",
+  "format": 1,
+  "name": "Unleashed Recompiled",
+  "repo": "hedge-dev/UnleashedRecomp",
+  "game": {
+    "kind": "iso_or_folder",
+    "label": "Your copy of Sonic Unleashed for Xbox 360 (USA or Europe): its disc image (.iso), or its folder with default.xex.",
+    "check": {
+      "file": "default.xex",
+      "xdvdfs": "default.xex"
+    },
+    "dumps": [
+      {
+        "name": "USA",
+        "size": 7835492352,
+        "crc32": "ea27d841"
+      },
+      {
+        "name": "Europe",
+        "size": 7835492352,
+        "crc32": "5cd5ccdd"
+      }
+    ]
+  },
+  "inputs": [
+    {
+      "id": "update",
+      "label": "Your title update for Sonic Unleashed (the file or folder from your Xbox 360).",
+      "role": "update",
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-spagonia",
+      "label": "Optional DLC: Spagonia (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-chunnan",
+      "label": "Optional DLC: Chunnan (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-mazuri",
+      "label": "Optional DLC: Mazuri (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-holoska",
+      "label": "Optional DLC: Holoska (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-apotos-shamar",
+      "label": "Optional DLC: Apotos and Shamar (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-empire-city-adabat",
+      "label": "Optional DLC: Empire City and Adabat (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    }
+  ],
+  "prepare": {
+    "program": [
+      "UnleashedRecomp.exe",
+      "UnleashedRecomp"
+    ],
+    "args": [
+      "--prepare",
+      "--game={game}",
+      "--update={input:update}",
+      "--dlc={input:dlc-spagonia}",
+      "--dlc={input:dlc-chunnan}",
+      "--dlc={input:dlc-mazuri}",
+      "--dlc={input:dlc-holoska}",
+      "--dlc={input:dlc-apotos-shamar}",
+      "--dlc={input:dlc-empire-city-adabat}"
+    ],
+    "label": "Installing the game files from your copy",
+    "timeout": 3600
+  },
+  "start": {
+    "program": [
+      "UnleashedRecomp.exe",
+      "UnleashedRecomp"
+    ]
+  },
+  "config": [
+    {
+      "id": "main",
+      "format": "toml",
+      "file": [
+        {
+          "path": "{install}/config.toml",
+          "if": "{install}/portable.txt"
+        },
+        {
+          "path": "{config}/UnleashedRecomp/config.toml"
+        }
+      ]
+    }
+  ],
+  "saves": [
+    "{config}/UnleashedRecomp/save",
+    "{install}/save"
+  ],
+  "folders": {
+    "saves": [
+      {
+        "path": "{install}/save",
+        "if": "{install}/portable.txt"
+      },
+      {
+        "path": "{config}/UnleashedRecomp/save"
+      }
+    ]
+  },
+  "looks": {
+    "graphics_key": "Video/GraphicsAPI",
+    "in": "main"
+  },
+  "settings": [
+    {
+      "id": "language",
+      "label": "Language",
+      "help": "The language of the menus and text.",
+      "choices": [
+        {
+          "label": "English",
+          "set": {
+            "System/Language": "\"English\""
+          }
+        },
+        {
+          "label": "Japanese",
+          "set": {
+            "System/Language": "\"Japanese\""
+          }
+        },
+        {
+          "label": "German",
+          "set": {
+            "System/Language": "\"German\""
+          }
+        },
+        {
+          "label": "French",
+          "set": {
+            "System/Language": "\"French\""
+          }
+        },
+        {
+          "label": "Spanish",
+          "set": {
+            "System/Language": "\"Spanish\""
+          }
+        },
+        {
+          "label": "Italian",
+          "set": {
+            "System/Language": "\"Italian\""
+          }
+        }
+      ],
+      "defaults": {
+        "System/Language": "\"English\""
+      }
+    },
+    {
+      "id": "voice",
+      "label": "Voice language",
+      "help": "The language of the voice acting.",
+      "choices": [
+        {
+          "label": "English",
+          "set": {
+            "System/VoiceLanguage": "\"English\""
+          }
+        },
+        {
+          "label": "Japanese",
+          "set": {
+            "System/VoiceLanguage": "\"Japanese\""
+          }
+        }
+      ],
+      "defaults": {
+        "System/VoiceLanguage": "\"English\""
+      }
+    },
+    {
+      "id": "window",
+      "label": "Window",
+      "help": "Fullscreen fills your screen. Windowed runs the game in a window you can move and resize.",
+      "choices": [
+        {
+          "label": "Fullscreen",
+          "set": {
+            "Video/Fullscreen": "true"
+          }
+        },
+        {
+          "label": "Windowed",
+          "set": {
+            "Video/Fullscreen": "false"
+          }
+        }
+      ],
+      "defaults": {
+        "Video/Fullscreen": "true"
+      }
+    },
+    {
+      "id": "resolution",
+      "label": "Resolution scale",
+      "help": "How sharp the picture is, compared with the size of the window. 1x is the normal setting; 2x looks cleaner but needs a fast graphics card.",
+      "choices": [
+        {
+          "label": "0.5x",
+          "set": {
+            "Video/ResolutionScale": "0.5"
+          }
+        },
+        {
+          "label": "0.75x",
+          "set": {
+            "Video/ResolutionScale": "0.75"
+          }
+        },
+        {
+          "label": "1x",
+          "set": {
+            "Video/ResolutionScale": "1.0"
+          }
+        },
+        {
+          "label": "1.5x",
+          "set": {
+            "Video/ResolutionScale": "1.5"
+          }
+        },
+        {
+          "label": "2x",
+          "set": {
+            "Video/ResolutionScale": "2.0"
+          }
+        }
+      ],
+      "defaults": {
+        "Video/ResolutionScale": "1.0"
+      }
+    },
+    {
+      "id": "aspect",
+      "label": "Aspect ratio",
+      "help": "Auto fits your screen, including ultrawide. 4:3 and Original 4:3 are for playing it like the console on an old TV.",
+      "choices": [
+        {
+          "label": "Auto",
+          "set": {
+            "Video/AspectRatio": "\"Auto\""
+          }
+        },
+        {
+          "label": "16:9",
+          "set": {
+            "Video/AspectRatio": "\"16:9\""
+          }
+        },
+        {
+          "label": "4:3",
+          "set": {
+            "Video/AspectRatio": "\"4:3\""
+          }
+        },
+        {
+          "label": "Original 4:3",
+          "set": {
+            "Video/AspectRatio": "\"Original 4:3\""
+          }
+        }
+      ],
+      "defaults": {
+        "Video/AspectRatio": "\"Auto\""
+      }
+    },
+    {
+      "id": "frame_rate",
+      "label": "Frame rate",
+      "help": "The most frames per second the game draws. 30 matches the console. Higher is smoother but needs a faster PC.",
+      "choices": [
+        {
+          "label": "30 FPS",
+          "set": {
+            "Video/FPS": "30"
+          }
+        },
+        {
+          "label": "60 FPS",
+          "set": {
+            "Video/FPS": "60"
+          }
+        },
+        {
+          "label": "120 FPS",
+          "set": {
+            "Video/FPS": "120"
+          }
+        },
+        {
+          "label": "144 FPS",
+          "set": {
+            "Video/FPS": "144"
+          }
+        },
+        {
+          "label": "240 FPS",
+          "set": {
+            "Video/FPS": "240"
+          }
+        },
+        {
+          "label": "Unlimited",
+          "set": {
+            "Video/FPS": "241"
+          }
+        }
+      ],
+      "defaults": {
+        "Video/FPS": "60"
+      }
+    },
+    {
+      "id": "vsync",
+      "label": "V-Sync",
+      "help": "Waits for your screen to refresh, which stops tearing. Turn it off for the lowest delay.",
+      "choices": [
+        {
+          "label": "On",
+          "set": {
+            "Video/VSync": "true"
+          }
+        },
+        {
+          "label": "Off",
+          "set": {
+            "Video/VSync": "false"
+          }
+        }
+      ],
+      "defaults": {
+        "Video/VSync": "true"
+      }
+    },
+    {
+      "id": "aa",
+      "label": "Anti-aliasing",
+      "help": "Smooths jagged edges. More samples look cleaner and cost more speed.",
+      "choices": [
+        {
+          "label": "Off",
+          "set": {
+            "Video/AntiAliasing": "\"None\""
+          }
+        },
+        {
+          "label": "2x MSAA",
+          "set": {
+            "Video/AntiAliasing": "\"2x MSAA\""
+          }
+        },
+        {
+          "label": "4x MSAA",
+          "set": {
+            "Video/AntiAliasing": "\"4x MSAA\""
+          }
+        },
+        {
+          "label": "8x MSAA",
+          "set": {
+            "Video/AntiAliasing": "\"8x MSAA\""
+          }
+        }
+      ],
+      "defaults": {
+        "Video/AntiAliasing": "\"4x MSAA\""
+      }
+    },
+    {
+      "id": "taa",
+      "label": "Transparency anti-aliasing",
+      "help": "Smooths the edges of leaves, fences and other see-through textures. Needs anti-aliasing turned on.",
+      "choices": [
+        {
+          "label": "On",
+          "set": {
+            "Video/TransparencyAntiAliasing": "true"
+          }
+        },
+        {
+          "label": "Off",
+          "set": {
+            "Video/TransparencyAntiAliasing": "false"
+          }
+        }
+      ],
+      "defaults": {
+        "Video/TransparencyAntiAliasing": "true"
+      }
+    },
+    {
+      "id": "af",
+      "label": "Texture filtering",
+      "help": "Keeps textures sharp at shallow angles. Costs very little.",
+      "choices": [
+        {
+          "label": "2x",
+          "set": {
+            "Video/AnisotropicFiltering": "2"
+          }
+        },
+        {
+          "label": "4x",
+          "set": {
+            "Video/AnisotropicFiltering": "4"
+          }
+        },
+        {
+          "label": "8x",
+          "set": {
+            "Video/AnisotropicFiltering": "8"
+          }
+        },
+        {
+          "label": "16x",
+          "set": {
+            "Video/AnisotropicFiltering": "16"
+          }
+        }
+      ],
+      "defaults": {
+        "Video/AnisotropicFiltering": "16"
+      }
+    },
+    {
+      "id": "shadows",
+      "label": "Shadow resolution",
+      "help": "How detailed shadows are. Original is the console's own.",
+      "choices": [
+        {
+          "label": "Original",
+          "set": {
+            "Video/ShadowResolution": "\"Original\""
+          }
+        },
+        {
+          "label": "1024",
+          "set": {
+            "Video/ShadowResolution": "\"1024\""
+          }
+        },
+        {
+          "label": "2048",
+          "set": {
+            "Video/ShadowResolution": "\"2048\""
+          }
+        },
+        {
+          "label": "4096",
+          "set": {
+            "Video/ShadowResolution": "\"4096\""
+          }
+        },
+        {
+          "label": "8192",
+          "set": {
+            "Video/ShadowResolution": "\"8192\""
+          }
+        }
+      ],
+      "defaults": {
+        "Video/ShadowResolution": "\"4096\""
+      }
+    },
+    {
+      "id": "gi",
+      "label": "Global illumination filtering",
+      "help": "How the soft light baked into levels is smoothed. Bicubic looks smoother than Bilinear.",
+      "choices": [
+        {
+          "label": "Bicubic",
+          "set": {
+            "Video/GITextureFiltering": "\"Bicubic\""
+          }
+        },
+        {
+          "label": "Bilinear",
+          "set": {
+            "Video/GITextureFiltering": "\"Bilinear\""
+          }
+        }
+      ],
+      "defaults": {
+        "Video/GITextureFiltering": "\"Bicubic\""
+      }
+    },
+    {
+      "id": "blur",
+      "label": "Motion blur",
+      "help": "Original is the console's blur. Enhanced is smoother, and works better at high frame rates.",
+      "choices": [
+        {
+          "label": "Off",
+          "set": {
+            "Video/MotionBlur": "\"Off\""
+          }
+        },
+        {
+          "label": "Original",
+          "set": {
+            "Video/MotionBlur": "\"Original\""
+          }
+        },
+        {
+          "label": "Enhanced",
+          "set": {
+            "Video/MotionBlur": "\"Enhanced\""
+          }
+        }
+      ],
+      "defaults": {
+        "Video/MotionBlur": "\"Original\""
+      }
+    },
+    {
+      "id": "api",
+      "label": "Graphics API",
+      "help": "Auto picks the best one for your PC. Change it only if the game won't start or looks wrong.",
+      "choices": [
+        {
+          "label": "Auto",
+          "set": {
+            "Video/GraphicsAPI": "\"Auto\""
+          }
+        },
+        {
+          "label": "Direct3D 12 (Windows)",
+          "set": {
+            "Video/GraphicsAPI": "\"D3D12\""
+          }
+        },
+        {
+          "label": "Vulkan",
+          "set": {
+            "Video/GraphicsAPI": "\"Vulkan\""
+          }
+        }
+      ],
+      "defaults": {
+        "Video/GraphicsAPI": "\"Auto\""
+      }
+    },
+    {
+      "id": "fps_counter",
+      "label": "Show FPS",
+      "help": "Shows the frame rate in the corner of the screen.",
+      "choices": [
+        {
+          "label": "Off",
+          "set": {
+            "Video/ShowFPS": "false"
+          }
+        },
+        {
+          "label": "On",
+          "set": {
+            "Video/ShowFPS": "true"
+          }
+        }
+      ],
+      "defaults": {
+        "Video/ShowFPS": "false"
+      }
+    },
+    {
+      "id": "icons",
+      "label": "Controller icons",
+      "help": "The button pictures shown in the game. Auto uses the controller you have plugged in.",
+      "choices": [
+        {
+          "label": "Auto",
+          "set": {
+            "Input/ControllerIcons": "\"Auto\""
+          }
+        },
+        {
+          "label": "Xbox",
+          "set": {
+            "Input/ControllerIcons": "\"Xbox\""
+          }
+        },
+        {
+          "label": "PlayStation",
+          "set": {
+            "Input/ControllerIcons": "\"PlayStation\""
+          }
+        }
+      ],
+      "defaults": {
+        "Input/ControllerIcons": "\"Auto\""
+      }
+    },
+    {
+      "id": "rumble",
+      "label": "Vibration",
+      "help": "Controller rumble.",
+      "choices": [
+        {
+          "label": "On",
+          "set": {
+            "Input/Vibration": "true"
+          }
+        },
+        {
+          "label": "Off",
+          "set": {
+            "Input/Vibration": "false"
+          }
+        }
+      ],
+      "defaults": {
+        "Input/Vibration": "true"
+      }
+    },
+    {
+      "id": "hcam",
+      "label": "Horizontal camera",
+      "help": "Which way the camera turns when you push the stick sideways.",
+      "choices": [
+        {
+          "label": "Normal",
+          "set": {
+            "Input/HorizontalCamera": "\"Normal\""
+          }
+        },
+        {
+          "label": "Reverse",
+          "set": {
+            "Input/HorizontalCamera": "\"Reverse\""
+          }
+        }
+      ],
+      "defaults": {
+        "Input/HorizontalCamera": "\"Normal\""
+      }
+    },
+    {
+      "id": "vcam",
+      "label": "Vertical camera",
+      "help": "Which way the camera turns when you push the stick up or down.",
+      "choices": [
+        {
+          "label": "Normal",
+          "set": {
+            "Input/VerticalCamera": "\"Normal\""
+          }
+        },
+        {
+          "label": "Reverse",
+          "set": {
+            "Input/VerticalCamera": "\"Reverse\""
+          }
+        }
+      ],
+      "defaults": {
+        "Input/VerticalCamera": "\"Normal\""
+      }
+    },
+    {
+      "id": "tod",
+      "label": "Day and night transition",
+      "help": "How the change between day and night looks: the Xbox 360 way or the PlayStation 3 way.",
+      "choices": [
+        {
+          "label": "Xbox",
+          "set": {
+            "System/TimeOfDayTransition": "\"Xbox\""
+          }
+        },
+        {
+          "label": "PlayStation",
+          "set": {
+            "System/TimeOfDayTransition": "\"PlayStation\""
+          }
+        }
+      ],
+      "defaults": {
+        "System/TimeOfDayTransition": "\"Xbox\""
+      }
+    }
+  ],
+  "actions": [
+    {
+      "id": "saves",
+      "label": "Saves",
+      "help": "Your save data.",
+      "open": "saves"
+    }
+  ]
+}

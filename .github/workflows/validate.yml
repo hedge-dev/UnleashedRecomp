@@ -73,11 +73,17 @@ jobs:
           CCACHE_DIR: /tmp/ccache
         run: cmake --build ./out/build/${{ env.CMAKE_PRESET }} --target UnleashedRecomp
 
+      - name: Pack Release
+        run: |
+          mkdir release
+          cp ./out/build/${{ env.CMAKE_PRESET }}/UnleashedRecomp/UnleashedRecomp ./release/UnleashedRecomp
+          cp ./recomplauncher.json ./release/recomplauncher.json
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: UnleashedRecomp-Linux-${{ env.CMAKE_PRESET }}
-          path: ./out/build/${{ env.CMAKE_PRESET }}/UnleashedRecomp/UnleashedRecomp
+          path: ./release
   build-windows:
     name: Build Windows
     runs-on: windows-latest
@@ -144,6 +150,7 @@ jobs:
           Move-Item -Path ".\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\dxcompiler.dll" -Destination ".\release\dxcompiler.dll"
           Move-Item -Path ".\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\dxil.dll" -Destination ".\release\dxil.dll"
           Move-Item -Path ".\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\UnleashedRecomp.exe" -Destination ".\release\UnleashedRecomp.exe"
+          Copy-Item -Path ".\recomplauncher.json" -Destination ".\release\recomplauncher.json"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
