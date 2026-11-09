@@ -3,6 +3,144 @@
   "format": 1,
   "name": "Unleashed Recompiled",
   "repo": "hedge-dev/UnleashedRecomp",
+  "game": {
+    "kind": "iso_or_folder",
+    "label": "Your copy of Sonic Unleashed for Xbox 360 (USA or Europe): its disc image (.iso), or its folder with default.xex.",
+    "check": {
+      "file": "default.xex",
+      "xdvdfs": "default.xex"
+    },
+    "dumps": [
+      {
+        "name": "USA",
+        "size": 7835492352,
+        "crc32": "ea27d841"
+      },
+      {
+        "name": "Europe",
+        "size": 7835492352,
+        "crc32": "5cd5ccdd"
+      }
+    ]
+  },
+  "inputs": [
+    {
+      "id": "update",
+      "label": "Your title update for Sonic Unleashed (the file or folder from your Xbox 360).",
+      "role": "update",
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-spagonia",
+      "label": "Optional DLC: Spagonia (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-chunnan",
+      "label": "Optional DLC: Chunnan (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-mazuri",
+      "label": "Optional DLC: Mazuri (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-holoska",
+      "label": "Optional DLC: Holoska (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-apotos-shamar",
+      "label": "Optional DLC: Apotos and Shamar (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    },
+    {
+      "id": "dlc-empire-city-adabat",
+      "label": "Optional DLC: Empire City and Adabat (the DLC file or folder).",
+      "role": "dlc",
+      "optional": true,
+      "formats": [
+        {
+          "type": "file"
+        },
+        {
+          "type": "folder"
+        }
+      ]
+    }
+  ],
+  "prepare": {
+    "program": [
+      "UnleashedRecomp.exe",
+      "UnleashedRecomp"
+    ],
+    "args": [
+      "--prepare",
+      "--game={game}",
+      "--update={input:update}",
+      "--dlc={input:dlc-spagonia}",
+      "--dlc={input:dlc-chunnan}",
+      "--dlc={input:dlc-mazuri}",
+      "--dlc={input:dlc-holoska}",
+      "--dlc={input:dlc-apotos-shamar}",
+      "--dlc={input:dlc-empire-city-adabat}"
+    ],
+    "label": "Installing the game files from your copy",
+    "timeout": 3600
+  },
   "start": {
     "program": [
       "UnleashedRecomp.exe",
