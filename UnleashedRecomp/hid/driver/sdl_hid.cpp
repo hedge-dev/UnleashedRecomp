@@ -38,7 +38,7 @@ public:
 
     SDL_GameControllerType GetControllerType() const
     {
-        return SDL_GameControllerTypeForIndex(index);
+        return SDL_GameControllerGetType(controller);
     }
 
     hid::EInputDevice GetInputDevice() const
