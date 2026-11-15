@@ -31,6 +31,7 @@ namespace hid
     extern EInputDevice g_inputDevice;
     extern EInputDevice g_inputDeviceController;
     extern EInputDeviceExplicit g_inputDeviceExplicit;
+    extern std::string_view g_inputDeviceName;
 
     extern uint16_t g_prohibitedButtons;
     extern bool g_isLeftStickProhibited;
@@ -45,5 +46,5 @@ namespace hid
     void SetProhibitedInputs(uint16_t wButtons = 0, bool leftStick = false, bool rightStick = false);
     bool IsInputAllowed();
     bool IsInputDeviceController();
-    std::string GetInputDeviceName();
+    std::string_view GetInputDeviceName();
 }

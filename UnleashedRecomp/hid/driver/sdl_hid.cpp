@@ -19,6 +19,7 @@ public:
     XAMINPUT_GAMEPAD state{};
     XAMINPUT_VIBRATION vibration{ 0, 0 };
     int index{};
+    const char* name{};
 
     Controller() = default;
 
@@ -34,6 +35,17 @@ public:
 
         joystick = SDL_GameControllerGetJoystick(controller);
         id = SDL_JoystickInstanceID(joystick);
+        name = SDL_GameControllerName(controller);
+
+        if (!name)
+        {
+            name = "Unknown";
+        }
+    }
+
+    const char* GetName() const
+    {
+        return name;
     }
 
     SDL_GameControllerType GetControllerType() const
@@ -60,9 +72,10 @@ public:
             return;
 
         SDL_GameControllerClose(controller);
-
+        
         controller = nullptr;
         joystick = nullptr;
+        name = nullptr;
         id = -1;
     }
 
@@ -174,6 +187,7 @@ static void SetControllerInputDevice(Controller* controller)
     if (App::s_isLoading)
         return;
 
+    hid::g_inputDeviceName = controller->GetName();
     hid::g_inputDevice = controller->GetInputDevice();
     hid::g_inputDeviceController = hid::g_inputDevice;
 
@@ -259,6 +273,7 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
 
         case SDL_KEYDOWN:
         case SDL_KEYUP:
+            hid::g_inputDeviceName = "Keyboard";
             hid::g_inputDevice = hid::EInputDevice::Keyboard;
             break;
 
@@ -269,6 +284,7 @@ int HID_OnSDLEvent(void*, SDL_Event* event)
             if (!GameWindow::IsFullscreen() || GameWindow::s_isFullscreenCursorVisible)
                 SDL_ShowCursor(SDL_ENABLE);
 
+            hid::g_inputDeviceName = "Mouse";
             hid::g_inputDevice = hid::EInputDevice::Mouse;
 
             break;
