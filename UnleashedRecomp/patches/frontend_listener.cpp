@@ -6,8 +6,6 @@
 
 static class FrontendListener : public SDLEventListener
 {
-    bool m_isF8KeyDown = false;
-
 public:
     bool OnSDLEvent(SDL_Event* event) override
     {
@@ -18,21 +16,15 @@ public:
         {
         case SDL_KEYDOWN:
         {
-            if (event->key.keysym.sym != SDLK_F8 || m_isF8KeyDown)
+            if (event->key.keysym.sym != SDLK_F8 || event->key.repeat)
                 break;
 
             *SWA::SGlobals::ms_IsRenderHud = !*SWA::SGlobals::ms_IsRenderHud;
 
             LOGFN("HUD {}", *SWA::SGlobals::ms_IsRenderHud ? "ON" : "OFF");
 
-            m_isF8KeyDown = true;
-
             break;
         }
-
-        case SDL_KEYUP:
-            m_isF8KeyDown = event->key.keysym.sym != SDLK_F8;
-            break;
         }
 
         return false;
