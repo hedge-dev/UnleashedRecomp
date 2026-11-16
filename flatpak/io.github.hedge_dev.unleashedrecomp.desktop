@@ -4,5 +4,5 @@ Exec=/app/bin/UnleashedRecomp
 Type=Application
 Icon=io.github.hedge_dev.unleashedrecomp
 Categories=Game;
-Comment=Static recompilation of Sonic Unleashed.
+Comment=Static recompilation of Sonic Unleashed
 MimeType=x-scheme-handler/unleashedrecomp
