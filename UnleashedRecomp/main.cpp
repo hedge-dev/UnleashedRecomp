@@ -27,6 +27,7 @@
 #include <ui/installer_wizard.h>
 #include <mod/mod_loader.h>
 #include <preload_executable.h>
+#include <discord/discord_presence.h>
 
 #ifdef _WIN32
 #include <timeapi.h>
@@ -318,6 +319,8 @@ int main(int argc, char *argv[])
         Config::LastChecked = timeNow;
         Config::Save();
     }
+
+    DiscordPresence::Init();
 
     if (Config::ShowConsole)
         os::process::ShowConsole();

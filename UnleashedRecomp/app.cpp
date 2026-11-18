@@ -1,5 +1,6 @@
 #include "app.h"
 #include <api/SWA.h>
+#include <discord/discord_presence.h>
 #include <gpu/video.h>
 #include <install/installer.h>
 #include <kernel/function.h>
@@ -20,6 +21,7 @@ void App::Restart(std::vector<std::string> restartArgs)
 void App::Exit()
 {
     Config::Save();
+    DiscordPresence::Shutdown();
 
 #ifdef _WIN32
     timeEndPeriod(1);
@@ -75,6 +77,7 @@ PPC_FUNC(sub_822C1130)
 
     AudioPatches::Update(App::s_deltaTime);
     InspirePatches::Update();
+    DiscordPresence::Update();
 
     // Apply subtitles option.
     if (auto pApplicationDocument = SWA::CApplicationDocument::GetInstance())

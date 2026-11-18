@@ -11,6 +11,8 @@
     "--socket=pulseaudio",
     "--device=all",
     "--filesystem=host",
+    "--filesystem=xdg-run/discord-ipc-0",
+    "--filesystem=xdg-run/app/com.discordapp.Discord:ro",
     "--filesystem=/media",
     "--filesystem=/run/media",
     "--filesystem=/mnt"

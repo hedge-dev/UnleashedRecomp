@@ -856,7 +856,56 @@ std::unordered_map<std::string_view, std::unordered_map<ELanguage, std::string>>
             { ELanguage::Spanish,  "Cambiar" },
             { ELanguage::Italian,  "Cambia" }
         }
-    }
+    },
+
+    /*
+        Discord Rich Presence strings. These are English-only for now; other
+        languages fall back to English automatically via Localise(). Translators:
+        add the remaining ELanguage entries (using the official localised zone
+        and stage names where they exist).
+    */
+    { "RichPresence_Status_Startup",  { { ELanguage::English, "Starting up" } } },
+    { "RichPresence_Status_Menus",    { { ELanguage::English, "In the menus" } } },
+    { "RichPresence_Status_WorldMap", { { ELanguage::English, "On the World Map" } } },
+    { "RichPresence_Status_Cutscene", { { ELanguage::English, "Watching a cutscene" } } },
+    { "RichPresence_Status_InGame",   { { ELanguage::English, "In game" } } },
+    { "RichPresence_Credits",         { { ELanguage::English, "Credits" } } },
+
+    { "RichPresence_State_Sonic",     { { ELanguage::English, "Playing as Sonic" } } },
+    { "RichPresence_State_Werehog",   { { ELanguage::English, "Playing as the Werehog" } } },
+
+    { "RichPresence_Suffix_Day",           { { ELanguage::English, "(Day)" } } },
+    { "RichPresence_Suffix_Night",         { { ELanguage::English, "(Night)" } } },
+    { "RichPresence_Suffix_Hub",           { { ELanguage::English, "Hub" } } },
+    { "RichPresence_Suffix_HubNight",      { { ELanguage::English, "Hub (Night)" } } },
+    { "RichPresence_Suffix_ExtraMission",  { { ELanguage::English, "Extra mission" } } },
+    { "RichPresence_Suffix_NightMission",  { { ELanguage::English, "Night mission" } } },
+
+    { "RichPresence_Region_Apotos",     { { ELanguage::English, "Apotos" } } },
+    { "RichPresence_Region_Chunnan",    { { ELanguage::English, "Chun-nan" } } },
+    { "RichPresence_Region_Spagonia",   { { ELanguage::English, "Spagonia" } } },
+    { "RichPresence_Region_Mazuri",     { { ELanguage::English, "Mazuri" } } },
+    { "RichPresence_Region_Holoska",    { { ELanguage::English, "Holoska" } } },
+    { "RichPresence_Region_EmpireCity", { { ELanguage::English, "Empire City" } } },
+    { "RichPresence_Region_Adabat",     { { ELanguage::English, "Adabat" } } },
+    { "RichPresence_Region_Shamar",     { { ELanguage::English, "Shamar" } } },
+    { "RichPresence_Region_Eggmanland", { { ELanguage::English, "Eggmanland" } } },
+
+    { "RichPresence_Stage_Apotos",       { { ELanguage::English, "Apotos - Windmill Isle" } } },
+    { "RichPresence_Stage_Apotos_Act1",  { { ELanguage::English, "Apotos - Windmill Isle Act 1" } } },
+    { "RichPresence_Stage_Apotos_Act2",  { { ELanguage::English, "Apotos - Windmill Isle Act 2" } } },
+    { "RichPresence_Stage_Chunnan",      { { ELanguage::English, "Chun-nan - Dragon Road" } } },
+    { "RichPresence_Stage_Spagonia",     { { ELanguage::English, "Spagonia - Rooftop Run" } } },
+    { "RichPresence_Stage_Mazuri",       { { ELanguage::English, "Mazuri - Savannah Citadel" } } },
+    { "RichPresence_Stage_Holoska",      { { ELanguage::English, "Holoska - Cool Edge" } } },
+    { "RichPresence_Stage_EmpireCity",   { { ELanguage::English, "Empire City - Skyscraper Scamper" } } },
+    { "RichPresence_Stage_Adabat",       { { ELanguage::English, "Adabat - Jungle Joyride" } } },
+    { "RichPresence_Stage_Shamar",       { { ELanguage::English, "Shamar - Arid Sands" } } },
+    { "RichPresence_Stage_Eggmanland",   { { ELanguage::English, "Eggmanland" } } },
+
+    { "RichPresence_Boss_EggBeetle",   { { ELanguage::English, "Boss: Egg Beetle" } } },
+    { "RichPresence_Boss_EggLancer",   { { ELanguage::English, "Boss: Egg Lancer" } } },
+    { "RichPresence_Boss_EggDevilRay", { { ELanguage::English, "Boss: Egg Devil Ray" } } }
 };
 
 std::string& Localise(const std::string_view& key)
