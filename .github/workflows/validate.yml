@@ -12,10 +12,14 @@ concurrency:
 
 jobs:
   build-linux:
-    name: Build Linux
-    runs-on: ubuntu-24.04
+    name: Build Linux (${{ matrix.arch.name }}, ${{ matrix.preset }})
+    runs-on: ${{ matrix.arch.runner }}
     strategy:
       matrix:
+        arch: [
+          { "name": "x86_64", "runner": "ubuntu-26.04" },
+          { "name": "arm64", "runner": "ubuntu-26.04-arm" },
+        ]
         preset: ["linux-debug", "linux-release", "linux-relwithdebinfo"]
     env:
       LLVM_VERSION: 18
@@ -23,12 +27,12 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Checkout Private Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ secrets.ASSET_REPO }}
           token: ${{ secrets.ASSET_REPO_TOKEN }}
@@ -37,64 +41,61 @@ jobs:
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ccache-${{ runner.os }}-${{ matrix.preset }}
+          key: ccache-${{ runner.os }}-${{ matrix.arch.name }}-${{ matrix.preset }}
 
       - name: Cache vcpkg
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ./thirdparty/vcpkg/downloads
             ./thirdparty/vcpkg/packages
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ matrix.arch.name }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
-              vcpkg-${{ runner.os }}-
+            vcpkg-${{ runner.os }}-${{ matrix.arch.name }}-
 
       - name: Install Dependencies (Linux)
         run: |-
           sudo apt update
           sudo apt install -y ninja-build llvm-${{ env.LLVM_VERSION }}-dev libgtk-3-dev libasound2-dev libpulse-dev libpipewire-0.3-dev
 
-      - name: Cache ccache Directory
-        uses: actions/cache@v4
-        with:
-          path: /tmp/ccache
-          key: ccache-${{ runner.os }}-${{ matrix.preset }}
-
       - name: Prepare Project
         run: cp ./private/* ./UnleashedRecompLib/private
   
       - name: Configure Project
-        env:
-          CCACHE_DIR: /tmp/ccache
         run: cmake . --preset ${{ env.CMAKE_PRESET }} -DSDL2MIXER_VORBIS=VORBISFILE -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache
 
       - name: Build Project
-        env:
-          CCACHE_DIR: /tmp/ccache
         run: cmake --build ./out/build/${{ env.CMAKE_PRESET }} --target UnleashedRecomp
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: UnleashedRecomp-Linux-${{ env.CMAKE_PRESET }}
+          name: UnleashedRecomp-Linux-${{ matrix.arch.name }}-${{ env.CMAKE_PRESET }}
           path: ./out/build/${{ env.CMAKE_PRESET }}/UnleashedRecomp/UnleashedRecomp
   build-windows:
-    name: Build Windows
-    runs-on: windows-latest
+    name: Build Windows (${{ matrix.preset.name }})
+    runs-on: ${{ matrix.preset.runner }}
     strategy:
       matrix:
-        preset: ["x64-Clang-Debug", "x64-Clang-Release", "x64-Clang-RelWithDebInfo"]
+        preset: [
+          {"name": "x64-Clang-Debug", "arch": "x64", "runner": "windows-latest"},
+          {"name": "x64-Clang-Release", "arch": "x64", "runner": "windows-latest"},
+          {"name": "x64-Clang-RelWithDebInfo", "arch": "x64", "runner": "windows-latest"},
+          {"name": "arm64-Clang-Debug", "arch": "arm64", "runner": "windows-11-arm"},
+          {"name": "arm64-Clang-Release", "arch": "arm64", "runner": "windows-11-arm"},
+          {"name": "arm64-Clang-RelWithDebInfo", "arch": "arm64", "runner": "windows-11-arm"},
+        ]
     env:
-      CMAKE_PRESET: ${{ matrix.preset }}
+      CMAKE_PRESET: ${{ matrix.preset.name }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ secrets.ASSET_REPO }}
           token: ${{ secrets.ASSET_REPO_TOKEN }}
@@ -103,17 +104,17 @@ jobs:
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ccache-${{ runner.os }}-${{ matrix.preset }}
+          key: ccache-${{ runner.os }}-${{ matrix.preset.name }}
 
       - name: Cache vcpkg
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ./thirdparty/vcpkg/downloads
             ./thirdparty/vcpkg/packages
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ matrix.preset.arch }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
-              vcpkg-${{ runner.os }}-
+            vcpkg-${{ runner.os }}-${{ matrix.preset.arch }}-
 
       - name: Install dependencies
         run: |
@@ -121,7 +122,9 @@ jobs:
           Remove-Item -Path "C:\ProgramData\Chocolatey\bin\ccache.exe" -Force -ErrorAction SilentlyContinue
 
       - name: Configure Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: ${{ matrix.preset.arch }}
 
       - name: Prepare Project
         run: |
@@ -146,31 +149,38 @@ jobs:
           Move-Item -Path ".\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\UnleashedRecomp.exe" -Destination ".\release\UnleashedRecomp.exe"
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: UnleashedRecomp-Windows-${{ env.CMAKE_PRESET }}
           path: .\release
 
       - name: Upload PDB
-        uses: actions/upload-artifact@v4
-        if: ${{ matrix.preset != 'x64-Clang-Release' }}
+        uses: actions/upload-artifact@v7
+        if: ${{ (matrix.preset.name != 'x64-Clang-Release') && (matrix.preset.name != 'arm64-Clang-Release') }}
         with:
           name: UnleashedRecomp-Windows-${{ env.CMAKE_PRESET }}-PDB
           path: .\out\build\${{ env.CMAKE_PRESET }}\UnleashedRecomp\UnleashedRecomp.pdb
   build-flatpak:
-    name: Build Flatpak
-    runs-on: ubuntu-24.04
+    name: Build Flatpak (${{ matrix.arch.name }})
+    runs-on: ${{ matrix.arch.runner }}
+    strategy:
+      matrix:
+        arch: [
+          {"name": "x86_64", "runner": "ubuntu-26.04"},
+          {"name": "arm64", "runner": "ubuntu-26.04-arm"},
+        ]
     env:
       FLATPAK_ID: io.github.hedge_dev.unleashedrecomp
+      CCACHE_DIR: /tmp/ccache
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Checkout Private Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ secrets.ASSET_REPO }}
           token: ${{ secrets.ASSET_REPO_TOKEN }}
@@ -182,10 +192,9 @@ jobs:
           sudo apt install -y flatpak-builder ccache
 
       - name: Setup ccache
-        uses: actions/cache@v4
+        uses: hendrikmuhs/ccache-action@v1.2
         with:
-          path: /tmp/ccache
-          key: ccache-${{ runner.os }}
+          key: ccache-${{ runner.os }}-${{ matrix.arch.name }}-flatpak
 
       - name: Prepare Project
         run: cp ./private/* ./UnleashedRecompLib/private
@@ -197,14 +206,13 @@ jobs:
       - name: Build Flatpak
         run: |
           echo "commit_message=$(git log -1 --pretty=%s)" >> $GITHUB_ENV
-          export CCACHE_DIR=/tmp/ccache
           flatpak-builder --user --force-clean --install-deps-from=flathub --repo=repo --ccache builddir ./flatpak/${{ env.FLATPAK_ID }}.json
           flatpak build-bundle repo ./${{ env.FLATPAK_ID }}.flatpak ${{ env.FLATPAK_ID }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: UnleashedRecomp-Flatpak
+          name: UnleashedRecomp-Flatpak-${{ matrix.arch.name }}
           path: ./${{ env.FLATPAK_ID }}.flatpak
   build-macos:
     name: Build macOS
@@ -218,12 +226,12 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Checkout Private Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ secrets.ASSET_REPO }}
           token: ${{ secrets.ASSET_REPO_TOKEN }}
@@ -240,7 +248,7 @@ jobs:
           key: ccache-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.preset }}
 
       - name: Cache vcpkg
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ./thirdparty/vcpkg/downloads
@@ -253,24 +261,14 @@ jobs:
         run: |
           brew install ninja
 
-      - name: Cache ccache Directory
-        uses: actions/cache@v4
-        with:
-          path: /tmp/ccache
-          key: ccache-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.preset }}
-
       - name: Prepare Project
         run: |
           cp ./private/* ./UnleashedRecompLib/private
 
       - name: Configure Project
-        env:
-          CCACHE_DIR: /tmp/ccache
         run: cmake . --preset ${{ env.CMAKE_PRESET }} -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} -DSDL2MIXER_VORBIS=VORBISFILE -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache
 
       - name: Build Project
-        env:
-          CCACHE_DIR: /tmp/ccache
         run: cmake --build ./out/build/${{ env.CMAKE_PRESET }} --target UnleashedRecomp
 
       - name: Pack Release
@@ -279,7 +277,7 @@ jobs:
           tar -czf UnleashedRecomp-macOS-${{ matrix.arch }}-${{ env.CMAKE_PRESET }}.tar.gz -C ./out/build/${{ env.CMAKE_PRESET }}/UnleashedRecomp "Unleashed Recompiled.app"
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: UnleashedRecomp-macOS-${{ matrix.arch }}-${{ env.CMAKE_PRESET }}
           path: UnleashedRecomp-macOS-${{ matrix.arch }}-${{ env.CMAKE_PRESET }}.tar.gz

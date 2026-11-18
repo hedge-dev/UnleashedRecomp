@@ -23,6 +23,15 @@ if (WIN32)
     set(D3D12_AGILITY_SDK_ENABLED ON CACHE BOOL "")
 endif()
 
+if (WIN32 AND UNLEASHED_RECOMP_ARCHITECTURE STREQUAL "arm64")
+    # Workaround for https://github.com/libsdl-org/SDL/issues/16481
+    # This also works around an issue caused by SDL2 adjusting the stack
+    # probe threshold way too high, causing an immediate crash with LTO
+    # on a function moving the stack pointer past the guard page. This
+    # issue does not exist with SDL3 as SDL_LIBC is the default.
+    set(SDL_LIBC ON CACHE BOOL "" FORCE)
+endif()
+
 add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/msdf-atlas-gen")
 add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/nativefiledialog-extended")
 add_subdirectory("${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/o1heap")

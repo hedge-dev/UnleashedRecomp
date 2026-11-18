@@ -27,7 +27,7 @@
         },
         {
             "name": "x64-Clang-Debug",
-            "displayName": "Debug",
+            "displayName": "Debug (x64)",
             "inherits": "windows-base",
             "architecture": {
                 "value": "x64",
@@ -43,7 +43,7 @@
         },
         {
             "name": "x64-Clang-RelWithDebInfo",
-            "displayName": "RelWithDebInfo",
+            "displayName": "RelWithDebInfo (x64)",
             "inherits": "x64-Clang-Debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo"
@@ -51,8 +51,41 @@
         },
         {
             "name": "x64-Clang-Release",
-            "displayName": "Release",
+            "displayName": "Release (x64)",
             "inherits": "x64-Clang-Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": true
+            }
+        },
+        {
+            "name": "arm64-Clang-Debug",
+            "displayName": "Debug (ARM64)",
+            "inherits": "windows-base",
+            "architecture": {
+                "value": "arm64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "VCPKG_TARGET_TRIPLET": {
+                    "value": "arm64-windows-static",
+                    "type": "STRING"
+                }
+            }
+        },
+        {
+            "name": "arm64-Clang-RelWithDebInfo",
+            "displayName": "RelWithDebInfo (ARM64)",
+            "inherits": "arm64-Clang-Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            }
+        },
+        {
+            "name": "arm64-Clang-Release",
+            "displayName": "Release (ARM64)",
+            "inherits": "arm64-Clang-Debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_INTERPROCEDURAL_OPTIMIZATION": true
@@ -68,10 +101,6 @@
                 "CMAKE_TOOLCHAIN_FILE": {
                     "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
                     "type": "FILEPATH"
-                },
-                "VCPKG_TARGET_TRIPLET": {
-                    "value": "x64-linux",
-                    "type": "STRING"
                 },
                 "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/toolchains/linux-clang.cmake"
             },
