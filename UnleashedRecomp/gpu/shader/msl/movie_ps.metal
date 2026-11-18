@@ -1,30 +1,34 @@
-#include "movie_common.hlsli"
+#include "movie_common.metali"
 
-PixelShaderOutput main(in Interpolators In)
+[[fragment]]
+PixelShaderOutput shaderMain(Interpolators In [[stage_in]],
+                             constant Texture2DDescriptorHeap* g_Texture2DDescriptorHeap [[buffer(0)]],
+                             constant SamplerDescriptorHeap* g_SamplerDescriptorHeap [[buffer(3)]],
+                             constant PushConstants& g_PushConstants [[buffer(8)]])
 {
-    Texture2D<float4> Tex0 = g_Texture2DDescriptorHeap[Tex0_ResourceDescriptorIndex];
-    Texture2D<float4> Tex1 = g_Texture2DDescriptorHeap[Tex1_ResourceDescriptorIndex];
-    Texture2D<float4> Tex2 = g_Texture2DDescriptorHeap[Tex2_ResourceDescriptorIndex];
-    Texture2D<float4> Tex3 = g_Texture2DDescriptorHeap[Tex3_ResourceDescriptorIndex];
-    Texture2D<float4> Tex4 = g_Texture2DDescriptorHeap[Tex4_ResourceDescriptorIndex];
+    texture2d<float> Tex0 = g_Texture2DDescriptorHeap[Tex0_ResourceDescriptorIndex].tex;
+    texture2d<float> Tex1 = g_Texture2DDescriptorHeap[Tex1_ResourceDescriptorIndex].tex;
+    texture2d<float> Tex2 = g_Texture2DDescriptorHeap[Tex2_ResourceDescriptorIndex].tex;
+    texture2d<float> Tex3 = g_Texture2DDescriptorHeap[Tex3_ResourceDescriptorIndex].tex;
+    texture2d<float> Tex4 = g_Texture2DDescriptorHeap[Tex4_ResourceDescriptorIndex].tex;
     
-    SamplerState Tex0_s = g_SamplerDescriptorHeap[Tex0_SamplerDescriptorIndex];
-    SamplerState Tex1_s = g_SamplerDescriptorHeap[Tex1_SamplerDescriptorIndex];
-    SamplerState Tex2_s = g_SamplerDescriptorHeap[Tex2_SamplerDescriptorIndex];
-    SamplerState Tex3_s = g_SamplerDescriptorHeap[Tex3_SamplerDescriptorIndex];
-    SamplerState Tex4_s = g_SamplerDescriptorHeap[Tex4_SamplerDescriptorIndex];
+    sampler Tex0_s = g_SamplerDescriptorHeap[Tex0_SamplerDescriptorIndex].samp;
+    sampler Tex1_s = g_SamplerDescriptorHeap[Tex1_SamplerDescriptorIndex].samp;
+    sampler Tex2_s = g_SamplerDescriptorHeap[Tex2_SamplerDescriptorIndex].samp;
+    sampler Tex3_s = g_SamplerDescriptorHeap[Tex3_SamplerDescriptorIndex].samp;
+    sampler Tex4_s = g_SamplerDescriptorHeap[Tex4_SamplerDescriptorIndex].samp;
     
     PixelShaderOutput Out;
-    float ValY = Tex0.Sample(Tex0_s, In.UV).r;
-    float ValU = Tex1.Sample(Tex1_s, In.UV).r - 0.5;
-    float ValV = Tex2.Sample(Tex2_s, In.UV).r - 0.5;
+    float ValY = Tex0.sample(Tex0_s, In.UV).r;
+    float ValU = Tex1.sample(Tex1_s, In.UV).r - 0.5;
+    float ValV = Tex2.sample(Tex2_s, In.UV).r - 0.5;
     float ValA = 1.0;
     float ValD = 0.0;
     if (bAmv)
-        ValA = (Tex3.Sample(Tex3_s, In.UV).r - 0.0625) * 1.164;
+        ValA = (Tex3.sample(Tex3_s, In.UV).r - 0.0625) * 1.164;
     if (bZmv)
     {
-        ValD = (Tex4.Sample(Tex4_s, In.UV).r - 0.0625) * 1.164;
+        ValD = (Tex4.sample(Tex4_s, In.UV).r - 0.0625) * 1.164;
         if (ValD < 9.0 / 255.0)
         {
             ValD = 0.0;
@@ -95,7 +99,6 @@ PixelShaderOutput main(in Interpolators In)
     
     if (any(In.UV < 0.0) || any(In.UV > 1.0))
         Out.Color.rgb = 0.0;
-    
-    Out.Depth = ValD;
+
     return Out;
 }

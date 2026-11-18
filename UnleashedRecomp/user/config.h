@@ -71,6 +71,9 @@ enum class EGraphicsAPI : uint32_t
 #ifdef UNLEASHED_RECOMP_D3D12
     D3D12,
 #endif
+#ifdef UNLEASHED_RECOMP_METAL
+    Metal,
+#endif
     Vulkan
 };
 

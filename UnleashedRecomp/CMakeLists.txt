@@ -4,6 +4,10 @@ if (WIN32)
     option(UNLEASHED_RECOMP_D3D12 "Add D3D12 support for rendering" ON)
 endif()
 
+if (APPLE)
+    option(UNLEASHED_RECOMP_METAL "Add Metal support for rendering" ON)
+endif()
+
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     option(UNLEASHED_RECOMP_FLATPAK "Configure the build for Flatpak compatibility." OFF)
 endif()
@@ -255,6 +259,10 @@ if (NOT ${CMAKE_BUILD_TYPE} MATCHES "Release")
     set(SHOW_GIT_INFO_AND_BUILD_TYPE 1)
 endif()
 
+if (UNLEASHED_RECOMP_METAL)
+    set(XCRUN_TOOL "/usr/bin/xcrun")
+endif()
+
 GenerateVersionSources(
     OUTPUT_DIR ${PROJECT_SOURCE_DIR}
     VERSION_TXT ${VERSION_TXT}
@@ -314,33 +322,6 @@ elseif (APPLE)
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${MACOS_BUNDLE_VERSION}
         MACOSX_BUNDLE_ICON_FILE "game_icon.icns"
     )
-
-    # Linking with MoltenVK directly would prevent using the system Vulkan loader to load with debug layers.
-    # Instead, copy the MoltenVK dylib to the app bundle along with an ICD file for the loader to find it.
-    # In the event the loader is not installed, the MoltenVK dylib can still be picked up directly in the app bundle.
-    set(MVK_BUNDLED_PATH "Resources/vulkan/icd.d")
-    set(MVK_DST "${CMAKE_CURRENT_BINARY_DIR}/Unleashed Recompiled.app/Contents/${MVK_BUNDLED_PATH}")
-    set_property(TARGET UnleashedRecomp APPEND PROPERTY BUILD_RPATH "@executable_path/../${MVK_BUNDLED_PATH}")
-
-    set(MVK_ICD_SRC "${UNLEASHED_RECOMP_THIRDPARTY_ROOT}/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json")
-    set(MVK_ICD_DST "${MVK_DST}/MoltenVK_icd.json")
-    set(MVK_DYLIB_SRC "${CMAKE_BINARY_DIR}/thirdparty/MoltenVK/libMoltenVK.dylib")
-    set(MVK_DYLIB_DST "${MVK_DST}/libMoltenVK.dylib")
-
-    add_custom_command(
-        OUTPUT ${MVK_DST}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_DST})
-    add_custom_command(
-        OUTPUT ${MVK_ICD_DST}
-        DEPENDS ${MVK_ICD_SRC} ${MVK_DST}
-        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_ICD_SRC} ${MVK_ICD_DST})
-    add_custom_command(
-        OUTPUT ${MVK_DYLIB_DST}
-        DEPENDS ${MVK_DYLIB_SRC} ${MVK_DST}
-        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
-    add_custom_target(CopyMoltenVK DEPENDS ${MVK_ICD_DST} ${MVK_DYLIB_DST})
-    add_dependencies(CopyMoltenVK MoltenVK)
-    add_dependencies(UnleashedRecomp CopyMoltenVK)
 else()
     add_executable(UnleashedRecomp ${UNLEASHED_RECOMP_CXX_SOURCES})
 endif()
@@ -373,6 +354,10 @@ if (UNLEASHED_RECOMP_D3D12)
         Microsoft::DXIL
         dxgi
     )
+endif()
+
+if (UNLEASHED_RECOMP_METAL)
+    target_compile_definitions(UnleashedRecomp PRIVATE UNLEASHED_RECOMP_METAL)
 endif()
 
 if (WIN32)
@@ -418,22 +403,37 @@ endif()
 target_precompile_headers(UnleashedRecomp PUBLIC ${UNLEASHED_RECOMP_PRECOMPILED_HEADERS})
 
 function(compile_shader FILE_PATH TARGET_NAME)
-    set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/${FILE_PATH}.hlsl)
-    cmake_path(GET FILE_PATH STEM VARIABLE_NAME)
+    set(HLSL_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/hlsl/${FILE_PATH}.hlsl)
+    set(MSL_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/msl/${FILE_PATH}.metal)
+    cmake_path(GET HLSL_FILE_PATH STEM HLSL_NAME)
+    cmake_path(GET MSL_FILE_PATH STEM MSL_NAME)
+    if (UNLEASHED_RECOMP_METAL)
+        add_custom_command(
+                OUTPUT ${MSL_FILE_PATH}.ir
+                COMMAND ${XCRUN_TOOL} -sdk macosx metal -o ${MSL_FILE_PATH}.ir -c ${MSL_FILE_PATH} -D__air__ -frecord-sources -gline-tables-only
+                DEPENDS ${MSL_FILE_PATH}
+        )
+        add_custom_command(
+                OUTPUT ${MSL_FILE_PATH}.metallib
+                COMMAND ${XCRUN_TOOL} -sdk macosx metallib -o ${MSL_FILE_PATH}.metallib ${MSL_FILE_PATH}.ir
+                DEPENDS ${MSL_FILE_PATH}.ir
+        )
+        BIN2C(TARGET_OBJ UnleashedRecomp SOURCE_FILE "${MSL_FILE_PATH}.metallib" DEST_FILE "${MSL_FILE_PATH}.metallib" ARRAY_NAME "g_${MSL_NAME}_air")
+    endif()
     if (UNLEASHED_RECOMP_D3D12)
         add_custom_command(
-            OUTPUT ${FILE_PATH}.dxil.h
-            COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil
-            DEPENDS ${FILE_PATH}
+            OUTPUT ${HLSL_FILE_PATH}.dxil.h
+            COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -E shaderMain -Fh ${HLSL_FILE_PATH}.dxil.h ${HLSL_FILE_PATH} -Vn g_${HLSL_NAME}_dxil
+            DEPENDS ${HLSL_FILE_PATH}
         )
-        target_sources(UnleashedRecomp PRIVATE ${FILE_PATH}.dxil.h)
+        target_sources(UnleashedRecomp PRIVATE ${HLSL_FILE_PATH}.dxil.h)
     endif()
     add_custom_command(
-        OUTPUT ${FILE_PATH}.spirv.h
-        COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -Fh ${FILE_PATH}.spirv.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_spirv
-        DEPENDS ${FILE_PATH}
+        OUTPUT ${HLSL_FILE_PATH}.spirv.h
+        COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -E shaderMain -Fh ${HLSL_FILE_PATH}.spirv.h ${HLSL_FILE_PATH} -Vn g_${HLSL_NAME}_spirv
+        DEPENDS ${HLSL_FILE_PATH}
     )
-    target_sources(UnleashedRecomp PRIVATE ${FILE_PATH}.spirv.h)
+    target_sources(UnleashedRecomp PRIVATE ${HLSL_FILE_PATH}.spirv.h)
 endfunction()
 
 function(compile_vertex_shader FILE_PATH)

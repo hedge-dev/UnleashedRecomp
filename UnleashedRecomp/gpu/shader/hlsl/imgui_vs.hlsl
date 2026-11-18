@@ -1,6 +1,6 @@
 #include "imgui_common.hlsli"
 
-void main(in float2 position : POSITION, in float2 uv : TEXCOORD, in float4 color : COLOR, out Interpolators interpolators)
+void shaderMain(in float2 position : POSITION, in float2 uv : TEXCOORD, in float4 color : COLOR, out Interpolators interpolators)
 {    
     if (g_PushConstants.ShaderModifier == IMGUI_SHADER_MODIFIER_TEXT_SKEW)
     {
