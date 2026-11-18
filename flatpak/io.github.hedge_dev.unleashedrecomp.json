@@ -10,6 +10,7 @@
     "--socket=fallback-x11",
     "--socket=pulseaudio",
     "--device=all",
+    "--talk-name=org.mpris.MediaPlayer2.*",
     "--filesystem=host",
     "--filesystem=/media",
     "--filesystem=/run/media",
