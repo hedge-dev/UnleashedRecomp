@@ -1686,3 +1686,13 @@ void EndingTextPositionMidAsmHook(PPCRegister& r31, PPCRegister& f13)
     else if (align == ALIGN_LEFT)
         f13.f64 += 133.0 * (1.0 - g_aspectRatioNarrowScale);
 }
+
+// Offsets calculated by converting the 4:3 values to 16:9 space and then substracting the differences from the original 16:9 position.
+// Afterward fact checked by overlaying a capture from the original hardware at 4:3 and a capture from recomp at 4:3.
+void AdvertiseLogoPlacementMidAsmHook(PPCRegister& f0, PPCRegister& f13, PPCRegister& f12, PPCRegister& f11)
+{
+    f0.f64 += -133.0f / 1280.0f * (1.0 - g_aspectRatioNarrowScale);
+    f13.f64 += 3.5f / 720.0f * (1.0 - g_aspectRatioNarrowScale);
+    f12.f64 += -133.0f / 1280.0f * (1.0 - g_aspectRatioNarrowScale);
+    f11.f64 += 3.5f / 720.0f * (1.0 - g_aspectRatioNarrowScale);
+}
