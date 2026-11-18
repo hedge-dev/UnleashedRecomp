@@ -1255,9 +1255,14 @@ static void DrawConfigOptions()
 
         case 3: // VIDEO
         {
-            DrawConfigOption(rowCount++, yOffset, &Config::WindowSize,
-                !Config::Fullscreen, &Localise("Options_Desc_NotAvailableFullscreen"),
-                0, 0, (int32_t)GameWindow::GetDisplayModes().size() - 1, false);
+            auto displayModeCount = (int32_t)GameWindow::GetDisplayModes().size();
+            auto canChangeWindowSize = !Config::Fullscreen && displayModeCount > 1;
+            auto windowSizeReason = &Localise("Options_Desc_NotAvailableFullscreen");
+            
+            if (!Config::Fullscreen && displayModeCount <= 1)
+                windowSizeReason = &Localise("Options_Desc_NotAvailableHardware");
+
+            DrawConfigOption(rowCount++, yOffset, &Config::WindowSize, canChangeWindowSize, windowSizeReason, 0, 0, displayModeCount - 1, false);
 
             auto displayCount = GameWindow::GetDisplayCount();
             auto canChangeMonitor = Config::Fullscreen && displayCount > 1;
