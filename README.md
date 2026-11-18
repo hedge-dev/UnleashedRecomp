@@ -12,6 +12,10 @@ Unleashed Recompiled is an unofficial PC port of the Xbox 360 version of Sonic U
 
 [XenonRecomp](https://github.com/hedge-dev/XenonRecomp) and [XenosRecomp](https://github.com/hedge-dev/XenosRecomp) are the main recompilers used for converting the game's original PowerPC code and Xenos shaders into compatible C++ and HLSL code respectively. The development of these recompilers was directly inspired by [N64: Recompiled](https://github.com/N64Recomp/N64Recomp), which was used to create [Zelda 64: Recompiled](https://github.com/Zelda64Recomp/Zelda64Recomp).
 
+### No AI Stance
+
+The Unleashed Recompiled team has not used and will not use generative AI technology for the development of this project in any capacity whatsoever. As per the [Contributing Guide](CONTRIBUTING.md), any pull request developed using such technology will be blanket banned.
+
 ## Table of Contents
 
 - [Minimum System Requirements](#minimum-system-requirements)
