@@ -352,6 +352,8 @@ if (UNLEASHED_RECOMP_FLATPAK)
     )
 endif()
 
+target_compile_definitions(UnleashedRecomp PRIVATE $<$<CONFIG:Debug>:UNLEASHED_RECOMP_DEBUG=1>)
+
 find_package(CURL REQUIRED)
 
 if (UNLEASHED_RECOMP_D3D12)

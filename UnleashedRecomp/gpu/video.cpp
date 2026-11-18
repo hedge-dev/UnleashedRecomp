@@ -3145,7 +3145,7 @@ static GuestTexture* CreateTexture(uint32_t width, uint32_t height, uint32_t dep
 
     g_textureDescriptorSet->setTexture(texture->descriptorIndex, texture->texture, RenderTextureLayout::SHADER_READ, texture->textureView.get());
    
-#ifdef _DEBUG 
+#ifdef UNLEASHED_RECOMP_DEBUG 
     texture->texture->setName(fmt::format("Texture {:X}", g_memory.MapVirtual(texture)));
 #endif
 
@@ -3162,7 +3162,7 @@ static GuestBuffer* CreateVertexBuffer(uint32_t length)
     auto buffer = g_userHeap.AllocPhysical<GuestBuffer>(ResourceType::VertexBuffer);
     buffer->buffer = g_device->createBuffer(RenderBufferDesc::VertexBuffer(length, GetBufferHeapType(), RenderBufferFlag::INDEX));
     buffer->dataSize = length;
-#ifdef _DEBUG 
+#ifdef UNLEASHED_RECOMP_DEBUG 
     buffer->buffer->setName(fmt::format("Vertex Buffer {:X}", g_memory.MapVirtual(buffer)));
 #endif
     return buffer;
@@ -3175,7 +3175,7 @@ static GuestBuffer* CreateIndexBuffer(uint32_t length, uint32_t, uint32_t format
     buffer->dataSize = length;
     buffer->format = ConvertFormat(format);
     buffer->guestFormat = format;
-#ifdef _DEBUG 
+#ifdef UNLEASHED_RECOMP_DEBUG 
     buffer->buffer->setName(fmt::format("Index Buffer {:X}", g_memory.MapVirtual(buffer)));
 #endif
     return buffer;
@@ -3213,7 +3213,7 @@ static GuestSurface* CreateSurface(uint32_t width, uint32_t height, uint32_t for
     surface->descriptorIndex = g_textureDescriptorAllocator.allocate();
     g_textureDescriptorSet->setTexture(surface->descriptorIndex, surface->textureHolder.get(), RenderTextureLayout::SHADER_READ, surface->textureView.get());
 
-#ifdef _DEBUG 
+#ifdef UNLEASHED_RECOMP_DEBUG 
     surface->texture->setName(fmt::format("{} {:X}", desc.flags & RenderTextureFlag::RENDER_TARGET ? "Render Target" : "Depth Stencil", g_memory.MapVirtual(surface)));
 #endif
 
@@ -5857,7 +5857,7 @@ static void MakePictureData(GuestPictureData* pictureData, uint8_t* data, uint32
 
         if (LoadTexture(texture, data, dataSize, {}))
         {
-#ifdef _DEBUG
+#ifdef UNLEASHED_RECOMP_DEBUG
             texture.texture->setName(reinterpret_cast<char*>(g_memory.Translate(pictureData->name + 2)));
 #endif
             XXH64_hash_t hash = XXH3_64bits(data, dataSize);

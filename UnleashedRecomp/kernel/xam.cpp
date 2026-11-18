@@ -203,7 +203,7 @@ uint32_t XamShowMessageBoxUI(uint32_t dwUserIndex, be<uint16_t>* wszTitle, be<ui
 {
     *pResult = cButtons ? cButtons - 1 : 0;
 
-#if _DEBUG
+#if UNLEASHED_RECOMP_DEBUG
     assert("XamShowMessageBoxUI encountered!" && false);
 #elif _WIN32
     // This code is Win32-only as it'll most likely crash, misbehave or
